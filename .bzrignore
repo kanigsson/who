@@ -1,0 +1,6 @@
+tests/*/*/*output
+tests/*/*/*counter
+tests/*/*/Makefile
+_build
+main.native
+tests/*counter

@@ -1,0 +1,1 @@
+let f = (λx -> (λy -> ((beq_z x) y))) in let f = (λx -> x) in ()
