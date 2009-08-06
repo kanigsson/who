@@ -41,9 +41,9 @@ let close_scheme = TyVar.close_listbind
 
 let rec print fmt = function
   | True -> pp_print_string fmt "True"
-  | Sub (v,t) -> fprintf fmt "%a < %a" Var.print v Ty.print t
-  | And (c1,c2) -> fprintf fmt "%a /\ %a" print c1 print c2
-  | Eq (t1,t2) -> fprintf fmt "%a = %a" Ty.print t1 Ty.print t2
+  | Sub (v,t) -> fprintf fmt "@[%a@ <@ %a@]" Var.print v Ty.print t
+  | And (c1,c2) -> fprintf fmt "@[%a@ /\\@ %a@]" print c1 print c2
+  | Eq (t1,t2) -> fprintf fmt "@[%a@ =@ %a@]" Ty.print t1 Ty.print t2
   | Exists b ->
       let l,c = open_tybind b in
       fprintf fmt "∃%a.%a" TyVar.print_list l print c
@@ -52,15 +52,16 @@ let rec print fmt = function
       fprintf fmt "let@ %a :@ %a@ in@ %a" Var.print v scheme s print c
 and scheme fmt b = 
   let l,(t,c) = open_scheme b in
-  fprintf fmt "∀%a[%a].%a" TyVar.print_list l Ty.print t print c
+  fprintf fmt "∀%a[%a].%a" TyVar.print_list l print c Ty.print t
 
+let ex () = TyVar.from_string "a"
 let exists f = 
-  let x = TyVar.new_anon () in
+  let x = ex () in
   Exists (close_tybind [x] (f (Ty.var x)))
 
 let exists2 f = 
-  let x = TyVar.new_anon () in
-  let y = TyVar.new_anon () in
+  let x = ex () in
+  let y = ex () in
   Exists (close_tybind [x;y] (f (Ty.var x) (Ty.var y)))
 
 let let_ s x f = 
@@ -72,5 +73,5 @@ let triv_scheme t =
   close_scheme [] (t,true_)
 
 let mk_scheme f = 
-  let a = TyVar.new_anon () in
+  let a = ex () in
   close_scheme [a] (f (Ty.var a))

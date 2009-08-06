@@ -6,3 +6,6 @@ all: main.native
 
 %.native: $(ALLML)
 	$(OCAMLBUILD) $@
+
+check:
+	make -C tests check

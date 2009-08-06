@@ -5,6 +5,8 @@ let parse_only = ref false
 let intern_only = ref false
 let constr_only = ref false
 
+open Infer
+
 let opt_spec = 
   Arg.align
   [ 
@@ -38,7 +40,9 @@ let _ =
   maybe_abort parse_only Ptree.print p;
   let p = Ptree.internalize p in
   maybe_abort intern_only Ast.print p;
+(*
   let p = Generate.generate p in
   maybe_abort constr_only Constr.print p;
-  ()
+*)
+  Infer.infer p
 
