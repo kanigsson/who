@@ -9,3 +9,6 @@ all: main.native
 
 check:
 	make -C tests check
+
+clean:
+	$(OCAMLBUILD) -clean

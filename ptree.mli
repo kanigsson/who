@@ -15,4 +15,4 @@ type ty =
 
 val print : t Misc.fmt
 
-val internalize : t -> Ast.t
+val internalize : t -> unit Ast.t

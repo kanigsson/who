@@ -1,4 +1,5 @@
 module A = Ast
+open Ast.DontCare
 
 type t =
   | Const of A.const
@@ -34,7 +35,7 @@ exception Error of string
 
 let error s = raise (Error s)
 let internalize env t = 
-  let rec aux env = function
+  let rec aux' env = function
     | Const c -> A.Const c
     | Var s -> 
         begin try A.Var (SM.find s env)
@@ -42,11 +43,12 @@ let internalize env t =
     | App (t1,t2) -> A.App (aux env t1, aux env t2)
     | Lam (s,t) ->
         let env, x = new_var env s in
-        A.Lam (A.close_bind x (aux env t))
+        A.Lam (close_bind x (aux env t))
     | Let (t,s,t') ->
         let t = aux env t in
         let env, x = new_var env s in
-        A.Let (t, A.close_bind x (aux env t')) in
+        A.Let (t, close_bind x (aux env t')) 
+  and aux env t = { A.v = aux' env t; t = () } in
   aux env t
 
 let internalize = internalize Initial.intern_map

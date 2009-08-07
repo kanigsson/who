@@ -38,11 +38,14 @@ let _ =
   update ();
   let p = parse () in
   maybe_abort parse_only Ptree.print p;
+(*
   let p = Ptree.internalize p in
-  maybe_abort intern_only Ast.print p;
+  maybe_abort intern_only Ast.DontCare.print p;
+  let p = Infer.infer p in
+  maybe_abort constr_only Infer.print_ast p;
+*)
 (*
   let p = Generate.generate p in
   maybe_abort constr_only Constr.print p;
 *)
-  Infer.infer p
 

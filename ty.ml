@@ -1,9 +1,4 @@
 open Vars
-type const = 
-  | Bool
-  | Int
-  | Unit
-
 type 'a t' = 
   [
     | `Const of const
@@ -28,11 +23,6 @@ let refresh s t =
   map ~tyvarfun:(fun v -> `Var (TyVar.refresh s v)) t
 
 open Format
-let print_const fmt = function
-  | Bool -> pp_print_string fmt "bool"
-  | Int -> pp_print_string fmt "int"
-  | Unit -> pp_print_string fmt "unit"
-
 let print' pr fmt = function
   | `Const c -> print_const fmt c
   | `Var v -> TyVar.print fmt v
