@@ -1,2 +1,4 @@
 let f = fun x -> fun y -> x = y
-let f = fun x -> x
+let f = fun x -> true
+
+let g = f true

@@ -1,7 +1,7 @@
 open Vars
 type 'a t' = 
   [
-    | `Const of const
+    | `Const of Const.ty
     | `Var of TyVar.t
     | `Arrow of 'a * 'a
     | `Tuple of 'a * 'a
@@ -24,7 +24,7 @@ let refresh s t =
 
 open Format
 let print' pr fmt = function
-  | `Const c -> print_const fmt c
+  | `Const c -> Const.print_ty fmt c
   | `Var v -> TyVar.print fmt v
   | `Arrow (t1,t2) -> fprintf fmt "@[(%a@ ->@ %a)@]" pr t1 pr t2
   | `Tuple (t1,t2) -> fprintf fmt "@[(%a,@ %a)@]" pr t1 pr t2
@@ -34,3 +34,8 @@ let var v = `U (`Var v)
 let arrow t1 t2 = `U (`Arrow (t1,t2))
 let const c = `U (`Const c)
 
+let unit = const (Const.TUnit)
+
+let arg = function
+  | `U (`Arrow (t1,_)) -> t1
+  | _ -> assert false

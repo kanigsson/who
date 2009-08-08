@@ -11,8 +11,7 @@ let opt_spec =
   Arg.align
   [ 
     "-parse-only", Arg.Set parse_only, " parse file and exit";
-    "-intern-only", Arg.Set intern_only, " scope file, print reconversion and exit";
-    "-constr-only", Arg.Set constr_only, " scope file, print reconversion and exit";
+    "-constr-only", Arg.Set constr_only, " do type inference and exit";
   ]
 let () = 
   Arg.parse opt_spec store_fn "Usage: who <options> <file>"
@@ -37,15 +36,9 @@ let maybe_abort r print f =
 let _ = 
   update ();
   let p = parse () in
-  maybe_abort parse_only Ptree.print p;
-(*
-  let p = Ptree.internalize p in
-  maybe_abort intern_only Ast.DontCare.print p;
-  let p = Infer.infer p in
-  maybe_abort constr_only Infer.print_ast p;
-*)
-(*
-  let p = Generate.generate p in
-  maybe_abort constr_only Constr.print p;
-*)
+  maybe_abort parse_only Clean_ast.print p;
+  Infer.infer p;
+  let p = Reconstruct.term p in
+  maybe_abort constr_only Ast.print p;
+  p
 

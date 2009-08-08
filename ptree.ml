@@ -1,6 +1,3 @@
-module A = Ast
-open Ast.DontCare
-
 type t =
   | Const of A.const
   | Var of string

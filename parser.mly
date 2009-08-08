@@ -1,13 +1,16 @@
 %{
-  open Ptree
+  open Clean_ast
 
-  let infix_app s t1 t2 = 
-    App (App (Var s, t1), t2)
+  let app t1 t2 = mk_node (App (t1,t2))
+  let var s = mk_node (Var s)
+  let const c = mk_node (Const c)
+  let infix_app s t1 t2 = app (app (var s) t1) t2
+  let let_ e1 x e2 = mk_node (Let (e1,x,e2))
+  let lam x e = mk_node (Lam (x,e))
 
   let rec merge = function
-    | [] -> Const Ast.Void
-    | Let (t,x,Const Ast.Void)::xs ->
-        Let (t,x,merge xs)
+    | [] -> const Const.Void
+    | { v = Let (t,x,{ v = Const Const.Void }) }::xs -> let_ t x (merge xs)
     | _ -> assert false
 
 %}
@@ -39,7 +42,7 @@
 %right EQUAL NEQ
 %left PLUS MINUS
 %right STAR
-%start <Ptree.t> main
+%start <Clean_ast.t> main
 
 %%
 
@@ -63,10 +66,10 @@ ty:
 
 *)
 constant:
-  |  n = INT { Ast.Int n }
-  |  TRUE { Ast.Btrue }
-  |  FALSE { Ast.Bfalse }
-  |  VOID { Ast.Void }
+  |  n = INT { Const.Int n }
+  |  TRUE { Const.Btrue }
+  |  FALSE { Const.Bfalse }
+  |  VOID { Const.Void }
 
 %inline infix_arith:
   | MINUS { "Zminus" }
@@ -78,8 +81,8 @@ constant:
   | EQUAL { "beq_z" }
 
 aterm:
-  | x = IDENT { Var x }
-  | c = constant { Const c }
+  | x = IDENT { var x }
+  | c = constant { const c }
 (*
   | l = LPAREN e = nterm COLON t = aftype r =  RPAREN 
     { embrace l r (PAnnot (e,t)) }
@@ -88,7 +91,7 @@ aterm:
 
 appterm:
   | t = aterm { t }
-  | t1 = appterm t2 = aterm { App (t1,t2) }
+  | t1 = appterm t2 = aterm { app t1 t2 }
 
 nterm:
   | t1 = appterm { t1 }
@@ -99,12 +102,12 @@ nterm:
   | st = IF it = nterm THEN tb = nterm ELSE eb = nterm %prec ifprec
     { embrace st eb.loc (PIte (it,tb,eb)) }
 *)
-  | FUN x = IDENT ARROW b = nterm { Lam (x,b) }
+  | FUN x = IDENT ARROW e = nterm { lam x e }
   | LET x = IDENT EQUAL t1 = nterm IN t2 = nterm 
-    { Let (t1,x,t2) }
+    { let_ t1 x t2 }
 
 decl:
   | LET x = IDENT EQUAL t = nterm
-    {Let (t,x, Const (Ast.Void))}
+  { let_ t x (const (Const.Void)) }
 
 main: l = nonempty_list(decl) EOF { merge l }
