@@ -38,8 +38,8 @@ let rec infer' env t = function
       infer {env with n = env.n + 1 } nt e1;
       infer (add_var env x nt) t e2
 and infer env t e = 
-  infer' env t e.A.v;
-  e.A.t <- t
+  e.A.t <- t; 
+  infer' env t e.A.v
 
 let infer e = 
   let nt = new_ty 0 in

@@ -1,15 +1,13 @@
 module Uf = Unionfind
-type 'a ty' = 
+type ty' = 
   | Var of int
   | Const of Const.ty
-  | Arrow of 'a * 'a
-  
-type ty = U of ty ty' Uf.t
+  | Arrow of ty * ty
+and ty = ty' Uf.t
 
-let fresh d = U (Uf.fresh d)
-let new_ty n = fresh (Var n)
-let arrow t1 t2 = fresh (Arrow (t1,t2))
-let const c = fresh (Const c)
+let new_ty n = Uf.fresh (Var n)
+let arrow t1 t2 = Uf.fresh (Arrow (t1,t2))
+let const c = Uf.fresh (Const c)
 
 let union = Uf.union (fun a b -> a)
 
@@ -17,13 +15,12 @@ open Format
 let rec print_node fmt x = 
   match Uf.desc x with
   | Var n -> fprintf fmt "%d:%d" (Uf.tag x) n
-  | Arrow (t1,t2) -> fprintf fmt "(%a -> %a)" print_node_ty t1 print_node_ty t2
+  | Arrow (t1,t2) -> fprintf fmt "(%a -> %a)" print_node t1 print_node t2
   | Const c -> Const.print_ty fmt c
-and print_node_ty fmt (U x) = print_node fmt x
 
 exception CannotUnify
 
-let rec unify (U a) (U b) =
+let rec unify a b =
   if Uf.equal a b then ();
   match Uf.desc a, Uf.desc b with
   | Var n1, Var n2 -> 
@@ -41,7 +38,7 @@ let equal a b = Uf.tag a = Uf.tag b
 
 let rec refresh_ty ~old ~new_ z =
   let h = Hashtbl.create 5 in
-  let rec aux' x =
+  let rec aux x =
     match Uf.desc x with
     | Var n when n > old -> 
         begin try Hashtbl.find h x
@@ -53,13 +50,11 @@ let rec refresh_ty ~old ~new_ z =
     | (Const _) -> x
     | Arrow (t1,t2) -> 
         let t1' = aux t1 and t2' = aux t2 in
-        if t1 == t1' && t2 == t2' then x else Uf.fresh (Arrow (t1',t2'))
-
-  and aux (U x) = U (aux' x) in
+        if t1 == t1' && t2 == t2' then x else Uf.fresh (Arrow (t1',t2')) in
   aux z
 
 module H = Hashtbl.Make (struct 
-                           type t = ty ty' Unionfind.t
+                           type t = ty
                            let equal a b = Uf.tag a = Uf.tag b
                            let hash (x : t) : int = Hashtbl.hash (Uf.tag x)
                          end)

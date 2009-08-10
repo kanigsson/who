@@ -6,7 +6,7 @@ type t' =
   | Let of t * string * t
 and t = { v : t' ; mutable t : Unify.ty    }
 
-let dummy = Unify.fresh (Unify.Var 0)
+let dummy = Unionfind.fresh (Unify.Var 0)
 let mk_node v = { v = v; t = dummy }
 
 open Format
