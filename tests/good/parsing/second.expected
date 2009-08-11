@@ -1,1 +1,2 @@
-let f = (λx -> (λy -> ((beq_z x) y))) in let f = (λx -> x) in ()
+let f  = (λ(x:bool) -> (λ(y:bool) -> ((beq_z x) y))) in
+let f  = (λ(x:bool) -> true) in let g  = (f true) in ()

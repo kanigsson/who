@@ -11,6 +11,9 @@ let id_or_keyword =
       [ ("true", TRUE );
         ("false", FALSE );
         ("let", LET  );
+        ("bool", BOOL  );
+        ("int", TINT  );
+        ("unit", UNIT  );
         ("in", IN );
         ("fun", FUN );
       ];
@@ -39,13 +42,17 @@ rule token = parse
   | digit+ as i
   { INT (int_of_string i) }
   | identifier as i { id_or_keyword i}
+  | tyvar as tv { TYVAR tv}
   | "->" { ARROW }
   | '=' { EQUAL }
   | "<>" { NEQ }
   | "()" { VOID  }
   | '(' { LPAREN   }
   | ')' { RPAREN   }
+  | '[' { LBRACKET   }
+  | ']' { RBRACKET   }
   | '*' { STAR  }
+  | ':' { COLON  }
   | "<=" { LE  }
   | '<' { LT  }
   | '+' { PLUS  }

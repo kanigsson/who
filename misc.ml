@@ -17,6 +17,10 @@ let nothing _ () = ()
 let double_newline fmt () = fprintf fmt "@\n@\n"
 let newline fmt () = fprintf fmt "@\n"
 
+let optlist pr fmt = function
+  | [] -> space fmt ()
+  | l -> fprintf fmt "@ [%a]@ " (print_list space pr) l
+
 let pair_compare cmpa cmpb (a1,b1) (a2,b2) =
   let c = cmpa a1 a2 in
   if c = 0 then cmpb b1 b2 else c

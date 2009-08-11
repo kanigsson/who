@@ -27,8 +27,8 @@ let parse () =
     let () = close_in ch in
     prog
   with 
-  | Parser.Error -> Format.eprintf "Parse error"; abort ch
-  | Lexer.Error msg -> Format.eprintf "lexer error"; abort ch
+  | Parser.Error -> Format.eprintf "Parse error@."; abort ch
+  | Lexer.Error msg -> Format.eprintf "lexer error@."; abort ch
 
 let maybe_abort r print f = 
   if !r then begin Format.printf "%a@." print f; exit 0; end
@@ -40,5 +40,5 @@ let _ =
   Infer.infer p;
   let p = Reconstruct.term p in
   maybe_abort constr_only Ast.print p;
-  p
+  Typing.typing p
 

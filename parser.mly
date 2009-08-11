@@ -5,19 +5,20 @@
   let var s = mk_node (Var s)
   let const c = mk_node (Const c)
   let infix_app s t1 t2 = app (app (var s) t1) t2
-  let let_ e1 x e2 = mk_node (Let (e1,x,e2))
-  let lam x e = mk_node (Lam (x,e))
+  let let_ l e1 x e2 = mk_node (Let (l,e1,x,e2))
+  let lam x t e = mk_node (Lam (x,t,e))
 
   let rec merge = function
     | [] -> const Const.Void
-    | { v = Let (t,x,{ v = Const Const.Void }) }::xs -> let_ t x (merge xs)
+    | { v = Let (l,t,x,{ v = Const Const.Void }) }::xs -> let_ l t x (merge xs)
     | _ -> assert false
 
 %}
 
 %token <int> INT
-%token LPAREN RPAREN
+%token LPAREN RPAREN LBRACKET RBRACKET
 %token <string> IDENT
+%token <string> TYVAR
 %token LET IN 
 %token VOID
 %token PLUS MINUS LE EQUAL STAR NEQ
@@ -31,9 +32,10 @@
 %token IF
 %token THEN ELSE
 *)
+%token COLON
 %token FUN
 %token LT
-%token TRUE FALSE
+%token TRUE FALSE BOOL TINT UNIT
 
 %right ARROW
 (* %nonassoc ifprec *)
@@ -46,25 +48,22 @@
 
 %%
 
-(*
 tconstant:
-  | p = BOOL { p, Ty.Bool }
-  | p = TINT { p, Ty.Int }
-  | p = UNIT { p, Ty.Unit }
-  | p = PROP { p, Ty.Prop }
+  | BOOL { Const.TBool }
+  | TINT { Const.TInt }
+  | UNIT { Const.TUnit }
 
-simple_type:
-  | x = tconstant { `Const x }
-  | v = IDENT { Var v }
+stype:
+  | x = tconstant { Ty.const x }
+  | v = TYVAR { Ty.var v }
 
 ty:
-  | t = simple_aftype { t }
-  | t1 = aftype ARROW t2 = aftype 
-    { embrace t1.loc t2.loc (TPureArrow (t1,t2)) }
-  | t1 = aftype STAR t2 = aftype 
-    { embrace t1.loc t2.loc (TTuple (t1,t2)) }
+  | t = stype { t }
+  | t1 = ty ARROW t2 = ty 
+    { Ty.arrow t1 t2 }
+  | t1 = ty STAR t2 = ty 
+    { Ty.tuple t1 t2 }
 
-*)
 constant:
   |  n = INT { Const.Int n }
   |  TRUE { Const.Btrue }
@@ -98,16 +97,16 @@ nterm:
   | t1 = nterm i = infix_arith t2 = nterm  { infix_app i t1 t2 }
   | t1 = nterm i = infix_cmp_prog t2 = nterm  { infix_app i t1 t2 }
   | t1 = nterm  NEQ t2 = nterm { infix_app "<>" t1 t2 }
-(*
-  | st = IF it = nterm THEN tb = nterm ELSE eb = nterm %prec ifprec
-    { embrace st eb.loc (PIte (it,tb,eb)) }
-*)
-  | FUN x = IDENT ARROW e = nterm { lam x e }
-  | LET x = IDENT EQUAL t1 = nterm IN t2 = nterm 
-    { let_ t1 x t2 }
+  | FUN LPAREN x = IDENT COLON t = ty RPAREN ARROW e = nterm { lam x t e }
+  | LET x = IDENT l = optgen EQUAL t1 = nterm IN t2 = nterm 
+    { let_ l t1 x t2 }
+
+optgen: 
+  | { [] }
+  | LBRACKET l = nonempty_list(TYVAR) RBRACKET { l }
 
 decl:
-  | LET x = IDENT EQUAL t = nterm
-  { let_ t x (const (Const.Void)) }
+  | LET x = IDENT l = optgen EQUAL t = nterm
+  { let_ l t x (const (Const.Void)) }
 
 main: l = nonempty_list(decl) EOF { merge l }

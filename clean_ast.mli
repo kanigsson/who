@@ -1,10 +1,13 @@
+type tvar = string
+type var = string
+
 type t' =
   | Const of Const.t
-  | Var of string
+  | Var of var
   | App of t * t
-  | Lam of string * t
-  | Let of t * string * t
-and t = { v : t' ; mutable t : Unify.ty    }
+  | Lam of var * Ty.t * t
+  | Let of tvar list * t * var * t
+and t = { v : t' ; mutable t : Unify.node }
 
 val mk_node : t' -> t
 

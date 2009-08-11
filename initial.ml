@@ -1,14 +1,17 @@
-open Vars
 module SM = Misc.StringMap
-module VM = Var.FreeMap
-open Unify
 
-let predefined = 
-  [ "beq_z", eqz_var ]
+(*
+module Infer = struct
+  open Unify
+  let infer_env = 
+    let nv = new_ty () in
+    SM.add "beq_z" (0, arrow nv (arrow nv (const Const.TBool))) SM.empty
+end
 
-let infer_env = 
-  let nv = new_ty 1 in
-  SM.add "beq_z" (0, arrow nv (arrow nv (const Const.TBool))) SM.empty
+let infer_env = Infer.infer_env
+*)
 
-let intern_map = 
-  List.fold_left (fun acc (s,v) -> SM.add s v acc) SM.empty predefined
+open Ty
+let typing_env = 
+  SM.add "beq_z" (["a"], arrow (var "a") (arrow (var "a") (const Const.TBool)))
+    SM.empty

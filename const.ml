@@ -9,6 +9,10 @@ type ty =
   | TInt
   | TUnit
 
+let type_of_constant = function
+  | Int _ -> TInt
+  | Void -> TUnit
+  | Btrue | Bfalse -> TBool
 
 open Format
 let print fmt = function

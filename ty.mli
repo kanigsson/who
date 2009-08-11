@@ -1,20 +1,21 @@
-open Vars
-type t = 
-    | Const of Const.ty
-    | Var of TyVar.t
-    | Arrow of t * t
-    | Tuple of t * t
+type tvar = string
+type 'a t' = 
+  | Var of string
+  | Const of Const.ty
+  | Tuple of 'a * 'a
+  | Arrow of 'a * 'a
+type t = C of t t'
 
 val print : t Misc.fmt
+val print' : 'a Misc.fmt -> ('a t') Misc.fmt
 
-val var : TyVar.t -> t
+val var : tvar -> t
 val const : Const.ty -> t
 val arrow : t -> t -> t
+val tuple : t -> t -> t
 val unit : t
 
 val arg : t -> t
 
-val map : tyvarfun:(TyVar.t -> t) -> t -> t
-val refresh : subst -> t -> t
-
-val equal : t -> t -> bool
+val subst : tvar -> t -> t -> t
+val lsubst : tvar list -> t list -> t -> t

@@ -1,4 +1,5 @@
-let f = fun x -> fun y -> x = y
-let f = fun x -> true
+let f ['a] = fun (x : 'a) -> fun (y : 'a) -> x = y
+let f ['a] = fun (x : 'a) -> true
 
 let g = f true
+let h = f 5
