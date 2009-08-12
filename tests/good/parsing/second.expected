@@ -1,2 +1,3 @@
-let f  = (λ(x:bool) -> (λ(y:bool) -> ((beq_z x) y))) in
-let f  = (λ(x:bool) -> true) in let g  = (f true) in ()
+let f ['a]   = (λ(x:'a) -> (λ(y:'a) -> ((beq_z x) y))) in
+let f ['a]   = (λ(x:'a) -> true) in
+let g   = (f true) in let h   = (f 5) in ()

@@ -6,7 +6,7 @@ exception Error of string
 
 let error s = raise (Error s)
 
-type env = { types : (tvar list * Ty.t) SM.t }
+type env = { types : ((tvar list * rvar list) * Ty.t) SM.t }
 
 let add_var env x tl t = { types = SM.add x (tl,t) env.types }
 
@@ -15,10 +15,10 @@ let type_of_var env x = SM.find x env.types
 
 let rec typing' env = function
   | Ast.Const c -> Ty.const (Const.type_of_constant c)
-  | Ast.Var (s,tl) -> 
+  | Ast.Var (s,tl,rl) -> 
       begin try 
-        let tvl, t = type_of_var env s in
-        Ty.lsubst tvl tl t
+        let (tvl,rvl), t = type_of_var env s in
+        Ty.rlsubst rvl rl (Ty.lsubst tvl tl t)
       with Not_found -> error (Misc.mysprintf "unknown variable: %s" s) end
   | App (e1,e2) ->
       let t2 = typing env e2 in
@@ -28,7 +28,7 @@ let rec typing' env = function
       | _ -> error "no function type"
       end
   | Lam (x,t,e) ->
-      let env = add_var env x [] t in
+      let env = add_var env x ([],[]) t in
       let t' = typing env e in
       arrow t t'
   | Let (tl,e1,x,e2) ->

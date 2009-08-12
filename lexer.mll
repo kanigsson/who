@@ -14,6 +14,7 @@ let id_or_keyword =
         ("bool", BOOL  );
         ("int", TINT  );
         ("unit", UNIT  );
+        ("ref", REF  );
         ("in", IN );
         ("fun", FUN );
       ];
@@ -51,8 +52,12 @@ rule token = parse
   | ')' { RPAREN   }
   | '[' { LBRACKET   }
   | ']' { RBRACKET   }
+  | '!' { EXCLAM   }
+  | ":=" { ASSIGN   }
+  | '|' { MID   }
   | '*' { STAR  }
-  | ':' { COLON  }
+  | ':' { COLON }
+  | ',' { COMMA }
   | "<=" { LE  }
   | '<' { LT  }
   | '+' { PLUS  }

@@ -13,5 +13,8 @@ let infer_env = Infer.infer_env
 
 open Ty
 let typing_env = 
-  SM.add "beq_z" (["a"], arrow (var "a") (arrow (var "a") (const Const.TBool)))
-    SM.empty
+  let a = "a" in
+  let va = var a in
+  let r = "r" in
+  SM.add "beq_z" (([a],[]), arrow va (arrow va (const Const.TBool)))
+  (SM.add "!" (([a],[r]), arrow (ref_ r va) va) SM.empty)

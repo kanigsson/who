@@ -1,7 +1,9 @@
-∃anon.let f : ∀anon_1[anon_1].∃anon_2,anon_3.let x : ∀[anon_2].True
-in ∃anon_4,anon_5.let y : ∀[anon_4].True in
-∃anon_6.∃anon_7.beq_z < (anon_7 -> (anon_6 -> anon_5)) / x < anon_7 / y < anon_6 / 
-(anon_4 -> anon_5) = anon_3 / (anon_2 -> anon_3) = anon_1 in let f_1 :
-∀anon_8[anon_8].∃anon_9,anon_10.let x_1 : ∀[anon_9].True in
-x_1 < anon_10 / (anon_9 -> anon_10) = anon_8 in
-anon = unit
+(let f ['a]  =
+ ((λ(x:'a) ->
+  ((λ(y:'a) ->
+   (((((beq_z ['a]   : ('a -> ('a -> bool))) (x   : 'a)) : ('a -> bool)) (y 
+     : 'a)) : bool)) : ('a -> bool))) : ('a -> ('a -> bool)))
+ in
+ (let f ['a]  = ((λ(x:'a) -> (true : bool)) : ('a -> bool)) in
+  (let g  = (((f [bool]   : (bool -> bool)) (true : bool)) : bool) in
+   (let h  = (((f [int]   : (int -> bool)) (5 : int)) : bool) in (() : unit) : unit) : unit) : unit) : unit)

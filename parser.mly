@@ -4,9 +4,12 @@
   let app t1 t2 = mk_node (App (t1,t2))
   let var s = mk_node (Var s)
   let const c = mk_node (Const c)
-  let infix_app s t1 t2 = app (app (var s) t1) t2
+  let app2 s t1 t2 = app (app (var s) t1) t2
   let let_ l e1 x e2 = mk_node (Let (l,e1,x,e2))
   let lam x t e = mk_node (Lam (x,t,e))
+
+  let read t = app (var "!") t
+  let write t1 t2 = app2 ":=" t1 t2
 
   let rec merge = function
     | [] -> const Const.Void
@@ -23,6 +26,7 @@
 %token VOID
 %token PLUS MINUS LE EQUAL STAR NEQ
 %token EOF
+%token REF
 (*
 %token <Loc.loc> EXCLAM ASSIGN
 %token REC REF
@@ -32,7 +36,7 @@
 %token IF
 %token THEN ELSE
 *)
-%token COLON
+%token COLON COMMA ASSIGN EXCLAM MID
 %token FUN
 %token LT
 %token TRUE FALSE BOOL TINT UNIT
@@ -59,10 +63,9 @@ stype:
 
 ty:
   | t = stype { t }
-  | t1 = ty ARROW t2 = ty 
-    { Ty.arrow t1 t2 }
-  | t1 = ty STAR t2 = ty 
-    { Ty.tuple t1 t2 }
+  | t1 = ty ARROW t2 = ty { Ty.arrow t1 t2 }
+  | t1 = ty STAR t2 = ty { Ty.tuple t1 t2 }
+  | REF LPAREN id = IDENT COMMA t = ty RPAREN { Ty.ref_ id t }
 
 constant:
   |  n = INT { Const.Int n }
@@ -91,19 +94,21 @@ aterm:
 appterm:
   | t = aterm { t }
   | t1 = appterm t2 = aterm { app t1 t2 }
+  | EXCLAM t = aterm { read t }
+  | t1 = aterm ASSIGN t2 = aterm {write t1 t2}
 
 nterm:
   | t1 = appterm { t1 }
-  | t1 = nterm i = infix_arith t2 = nterm  { infix_app i t1 t2 }
-  | t1 = nterm i = infix_cmp_prog t2 = nterm  { infix_app i t1 t2 }
-  | t1 = nterm  NEQ t2 = nterm { infix_app "<>" t1 t2 }
+  | t1 = nterm i = infix_arith t2 = nterm  { app2 i t1 t2 }
+  | t1 = nterm i = infix_cmp_prog t2 = nterm  { app2 i t1 t2 }
+  | t1 = nterm  NEQ t2 = nterm { app2 "<>" t1 t2 }
   | FUN LPAREN x = IDENT COLON t = ty RPAREN ARROW e = nterm { lam x t e }
   | LET x = IDENT l = optgen EQUAL t1 = nterm IN t2 = nterm 
     { let_ l t1 x t2 }
 
 optgen: 
-  | { [] }
-  | LBRACKET l = nonempty_list(TYVAR) RBRACKET { l }
+    | { [],[] }
+  | LBRACKET tl = list(TYVAR) MID rl=list(IDENT) RBRACKET { tl,rl }
 
 decl:
   | LET x = IDENT l = optgen EQUAL t = nterm
