@@ -1,1 +1,1 @@
-let f   = (λ(x:int) -> x) in ()
+let f    = (λ(x:nat) -> x) in ()

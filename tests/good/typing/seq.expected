@@ -1,0 +1,20 @@
+esubst : {|}[e2 -> {r2
+|}] = {|}
+esubst : {|}[e2 -> {r2
+|}] = {|}
+esubst : {|e1 e2 }[e2 -> {r2 |}] = {r2 |e1
+}
+esubst : {|e2 }[e2 -> {r2 |}] = {r2
+|}
+esubst : {|e1 }[e2 -> {r2 |}] = {|e1
+}
+esubst : {|}[e1 -> {r1
+|}] = {|}
+esubst : {|}[e1 -> {r1
+|}] = {|}
+esubst : {r2 |e1 }[e1 -> {r1 |}] = {r1 r2
+|}
+esubst : {r2 |}[e1 -> {r1 |}] = {r2
+|}
+esubst : {|e1 }[e1 -> {r1 |}] = {r1
+|}

@@ -1,0 +1,25 @@
+(let seq ['a 'b 'c]   [e1 e2] =
+ ((λ(f:('a ->{|e1 } 'b)) ->
+  ((λ(g:('b ->{|e2 } 'c)) ->
+   ((λ(x:'a) ->
+    (((g    : ('b ->{|e2 } 'c))
+     (((f    : ('a ->{|e1 } 'b)) (x    : 'a)) : 'b)) : 'c)) : ('a ->{|e1
+   e2 } 'c))) : (('b ->{|e2
+  } 'c) ->{|} ('a ->{|e1 e2 } 'c)))) : (('a ->{|e1
+ } 'b) ->{|} (('b ->{|e2 } 'c) ->{|} ('a ->{|e1 e2 } 'c)))) in
+ (let h  [r1 r2]  =
+  ((λ(x:ref(r1,nat)) ->
+   ((λ(y:ref(r2,nat)) ->
+    (((((seq [nat nat nat]   [{r1 |} {r2 |}]  : ((nat ->{r1
+       |} nat) ->{|} ((nat ->{r2 |} nat) ->{|} (nat ->{r1 r2 |} nat))))
+       ((λ(z:nat) ->
+        (((! [nat]  [r1]   : (ref(r1,nat) ->{r1 |} nat)) (x  
+          : ref(r1,nat))) : nat)) : (nat ->{r1
+       |} nat))) : ((nat ->{r2
+     |} nat) ->{|} (nat ->{r1 r2 |} nat)))
+     ((λ(z:nat) ->
+      (((! [nat]  [r2]   : (ref(r2,nat) ->{r2 |} nat)) (y    : ref(r2,nat))) : nat)) : (nat ->{r2
+     |} nat))) : (nat ->{r1
+    r2 |} nat))) : (ref(r2,nat) ->{|} (nat ->{r1
+   r2 |} nat)))) : (ref(r1,nat) ->{|} (ref(r2,nat) ->{|} (nat ->{r1
+  r2 |} nat)))) in (() : unit) : unit) : unit)

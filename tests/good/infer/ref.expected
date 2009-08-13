@@ -1,0 +1,7 @@
+(let f ['a]  [toto]  =
+ ((λ(x:ref(toto,'a)) ->
+  (((![a|->'a;][r|->toto;][] : (ref(toto,'a) ->{toto } 'a), 18)
+   (x[][][] : ref(toto,'a), 22)) : 'a, { {toto }
+  18 22})) : (ref(toto,'a) ->{ {toto }
+ 18 22} 'a), 25) in (() : unit, 26) : unit, { 25
+26})

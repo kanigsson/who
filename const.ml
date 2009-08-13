@@ -23,5 +23,5 @@ let print fmt = function
 
 let print_ty fmt = function
   | TBool -> pp_print_string fmt "bool"
-  | TInt -> pp_print_string fmt "int"
+  | TInt -> pp_print_string fmt "nat"
   | TUnit -> pp_print_string fmt "unit"

@@ -1,0 +1,3 @@
+(let f   = ((λ(x:nat) -> (x[][][] : nat, 7)) : (nat ->7 nat), 9) in
+ (() : unit, 10) : unit, { 9
+10})

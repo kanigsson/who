@@ -1,1 +1,1 @@
-(let f  = ((λ(x:int) -> (x   : int)) : (int -> int)) in (() : unit) : unit)
+(let f   = ((λ(x:nat) -> (x    : nat)) : (nat ->{|} nat)) in (() : unit) : unit)

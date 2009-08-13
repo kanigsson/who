@@ -53,6 +53,11 @@ let list_equal cmp l1 l2 =
   list_compare cmp l1 l2 = 0
 
 module StringMap = Map.Make(String)
+module StringSet = Set.Make(String)
+module SS = StringSet
+
+let print_set fmt s = 
+  SS.iter (fun x -> pp_print_string fmt x ; space fmt ()) s
 
 let rec fold_down f acc n = 
   if n <= 0 then acc

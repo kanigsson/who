@@ -2,7 +2,7 @@ let filename = ref ""
 let store_fn x = filename := x
 let abort cin = close_in cin ; exit 1
 let parse_only = ref false
-let intern_only = ref false
+let infer_only = ref false
 let constr_only = ref false
 
 open Infer
@@ -11,6 +11,7 @@ let opt_spec =
   Arg.align
   [ 
     "-parse-only", Arg.Set parse_only, " parse file and exit";
+    "-infer-only", Arg.Set infer_only, " parse file and exit";
     "-constr-only", Arg.Set constr_only, " do type inference and exit";
   ]
 let () = 
@@ -37,7 +38,8 @@ let _ =
   update ();
   let p = parse () in
   maybe_abort parse_only Clean_ast.print p;
-  Infer.infer p;
+  let p = Infer.infer p in
+  maybe_abort infer_only I_ast.print p;
   let p = Reconstruct.term p in
   maybe_abort constr_only Ast.print p;
   Typing.typing p

@@ -1,5 +1,6 @@
 %{
   open Clean_ast
+  module SS = Misc.SS
 
   let app t1 t2 = mk_node (App (t1,t2))
   let var s = mk_node (Var s)
@@ -7,6 +8,9 @@
   let app2 s t1 t2 = app (app (var s) t1) t2
   let let_ l e1 x e2 = mk_node (Let (l,e1,x,e2))
   let lam x t e = mk_node (Lam (x,t,e))
+
+  let list_to_set x = 
+    List.fold_left (fun acc x -> SS.add x acc) SS.empty x
 
   let read t = app (var "!") t
   let write t1 t2 = app2 ":=" t1 t2
@@ -19,7 +23,7 @@
 %}
 
 %token <int> INT
-%token LPAREN RPAREN LBRACKET RBRACKET
+%token LPAREN RPAREN LBRACKET RBRACKET LCURL RCURL
 %token <string> IDENT
 %token <string> TYVAR
 %token LET IN 
@@ -48,8 +52,8 @@
 %right EQUAL NEQ
 %left PLUS MINUS
 %right STAR
-%start <Clean_ast.t> main
 
+%start <Clean_ast.t> main
 %%
 
 tconstant:
@@ -61,9 +65,12 @@ stype:
   | x = tconstant { Ty.const x }
   | v = TYVAR { Ty.var v }
 
+effect:
+  | lr = list(IDENT) MID le =  list(IDENT) 
+    { list_to_set lr, list_to_set le}
 ty:
   | t = stype { t }
-  | t1 = ty ARROW t2 = ty { Ty.arrow t1 t2 }
+  | t1 = ty ARROW LCURL e = effect RCURL t2 = ty %prec ARROW { Ty.arrow t1 t2 e }
   | t1 = ty STAR t2 = ty { Ty.tuple t1 t2 }
   | REF LPAREN id = IDENT COMMA t = ty RPAREN { Ty.ref_ id t }
 
@@ -107,8 +114,9 @@ nterm:
     { let_ l t1 x t2 }
 
 optgen: 
-    | { [],[] }
-  | LBRACKET tl = list(TYVAR) MID rl=list(IDENT) RBRACKET { tl,rl }
+  | { [],[], [] }
+  | LBRACKET tl = list(TYVAR) MID rl=list(IDENT) MID el = list(IDENT) RBRACKET 
+    { tl,rl,el }
 
 decl:
   | LET x = IDENT l = optgen EQUAL t = nterm

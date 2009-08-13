@@ -1,9 +1,10 @@
-(let f ['a]  =
+(let f ['a]   =
  ((λ(x:'a) ->
   ((λ(y:'a) ->
-   (((((beq_z ['a]   : ('a -> ('a -> bool))) (x   : 'a)) : ('a -> bool)) (y 
-     : 'a)) : bool)) : ('a -> bool))) : ('a -> ('a -> bool)))
+   (((((beq_z ['a]    : ('a ->{|} ('a ->{|} bool))) (x    : 'a)) : ('a ->{|} bool))
+    (y    : 'a)) : bool)) : ('a ->{|} bool))) : ('a ->{|} ('a ->{|} bool)))
  in
- (let f ['a]  = ((λ(x:'a) -> (true : bool)) : ('a -> bool)) in
-  (let g  = (((f [bool]   : (bool -> bool)) (true : bool)) : bool) in
-   (let h  = (((f [int]   : (int -> bool)) (5 : int)) : bool) in (() : unit) : unit) : unit) : unit) : unit)
+ (let f ['a]   = ((λ(x:'a) -> (true : bool)) : ('a ->{|} bool)) in
+  (let g   = (((f [bool]    : (bool ->{|} bool)) (true : bool)) : bool) in
+   (let h   = (((f [nat]    : (nat ->{|} bool)) (5 : nat)) : bool) in
+    (() : unit) : unit) : unit) : unit) : unit)

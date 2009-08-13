@@ -52,6 +52,8 @@ rule token = parse
   | ')' { RPAREN   }
   | '[' { LBRACKET   }
   | ']' { RBRACKET   }
+  | '{' { LCURL   }
+  | '}' { RCURL   }
   | '!' { EXCLAM   }
   | ":=" { ASSIGN   }
   | '|' { MID   }
