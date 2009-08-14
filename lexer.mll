@@ -4,24 +4,32 @@
 
   exception Error of string
 
+let create_info lexbuf =
+  let spos_p = Lexing.lexeme_start_p lexbuf in
+  let epos_p = Lexing.lexeme_end_p lexbuf in
+    { Loc.st= (spos_p.pos_lnum, spos_p.pos_cnum - spos_p.pos_bol ) ;
+      en = (epos_p.pos_lnum, epos_p.pos_cnum - epos_p.pos_bol )}
+
+
 (* decide if a string is a keyword or an identifier *)
 let id_or_keyword = 
   let h = Hashtbl.create 17 in
     List.iter (fun (s,k) -> Hashtbl.add h s k)
       [ 
-        ("true", TRUE );
-        ("false", FALSE );
-        ("True", PTRUE );
-        ("False", PFALSE );
-        ("let", LET  );
-        ("bool", BOOL  );
-        ("int", TINT  );
-        ("unit", UNIT  );
-        ("ref", REF  );
-        ("in", IN );
-        ("fun", FUN );
+        ("true", fun i -> TRUE (create_info i) );
+        ("false", fun i -> FALSE (create_info i) );
+        ("True", fun i -> PTRUE (create_info i) );
+        ("False", fun i -> PFALSE (create_info i) );
+        ("let", fun i -> LET (create_info i)  );
+        ("bool", fun i -> BOOL  );
+        ("int", fun i -> TINT  );
+        ("unit", fun i -> UNIT  );
+        ("ref", fun i -> REF  );
+        ("in", fun i -> IN );
+        ("fun", fun i -> FUN (create_info i) );
       ];
-    fun s -> try Hashtbl.find h s with Not_found -> IDENT s
+    fun s -> try Hashtbl.find h s with Not_found -> 
+      fun i -> IDENT (Loc.mk (create_info i) s)
 
 let incr_linenum lexbuf =
     let pos = lexbuf.Lexing.lex_curr_p in
@@ -44,20 +52,20 @@ rule token = parse
   | [' ' '\t' ]
       { token lexbuf }
   | digit+ as i
-  { INT (int_of_string i) }
-  | identifier as i { id_or_keyword i}
+  { INT (Loc.mk (create_info lexbuf) (int_of_string i)) }
+  | identifier as i { id_or_keyword i lexbuf}
   | tyvar as tv { TYVAR tv}
   | "->" { ARROW }
   | '=' { EQUAL }
   | "<>" { NEQ }
-  | "()" { VOID  }
+  | "()" { VOID (create_info lexbuf)  }
   | '(' { LPAREN   }
   | ')' { RPAREN   }
   | '[' { LBRACKET   }
   | ']' { RBRACKET   }
-  | '{' { LCURL   }
+  | '{' { LCURL (create_info lexbuf) }
   | '}' { RCURL   }
-  | '!' { EXCLAM   }
+  | '!' { EXCLAM (create_info lexbuf) }
   | ":=" { ASSIGN   }
   | '|' { MID   }
   | '*' { STAR  }

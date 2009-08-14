@@ -70,8 +70,6 @@ and preff fmt x =
       let p r = print_list space r in
       fprintf fmt "{%a %a}" (p prvar) rl (p preff) el
 
-
-
 exception CannotUnify
 
 open Format
@@ -117,12 +115,10 @@ and runify a b =
 and eunify a b = 
   if Uf.equal a b then () else eunion a b 
       
-let equal a b = Uf.tag a = Uf.tag b
-
 module H = Hashtbl.Make (struct 
                            type t = node
                            let equal a b = Uf.tag a = Uf.tag b
-                           let hash (x : t) : int = Hashtbl.hash (Uf.tag x)
+                           let hash = Uf.tag
                          end)
 let to_ty, to_eff, to_r =
   let h = H.create 127 in

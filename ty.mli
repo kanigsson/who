@@ -33,7 +33,7 @@ val lsubst : tvar list -> t list -> t -> t
 val rlsubst : rvar list -> rvar list -> t -> t
 
 val allsubst : 
-  tvar list * rvar list * effvar list -> t list * rvar list * Effect.t list -> 
+  Generalize.t -> t list * rvar list * Effect.t list -> 
     t -> t
 
 val equal : t -> t -> bool

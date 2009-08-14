@@ -1,6 +1,4 @@
-type tvar = string
-type rvar = string
-type effvar = string
+open Vars
 type ('a,'b,'c) t' = 
   | Var of string
   | Const of Const.ty

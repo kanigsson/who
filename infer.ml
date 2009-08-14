@@ -97,8 +97,8 @@ let rec infer' env t = function
       let e2 = infer (add_var env x g xt) t e2 in
       Let (g,e1,x,e2), Unify.effect [] [e1.e; e2.e]
 and infer env t (e : ParseT.t) : Ast.Infer.t = 
-  let e,eff = infer' env t e.v in
-  { v = e ; t = t; e = eff }
+  let e',eff = infer' env t e.v in
+  { v = e' ; t = t; e = eff; loc = e.loc }
 
 let infer e = 
   let nt = new_ty () in
@@ -111,6 +111,6 @@ let rec recon'  = function
   | Lam (x,ot,e,p) -> Lam (x,ot, recon e, Misc.opt_map recon p)
   | Let (g,e1,x,e2) -> Let (g, recon e1, x, recon e2)
 and recon (t : Ast.Infer.t) : Ast.Recon.t = 
-  { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e }
+  { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e; loc = t.loc }
 and inst (th,rh,eh) =
     List.map U.to_ty th, List.map U.to_r rh, List.map U.to_eff eh
