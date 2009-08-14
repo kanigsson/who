@@ -27,6 +27,8 @@ let rec typing' env = function
       | C (Arrow (ta,tb,eff)), eff1 -> 
           if ta = t2 then tb, Effect.union eff1 (Effect.union eff2 eff) 
           else error "type mismatch"
+      | C (PureArr (ta,tb)), eff ->
+          if ta = t2 then tb, eff else error "type mismatch"
       | _ -> error "no function type"
       end
   | Lam (x,t,e) ->

@@ -1,14 +1,5 @@
-(let apply ['a 'b]   [e] =
- ((λ(f:('a ->{|e } 'b)) ->
-  ((λ(x:'a) -> (((f    : ('a ->{|e } 'b)) (x    : 'a)) : 'b)) : ('a ->{|e
-  } 'b))) : (('a ->{|e
- } 'b) ->{|} ('a ->{|e } 'b))) in
- (let h  [r]  =
-  ((λ(x:ref(r,nat)) ->
-   (((((apply [nat nat]   [{r |}]  : ((nat ->{r |} nat) ->{|} (nat ->{r
-      |} nat)))
-      ((λ(z:nat) ->
-       (((! [nat]  [r]   : (ref(r,nat) ->{r |} nat)) (x    : ref(r,nat))) : nat)) : (nat ->{r
-      |} nat))) : (nat ->{r
-    |} nat)) (5 : nat)) : nat)) : (ref(r,nat) ->{r
-  |} nat)) in (() : unit) : unit) : unit)
+let apply['a 'b||e]= (λ(f:('a ->{|e } 'b)) -> (λ(x:'a) -> (f [||] x [||])))
+in
+let h[|r|]=
+(λ(x:ref(r,nat)) ->
+((apply [nat,nat||{r |}] (λ(z:nat) -> (! [nat|r|] x [||]))) 5)) in ()

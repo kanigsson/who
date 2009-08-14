@@ -1,2 +1,2 @@
-let apply ['a 'b]   [e]  = (λ(f:('a ->{|e } 'b)) -> (λ(x:'a) -> (f x))) in
-let h  [r]   = (λ(x:ref(r,nat)) -> ((apply (λ(z:nat) -> (! x))) 5)) in ()
+let apply ['a 'b||e] = (λ(f:('a ->{|e } 'b)) -> (λ(x:'a) -> (f x))) in
+let h [|r|] = (λ(x:ref(r,nat)) -> ((apply (λ(z:nat) -> (! x))) 5)) in ()

@@ -1,1 +1,1 @@
-let f ['a]  [toto]   = (λ(x:ref(toto,'a)) -> (! x)) in ()
+let f ['a|toto|] = (λ(x:ref(toto,'a)) -> (! x)) in ()

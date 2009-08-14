@@ -6,7 +6,7 @@ type t' =
   | Lam of var * Ty.t * t 
   | Let of Generalize.t * t * var * t
 and t = { v : t' ; t : Ty.t }
-and inst = (Ty.t list , rvar list , Effect.t list) Inst.t
+and inst = (Ty.t, rvar, Effect.t) Inst.t
 
 open Myformat
 
@@ -19,7 +19,6 @@ let rec print' fmt = function
   | Let (g,e1,x,e2) -> 
       fprintf fmt "@[let@ %s%a=@ %a@ in@ %a@]" 
       x Generalize.print g print e1 print e2
-and print fmt t = fprintf fmt "(%a : %a)" print' t.v Ty.print t.t
+and print fmt t = print' fmt t.v
 and print_inst = 
-  Inst.print (Ty.print_list comma) (print_list comma rvar) 
-             (Effect.print_list comma)
+  Inst.print Ty.print rvar Effect.print

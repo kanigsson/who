@@ -15,16 +15,12 @@ type t' =
   | Lam of var * Ty.t * t * t option
   | Let of Generalize.t * t * var * t
 and t = { v : t' ; t : U.node ; e : U.enode }
-and inst = (ut,ur,ue) Inst.t
+and inst = (U.node,U.rnode,U.enode) Inst.t
 
 let mk v t e = { v = v; t = t; e = e }
 let mk_val v t = mk v t (U.new_e ())
 
 open Myformat
-
-let htp = hash_print pp_print_string U.print_node
-let rtp = hash_print pp_print_string U.prvar
-let etp = hash_print pp_print_string U.preff
 
 let rec print' fmt = function
   | Const c -> Const.print fmt c
@@ -40,7 +36,7 @@ and print fmt t = print' fmt t.v
 and post fmt = function
   | None -> ()
   | Some x -> fprintf fmt "{%a}" print x
-and inst = Inst.print htp rtp etp
+and inst = Inst.print U.print_node U.prvar U.preff
 
 let const c = mk_val (Const c) (U.const (Const.type_of_constant c))
 

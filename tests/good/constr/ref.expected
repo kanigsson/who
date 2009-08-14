@@ -1,4 +1,1 @@
-(let f ['a]  [toto]  =
- ((λ(x:ref(toto,'a)) ->
-  (((! ['a]  [toto]   : (ref(toto,'a) ->{toto |} 'a)) (x    : ref(toto,'a))) : 'a)) : (ref(toto,'a) ->{toto
- |} 'a)) in (() : unit) : unit)
+let f['a|toto|]= (λ(x:ref(toto,'a)) -> (! ['a|toto|] x [||])) in ()

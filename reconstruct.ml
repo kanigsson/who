@@ -40,28 +40,18 @@ let getinst (tl,rl,el) oldt newt =
   []
 
 
-let rec recon' env t = function
-  | Var (x,i) -> 
-      begin try 
-        let g,xt = type_of_var env x in
-        O.Var (x,inst g i)
-      with Not_found -> error (Myformat.sprintf "unknown variable :%s" x)
-      end
+let rec recon' t = function
+  | Var (x,i) -> O.Var (x,inst i)
   | Const c -> O.Const c
-  | App (e1,e2) -> O.App (recon env e1, recon env e2)
-  | Lam (x,ot,e,_) -> 
-      O.Lam (x,ot, recon (add_var env x ([],[],[]) ot) e)
+  | App (e1,e2) -> O.App (recon e1, recon e2)
+  | Lam (x,ot,e,_) -> O.Lam (x,ot, recon e)
   | Let (g,e1,x,e2) ->
-      let t1 = U.to_ty e1.t in
-      let env' = add_var env x g t1 in
-      O.Let (g, recon env e1, x, recon env' e2)
-and recon env t = 
+      O.Let (g, recon e1, x, recon e2)
+and recon t = 
   let nt = U.to_ty t.t in
-  { O.v = recon' env nt t.v; t = nt }
-and inst = 
-  let bl h f l = List.map (fun x -> f (Hashtbl.find h x)) l in
-  fun (tl,rl,el) (th,rh,eh) ->
-    bl th U.to_ty tl, bl rh U.to_r rl, bl eh U.to_eff el
+  { O.v = recon' nt t.v; t = nt }
+and inst (th,rh,eh) =
+    List.map U.to_ty th, List.map U.to_r rh, List.map U.to_eff eh
 
-let term t = recon { types = Initial.typing_env } t
+let term t = recon t
 

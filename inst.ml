@@ -1,7 +1,8 @@
 open Vars
 
-type ('a,'b,'c) t = 'a * 'b * 'c 
+type ('a,'b,'c) t = 'a list * 'b list * 'c list 
 
-open Format
+open Myformat
+let prl pr = print_list comma pr
 let print pra prb prc fmt (tl,rl,el) =
-  fprintf fmt "[%a|%a|%a]" pra tl prb rl prc el
+  fprintf fmt "[%a|%a|%a]" (prl pra) tl (prl prb) rl (prl prc) el

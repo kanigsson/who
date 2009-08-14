@@ -27,9 +27,8 @@ let ymemo ff =
 let to_uf_node (tl,rl,el) x = 
   let bh f l = 
     let h = Hashtbl.create 3 in
-    List.iter (fun x -> Hashtbl.add h x (f ())) l;
-    h in
-  let th = bh new_ty tl and rh = bh new_r rl and eh = bh new_e el in
+    List.map (fun x -> let n = f () in Hashtbl.add h x n; n) l,h in
+  let tn,th = bh new_ty tl and rn,rh = bh new_r rl and en,eh = bh new_e el in
   let rec aux' f = function
     | (Ty.Const c) -> const c
     | Ty.Arrow (t1,t2,e) -> arrow (f t1) (f t2) (eff e)
@@ -46,7 +45,7 @@ let to_uf_node (tl,rl,el) x =
     else
       effect (SS.fold (fun x acc -> auxr x :: acc) rl []) 
         (SS.fold (fun x acc -> auxe x :: acc) el []) in 
-  ymemo aux x, (th,rh,eh)
+  ymemo aux x, (tn,rn,en)
 
 let to_logic_type t = 
   let rec aux' = function
@@ -58,9 +57,7 @@ let to_logic_type t =
           (Ty.parr (Ty.map e) (Ty.parr t2 (Ty.prop)))
     | Ty.Ref _ -> Ty.unit
   and aux (Ty.C x) = aux' x in
-  let r = aux t in
-  printf "lt : %a to %a@." Ty.print t Ty.print r;
-  r
+  aux t
 
 
 let rec infer' env t = function
@@ -72,7 +69,7 @@ let rec infer' env t = function
   | A.Var x -> 
       begin try
         let m,xt = SM.find x env.vars in
-        printf "var %s : %a@." x Ty.print xt;
+(*         printf "var %s : %a@." x Ty.print xt; *)
         let xt = if env.pm then to_logic_type xt else xt in
         let nt,i = to_uf_node m xt in
         unify nt t;
