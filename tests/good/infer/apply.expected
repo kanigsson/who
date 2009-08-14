@@ -2,5 +2,5 @@ let apply ['a 'b||e]=
 (λ(f:('a ->{|e } 'b)) -> (λ(x:'a) -> (f [||] x [||]))) in
 let h [|r|]=
 (λ(x:ref(r,nat)) ->
-((apply [nat,nat||{ {r } 54 57}] (λ(z:nat) -> (! [nat|r|] x [||]))) 5)) in
+((apply [nat,nat||{ {r } 66 69}] (λ(z:nat) -> (! [nat|r|] x [||]))) 5)) in
 ()

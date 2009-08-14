@@ -5,8 +5,9 @@ type ('a,'b,'c) t'' =
   | Const of Const.t
   | Var of var * ('a,'b,'c) Inst.t
   | App of ('a,'b,'c) t' * ('a,'b,'c) t'
-  | Lam of var * Ty.t * ('a,'b,'c) t' * ('a,'b,'c) t' option
+  | Lam of var * Ty.t * ('a,'b,'c) t' option * ('a,'b,'c) t' * ('a,'b,'c) t' option
   | Let of Generalize.t * ('a,'b,'c) t' * var * ('a,'b,'c) t'
+  | PureFun of var * Ty.t * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
 
 
@@ -17,11 +18,14 @@ let print pra prb prc fmt t =
     | Const c -> Const.print fmt c
     | Var (v,i) -> fprintf fmt "%s %a" v (Inst.print pra prb prc) i
     | App (t1,t2) -> fprintf fmt "@[(%a@ %a)@]" print t1 print t2
-    | Lam (x,t,e,p) -> fprintf fmt "@[(λ(%s:%a)@ ->@ %a%a)@]" 
-      x Ty.print t print e post p
+    | Lam (x,t,p,e,q) -> 
+        fprintf fmt "@[(λ(%s:%a)@ ->@ %a%a%a)@]" x Ty.print t 
+          post p print e post q
+    | PureFun (x,t,e) ->
+        fprintf fmt "@[(λ(%s:%a)@ ->@ %a)@]" x Ty.print t print e
     | Let (g,e1,x,e2) -> 
         fprintf fmt "@[let@ %s %a=@ %a@ in@ %a@]" 
-        x Generalize.print g print e1 print e2
+          x Generalize.print g print e1 print e2
   and print fmt t = print' fmt t.v
   and post fmt = function
     | None -> ()
@@ -35,7 +39,7 @@ module Infer = struct
   let mk_val v t = mk v t (U.new_e ())
   let const c = mk_val (Const c) (U.const (Const.type_of_constant c))
 
-  let lam x t e p = mk_val (Lam (x,U.to_ty t,e,p)) (U.arrow t e.t e.e)
+  let lam x t p e q = mk_val (Lam (x,U.to_ty t,p,e,q)) (U.arrow t e.t e.e)
   let lam_anon t e p = lam "__anon" t e p
 
   let print fmt t = print U.print_node U.prvar U.preff fmt t
@@ -57,5 +61,6 @@ module ParseT = struct
   let const c = mk (Const c)
   let app2 s t1 t2 loc = app (app (var s loc) t1 loc) t2 loc
   let let_ l e1 x e2 = mk (Let (l,e1,x,e2)) 
-  let lam x t e p = mk (Lam (x,t,e,p))
+  let lam x t p e q = mk (Lam (x,t,p,e,q))
+  let pure_lam x t e = mk (PureFun (x,t,e))
 end

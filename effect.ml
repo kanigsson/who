@@ -3,6 +3,8 @@ module SS = Misc.SS
 type t = SS.t * SS.t
 
 let empty = SS.empty, SS.empty
+
+let is_empty (r,e) = SS.is_empty r && SS.is_empty e
 let union (r1,e1) (r2,e2) = SS.union r1 r2, SS.union e1 e2
 
 open Myformat

@@ -1,1 +1,1 @@
-let f = fun (x : int) -> x { fun (z : <|>) -> fun (r : int) -> True {} {} }
+let f = fun (x : int) -> {} x { fun (z : <|>) -> fun (r : int) -> True }

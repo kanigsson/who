@@ -1,7 +1,9 @@
 let seq ['a 'b 'c||e1 e2] =
-fun (f : 'a ->{|e1} 'b) -> fun  (g : 'b ->{|e2} 'c) -> fun (x : 'a) -> g (f x)
-{} {} {}
+fun (f : 'a ->{|e1} 'b) -> {} 
+  fun  (g : 'b ->{|e2} 'c) -> {} 
+    fun (x : 'a) ->
+{} g (f x) {} {} {}
 
 let h [|r1 r2|] = 
-  fun (x : ref(r1,int)) -> fun (y : ref(r2,int)) -> 
-  seq (fun (z : int) -> !x {}) (fun (z : int) -> !y {}) {} {}
+  fun (x : ref(r1,int)) -> {} fun (y : ref(r2,int)) ->  {}
+  seq (fun (z : int) -> {} !x {}) (fun (z : int) -> {} !y {}) {} {}

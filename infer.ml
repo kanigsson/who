@@ -77,19 +77,26 @@ let rec infer' env t = function
   | Const c -> 
       unify t (const (Const.type_of_constant c));
       Const c, new_e ()
-  | Lam (x,xt,e,p) ->
+  | PureFun (x,xt,e) ->
+      let nt,_ = to_uf_node Generalize.empty xt in
+      let nt' = new_ty () in
+      let env = add_var env x Generalize.empty xt in
+      let e = infer env nt' e in
+      unify (parr nt nt') t;
+      PureFun (x,xt,e), new_e ()
+  | Lam (x,xt,p,e,q) ->
       let nt,_ = to_uf_node Generalize.empty xt in
       let nt' = new_ty () in
       let env = add_var env x Generalize.empty xt in
       let e = infer env nt' e in
       unify (arrow nt nt' e.e) t;
       let p = 
-        match p with
-        | None -> None
-        | Some p ->
-          Some (infer {env with pm = true} 
-                   (parr (map e.e) (parr nt' prop)) p) in
-      Lam (x,xt,e,p), new_e ()
+        Misc.opt_map 
+          (infer {env with pm = true} (parr (map e.e) (parr nt' prop))) p in
+      let q = 
+        Misc.opt_map 
+          (infer {env with pm = true} (parr (map e.e) (parr nt' prop))) q in
+      Lam (x,xt,p,e,q), new_e ()
   | Let (g,e1,x,e2) ->
       let nt = new_ty () in
       let e1 = infer env nt e1 in
@@ -108,7 +115,9 @@ let rec recon'  = function
   | Var (x,i) -> Var (x,inst i)
   | Const c -> Const c
   | App (e1,e2) -> App (recon e1, recon e2)
-  | Lam (x,ot,e,p) -> Lam (x,ot, recon e, Misc.opt_map recon p)
+  | PureFun (x,t,e) -> PureFun (x,t,recon e)
+  | Lam (x,ot,p,e,q) -> 
+      Lam (x,ot, Misc.opt_map recon p, recon e, Misc.opt_map recon q)
   | Let (g,e1,x,e2) -> Let (g, recon e1, x, recon e2)
 and recon (t : Ast.Infer.t) : Ast.Recon.t = 
   { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e; loc = t.loc }

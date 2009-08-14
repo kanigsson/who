@@ -31,8 +31,8 @@ let rec typing' env  = function
           if ta = t2 then tb, eff else error "type mismatch"
       | _ -> error "no function type"
       end
-  | Lam (x,t,e,p) ->
-      let env = add_var env x ([],[],[]) t in
+  | Lam (x,t,p,e,q) ->
+      let env = add_var env x Generalize.empty t in
       let t',eff = typing env e in
       arrow t t' eff, Effect.empty
   | Let (tl,e1,x,e2) ->
@@ -40,6 +40,11 @@ let rec typing' env  = function
       let env = add_var env x tl t in
       let t, eff2 = typing env e2 in
       t, Effect.union eff1 eff2
+  | PureFun (x,t,e) ->
+      let env = add_var env x Generalize.empty t in
+      let t', eff = typing env e in
+      if Effect.is_empty eff then parr t t', eff 
+      else error "effectful pure function"
 and typing env (e : Ast.Recon.t) : Ty.t * Effect.t =
   let ((t',eff) as x) = typing' env e.v in
   if Ty.equal e.t t' then x else 

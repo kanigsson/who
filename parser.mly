@@ -106,12 +106,15 @@ nterm:
   | t1 = appterm { t1 }
   | t1 = nterm i = infix_arith t2 = nterm  
     { app2 i t1 t2 (embrace t1.loc t2.loc) }
-  | sp = FUN LPAREN x = ident_no_pos COLON t = ty RPAREN ARROW e = nterm p = post 
-    { lam x t e (snd p) (embrace sp (fst p)) }
+  | sp = FUN LPAREN x = ident_no_pos COLON t = ty RPAREN 
+    ARROW p = prepost e = nterm q = prepost 
+    { lam x t (snd p) e (snd q) (embrace sp (fst q)) }
+  | sp = FUN LPAREN x = ident_no_pos COLON t = ty RPAREN ARROW e = nterm 
+    { pure_lam x t e (embrace sp e.loc) }
   | p = LET x = ident_no_pos l = optgen EQUAL t1 = nterm IN t2 = nterm 
     { let_ l t1 x t2 (embrace p t2.loc) }
 
-post:
+prepost:
   | p = LCURL RCURL { p, None }
   | p = LCURL t = nterm RCURL { p, Some t}
 
