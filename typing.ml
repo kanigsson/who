@@ -1,4 +1,4 @@
-open Ast
+open I_ast
 open Ty
 module SM = Misc.StringMap
 
@@ -14,9 +14,9 @@ let type_of_var env x = SM.find x env.types
 
 open Format
 let rec typing' env = function
-  | Ast.Const c -> 
+  | I_ast.Const c -> 
       Ty.const (Const.type_of_constant c), Effect.empty
-  | Ast.Var (s,i) -> 
+  |I_ast.Var (s,i) -> 
       begin try 
         let g, t = type_of_var env s in
         Ty.allsubst g i t, Effect.empty
@@ -31,7 +31,7 @@ let rec typing' env = function
           if ta = t2 then tb, eff else error "type mismatch"
       | _ -> error "no function type"
       end
-  | Lam (x,t,e) ->
+  | Lam (x,t,e,p) ->
       let env = add_var env x ([],[],[]) t in
       let t',eff = typing env e in
       arrow t t' eff, Effect.empty

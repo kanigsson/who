@@ -39,8 +39,8 @@ let _ =
   let p = parse () in
   maybe_abort parse_only Clean_ast.print p;
   let p = Infer.infer p in
-  maybe_abort infer_only I_ast.print p;
+  maybe_abort infer_only I_ast.Infer.print p;
   let p = Reconstruct.term p in
-  maybe_abort constr_only Ast.print p;
+  maybe_abort constr_only I_ast.Recon.print p;
   Typing.typing p
 

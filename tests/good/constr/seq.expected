@@ -1,7 +1,7 @@
-let seq['a 'b 'c||e1 e2]=
+let seq ['a 'b 'c||e1 e2]=
 (λ(f:('a ->{|e1 } 'b)) ->
 (λ(g:('b ->{|e2 } 'c)) -> (λ(x:'a) -> (g [||] (f [||] x [||]))))) in
-let h[|r1 r2|]=
+let h [|r1 r2|]=
 (λ(x:ref(r1,nat)) ->
 (λ(y:ref(r2,nat)) ->
 ((seq [nat,nat,nat||{r1 |},{r2 |}] (λ(z:nat) -> (! [nat|r1|] x [||])))

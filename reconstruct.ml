@@ -1,5 +1,4 @@
 open I_ast
-module O = Ast
 module SM = Misc.StringMap
 module U = Unify
 
@@ -40,16 +39,13 @@ let getinst (tl,rl,el) oldt newt =
   []
 
 
-let rec recon' t = function
-  | Var (x,i) -> O.Var (x,inst i)
-  | Const c -> O.Const c
-  | App (e1,e2) -> O.App (recon e1, recon e2)
-  | Lam (x,ot,e,_) -> O.Lam (x,ot, recon e)
-  | Let (g,e1,x,e2) ->
-      O.Let (g, recon e1, x, recon e2)
-and recon t = 
-  let nt = U.to_ty t.t in
-  { O.v = recon' nt t.v; t = nt }
+let rec recon' : infer -> recon = function
+  | Var (x,i) -> Var (x,inst i)
+  | Const c -> Const c
+  | App (e1,e2) -> App (recon e1, recon e2)
+  | Lam (x,ot,e,p) -> Lam (x,ot, recon e, Misc.opt_map recon p)
+  | Let (g,e1,x,e2) -> Let (g, recon e1, x, recon e2)
+and recon t = { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e }
 and inst (th,rh,eh) =
     List.map U.to_ty th, List.map U.to_r rh, List.map U.to_eff eh
 

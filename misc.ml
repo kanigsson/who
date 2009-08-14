@@ -60,3 +60,6 @@ let fold_map f acc l =
   in
   aux acc l
         
+let opt_map f = function
+  | None -> None
+  | Some x -> Some (f x)
