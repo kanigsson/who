@@ -15,10 +15,17 @@ module SS = Misc.SS
 open Ty
 let typing_env = 
   let a = "a" in
+  let b = "b" in
   let va = var a in
+  let vb = var b in
   let r = "r" in
   let se = SS.empty in
-  let e = se, se in
   let re = SS.add r se, se in
-  SM.add "beq_z" (([a],[],[]), arrow va (arrow va (const Const.TBool) e) e)
-  (SM.add "!" (([a],[r],[]), arrow (ref_ r va) va re) SM.empty)
+  let l = 
+    [
+      "beq_z", (([a],[],[]), parr va (parr va (const Const.TBool)));
+      "!", (([a],[r],[]), arrow (ref_ r va) va re);
+      "snd", (([a;b],[],[]), parr (tuple va vb) vb);
+      "fst", (([a;b],[],[]), parr (tuple va vb) va);
+    ] in
+  List.fold_left (fun acc (x,s) -> SM.add x s acc) SM.empty l

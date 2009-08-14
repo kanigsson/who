@@ -8,8 +8,11 @@
 let id_or_keyword = 
   let h = Hashtbl.create 17 in
     List.iter (fun (s,k) -> Hashtbl.add h s k)
-      [ ("true", TRUE );
+      [ 
+        ("true", TRUE );
         ("false", FALSE );
+        ("True", PTRUE );
+        ("False", PFALSE );
         ("let", LET  );
         ("bool", BOOL  );
         ("int", TINT  );
@@ -62,6 +65,7 @@ rule token = parse
   | ',' { COMMA }
   | "<=" { LE  }
   | '<' { LT  }
+  | '>' { GT  }
   | '+' { PLUS  }
   | '-' { MINUS  }
   | "(*" { comment lexbuf; token lexbuf }

@@ -10,39 +10,39 @@ type ue = (effvar, U.enode) Hashtbl.t
 
 type t' =
   | Const of Const.t
-  | Var of string * ut * ur * ue
+  | Var of string * inst
   | App of t * t
-  | Lam of var * Ty.t * t 
-  | Let of (tvar list * rvar list * effvar list) * t * var * t
+  | Lam of var * Ty.t * t * t option
+  | Let of Generalize.t * t * var * t
 and t = { v : t' ; t : U.node ; e : U.enode }
+and inst = (ut,ur,ue) Inst.t
 
-open Format
-let tyvarlist = Misc.optlist pp_print_string
-let rlist = Misc.optlist pp_print_string
-let elist = Misc.optlist pp_print_string
+let mk v t e = { v = v; t = t; e = e }
+let mk_val v t = mk v t (U.new_e ())
 
-let htp fmt h =
-  fprintf fmt "[";
-  Hashtbl.iter (fun k v -> fprintf fmt "%s|->%a;" k U.print_node v) h;
-  fprintf fmt "]"
+open Myformat
 
-let etp fmt h = 
-  fprintf fmt "[";
-  Hashtbl.iter (fun k v -> fprintf fmt "%s|->%a;" k U.preff v) h;
-  fprintf fmt "]"
-
-let rtp fmt h = 
-  fprintf fmt "[";
-  Hashtbl.iter (fun k v -> fprintf fmt "%s|->%a;" k U.prvar v) h;
-  fprintf fmt "]"
+let htp = hash_print pp_print_string U.print_node
+let rtp = hash_print pp_print_string U.prvar
+let etp = hash_print pp_print_string U.preff
 
 let rec print' fmt = function
   | Const c -> Const.print fmt c
-  | Var (v,tl,rl,el) -> fprintf fmt "%s%a%a%a" v htp tl rtp rl etp el
+  | Var (v,i) -> fprintf fmt "%s %a" v inst i
   | App (t1,t2) -> fprintf fmt "@[(%a@ %a)@]" print t1 print t2
-  | Lam (x,t,e) -> fprintf fmt "@[(λ(%s:%a)@ ->@ %a)@]" x Ty.print t print e
-  | Let ((tl,rl,el),e1,x,e2) -> 
-      fprintf fmt "@[let@ %s%a%a%a=@ %a@ in@ %a@]" 
-      x tyvarlist tl rlist rl elist el print e1 print e2
-and print fmt t = 
-  fprintf fmt "(%a : %a, %a)" print' t.v U.print_node t.t U.preff t.e
+  | Lam (x,t,e,p) -> fprintf fmt "@[(λ(%s:%a)@ ->@ %a%a)@]" 
+    x Ty.print t print e post p
+  | Let (g,e1,x,e2) -> 
+      fprintf fmt "@[let@ %s %a=@ %a@ in@ %a@]" 
+      x Generalize.print g print e1 print e2
+and print fmt t = print' fmt t.v
+(*   fprintf fmt "(%a : %a, %a)" print' t.v U.print_node t.t U.preff t.e *)
+and post fmt = function
+  | None -> ()
+  | Some x -> fprintf fmt "{%a}" print x
+and inst = Inst.print htp rtp etp
+
+let const c = mk_val (Const c) (U.const (Const.type_of_constant c))
+
+let lam x t e p = mk_val (Lam (x,U.to_ty t,e,p)) (U.arrow t e.t e.e)
+let lam_anon t e p = lam "__anon" t e p

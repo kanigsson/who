@@ -1,6 +1,0 @@
-esubst : {|}[e -> {r
-|}] = {|}
-esubst : {|e }[e -> {r |}] = {r
-|}
-esubst : {|e }[e -> {r |}] = {r
-|}

@@ -6,7 +6,7 @@ exception Error of string
 
 let error s = raise (Error s)
 
-type env = { types : ((tvar list * rvar list * effvar list) * Ty.t) SM.t }
+type env = { types : (Generalize.t * Ty.t) SM.t }
 
 let add_var env x g t = { types = SM.add x (g,t) env.types }
 
@@ -16,11 +16,11 @@ open Format
 let rec typing' env = function
   | Ast.Const c -> 
       Ty.const (Const.type_of_constant c), Effect.empty
-  | Ast.Var (s,tl,rl,el) -> 
+  | Ast.Var (s,i) -> 
       begin try 
         let g, t = type_of_var env s in
-        Ty.allsubst g (tl,rl,el) t, Effect.empty
-      with Not_found -> error (Misc.mysprintf "unknown variable: %s" s) end
+        Ty.allsubst g i t, Effect.empty
+      with Not_found -> error (Myformat.sprintf "unknown variable: %s" s) end
   | App (e1,e2) ->
       let t2,eff2 = typing env e2 in
       begin match typing env e1 with
@@ -41,6 +41,6 @@ let rec typing' env = function
 and typing env { v = v; t = t } =
   let t',eff = typing' env v in
   if Ty.equal t t' then t,eff else 
-    error (Misc.mysprintf "annotation mismatch: %a and %a@." Ty.print t Ty.print t')
+    error (Myformat.sprintf "annotation mismatch: %a and %a@." Ty.print t Ty.print t')
 
 let typing t = ignore (typing { types = Initial.typing_env; } t)

@@ -7,13 +7,10 @@
   let const c = mk_node (Const c)
   let app2 s t1 t2 = app (app (var s) t1) t2
   let let_ l e1 x e2 = mk_node (Let (l,e1,x,e2))
-  let lam x t e = mk_node (Lam (x,t,e))
+  let lam x t e p = mk_node (Lam (x,t,e,p))
 
   let list_to_set x = 
     List.fold_left (fun acc x -> SS.add x acc) SS.empty x
-
-  let read t = app (var "!") t
-  let write t1 t2 = app2 ":=" t1 t2
 
   let rec merge = function
     | [] -> const Const.Void
@@ -42,13 +39,13 @@
 *)
 %token COLON COMMA ASSIGN EXCLAM MID
 %token FUN
-%token LT
-%token TRUE FALSE BOOL TINT UNIT
+%token LT GT
+%token TRUE FALSE BOOL TINT UNIT PTRUE PFALSE
 
 %right ARROW
-(* %nonassoc ifprec *)
 %nonassoc IN
 %nonassoc LE LT
+%nonassoc ASSIGN
 %right EQUAL NEQ
 %left PLUS MINUS
 %right STAR
@@ -72,18 +69,22 @@ ty:
   | t = stype { t }
   | t1 = ty ARROW LCURL e = effect RCURL t2 = ty %prec ARROW { Ty.arrow t1 t2 e }
   | t1 = ty STAR t2 = ty { Ty.tuple t1 t2 }
+  | LT e = effect GT { Ty.map e }
   | REF LPAREN id = IDENT COMMA t = ty RPAREN { Ty.ref_ id t }
 
 constant:
   |  n = INT { Const.Int n }
   |  TRUE { Const.Btrue }
   |  FALSE { Const.Bfalse }
+  |  PTRUE { Const.Ptrue }
+  |  PFALSE { Const.Pfalse }
   |  VOID { Const.Void }
 
 %inline infix_arith:
   | MINUS { "Zminus" }
   |  PLUS { "Zplus" }
   |  STAR { "Zmult" }
+  | ASSIGN { ":=" }
 %inline infix_cmp_prog:
   | LE { "Zleb" }
   | LT { "Zltb" }
@@ -91,27 +92,26 @@ constant:
 
 aterm:
   | x = IDENT { var x }
+  | EXCLAM { var "!" }
   | c = constant { const c }
-(*
-  | l = LPAREN e = nterm COLON t = aftype r =  RPAREN 
-    { embrace l r (PAnnot (e,t)) }
-*)
   | LPAREN t = nterm RPAREN { t }
 
 appterm:
   | t = aterm { t }
   | t1 = appterm t2 = aterm { app t1 t2 }
-  | EXCLAM t = aterm { read t }
-  | t1 = aterm ASSIGN t2 = aterm {write t1 t2}
 
 nterm:
   | t1 = appterm { t1 }
   | t1 = nterm i = infix_arith t2 = nterm  { app2 i t1 t2 }
   | t1 = nterm i = infix_cmp_prog t2 = nterm  { app2 i t1 t2 }
   | t1 = nterm  NEQ t2 = nterm { app2 "<>" t1 t2 }
-  | FUN LPAREN x = IDENT COLON t = ty RPAREN ARROW e = nterm { lam x t e }
+  | FUN LPAREN x = IDENT COLON t = ty RPAREN ARROW e = nterm p = post { lam x t e p }
   | LET x = IDENT l = optgen EQUAL t1 = nterm IN t2 = nterm 
     { let_ l t1 x t2 }
+
+post:
+  | LCURL RCURL { None }
+  | LCURL t = nterm RCURL { Some t}
 
 optgen: 
   | { [],[], [] }

@@ -1,2 +1,2 @@
 let f ['a|toto|] = 
-  fun (x : ref(toto,'a)) -> !x
+  fun (x : ref(toto,'a)) -> !x {}

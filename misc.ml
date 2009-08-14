@@ -3,37 +3,9 @@ open Format
 let lineno = ref 0
 let newlinepos = ref 0
 
-type 'a fmt = Format.formatter -> 'a -> unit
-
-let rec print_list sep prf fmt = function
-  | [] -> ()
-  | [x] -> prf fmt x
-  | (x::xs) -> prf fmt x; sep fmt (); print_list sep prf fmt xs
-
-let comma fmt () = pp_print_string fmt ","
-let semi fmt () = pp_print_string fmt ";"
-let space fmt () = fprintf fmt "@ "
-let nothing _ () = ()
-let double_newline fmt () = fprintf fmt "@\n@\n"
-let newline fmt () = fprintf fmt "@\n"
-
-let optlist pr fmt = function
-  | [] -> space fmt ()
-  | l -> fprintf fmt "@ [%a]@ " (print_list space pr) l
-
 let pair_compare cmpa cmpb (a1,b1) (a2,b2) =
   let c = cmpa a1 a2 in
   if c = 0 then cmpb b1 b2 else c
-
-let print_option prf fmt = function
-  | None -> ()
-  | Some x -> prf fmt x
-
-let pr_opt_string fmt s = print_option pp_print_string fmt s
-
-let mysprintf s =
-  ignore(flush_str_formatter ());
-  kfprintf (fun _ -> flush_str_formatter ()) str_formatter s
 
 let cnt =
   let x = ref 0 in
@@ -55,9 +27,6 @@ let list_equal cmp l1 l2 =
 module StringMap = Map.Make(String)
 module StringSet = Set.Make(String)
 module SS = StringSet
-
-let print_set fmt s = 
-  SS.iter (fun x -> pp_print_string fmt x ; space fmt ()) s
 
 let rec fold_down f acc n = 
   if n <= 0 then acc
@@ -91,4 +60,3 @@ let fold_map f acc l =
   in
   aux acc l
         
-

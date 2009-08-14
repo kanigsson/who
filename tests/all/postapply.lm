@@ -1,0 +1,5 @@
+let apply ['a 'b ||e] =
+fun (f : 'a ->{|e} 'b) -> fun (x : 'a) -> 
+  f x 
+  {fun (z : <|e>) -> fun (k : 'b) -> snd f z k {} {}}
+  {} 
