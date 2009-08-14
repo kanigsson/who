@@ -1,7 +1,6 @@
-module A = Clean_ast
 open Unify
+open Ast
 module SM = Misc.StringMap
-module I = I_ast
 open Format
 
 type env = { 
@@ -30,7 +29,7 @@ let to_uf_node (tl,rl,el) x =
     List.map (fun x -> let n = f () in Hashtbl.add h x n; n) l,h in
   let tn,th = bh new_ty tl and rn,rh = bh new_r rl and en,eh = bh new_e el in
   let rec aux' f = function
-    | (Ty.Const c) -> const c
+    | (Ty.Const c) -> Unify.const c
     | Ty.Arrow (t1,t2,e) -> arrow (f t1) (f t2) (eff e)
     | Ty.Tuple (t1,t2) -> tuple (f t1) (f t2)
     | Ty.Var x -> (try Hashtbl.find th x with Not_found -> var x)
@@ -61,46 +60,57 @@ let to_logic_type t =
 
 
 let rec infer' env t = function
-  | A.App (e1,e2) ->
+  | App (e1,e2) ->
       let nt = new_ty () and e = new_e () in
       let e1 = infer env (arrow nt t e) e1 in
       let e2 = infer env nt e2 in
-      I.App (e1,e2), Unify.effect [] [e;e1.I.e;e2.I.e]
-  | A.Var x -> 
+      App (e1,e2), Unify.effect [] [e;e1.e;e2.e]
+  | Var (x,_) -> 
       begin try
         let m,xt = SM.find x env.vars in
 (*         printf "var %s : %a@." x Ty.print xt; *)
         let xt = if env.pm then to_logic_type xt else xt in
         let nt,i = to_uf_node m xt in
         unify nt t;
-        I.Var (x, i), new_e ()
+        Var (x, i), new_e ()
       with Not_found -> error (sprintf "variable %s not found" x) end
-  | A.Const c -> 
+  | Const c -> 
       unify t (const (Const.type_of_constant c));
-      I.Const c, new_e ()
-  | A.Lam (x,xt,e,p) ->
+      Const c, new_e ()
+  | Lam (x,xt,e,p) ->
       let nt,_ = to_uf_node Generalize.empty xt in
       let nt' = new_ty () in
       let env = add_var env x Generalize.empty xt in
       let e = infer env nt' e in
-      unify (arrow nt nt' e.I.e) t;
+      unify (arrow nt nt' e.e) t;
       let p = 
         match p with
         | None -> None
         | Some p ->
           Some (infer {env with pm = true} 
-                   (parr (map e.I.e) (parr nt' prop)) p) in
-      I.Lam (x,xt,e,p), new_e ()
-  | A.Let (g,e1,x,e2) ->
+                   (parr (map e.e) (parr nt' prop)) p) in
+      Lam (x,xt,e,p), new_e ()
+  | Let (g,e1,x,e2) ->
       let nt = new_ty () in
       let e1 = infer env nt e1 in
       let xt = to_ty nt in
       let e2 = infer (add_var env x g xt) t e2 in
-      I.Let (g,e1,x,e2), Unify.effect [] [e1.I.e; e2.I.e]
-and infer env t e = 
-  let e,eff = infer' env t e.A.v in
-  { I.v = e ; t = t; e = eff }
+      Let (g,e1,x,e2), Unify.effect [] [e1.e; e2.e]
+and infer env t (e : ParseT.t) : Ast.Infer.t = 
+  let e,eff = infer' env t e.v in
+  { v = e ; t = t; e = eff }
 
 let infer e = 
   let nt = new_ty () in
   infer { vars = Initial.typing_env; pm = false } nt e
+
+let rec recon'  = function
+  | Var (x,i) -> Var (x,inst i)
+  | Const c -> Const c
+  | App (e1,e2) -> App (recon e1, recon e2)
+  | Lam (x,ot,e,p) -> Lam (x,ot, recon e, Misc.opt_map recon p)
+  | Let (g,e1,x,e2) -> Let (g, recon e1, x, recon e2)
+and recon (t : Ast.Infer.t) : Ast.Recon.t = 
+  { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e }
+and inst (th,rh,eh) =
+    List.map U.to_ty th, List.map U.to_r rh, List.map U.to_eff eh

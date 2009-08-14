@@ -1,4 +1,4 @@
-open I_ast
+open Ast
 open Ty
 module SM = Misc.StringMap
 
@@ -13,10 +13,10 @@ let add_var env x g t = { types = SM.add x (g,t) env.types }
 let type_of_var env x = SM.find x env.types
 
 open Format
-let rec typing' env = function
-  | I_ast.Const c -> 
+let rec typing' env  = function
+  | Ast.Const c -> 
       Ty.const (Const.type_of_constant c), Effect.empty
-  |I_ast.Var (s,i) -> 
+  |Ast.Var (s,i) -> 
       begin try 
         let g, t = type_of_var env s in
         Ty.allsubst g i t, Effect.empty
@@ -40,9 +40,10 @@ let rec typing' env = function
       let env = add_var env x tl t in
       let t, eff2 = typing env e2 in
       t, Effect.union eff1 eff2
-and typing env { v = v; t = t } =
-  let t',eff = typing' env v in
-  if Ty.equal t t' then t,eff else 
-    error (Myformat.sprintf "annotation mismatch: %a and %a@." Ty.print t Ty.print t')
+and typing env (e : Ast.Recon.t) : Ty.t * Effect.t =
+  let ((t',eff) as x) = typing' env e.v in
+  if Ty.equal e.t t' then x else 
+    error (Myformat.sprintf "annotation mismatch: %a and %a@." 
+             Ty.print e.t Ty.print t')
 
 let typing t = ignore (typing { types = Initial.typing_env; } t)

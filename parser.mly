@@ -1,13 +1,7 @@
 %{
-  open Clean_ast
+  open Ast
+  open ParseT
   module SS = Misc.SS
-
-  let app t1 t2 = mk_node (App (t1,t2))
-  let var s = mk_node (Var s)
-  let const c = mk_node (Const c)
-  let app2 s t1 t2 = app (app (var s) t1) t2
-  let let_ l e1 x e2 = mk_node (Let (l,e1,x,e2))
-  let lam x t e p = mk_node (Lam (x,t,e,p))
 
   let list_to_set x = 
     List.fold_left (fun acc x -> SS.add x acc) SS.empty x
@@ -50,7 +44,7 @@
 %left PLUS MINUS
 %right STAR
 
-%start <Clean_ast.t> main
+%start <Ast.ParseT.t> main
 %%
 
 tconstant:

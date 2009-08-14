@@ -1,22 +1,14 @@
-type var = string
-type tvar = string
-type rvar = string
-type effvar = string
-
+open Vars
 module U = Unify
 
-type ('a,'b,'c) t' =
+type ('a,'b,'c) t'' =
   | Const of Const.t
-  | Var of string * ('a,'b,'c) Inst.t
-  | App of ('a,'b,'c) t * ('a,'b,'c) t
-  | Lam of var * Ty.t * ('a,'b,'c) t * ('a,'b,'c) t option
-  | Let of Generalize.t * ('a,'b,'c) t * var * ('a,'b,'c) t
-and ('a,'b,'c) t = { v :('a,'b,'c)  t' ; t : 'a ; e : 'c }
-type infer = (U.node, U.rnode, U.enode) t'
-type recon = (Ty.t, rvar, Effect.t) t'
+  | Var of var * ('a,'b,'c) Inst.t
+  | App of ('a,'b,'c) t' * ('a,'b,'c) t'
+  | Lam of var * Ty.t * ('a,'b,'c) t' * ('a,'b,'c) t' option
+  | Let of Generalize.t * ('a,'b,'c) t' * var * ('a,'b,'c) t'
+and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c }
 
-let mk v t e = { v = v; t = t; e = e }
-let mk_val v t = mk v t (U.new_e ())
 
 open Myformat
 
@@ -37,6 +29,10 @@ let print pra prb prc fmt t =
   print fmt t
 
 module Infer = struct
+  type t = (U.node, U.rnode, U.enode) t'
+
+  let mk v t e = { v = v; t = t; e = e }
+  let mk_val v t = mk v t (U.new_e ())
   let const c = mk_val (Const c) (U.const (Const.type_of_constant c))
 
   let lam x t e p = mk_val (Lam (x,U.to_ty t,e,p)) (U.arrow t e.t e.e)
@@ -46,6 +42,20 @@ module Infer = struct
 end
 
 module Recon = struct
+  type t = (Ty.t, rvar, Effect.t) t'
   let print fmt t = print Ty.print Vars.rvar Effect.print fmt t
 end
 
+module ParseT = struct
+  type t = (unit,unit,unit) t'
+  let nothing fmt () = ()
+  let print fmt t = print nothing nothing nothing fmt t
+
+  let mk v = { v = v; t = (); e = () }
+  let app t1 t2 = mk (App (t1,t2))
+  let var s = mk (Var (s,Inst.empty))
+  let const c = mk (Const c)
+  let app2 s t1 t2 = app (app (var s) t1) t2
+  let let_ l e1 x e2 = mk (Let (l,e1,x,e2))
+  let lam x t e p = mk (Lam (x,t,e,p))
+end
