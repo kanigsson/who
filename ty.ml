@@ -47,6 +47,18 @@ let arg = function
   | C (Arrow (t1,_,_)) -> t1
   | _ -> assert false
 
+let to_logic_type t = 
+  let rec aux' = function
+    | (Var _ | Const _ | Map _) as t -> C t
+    | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
+    | PureArr (t1,t2) -> parr (aux t1) (aux t2)
+    | Arrow (t1,t2,e) -> 
+        tuple (parr t1 (parr (map e) (prop))) (parr (map e) (parr t2 (prop)))
+    | Ref (x,t) -> ref_ x t
+    | App (v,i) -> app v i 
+  and aux (C x) = aux' x in
+  aux t
+
 let subst x t target =
   let rec aux' = function
     | Var y when x = y -> let C t = t in t
@@ -118,5 +130,9 @@ let rec equal' t1 t2 =
   | Arrow (ta1,ta2,e1), Arrow (tb1,tb2,e2) -> 
       equal ta1 tb1 && equal ta2 tb2 && Effect.equal e1 e2
   | Ref (r1,t1), Ref (r2,t2) -> r1 = r2 && equal t1 t2
+  | Map e1, Map e2 -> Effect.equal e1 e2
+  | App (v1,i1), App (v2,i2) -> 
+      v1 = v2 && Inst.equal equal (=) (Effect.equal) i1 i2
+
   | _ -> false
 and equal (C a) (C b) = equal' a b

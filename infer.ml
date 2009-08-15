@@ -42,7 +42,6 @@ let bh f l =
 let prety eff = parr (map eff) prop
 let postty eff t = parr (map eff) (parr (map eff) (parr t prop)) 
 
-
 let to_uf_node (tl,rl,el) x = 
   let tn,th = bh new_ty tl and rn,rh = bh new_r rl and en,eh = bh new_e el in
   let rec aux' f = function
@@ -65,19 +64,6 @@ let to_uf_node (tl,rl,el) x =
         (SS.fold (fun x acc -> auxe x :: acc) el []) in 
   real x, (tn,rn,en)
 
-let to_logic_type t = 
-  let rec aux' = function
-    | (Ty.Var _ | Ty.Const _ | Ty.Map _) as t -> Ty.C t
-    | Ty.Tuple (t1,t2) -> Ty.tuple (aux t1) (aux t2)
-    | Ty.PureArr (t1,t2) -> Ty.parr (aux t1) (aux t2)
-    | Ty.Arrow (t1,t2,e) -> 
-        Ty.tuple (Ty.parr t1 (Ty.parr (Ty.map e) (Ty.prop)))
-          (Ty.parr (Ty.map e) (Ty.parr t2 (Ty.prop)))
-    | Ty.Ref (x,t) -> Ty.ref_ x t
-    | Ty.App (v,i) -> Ty.app v i 
-  and aux (Ty.C x) = aux' x in
-  aux t
-
 let pref eff (p : ParseT.t) = 
   Ast.ParseT.pure_lam "cur" (Ty.map (to_eff eff)) p p.loc
 
@@ -94,10 +80,11 @@ let rec infer' env t loc = function
       let e2 = infer env nt e2 in
       App (e1,e2), Unify.effect [] [e;e1.e;e2.e]
   | Var (x,_) -> 
+(*       Myformat.printf "var %a@." Vars.var x; *)
         let m,xt = 
           try SM.find x env.vars
           with Not_found -> error (sprintf "variable %s not found" x) loc in
-        let xt = if env.pm then to_logic_type xt else xt in
+        let xt = if env.pm then Ty.to_logic_type xt else xt in
         let nt,i = to_uf_node m xt in
         unify nt t loc;
         Var (x, i), new_e ()
@@ -140,7 +127,9 @@ let rec infer' env t loc = function
       let e2 = infer env t e2 in
       let e3 = infer env t e3 in
       Ite (e1,e2,e3), Unify.effect [] [e1.e;e2.e; e3.e]
-  | Axiom e -> Axiom (infer env prop e), new_e ()
+  | Axiom e -> 
+      unify prop t loc;
+      Axiom (infer env prop e), new_e ()
   | Logic t' -> 
       let nt, _ = to_uf_node Ty.Generalize.empty t' in
       unify nt t loc; 

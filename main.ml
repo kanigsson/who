@@ -29,5 +29,6 @@ let _ =
     Typing.typing p
   with
   | Sys_error e -> Error.bad e
-  | Infer.Error (s,loc) -> Error.with_loc s loc
+  | Infer.Error (s,loc) 
+  | Typing.Error (s,loc) -> Error.with_loc s loc 
 

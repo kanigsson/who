@@ -17,4 +17,11 @@ let map fa fb fc (tl,rl,el) =
 let iter2 fa fb fc (tl1,rl1,el1) (tl2,rl2,el2) =
   List.iter2 fa tl1 tl2;
   List.iter2 fb rl1 rl2;
-  List.iter2 fc el1 el2;
+  List.iter2 fc el1 el2
+
+let equal eqa eqb eqc (tl1,rl1,el1) (tl2,rl2,el2) =
+  try 
+    List.for_all2 eqa tl1 tl2 &&
+    List.for_all2 eqb rl1 rl2 &&
+    List.for_all2 eqc el1 el2
+  with Invalid_argument _ -> false

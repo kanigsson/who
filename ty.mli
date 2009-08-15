@@ -30,6 +30,8 @@ val int : t
 
 val arg : t -> t
 
+val to_logic_type : t -> t
+
 val subst : tvar -> t -> t -> t
 val rsubst : rvar -> rvar -> t -> t
 val lsubst : tvar list -> t list -> t -> t
