@@ -8,6 +8,10 @@ type ('a,'b,'c) t'' =
   | Lam of var * Ty.t * ('a,'b,'c) t' option * ('a,'b,'c) t' * ('a,'b,'c) t' option
   | Let of Generalize.t * ('a,'b,'c) t' * var * ('a,'b,'c) t'
   | PureFun of var * Ty.t * ('a,'b,'c) t'
+  | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
+  | Axiom of ('a,'b,'c) t'
+  | Logic of Ty.t
+  | TypeDef of Generalize.t * Ty.t option * var * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
 
 
@@ -26,6 +30,12 @@ let print pra prb prc fmt t =
     | Let (g,e1,x,e2) -> 
         fprintf fmt "@[let@ %s %a=@ %a@ in@ %a@]" 
           x Generalize.print g print e1 print e2
+    | Ite (e1,e2,e3) ->
+        fprintf fmt "@[if %a then %a else %a@]" print e1 print e2 print e3
+    | Axiom e -> fprintf fmt "axiom %a" print e
+    | Logic t -> fprintf fmt "logic %a" Ty.print t
+    | TypeDef (g,t,x,e) -> 
+        fprintf fmt "type %a =@ %a in@ %a" var x (opt_print Ty.print) t print e
   and print fmt t = print' fmt t.v
   and post fmt = function
     | None -> ()
@@ -63,4 +73,5 @@ module ParseT = struct
   let let_ l e1 x e2 = mk (Let (l,e1,x,e2)) 
   let lam x t p e q = mk (Lam (x,t,p,e,q))
   let pure_lam x t e = mk (PureFun (x,t,e))
+  let typedef l t x e = mk (TypeDef (l,t,x,e))
 end

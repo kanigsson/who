@@ -20,11 +20,11 @@ let optlist pr fmt = function
   | [] -> space fmt ()
   | l -> fprintf fmt "@ [%a]@ " (print_list space pr) l
 
-let print_option prf fmt = function
+let opt_print prf fmt = function
   | None -> ()
   | Some x -> prf fmt x
 
-let pr_opt_string fmt s = print_option pp_print_string fmt s
+let pr_opt_string fmt s = opt_print pp_print_string fmt s
 
 let sprintf s =
   ignore(flush_str_formatter ());

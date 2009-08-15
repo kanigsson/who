@@ -39,6 +39,9 @@ let const =
   fun c -> Hashtbl.find h c
 
 let prop = const TProp
+let bool = const TBool
+let int = const TInt
+let unit = const TUnit
 
 let union a b = Uf.union (fun a b -> a) a b
 let eunion a b = 

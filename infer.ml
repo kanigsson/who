@@ -5,6 +5,7 @@ open Format
 
 type env = { 
   vars : (Generalize.t * Ty.t) SM.t ;  
+  types : (Generalize.t * Ty.t option) SM.t;
   pm : bool
   }
 
@@ -13,6 +14,7 @@ exception Error of string
 let error s = raise (Error s)
 
 let add_var env x g t = { env with vars = SM.add x (g,t) env.vars }
+let add_ty env x g t = { env with types = SM.add x (g,t) env.types }
 
 let ymemo ff =
   let h = Hashtbl.create 17 in
@@ -68,7 +70,6 @@ let rec infer' env t = function
   | Var (x,_) -> 
       begin try
         let m,xt = SM.find x env.vars in
-(*         printf "var %s : %a@." x Ty.print xt; *)
         let xt = if env.pm then to_logic_type xt else xt in
         let nt,i = to_uf_node m xt in
         unify nt t;
@@ -88,7 +89,7 @@ let rec infer' env t = function
       let nt,_ = to_uf_node Generalize.empty xt in
       let nt' = new_ty () in
       let env = add_var env x Generalize.empty xt in
-      let e = infer env nt' e in
+      let e = infer {env with pm = false} nt' e in
       unify (arrow nt nt' e.e) t;
       let p = 
         Misc.opt_map 
@@ -97,21 +98,35 @@ let rec infer' env t = function
         Misc.opt_map 
           (infer {env with pm = true} (parr (map e.e) (parr nt' prop))) q in
       Lam (x,xt,p,e,q), new_e ()
+  | TypeDef (g,t',x,e) -> 
+      let env = add_ty env x g t' in
+      let e = infer env t e in
+      TypeDef (g,t',x,e), new_e ()
   | Let (g,e1,x,e2) ->
       let nt = new_ty () in
       let e1 = infer env nt e1 in
       let xt = to_ty nt in
       let e2 = infer (add_var env x g xt) t e2 in
       Let (g,e1,x,e2), Unify.effect [] [e1.e; e2.e]
+  | Ite (e1,e2,e3) ->
+      let e1 = infer env bool e1 in
+      let e2 = infer env t e2 in
+      let e3 = infer env t e3 in
+      Ite (e1,e2,e3), Unify.effect [] [e1.e;e2.e; e3.e]
+  | Axiom e -> Axiom (infer env prop e), new_e ()
+  | Logic t' -> 
+      let nt, _ = to_uf_node Generalize.empty t' in
+      unify nt t; 
+      Logic t', new_e ()
 and infer env t (e : ParseT.t) : Ast.Infer.t = 
   let e',eff = infer' env t e.v in
   { v = e' ; t = t; e = eff; loc = e.loc }
 
 let infer e = 
   let nt = new_ty () in
-  infer { vars = Initial.typing_env; pm = false } nt e
+  infer { vars = Initial.typing_env; pm = false; types = SM.empty } nt e
 
-let rec recon'  = function
+let rec recon' = function
   | Var (x,i) -> Var (x,inst i)
   | Const c -> Const c
   | App (e1,e2) -> App (recon e1, recon e2)
@@ -119,6 +134,10 @@ let rec recon'  = function
   | Lam (x,ot,p,e,q) -> 
       Lam (x,ot, Misc.opt_map recon p, recon e, Misc.opt_map recon q)
   | Let (g,e1,x,e2) -> Let (g, recon e1, x, recon e2)
+  | Ite (e1,e2,e3) -> Ite (recon e1, recon e2, recon e3)
+  | Axiom e -> Axiom (recon e)
+  | Logic t -> Logic t
+  | TypeDef (g,t,x,e) -> TypeDef (g,t,x,recon e)
 and recon (t : Ast.Infer.t) : Ast.Recon.t = 
   { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e; loc = t.loc }
 and inst (th,rh,eh) =

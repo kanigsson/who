@@ -21,11 +21,18 @@ let id_or_keyword =
         ("True", fun i -> PTRUE (create_info i) );
         ("False", fun i -> PFALSE (create_info i) );
         ("let", fun i -> LET (create_info i)  );
+        ("axiom", fun i -> LOGIC (create_info i)  );
+        ("logic", fun i -> AXIOM (create_info i)  );
+        ("type", fun i -> TYPE (create_info i)  );
         ("bool", fun i -> BOOL  );
         ("int", fun i -> TINT  );
         ("unit", fun i -> UNIT  );
+        ("prop", fun i -> PROP  );
         ("ref", fun i -> REF  );
         ("in", fun i -> IN );
+        ("if", fun i -> IF (create_info i) );
+        ("then", fun i -> THEN );
+        ("else", fun i -> ELSE );
         ("fun", fun i -> FUN (create_info i) );
       ];
     fun s -> try Hashtbl.find h s with Not_found -> 
@@ -72,6 +79,7 @@ rule token = parse
   | ':' { COLON }
   | ',' { COMMA }
   | "<=" { LE  }
+  | "/\\" { AND }
   | '<' { LT  }
   | '>' { GT  }
   | '+' { PLUS  }

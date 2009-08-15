@@ -24,6 +24,8 @@ val ref_ : rvar -> t -> t
 val map : Effect.t -> t
 val unit : t
 val prop : t
+val bool : t
+val int : t
 
 val arg : t -> t
 

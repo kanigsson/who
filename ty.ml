@@ -37,6 +37,8 @@ let map e = C (Map e)
 
 let unit = const (Const.TUnit)
 let prop = const (Const.TProp)
+let bool = const (Const.TBool)
+let int = const (Const.TInt)
 
 let arg = function
   | C (Arrow (t1,_,_)) -> t1
