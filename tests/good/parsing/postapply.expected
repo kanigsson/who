@@ -1,10 +1,7 @@
 let apply ['a 'b||e]=
-(λ(f:('a ->{|e } 'b)) ->
-(λ(x:'a) -> (f  x ){(λ(z:map{|e }) -> (λ(k:'b) -> (((snd  f ) z ) k )))}))
+(λ(f:('a ->{|e } 'b)) -> (λ(x:'a) -> (f  x ){ k : (((snd  f ) cur ) k )}))
 in
 let main [|r|]=
 (λ(x:ref(r,nat)) ->
-((apply 
- (λ(z:unit) ->
- ((:=  x ) 0){(λ(z:map{r |}) -> (λ(k:unit) -> ((beq_z  r ) 0)))}))
-()){(λ(z:map{r |}) -> (λ(k:unit) -> ((beq_z  x ) 0)))}) in ()
+((apply  (λ(z:unit) -> ((:=  x ) 0){((=  ((!!  x ) cur )) 0)})) ()){
+((=  ((!!  x ) cur )) 0)}) in ()

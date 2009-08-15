@@ -36,7 +36,7 @@
 %token <string Loc.t> IDENT
 %token <string> TYVAR
 %token IN 
-%token PLUS MINUS LE EQUAL STAR NEQ
+%token PLUS MINUS LE EQUAL STAR NEQ BEQUAL BNEQ
 %token EOF
 %token REF
 %token <Loc.loc> EXCLAM DEXCLAM IF FUN TRUE FALSE PTRUE PFALSE VOID LET AXIOM LOGIC TYPE
@@ -48,7 +48,7 @@
 %left AND
 %nonassoc LE LT
 %nonassoc ASSIGN
-%right EQUAL NEQ
+%right EQUAL NEQ BEQUAL BNEQ
 %right COMMA
 %left PLUS MINUS
 %right STAR
@@ -93,7 +93,9 @@ constant:
   | ASSIGN { ":=" }
   | LE { "Zleb" }
   | LT { "Zltb" }
-  | EQUAL { "beq_z" }
+  | EQUAL { "=" }
+  | BEQUAL { "==" }
+  | BNEQ { "!=" }
   | NEQ { "<>" }
   | AND { "/\\" }
   | COMMA { "," }
@@ -102,7 +104,6 @@ constant:
 aterm:
   | x = IDENT { var x.c x.info }
   | p = EXCLAM { var "!" p }
-  | p = DEXCLAM { var "!!" p }
   | c = constant { let p,c = c in const c p }
   | l = LPAREN t = nterm e = RPAREN { mk t.v (embrace l e) }
 
@@ -111,16 +112,28 @@ appterm:
   | t1 = appterm t2 = aterm { app t1 t2 (embrace t1.loc t2.loc) }
 
 nterm:
+  | p = DEXCLAM x = IDENT 
+    { app2 "!!" (var x.c x.info) (var "cur" p) (embrace p x.info) }
+  | p = DEXCLAM x = IDENT MID t = aterm 
+    { app2 "!!" (var x.c x.info) t (embrace p t.loc)  }
   | t1 = appterm { t1 }
   | t1 = nterm i = infix t2 = nterm  
     { app2 i t1 t2 (embrace t1.loc t2.loc) }
-  | sp = FUN l = arglist ARROW p = prepost e = nterm q = prepost 
-    { mk_lam l (snd p) e (snd q) (embrace sp (fst q)) }
+  | sp = FUN l = arglist ARROW body = funcbody
+    { let p,e,q = body in
+      mk_lam l (snd p) e (snd q) (embrace sp (fst q)) }
   | sp = FUN l = arglist ARROW e = nterm 
     { mk_pure_lam l e (embrace sp e.loc) }
-  | p = LET x = ident_no_pos l = optgen EQUAL t1 = nterm IN t2 = nterm 
-    %prec let_
-    { let_ l t1 x t2 (embrace p t2.loc) }
+  | b = letwithoutargs EQUAL t = nterm IN t2 = nterm %prec let_
+    { let p,x,l = b in
+      let_ l t x t2 p}
+  | b = letwithargs EQUAL body = funcbody IN t2 = nterm %prec let_
+    { let p,x,l,args = b in
+      let pre,e,q = body in
+      let_ l (mk_lam args (snd pre) e (snd q) p) x t2 (embrace p t2.loc) }
+  | b = letwithargs EQUAL t1 = nterm IN t2 = nterm %prec let_
+    { let p,x,l,args = b in
+      let_ l (mk_pure_lam args t1 p) x t2 (embrace p t2.loc) }
   | st = IF it = nterm THEN tb = nterm ELSE eb = nterm %prec ifprec
     { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
 
@@ -130,7 +143,23 @@ onetyarg:
 
 arglist: l = nonempty_list(onetyarg) { List.flatten l }
 
-prepost:
+letwithargs:
+  | p = LET x = ident_no_pos l = optgen args = arglist
+  { p, x, l, args }
+
+letwithoutargs:
+  | p = LET x = ident_no_pos l = optgen 
+    { p,x,l }
+
+funcbody:
+  p = precond e = nterm q = postcond { p,e,q }
+
+postcond:
+  | p = LCURL RCURL { p, PNone }
+  | p = LCURL t = nterm RCURL { p, PPlain t}
+  | p = LCURL x = ident_no_pos COLON t = nterm RCURL { p, PResult (x,t)}
+
+precond:
   | p = LCURL RCURL { p, None }
   | p = LCURL t = nterm RCURL { p, Some t}
 
@@ -140,8 +169,17 @@ optgen:
     { tl, rl, el }
 
 decl:
-  | p = LET x = ident_no_pos l = optgen EQUAL t = nterm
-    {let_ l t x  (const (Const.Void) p) (embrace p t.loc) }
+  | b = letwithoutargs EQUAL t = nterm
+    { let p,x,l = b in
+      let_ l t x  (const (Const.Void) p) (embrace p t.loc) }
+  | b = letwithargs EQUAL body = funcbody
+    { let p,x,l,args = b in
+      let pre,e,q = body in
+      let_ l (mk_lam args (snd pre) e (snd q) p) x (const (Const.Void) p) 
+        (embrace p e.loc) }
+  | b = letwithargs EQUAL t1 = nterm
+    { let p,x,l,args = b in
+      let_ l (mk_pure_lam args t1 p) x (const (Const.Void) p) (embrace p t1.loc) }
   | p = AXIOM x = ident_no_pos l = optgen EQUAL t = nterm
     { let_ l (mk (Axiom t) p) x (const (Const.Void) p) (embrace p t.loc) }
   | p = LOGIC x = ident_no_pos l = optgen EQUAL t = ty

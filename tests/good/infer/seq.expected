@@ -4,6 +4,6 @@ let seq ['a 'b 'c||e1 e2]=
 let h [|r1 r2|]=
 (λ(x:ref(r1,nat)) ->
 (λ(y:ref(r2,nat)) ->
-((seq [nat,nat,nat||{ {r1 } 98 101},{ {r2 } 121 124}]
+((seq [nat,nat,nat||{ {r1 } 78 81},{ {r2 } 95 98}]
  (λ(z:nat) -> (! [nat|r1|] x )))
 (λ(z:nat) -> (! [nat|r2|] y ))))) in ()

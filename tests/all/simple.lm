@@ -1,1 +1,1 @@
-let f = fun (x : int) -> {} x {}
+let f (x : int) = {} x {}

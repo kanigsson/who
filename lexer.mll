@@ -63,6 +63,7 @@ rule token = parse
   | identifier as i { id_or_keyword i lexbuf}
   | tyvar as tv { TYVAR tv}
   | "->" { ARROW }
+  | "==" { BEQUAL }
   | '=' { EQUAL }
   | "<>" { NEQ }
   | "()" { VOID (create_info lexbuf)  }
@@ -72,8 +73,9 @@ rule token = parse
   | ']' { RBRACKET   }
   | '{' { LCURL (create_info lexbuf) }
   | '}' { RCURL   }
+  | "!!" { DEXCLAM (create_info lexbuf) }
+  | "!=" { BNEQ }
   | '!' { EXCLAM (create_info lexbuf) }
-  | "!" { DEXCLAM (create_info lexbuf) }
   | ":=" { ASSIGN   }
   | '|' { MID   }
   | '*' { STAR  }

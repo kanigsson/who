@@ -1,2 +1,2 @@
-let f ['a||]= (λ(x:'a) -> (λ(y:'a) -> ((beq_z  x ) y ))) in
+let f ['a||]= (λ(x:'a) -> (λ(y:'a) -> ((=  x ) y ))) in
 let f ['a||]= (λ(x:'a) -> true) in let g = (f  true) in let h = (f  5) in ()

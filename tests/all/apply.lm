@@ -1,5 +1,9 @@
-let apply ['a 'b ||e] =
-fun (f : 'a ->{|e} 'b) -> {} fun (x : 'a) -> {} f x {} {}
+let apply ['a 'b ||e] (f : 'a ->{|e} 'b) (x : 'a) = 
+  {} 
+  f x 
+  {}
 
-let h [|r|] = 
-  fun (x : ref(r,int)) -> {} apply (fun (z : int) -> {} !x {}) 5 {}
+let h [|r|] (x : ref(r,int)) = 
+  {} 
+  apply (fun (z : int) -> {} !x {}) 5 
+  {}

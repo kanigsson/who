@@ -1,5 +1,9 @@
-let f ['a||] = fun (x : 'a) -> {} fun (y : 'a) -> {} x = y {} {}
-let f ['a||] = fun (x : 'a) -> {} true {}
+let f ['a||] (x y : 'a) = 
+  {} 
+  x == y 
+  {}
+
+let f ['a||] (x : 'a) = {} true {}
 
 let g = f true
 let h = f 5

@@ -1,1 +1,1 @@
-let f [|r|] = fun (x : ref(r,int)) -> {} x := 0 {}
+let f [|r|] (x : ref(r,int)) = {} x := 0 {}

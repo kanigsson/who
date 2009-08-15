@@ -7,7 +7,7 @@ type env = {
   vars : (Ty.Generalize.t * Ty.t) SM.t ;  
   types : (Ty.Generalize.t * Ty.t option) SM.t;
   pm : bool;
-  curloc : Loc.loc
+  curloc : Loc.loc;
   }
 
 exception Error of string * Loc.loc
@@ -38,6 +38,10 @@ let unify t1 t2 loc =
 let bh f l = 
   let h = Hashtbl.create 3 in
   List.map (fun x -> let n = f () in Hashtbl.add h x n; n) l,h
+
+let prety eff = parr (map eff) prop
+let postty eff t = parr (map eff) (parr (map eff) (parr t prop)) 
+
 
 let to_uf_node (tl,rl,el) x = 
   let tn,th = bh new_ty tl and rn,rh = bh new_r rl and en,eh = bh new_e el in
@@ -72,6 +76,14 @@ let to_logic_type t =
   and aux (Ty.C x) = aux' x in
   aux t
 
+let pref eff (p : ParseT.t) = 
+  Ast.ParseT.pure_lam "cur" (Ty.map (to_eff eff)) p p.loc
+
+let postf eff t res (p : ParseT.t) = 
+  let et = Ty.map (to_eff eff) in
+  let lam = Ast.ParseT.pure_lam in
+  let lameff s = lam s et in
+  lameff "old" (lameff "cur" (lam res (to_ty t) p p.loc ) p.loc) p.loc
 
 let rec infer' env t loc = function
   | App (e1,e2) ->
@@ -103,12 +115,8 @@ let rec infer' env t loc = function
       let env = add_var env x Ty.Generalize.empty xt in
       let e = infer {env with pm = false} nt' e in
       unify (arrow nt nt' e.e) t loc;
-      let p = 
-        Misc.opt_map 
-          (infer {env with pm = true} (parr (map e.e) (parr nt' prop))) p in
-      let q = 
-        Misc.opt_map 
-          (infer {env with pm = true} (parr (map e.e) (parr nt' prop))) q in
+      let p = pre env e.e p in
+      let q = post env e.e nt' q in
       Lam (x,xt,p,e,q), new_e ()
   | TypeDef (g,t',x,e) -> 
       let env = add_ty env x g t' in
@@ -130,9 +138,19 @@ let rec infer' env t loc = function
       let nt, _ = to_uf_node Ty.Generalize.empty t' in
       unify nt t loc; 
       Logic t', new_e ()
+
 and infer env t (e : ParseT.t) : Ast.Infer.t = 
   let e',eff = infer' {env with curloc = e.loc} t e.loc e.v in
   { v = e' ; t = t; e = eff; loc = e.loc }
+and pre env eff = function
+  | None -> None
+  | Some f -> Some (infer {env with pm = true} (prety eff) (pref eff f))
+and post env eff t = function
+  | PNone -> PNone
+  | PPlain f -> 
+      PPlain (infer {env with pm = true} (postty eff t) (postf eff t "" f))
+  | PResult (r,f) ->
+      PPlain (infer {env with pm = true} (postty eff t) (postf eff t r f))
 
 let initial = { vars = Initial.typing_env; pm = false; 
                 types = SM.empty; curloc = Loc.dummy; }
@@ -146,7 +164,7 @@ let rec recon' = function
   | App (e1,e2) -> App (recon e1, recon e2)
   | PureFun (x,t,e) -> PureFun (x,t,recon e)
   | Lam (x,ot,p,e,q) -> 
-      Lam (x,ot, Misc.opt_map recon p, recon e, Misc.opt_map recon q)
+      Lam (x,ot, Misc.opt_map recon p, recon e, post q)
   | Let (g,e1,x,e2) -> Let (g, recon e1, x, recon e2)
   | Ite (e1,e2,e3) -> Ite (recon e1, recon e2, recon e3)
   | Axiom e -> Axiom (recon e)
@@ -156,3 +174,7 @@ and recon (t : Ast.Infer.t) : Ast.Recon.t =
   { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e; loc = t.loc }
 and inst (th,rh,eh) =
     List.map U.to_ty th, List.map U.to_r rh, List.map U.to_eff eh
+and post = function
+  | PNone -> PNone
+  | PPlain f -> PPlain (recon f)
+  | _ -> assert false

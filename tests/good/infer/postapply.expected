@@ -1,9 +1,22 @@
 let apply ['a 'b||e]=
 (λ(f:('a ->{|e } 'b)) ->
 (λ(x:'a) ->
-(f  x ){(λ(z:map{|e }) ->
+(f  x ){(λ(old:map{|e }) ->
+        (λ(cur:map{|e }) ->
         (λ(k:'b) ->
         (((snd [('a ->(map{ e e} ->prop)),(map{ e e} ->('b ->prop))||] f )
-         z )
-        k )))}))
+         cur )
+        k ))))}))
+in
+let main [|r|]=
+(λ(x:ref(r,nat)) ->
+((apply [unit,unit||{r r {r } { 104 112 115} 117}]
+ (λ(z:unit) ->
+ ((:= [nat|r|] x ) 0){(λ(old:map{r |}) ->
+                      (λ(cur:map{r |}) ->
+                      (λ(:unit) ->
+                      ((= [nat||] ((!! [nat|r|{r }] x ) cur )) 0))))}))
+()){(λ(old:map{r |}) ->
+    (λ(cur:map{r |}) ->
+    (λ(:unit) -> ((= [nat||] ((!! [nat|r|{r }] x ) cur )) 0))))})
 in ()

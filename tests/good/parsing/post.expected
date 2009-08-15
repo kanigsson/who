@@ -1,1 +1,1 @@
-let f = (λ(x:nat) -> x {(λ(z:map{|}) -> (λ(r:nat) -> True))}) in ()
+let f = (λ(x:nat) -> x {True}) in ()

@@ -7,6 +7,9 @@ let empty = SS.empty, SS.empty
 let is_empty (r,e) = SS.is_empty r && SS.is_empty e
 let union (r1,e1) (r2,e2) = SS.union r1 r2, SS.union e1 e2
 
+let rsingleton r = SS.add r SS.empty, SS.empty
+let esingleton e = SS.empty, SS.add e SS.empty
+
 open Myformat
 let print fmt (r,e) = fprintf fmt "{%a|%a}" print_set r print_set e
 let print_list sep fmt l = print_list sep print fmt l

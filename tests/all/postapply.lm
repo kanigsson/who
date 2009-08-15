@@ -1,13 +1,10 @@
-let apply ['a 'b ||e] =
-fun (f : 'a ->{|e} 'b) -> {} fun (x : 'a) -> 
-  {}
-  f x 
-  {fun (z : <|e>) -> fun (k : 'b) -> snd f z k }
+let apply ['a 'b ||e] (f : 'a ->{|e} 'b) (x : 'a) = 
   {} 
+  f x 
+  { k : snd f cur k }
 
-let main [|r|] =
-  fun (x:ref(r,int)) ->
+let main [|r|] (x:ref(r,int)) =
   {}
-  apply (fun (z : unit) -> {} x := 0 { fun (z : <r|>) -> fun (k : unit) -> r = 0 } ) ()
-  { fun (z : <r|>) -> fun (k : unit) -> x = 0 }
+  apply (fun (z : unit) -> {} x := 0 { !! x = 0 } ) ()
+  { !! x = 0 }
 

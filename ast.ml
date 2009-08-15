@@ -5,7 +5,7 @@ type ('a,'b,'c) t'' =
   | Const of Const.t
   | Var of var * ('a,'b,'c) Inst.t
   | App of ('a,'b,'c) t' * ('a,'b,'c) t'
-  | Lam of var * Ty.t * ('a,'b,'c) t' option * ('a,'b,'c) t' * ('a,'b,'c) t' option
+  | Lam of var * Ty.t * ('a,'b,'c) t' option * ('a,'b,'c) t' * ('a,'b,'c) post
   | Let of Ty.Generalize.t * ('a,'b,'c) t' * var * ('a,'b,'c) t'
   | PureFun of var * Ty.t * ('a,'b,'c) t'
   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
@@ -13,6 +13,10 @@ type ('a,'b,'c) t'' =
   | Logic of Ty.t
   | TypeDef of Ty.Generalize.t * Ty.t option * var * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
+and ('a,'b,'c) post = 
+  | PNone
+  | PPlain of ('a,'b,'c) t'
+  | PResult of var * ('a,'b,'c) t'
 
 
 open Myformat
@@ -24,7 +28,7 @@ let print pra prb prc fmt t =
     | App (t1,t2) -> fprintf fmt "@[(%a@ %a)@]" print t1 print t2
     | Lam (x,t,p,e,q) -> 
         fprintf fmt "@[(λ(%s:%a)@ ->@ %a%a%a)@]" x Ty.print t 
-          post p print e post q
+          pre p print e post q
     | PureFun (x,t,e) ->
         fprintf fmt "@[(λ(%s:%a)@ ->@ %a)@]" x Ty.print t print e
     | Let (g,e1,x,e2) -> 
@@ -37,9 +41,14 @@ let print pra prb prc fmt t =
     | TypeDef (g,t,x,e) -> 
         fprintf fmt "type %a =@ %a in@ %a" var x (opt_print Ty.print) t print e
   and print fmt t = print' fmt t.v
-  and post fmt = function
+  and pre fmt = function
     | None -> ()
-    | Some x -> fprintf fmt "{%a}" print x in 
+    | Some x -> fprintf fmt "{%a}" print x
+  and post fmt = function
+    | PNone -> ()
+    | PPlain f -> fprintf fmt "{%a}" print f
+    | PResult (r,f) -> fprintf fmt "{ %a : %a}" var r print f in
+   
   print fmt t
 
 module Infer = struct
