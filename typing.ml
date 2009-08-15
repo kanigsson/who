@@ -58,7 +58,7 @@ let rec formtyping' env loc = function
       let t',eff = typing env e in
       pre env eff p;
       post env eff t' q;
-      arrow t t' eff
+      to_logic_type (arrow t t' eff)
   | Let (tl,e1,x,e2) ->
       let t = formtyping env e1 in
       let env = add_var env x tl t in
