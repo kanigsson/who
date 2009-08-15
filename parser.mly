@@ -39,7 +39,7 @@
 %token PLUS MINUS LE EQUAL STAR NEQ
 %token EOF
 %token REF
-%token <Loc.loc> EXCLAM IF FUN TRUE FALSE PTRUE PFALSE VOID LET AXIOM LOGIC TYPE
+%token <Loc.loc> EXCLAM DEXCLAM IF FUN TRUE FALSE PTRUE PFALSE VOID LET AXIOM LOGIC TYPE
 %token COLON COMMA ASSIGN MID AND THEN ELSE LT GT ARROW BOOL TINT UNIT PROP
 
 %nonassoc let_
@@ -76,7 +76,7 @@ ty:
   | t1 = ty ARROW LCURL e = effect RCURL t2 = ty %prec ARROW { Ty.arrow t1 t2 e }
   | t1 = ty STAR t2 = ty { Ty.tuple t1 t2 }
   | LT e = effect GT { Ty.map e }
-  | REF LPAREN id = ident_no_pos COMMA t = ty RPAREN { Ty.ref_ id t }
+  | REF LPAREN id = ident_no_pos COMMA t = ty  RPAREN { Ty.ref_ id t }
 
 constant:
   |  n = INT    { n.info, Const.Int n.c }
@@ -102,6 +102,7 @@ constant:
 aterm:
   | x = IDENT { var x.c x.info }
   | p = EXCLAM { var "!" p }
+  | p = DEXCLAM { var "!!" p }
   | c = constant { let p,c = c in const c p }
   | l = LPAREN t = nterm e = RPAREN { mk t.v (embrace l e) }
 
@@ -135,9 +136,8 @@ prepost:
 
 optgen: 
   | { [],[], [] }
-  | LBRACKET tl = list(TYVAR) MID rl=list(ident_no_pos) MID el =
-      list(ident_no_pos) RBRACKET 
-    { tl, rl,el }
+  | LBRACKET tl = list(TYVAR) MID rl=list(ident_no_pos) MID el = list(ident_no_pos) RBRACKET 
+    { tl, rl, el }
 
 decl:
   | p = LET x = ident_no_pos l = optgen EQUAL t = nterm

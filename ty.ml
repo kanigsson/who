@@ -1,6 +1,6 @@
 open Vars
 type ('a,'b,'c) t' = 
-  | Var of string
+  | Var of tvar
   | Const of Const.ty
   | Tuple of 'a * 'a
   | Arrow of 'a * 'a * 'c
@@ -47,11 +47,11 @@ let arg = function
 let subst x t target =
   let rec aux' = function
     | Var y when x = y -> let C t = t in t
-    | (Var _ | Const _ | Map _) as x -> x
+    | (Var _ | Const _ | Map _ ) as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
     | Arrow (t1,t2,eff) -> Arrow (aux t1, aux t2,eff) 
-    | Ref (r,t) -> Ref (r,aux t)
+    | Ref (r,t) -> Ref (r, aux t)
   and aux (C x) = C (aux' x) in
   aux target
 
@@ -61,7 +61,7 @@ let rsubst x t target =
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
     | Arrow (t1,t2,eff) -> Arrow (aux t1, aux t2,effsubst eff) 
-    | Ref (r,t) -> Ref (auxr r,aux t)
+    | Ref (r,t) -> Ref (auxr r, aux t)
     | Map e -> Map (effsubst e)
   and auxr r = if r = x then t else r
   and effsubst (rl,el) = Effect.map auxr rl, el
@@ -70,12 +70,12 @@ let rsubst x t target =
 
 let esubst e eff target = 
   let rec aux' = function
-    | (Var _ | Const _) as x -> x
+    | (Var _ | Const _ ) as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
     | Arrow (t1,t2,eff') -> Arrow (aux t1, aux t2,Effect.subst e eff eff') 
-    | Ref (r,t) -> Ref (r,aux t)
     | Map eff' -> Map (Effect.subst e eff eff')
+    | Ref (r,t) -> Ref (r, aux t)
   and aux (C x) = C (aux' x) in
   aux target
 
@@ -83,7 +83,22 @@ let lsubst = List.fold_right2 subst
 let rlsubst = List.fold_right2 rsubst
 let elsubst = List.fold_right2 esubst
 
-let allsubst (tvl,rvl,evl) (tl,rl,el) target = 
+module Generalize = struct
+  type ty = t
+  type t = tvar list * rvar list * effvar list
+
+  let empty = [],[],[]
+  let is_empty = function
+    | [],[],[] -> true
+    | _ -> false
+
+  open Myformat
+  let print fmt ((tl,rl,el) as g) = 
+    if is_empty g then ()
+    else fprintf fmt "[%a|%a|%a]" tvarlist tl rvarlist rl effvarlist el
+end
+
+let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target = 
   elsubst evl el (rlsubst rvl rl (lsubst tvl tl target))
 
 let rec equal' t1 t2 = 

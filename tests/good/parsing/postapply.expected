@@ -4,5 +4,7 @@ let apply ['a 'b||e]=
 in
 let main [|r|]=
 (λ(x:ref(r,nat)) ->
-(apply  (λ(z:unit) -> ((:=  x ) 0){((beq_z  x ) 0)})){((beq_z  x ) 0)}) in
-()
+((apply 
+ (λ(z:unit) ->
+ ((:=  x ) 0){(λ(z:map{r |}) -> (λ(k:unit) -> ((beq_z  r ) 0)))}))
+()){(λ(z:map{r |}) -> (λ(k:unit) -> ((beq_z  x ) 0)))}) in ()

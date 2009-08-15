@@ -34,8 +34,18 @@ val rsubst : rvar -> rvar -> t -> t
 val lsubst : tvar list -> t list -> t -> t
 val rlsubst : rvar list -> rvar list -> t -> t
 
+val equal : t -> t -> bool
+
+module Generalize : sig
+  type t = tvar list * rvar list * effvar list
+
+  val empty : t 
+  val is_empty : t -> bool
+
+  val print : t Myformat.fmt
+end
+
 val allsubst : 
   Generalize.t -> t list * rvar list * Effect.t list -> 
     t -> t
 
-val equal : t -> t -> bool

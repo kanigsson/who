@@ -9,7 +9,7 @@ and rnode = r Uf.t
 and enode = e Uf.t
 and r = 
   | RU 
-  | RT of string
+  | RT of string 
 and e = 
   | EU
   | EV of string
@@ -19,7 +19,7 @@ let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh (T t)
 let arrow t1 t2 e = mkt (Ty.Arrow (t1,t2,e)) 
 let tuple t1 t2 = mkt (Ty.Tuple (t1,t2)) 
-let ref_ r t = mkt (Ty.Ref (r, t))
+let ref_ r t = mkt (Ty.Ref (r,t))
 let mkr r = Uf.fresh (RT r)
 let new_r () = Uf.fresh RU
 let var s = mkt (Ty.Var s)
@@ -64,7 +64,7 @@ let rec print_node fmt x =
 and prvar fmt x = 
   match Uf.desc x with
   | RU -> fprintf fmt "%d" (Uf.tag x)
-  | RT s -> pp_print_string fmt s
+  | RT s -> fprintf fmt "%s" s
 and preff fmt x = 
   match Uf.desc x with
   | EU -> fprintf fmt "%d" (Uf.tag x)
@@ -97,9 +97,7 @@ let rec unify a b =
           unify ta1 tb1;
           unify ta2 tb2;
           eunify e1 e2
-      | Ty.Ref (r1,t1), Ty.Ref (r2,t2) -> 
-          runify r1 r2;
-          unify t1 t2
+      | Ty.Ref (r1,t1), Ty.Ref (r2,t2) -> runify r1 r2; unify t1 t2
       | Ty.Map e1, Ty.Map e2 -> eunify e1 e2
       | _ , _ -> 
           raise CannotUnify
@@ -108,14 +106,15 @@ let rec unify a b =
        * raised *)
       union a b;
 and runify a b = 
+(*   printf "runify: %a and %a@." prvar a prvar b; *)
   if Uf.equal a b then () else
   match Uf.desc a, Uf.desc b with
   | RU, RU -> union a b
   | RU _, RT _ -> union b a
   | RT _, RU _ -> union a b
   | RT s1, RT s2 when s1 = s2 -> ()
-  | RT x1, RT x2 -> 
-      printf "runify: %s and %s@." x1 x2;
+  | RT _, RT _ -> 
+(*       printf "runify: %s and %s@." x1 x2; *)
       raise CannotUnify
 and eunify a b = 
   if Uf.equal a b then () else eunion a b 
@@ -125,9 +124,10 @@ module H = Hashtbl.Make (struct
                            let equal a b = Uf.tag a = Uf.tag b
                            let hash = Uf.tag
                          end)
+
 let to_ty, to_eff, to_r =
   let h = H.create 127 in
-  let rec ty' = function
+  let rec ty' : (node, rnode, enode) Ty.t' -> Ty.t = function
     | Ty.Var s -> Ty.var s
     | Ty.Arrow (t1,t2,e) -> Ty.arrow (ty t1) (ty t2) (eff e)
     | Ty.Tuple (t1,t2) -> Ty.tuple (ty t1) (ty t2)
@@ -146,7 +146,7 @@ let to_ty, to_eff, to_r =
   and rv r = 
     match Uf.desc r with
     | RU -> assert false
-    | RT t -> t 
+    | RT s -> s
   and eff x =
     let f acc x = List.fold_left (fun acc x -> SS.add x acc) acc x in
     let rec aux ((racc,eacc) as acc) x = 

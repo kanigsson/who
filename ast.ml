@@ -6,12 +6,12 @@ type ('a,'b,'c) t'' =
   | Var of var * ('a,'b,'c) Inst.t
   | App of ('a,'b,'c) t' * ('a,'b,'c) t'
   | Lam of var * Ty.t * ('a,'b,'c) t' option * ('a,'b,'c) t' * ('a,'b,'c) t' option
-  | Let of Generalize.t * ('a,'b,'c) t' * var * ('a,'b,'c) t'
+  | Let of Ty.Generalize.t * ('a,'b,'c) t' * var * ('a,'b,'c) t'
   | PureFun of var * Ty.t * ('a,'b,'c) t'
   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
   | Axiom of ('a,'b,'c) t'
   | Logic of Ty.t
-  | TypeDef of Generalize.t * Ty.t option * var * ('a,'b,'c) t'
+  | TypeDef of Ty.Generalize.t * Ty.t option * var * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
 
 
@@ -29,7 +29,7 @@ let print pra prb prc fmt t =
         fprintf fmt "@[(λ(%s:%a)@ ->@ %a)@]" x Ty.print t print e
     | Let (g,e1,x,e2) -> 
         fprintf fmt "@[let@ %s %a=@ %a@ in@ %a@]" 
-          x Generalize.print g print e1 print e2
+          x Ty.Generalize.print g print e1 print e2
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then %a else %a@]" print e1 print e2 print e3
     | Axiom e -> fprintf fmt "axiom %a" print e

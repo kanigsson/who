@@ -73,6 +73,7 @@ rule token = parse
   | '{' { LCURL (create_info lexbuf) }
   | '}' { RCURL   }
   | '!' { EXCLAM (create_info lexbuf) }
+  | "!" { DEXCLAM (create_info lexbuf) }
   | ":=" { ASSIGN   }
   | '|' { MID   }
   | '*' { STAR  }
