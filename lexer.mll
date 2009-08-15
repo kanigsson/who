@@ -59,8 +59,8 @@ rule token = parse
   | '=' { EQUAL }
   | "<>" { NEQ }
   | "()" { VOID (create_info lexbuf)  }
-  | '(' { LPAREN   }
-  | ')' { RPAREN   }
+  | '(' { LPAREN (create_info lexbuf)  }
+  | ')' { RPAREN (create_info lexbuf)  }
   | '[' { LBRACKET   }
   | ']' { RBRACKET   }
   | '{' { LCURL (create_info lexbuf) }

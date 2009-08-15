@@ -18,7 +18,8 @@
 %}
 
 %token <int Loc.t> INT
-%token LPAREN RPAREN LBRACKET RBRACKET RCURL
+%token <Loc.loc> LPAREN RPAREN 
+%token LBRACKET RBRACKET RCURL
 %token <Loc.loc> LCURL
 %token <string Loc.t> IDENT
 %token <string> TYVAR
@@ -96,7 +97,7 @@ aterm:
   | x = IDENT { var x.c x.info }
   | p = EXCLAM { var "!" p }
   | c = constant { let p,c = c in const c p }
-  | LPAREN t = nterm RPAREN { t }
+  | l = LPAREN t = nterm e = RPAREN { mk t.v (embrace l e) }
 
 appterm:
   | t = aterm { t }
