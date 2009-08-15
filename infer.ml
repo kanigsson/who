@@ -9,9 +9,9 @@ type env = {
   pm : bool
   }
 
-exception Error of string
+exception Error of string * Loc.loc
 
-let error s = raise (Error s)
+let error s loc = raise (Error (s,loc))
 
 let add_var env x g t = { env with vars = SM.add x (g,t) env.vars }
 let add_ty env x g t = { env with types = SM.add x (g,t) env.types }
@@ -60,8 +60,15 @@ let to_logic_type t =
   and aux (Ty.C x) = aux' x in
   aux t
 
+let unify t1 t2 loc = 
+  try unify t1 t2 
+  with CannotUnify ->
+    error 
+      (Myformat.sprintf "type mismatch between %a and %a" 
+        U.print_node t1 U.print_node t2) loc
 
-let rec infer' env t = function
+
+let rec infer' env t loc = function
   | App (e1,e2) ->
       let nt = new_ty () and e = new_e () in
       let e1 = infer env (arrow nt t e) e1 in
@@ -72,25 +79,25 @@ let rec infer' env t = function
         let m,xt = SM.find x env.vars in
         let xt = if env.pm then to_logic_type xt else xt in
         let nt,i = to_uf_node m xt in
-        unify nt t;
+        unify nt t loc;
         Var (x, i), new_e ()
-      with Not_found -> error (sprintf "variable %s not found" x) end
+      with Not_found -> error (sprintf "variable %s not found" x) loc end
   | Const c -> 
-      unify t (const (Const.type_of_constant c));
+      unify t (const (Const.type_of_constant c)) loc;
       Const c, new_e ()
   | PureFun (x,xt,e) ->
       let nt,_ = to_uf_node Generalize.empty xt in
       let nt' = new_ty () in
       let env = add_var env x Generalize.empty xt in
       let e = infer env nt' e in
-      unify (parr nt nt') t;
+      unify (parr nt nt') t loc;
       PureFun (x,xt,e), new_e ()
   | Lam (x,xt,p,e,q) ->
       let nt,_ = to_uf_node Generalize.empty xt in
       let nt' = new_ty () in
       let env = add_var env x Generalize.empty xt in
       let e = infer {env with pm = false} nt' e in
-      unify (arrow nt nt' e.e) t;
+      unify (arrow nt nt' e.e) t loc;
       let p = 
         Misc.opt_map 
           (infer {env with pm = true} (parr (map e.e) (parr nt' prop))) p in
@@ -116,10 +123,10 @@ let rec infer' env t = function
   | Axiom e -> Axiom (infer env prop e), new_e ()
   | Logic t' -> 
       let nt, _ = to_uf_node Generalize.empty t' in
-      unify nt t; 
+      unify nt t loc; 
       Logic t', new_e ()
 and infer env t (e : ParseT.t) : Ast.Infer.t = 
-  let e',eff = infer' env t e.v in
+  let e',eff = infer' env t e.loc e.v in
   { v = e' ; t = t; e = eff; loc = e.loc }
 
 let infer e = 

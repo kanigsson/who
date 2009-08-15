@@ -1,1 +1,1 @@
-let f = (λ(x:nat) -> x [||]) in ()
+let f = (λ(x:nat) -> x ) in ()

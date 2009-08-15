@@ -84,7 +84,6 @@ let rec unify a b =
   | U _, T _ -> union b a
   | T _, U _ -> union a b
   | T t1, T t2 ->
-      union a b;
       begin match t1, t2 with
       | Ty.Var s1, Ty.Var s2 when s1 = s2 -> ()
       | Ty.Const c1, Ty.Const c2 when c1 = c2 -> ()
@@ -105,6 +104,9 @@ let rec unify a b =
       | _ , _ -> 
           raise CannotUnify
       end; 
+      (* We really should unify afterwards, in case of an exception beeing
+       * raised *)
+      union a b;
 and runify a b = 
   if Uf.equal a b then () else
   match Uf.desc a, Uf.desc b with

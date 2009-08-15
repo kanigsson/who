@@ -1,10 +1,9 @@
 let apply ['a 'b||e]=
 (λ(f:('a ->{|e } 'b)) ->
 (λ(x:'a) ->
-(f [||] x [||]){(λ(z:map{|e }) ->
-                (λ(k:'b) ->
-                (((snd [('a ->(map{ e e} ->prop)),(map{ e
-                  e} ->('b ->prop))||] f [||])
-                 z [||])
-                k [||])))}))
+(f  x ){(λ(z:map{|e }) ->
+        (λ(k:'b) ->
+        (((snd [('a ->(map{ e e} ->prop)),(map{ e e} ->('b ->prop))||] f )
+         z )
+        k )))}))
 in ()

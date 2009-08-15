@@ -23,8 +23,9 @@ let typing_env =
   let re = SS.add r se, se in
   let l = 
     [
-      "beq_z", (([a],[],[]), parr va (parr va (const Const.TBool)));
+      "beq_z", (([a],[],[]), parr va (parr va bool));
       "!", (([a],[r],[]), arrow (ref_ r va) va re);
+      ":=", (([a],[r],[]), parr (ref_ r va) (arrow va unit re));
       "snd", (([a;b],[],[]), parr (tuple va vb) vb);
       "fst", (([a;b],[],[]), parr (tuple va vb) va);
     ] in
