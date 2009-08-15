@@ -24,6 +24,7 @@ let mkr r = Uf.fresh (RT r)
 let new_r () = Uf.fresh RU
 let var s = mkt (Ty.Var s)
 let map e = mkt (Ty.Map e)
+let app v i = mkt (Ty.App (v,i))
 let parr t1 t2 = mkt (Ty.PureArr (t1,t2))
 
 let new_e () = Uf.fresh EU
@@ -99,6 +100,8 @@ let rec unify a b =
           eunify e1 e2
       | Ty.Ref (r1,t1), Ty.Ref (r2,t2) -> runify r1 r2; unify t1 t2
       | Ty.Map e1, Ty.Map e2 -> eunify e1 e2
+      | Ty.App (v1,i1), Ty.App (v2,i2) when v1 = v2 ->
+          Inst.iter2 unify runify eunify i1 i2
       | _ , _ -> 
           raise CannotUnify
       end; 
@@ -135,6 +138,7 @@ let to_ty, to_eff, to_r =
     | Ty.Ref (r,t) -> Ty.ref_ (rv r) (ty t)
     | Ty.Map e -> Ty.map (eff e)
     | Ty.PureArr (t1,t2) -> Ty.parr (ty t1) (ty t2)
+    | Ty.App (v,i) -> Ty.app v (Inst.map ty rv eff i) 
   and ty x = 
     try H.find h x 
     with Not_found -> 

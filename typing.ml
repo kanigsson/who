@@ -22,7 +22,7 @@ let rec typing' env  = function
         let g, t = type_of_var env s in
         Ty.allsubst g i t, Effect.empty
       with Not_found -> error (Myformat.sprintf "unknown variable: %s" s) end
-  | App (e1,e2) ->
+  | Ast.App (e1,e2) ->
       let t2,eff2 = typing env e2 in
       begin match typing env e1 with
       | C (Arrow (ta,tb,eff)), eff1 -> 
@@ -48,6 +48,11 @@ let rec typing' env  = function
       let t', eff = typing env e in
       if Effect.is_empty eff then parr t t', eff 
       else error "effectful pure function"
+  | Quant (_,x,t,e) ->
+      let env = add_var env x Generalize.empty t in
+      let t', eff = typing env e in
+      if Effect.is_empty eff && Ty.equal t' Ty.prop then Ty.prop, eff
+      else error "not of type prop"
   | Axiom e ->
       let t, eff = typing env e in
       t,eff

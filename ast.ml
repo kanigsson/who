@@ -1,6 +1,7 @@
 open Vars
 module U = Unify
 
+type quant = FA | EX
 type ('a,'b,'c) t'' =
   | Const of Const.t
   | Var of var * ('a,'b,'c) Inst.t
@@ -12,6 +13,7 @@ type ('a,'b,'c) t'' =
   | Axiom of ('a,'b,'c) t'
   | Logic of Ty.t
   | TypeDef of Ty.Generalize.t * Ty.t option * var * ('a,'b,'c) t'
+  | Quant of quant * var * Ty.t * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
 and ('a,'b,'c) post = 
   | PNone
@@ -40,6 +42,8 @@ let print pra prb prc fmt t =
     | Logic t -> fprintf fmt "logic %a" Ty.print t
     | TypeDef (g,t,x,e) -> 
         fprintf fmt "type %a =@ %a in@ %a" var x (opt_print Ty.print) t print e
+    | Quant (k,x,t,e) ->
+        fprintf fmt "@[%a (%a:%a).@ %a@]" quant k var x Ty.print t print e
   and print fmt t = print' fmt t.v
   and pre fmt = function
     | None -> ()
@@ -47,7 +51,10 @@ let print pra prb prc fmt t =
   and post fmt = function
     | PNone -> ()
     | PPlain f -> fprintf fmt "{%a}" print f
-    | PResult (r,f) -> fprintf fmt "{ %a : %a}" var r print f in
+    | PResult (r,f) -> fprintf fmt "{ %a : %a}" var r print f
+  and quant fmt = function
+    | FA -> pp_print_string fmt "forall"
+    | EX -> pp_print_string fmt "exists" in
    
   print fmt t
 
@@ -83,4 +90,5 @@ module ParseT = struct
   let lam x t p e q = mk (Lam (x,t,p,e,q))
   let pure_lam x t e = mk (PureFun (x,t,e))
   let typedef l t x e = mk (TypeDef (l,t,x,e))
+  let quant k x t e = mk (Quant (k,x,t,e))
 end

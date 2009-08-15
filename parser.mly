@@ -28,6 +28,10 @@
   let mk_pure_lam l e loc =
     List.fold_right (fun (x,t) acc -> pure_lam x t acc loc) l e
 
+  let mk_quant k l e loc = 
+    List.fold_right (fun (x,t) acc -> quant k x t acc loc) l e
+
+
 %}
 
 %token <int Loc.t> INT
@@ -39,9 +43,11 @@
 %token PLUS MINUS LE EQUAL STAR NEQ BEQUAL BNEQ
 %token EOF
 %token REF
-%token <Loc.loc> EXCLAM DEXCLAM IF FUN TRUE FALSE PTRUE PFALSE VOID LET AXIOM LOGIC TYPE
-%token COLON COMMA ASSIGN MID AND THEN ELSE LT GT ARROW BOOL TINT UNIT PROP
+%token <Loc.loc> EXCLAM DEXCLAM IF FUN TRUE FALSE PTRUE PFALSE VOID LET AXIOM
+%token <Loc.loc> LOGIC TYPE FORALL EXISTS
+%token COLON COMMA ASSIGN MID AND THEN ELSE LT GT ARROW BOOL TINT UNIT PROP DOT
 
+%nonassoc forall
 %nonassoc let_
 %right ARROW
 %nonassoc ifprec
@@ -66,17 +72,27 @@ tconstant:
 stype:
   | x = tconstant { Ty.const x }
   | v = TYVAR { Ty.var v }
+  | LPAREN t = ty RPAREN { t }
+  | i = inst v = ident_no_pos { Ty.app v i }
 
 effect:
   | lr = list(ident_no_pos) MID le =  list(ident_no_pos) 
     { list_to_set lr, list_to_set le}
+
+sepeffect:
+  | LCURL e = effect RCURL { e }
+
 ty:
   | t = stype { t }
   | t1 = ty ARROW t2 = ty { Ty.parr t1 t2 }
-  | t1 = ty ARROW LCURL e = effect RCURL t2 = ty %prec ARROW { Ty.arrow t1 t2 e }
+  | t1 = ty ARROW e = sepeffect t2 = ty %prec ARROW { Ty.arrow t1 t2 e }
   | t1 = ty STAR t2 = ty { Ty.tuple t1 t2 }
   | LT e = effect GT { Ty.map e }
   | REF LPAREN id = ident_no_pos COMMA t = ty  RPAREN { Ty.ref_ id t }
+
+inst:
+  LBRACKET tl = list(ty) MID rl = list(ident_no_pos) MID el = list(sepeffect) RBRACKET
+  { tl, rl, el }
 
 constant:
   |  n = INT    { n.info, Const.Int n.c }
@@ -124,6 +140,10 @@ nterm:
       mk_lam l (snd p) e (snd q) (embrace sp (fst q)) }
   | sp = FUN l = arglist ARROW e = nterm 
     { mk_pure_lam l e (embrace sp e.loc) }
+  | sp = FORALL l = arglist DOT e = nterm %prec forall
+    { mk_quant FA l e (embrace sp e.loc) }
+  | sp = EXISTS l = arglist DOT e = nterm %prec forall
+    { mk_quant EX l e (embrace sp e.loc) }
   | b = letwithoutargs EQUAL t = nterm IN t2 = nterm %prec let_
     { let p,x,l = b in
       let_ l t x t2 p}
@@ -180,9 +200,9 @@ decl:
   | b = letwithargs EQUAL t1 = nterm
     { let p,x,l,args = b in
       let_ l (mk_pure_lam args t1 p) x (const (Const.Void) p) (embrace p t1.loc) }
-  | p = AXIOM x = ident_no_pos l = optgen EQUAL t = nterm
+  | p = AXIOM x = ident_no_pos l = optgen COLON t = nterm
     { let_ l (mk (Axiom t) p) x (const (Const.Void) p) (embrace p t.loc) }
-  | p = LOGIC x = ident_no_pos l = optgen EQUAL t = ty
+  | p = LOGIC x = ident_no_pos l = optgen COLON t = ty
     { let_ l (mk (Logic t) p) x (const (Const.Void) p) p }
   | p = TYPE x = ident_no_pos l = optgen
     { typedef l None x (const (Const.Void) p) p }

@@ -1,0 +1,8 @@
+type array ['a||]
+
+logic get ['a||] : int -> ['a||] array -> 'a
+logic set ['a||] : int -> 'a -> ['a||] array -> ['a||] array
+
+axiom get_set_eq ['a||] : 
+  forall (t : ['a||] array) (i : int) (z : 'a).  get i (set i z t) = z
+

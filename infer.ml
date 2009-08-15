@@ -53,6 +53,7 @@ let to_uf_node (tl,rl,el) x =
     | Ty.Ref (r,t) -> ref_ (auxr r) (f t)
     | Ty.Map e -> map (eff e)
     | Ty.PureArr (t1,t2) -> parr (f t1) (f t2)
+    | Ty.App (v,i) -> Unify.app v (Inst.map real auxr eff i) 
   and aux f (Ty.C x) = aux' f x 
   and real x = ymemo aux x
   and auxr r = try HT.find rh r with Not_found -> mkr r
@@ -73,6 +74,7 @@ let to_logic_type t =
         Ty.tuple (Ty.parr t1 (Ty.parr (Ty.map e) (Ty.prop)))
           (Ty.parr (Ty.map e) (Ty.parr t2 (Ty.prop)))
     | Ty.Ref (x,t) -> Ty.ref_ x t
+    | Ty.App (v,i) -> Ty.app v i 
   and aux (Ty.C x) = aux' x in
   aux t
 
@@ -109,6 +111,11 @@ let rec infer' env t loc = function
       let e = infer env nt' e in
       unify (parr nt nt') t loc;
       PureFun (x,xt,e), new_e ()
+  | Quant (k,x,xt,e) ->
+      let env = add_var env x Ty.Generalize.empty xt in
+      let e = infer env t e in
+      unify prop t loc;
+      Quant (k,x,xt,e), new_e ()
   | Lam (x,xt,p,e,q) ->
       let nt,_ = to_uf_node Ty.Generalize.empty xt in
       let nt' = new_ty () in
@@ -163,6 +170,7 @@ let rec recon' = function
   | Const c -> Const c
   | App (e1,e2) -> App (recon e1, recon e2)
   | PureFun (x,t,e) -> PureFun (x,t,recon e)
+  | Quant (k,x,t,e) -> Quant (k,x,t,recon e)
   | Lam (x,ot,p,e,q) -> 
       Lam (x,ot, Misc.opt_map recon p, recon e, post q)
   | Let (g,e1,x,e2) -> Let (g, recon e1, x, recon e2)

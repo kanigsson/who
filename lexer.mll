@@ -21,9 +21,11 @@ let id_or_keyword =
         ("True", fun i -> PTRUE (create_info i) );
         ("False", fun i -> PFALSE (create_info i) );
         ("let", fun i -> LET (create_info i)  );
-        ("axiom", fun i -> LOGIC (create_info i)  );
-        ("logic", fun i -> AXIOM (create_info i)  );
+        ("axiom", fun i -> AXIOM (create_info i)  );
+        ("logic", fun i -> LOGIC (create_info i)  );
         ("type", fun i -> TYPE (create_info i)  );
+        ("forall", fun i -> FORALL (create_info i)  );
+        ("exists", fun i -> EXISTS (create_info i)  );
         ("bool", fun i -> BOOL  );
         ("int", fun i -> TINT  );
         ("unit", fun i -> UNIT  );
@@ -81,6 +83,7 @@ rule token = parse
   | '*' { STAR  }
   | ':' { COLON }
   | ',' { COMMA }
+  | '.' { DOT }
   | "<=" { LE  }
   | "/\\" { AND }
   | '<' { LT  }

@@ -6,6 +6,7 @@ type ('a,'b,'c) t' =
   | Tuple of 'a * 'a
   | Arrow of 'a * 'a * 'c
   | PureArr of 'a * 'a
+  | App of tvar * ('a,'b,'c) Inst.t
   | Ref of 'b * 'a
   | Map of 'c
 type t = C of (t,rvar,Effect.t) t'
@@ -33,6 +34,7 @@ val subst : tvar -> t -> t -> t
 val rsubst : rvar -> rvar -> t -> t
 val lsubst : tvar list -> t list -> t -> t
 val rlsubst : rvar list -> rvar list -> t -> t
+val app : tvar -> (t,rvar,Effect.t) Inst.t -> t
 
 val equal : t -> t -> bool
 

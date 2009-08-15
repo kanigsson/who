@@ -5,6 +5,7 @@ type ('a,'b,'c) t' =
   | Tuple of 'a * 'a
   | Arrow of 'a * 'a * 'c
   | PureArr of 'a * 'a
+  | App of tvar * ('a,'b,'c) Inst.t
   | Ref of 'b * 'a
   | Map of 'c
 type t = C of (t,rvar,Effect.t) t'
@@ -21,6 +22,7 @@ let print' pt pr pe fmt = function
   | Const c -> Const.print_ty fmt c
   | Ref (r,t) -> fprintf fmt "ref(%a,%a)" pr r pt t
   | Map e -> fprintf fmt "map%a" pe e
+  | App (v,i) -> fprintf fmt "%a%a" tvar v (Inst.print pt pr pe) i
 
 let rec print fmt (C x) = 
   print' print pp_print_string Effect.print fmt x
@@ -34,6 +36,7 @@ let tuple t1 t2 = C (Tuple (t1,t2))
 let const c = C (Const c)
 let ref_ r t = C (Ref (r,t))
 let map e = C (Map e)
+let app v i = C (App (v,i))
 
 let unit = const (Const.TUnit)
 let prop = const (Const.TProp)
@@ -52,6 +55,7 @@ let subst x t target =
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
     | Arrow (t1,t2,eff) -> Arrow (aux t1, aux t2,eff) 
     | Ref (r,t) -> Ref (r, aux t)
+    | App (v,i) -> App (v,Inst.map aux Misc.id Misc.id i) 
   and aux (C x) = C (aux' x) in
   aux target
 
@@ -63,6 +67,7 @@ let rsubst x t target =
     | Arrow (t1,t2,eff) -> Arrow (aux t1, aux t2,effsubst eff) 
     | Ref (r,t) -> Ref (auxr r, aux t)
     | Map e -> Map (effsubst e)
+    | App (v,i) -> App (v, Inst.map aux auxr effsubst i)
   and auxr r = if r = x then t else r
   and effsubst (rl,el) = Effect.map auxr rl, el
   and aux (C x) = C (aux' x) in
@@ -73,10 +78,12 @@ let esubst e eff target =
     | (Var _ | Const _ ) as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
-    | Arrow (t1,t2,eff') -> Arrow (aux t1, aux t2,Effect.subst e eff eff') 
-    | Map eff' -> Map (Effect.subst e eff eff')
+    | Arrow (t1,t2,eff') -> Arrow (aux t1, aux t2,effsubst eff') 
+    | Map eff' -> Map (effsubst eff')
     | Ref (r,t) -> Ref (r, aux t)
-  and aux (C x) = C (aux' x) in
+    | App (v,i) -> App (v, Inst.map aux Misc.id effsubst i)
+  and aux (C x) = C (aux' x) 
+  and effsubst eff' = Effect.subst e eff eff' in
   aux target
 
 let lsubst = List.fold_right2 subst
