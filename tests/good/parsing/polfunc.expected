@@ -1,0 +1,3 @@
+let f [||e]=
+(λ(g:(nat ->{|e } nat)) ->
+{(((fst  g ) 5) cur )}(g  5){ r : (((((snd  g ) 5) old ) cur ) r )}) in ()

@@ -22,7 +22,7 @@ let prety eff = parr (map eff) prop
 let postty eff t = parr (map eff) (parr (map eff) (parr t prop)) 
 
 open Format
-(* TODO logic typing *)
+(* TODO hybrid environment *)
 let rec formtyping' env loc = function
   | Ast.Const c -> Ty.const (Const.type_of_constant c)
   |Ast.Var (s,i) -> 

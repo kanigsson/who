@@ -18,5 +18,6 @@ let typing_env =
       ":=", (([a],[r],[]), parr (ref_ r va) (arrow va unit re));
       "snd", (([a;b],[],[]), parr (tuple va vb) vb);
       "fst", (([a;b],[],[]), parr (tuple va vb) va);
+      "+", (([],[],[]), parr int (parr int int));
     ] in
   List.fold_left (fun acc (x,s) -> SM.add x s acc) SM.empty l

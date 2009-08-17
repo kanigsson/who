@@ -1,7 +1,7 @@
 let apply ['a 'b ||e] (f : 'a ->{|e} 'b) (x : 'a) = 
   {} 
   f x 
-  { k : snd f cur k }
+  { k : snd f x old cur k }
 
 let main [|r|] (x:ref(r,int)) =
   {}

@@ -53,7 +53,8 @@ let to_logic_type t =
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)
     | Arrow (t1,t2,e) -> 
-        tuple (parr t1 (parr (map e) (prop))) (parr (map e) (parr t2 (prop)))
+        tuple (parr t1 (parr (map e) (prop))) 
+          (parr t1 (parr (map e) (parr (map e) (parr t2 (prop)))))
     | Ref (x,t) -> ref_ x t
     | App (v,i) -> app v i 
   and aux (C x) = aux' x in

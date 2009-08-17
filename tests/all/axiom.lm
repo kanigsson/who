@@ -1,0 +1,1 @@
+axiom a : forall (x : int). x = 0

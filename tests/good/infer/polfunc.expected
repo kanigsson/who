@@ -1,0 +1,16 @@
+let f [||e]=
+(λ(g:(nat ->{|e } nat)) ->
+{(λ(cur:map{|e }) ->
+ (((fst [(nat ->(map{ e e} ->prop)),(nat ->(map{ e e} ->(map{ e
+   e} ->(nat ->prop))))||] g )
+  5)
+ cur ))}(g  5){(λ(old:map{|e }) ->
+               (λ(cur:map{|e }) ->
+               (λ(r:nat) ->
+               (((((snd [(nat ->(map{ e e e} ->prop)),(nat ->(map{ e e
+                   e} ->(map{ e e e} ->(nat ->prop))))||] g )
+                  5)
+                 old )
+                cur )
+               r ))))})
+in ()

@@ -1,0 +1,5 @@
+let f [||e] (g : int -> {|e} int) =
+  { fst g 5 cur }
+    g 5
+  { r : snd g 5 old cur r }
+

@@ -103,9 +103,9 @@ constant:
   |  p = VOID   { p, Const.Void }
 
 %inline infix:
-  | MINUS { "Zminus" }
-  |  PLUS { "Zplus" }
-  |  STAR { "Zmult" }
+  | MINUS { "-" }
+  |  PLUS { "+" }
+  |  STAR { "*" }
   | ASSIGN { ":=" }
   | LE { "Zleb" }
   | LT { "Zltb" }

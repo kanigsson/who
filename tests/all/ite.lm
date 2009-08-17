@@ -1,0 +1,2 @@
+let f (b : bool) = 
+  {} if b then 5 else 3 {}

@@ -1,6 +1,6 @@
 let apply ['a 'b||e]=
-(λ(f:('a ->{|e } 'b)) -> (λ(x:'a) -> (f  x ){ k : (((snd  f ) cur ) k )}))
-in
+(λ(f:('a ->{|e } 'b)) ->
+(λ(x:'a) -> (f  x ){ k : (((((snd  f ) x ) old ) cur ) k )})) in
 let main [|r|]=
 (λ(x:ref(r,nat)) ->
 ((apply  (λ(z:unit) -> ((:=  x ) 0){((=  ((!!  x ) cur )) 0)})) ()){
