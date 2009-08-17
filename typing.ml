@@ -16,6 +16,7 @@ let type_of_var env x = SM.find x env.types
 
 let ftype_of_var env x = 
   let m,t = type_of_var env x in
+(*   Format.printf "ftype_of_var : %a of type %a@." Vars.var x Ty.print t; *)
   m, to_logic_type t
 
 let prety eff = parr (map eff) prop
@@ -28,7 +29,9 @@ let rec formtyping' env loc = function
   |Ast.Var (s,i) -> 
       begin try 
         let g, t = ftype_of_var env s in
-        Ty.allsubst g i t
+        let r = Ty.allsubst g i t in
+(*         printf "var : %a of type %a@." Vars.var s Ty.print r; r *)
+        r
       with Not_found -> 
         error (Myformat.sprintf "unknown variable: %s" s) loc 
       end
@@ -64,6 +67,7 @@ let rec formtyping' env loc = function
       let env = add_var env x tl t in
       let t = formtyping env e2 in
       t
+  | Param _ -> error "effectful parameter in logic" loc
 and formtyping env (e : Ast.Recon.t) : Ty.t =
 (*   Myformat.printf "formtyping %a@." Ast.Recon.print e; *)
   let t = formtyping' env e.loc e.v in
@@ -71,7 +75,7 @@ and formtyping env (e : Ast.Recon.t) : Ty.t =
     if Effect.is_empty e.e then t
     else error (Myformat.sprintf "not empty: %a" Effect.print e.e) e.loc
   else
-    error (Myformat.sprintf "annotation mismatch: %a and %a@." 
+    error (Myformat.sprintf "fannotation mismatch: %a and %a@." 
              Ty.print e.t Ty.print t) e.loc
 and pre env eff = function
   | None -> ()
@@ -110,6 +114,7 @@ and typing' env loc = function
       let env = add_var env x tl t in
       let t, eff2 = typing env e2 in
       t, Effect.union eff1 eff2
+  | Param (t,e) -> t,e
   | TypeDef (tl,t,x,e) -> typing env e
   | PureFun (x,t,e) ->
       let env = add_svar env x t in
@@ -148,4 +153,4 @@ and fis_oftype env t e =
       (Myformat.sprintf "typing mismatch: %a and %a" Ty.print t Ty.print t') 
       e.loc
 
-let typing t = ignore (typing { types = Initial.typing_env; } t)
+let typing t = ignore (typing { types = SM.empty; } t)

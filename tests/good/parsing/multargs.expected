@@ -1,0 +1,55 @@
+let /\ = logic (prop ->(prop ->prop)) in let
+-> = logic (prop ->(prop ->prop)) in let = ['a||]= logic ('a ->('a ->prop))
+in let <> ['a||]= logic ('a ->('a ->prop)) in let
+== ['a||]= logic ('a ->('a ->bool)) in let
+!= ['a||]= logic ('a ->('a ->bool)) in let
+!! ['a|r|e]= logic (ref(r,'a) ->(map{|e } ->'a)) in let
+! ['a|r|]=
+          (λ(x:ref(r,'a)) ->  param('a,{r |})
+          { r : ((/\  ((=  ((!!  x ) cur )) r ))
+                ((=  ((!!  x ) old )) ((!!  x ) cur )))}) in let
+:= ['a|r|e]=
+            (λ(x:ref(r,'a)) ->
+            (λ(v:'a) ->  param(unit,{r |}) {((=  ((!!  x ) cur )) v )})) in
+let fst ['a 'b||]= logic (('a * 'b) ->'a) in let snd ['a
+'b||]= logic (('a * 'b) ->'b) in let + = logic (nat ->(nat ->nat)) in let
+- = logic (nat ->(nat ->nat)) in let * = logic (nat ->(nat ->nat)) in let
+< = logic (nat ->(nat ->prop)) in let <= = logic (nat ->(nat ->prop)) in let
+> = logic (nat ->(nat ->prop)) in let <= = logic (nat ->(nat ->prop)) in let
+max = logic (nat ->(nat ->nat)) in let min = logic (nat ->(nat ->nat)) in let
+pre ['a 'b||]= (λ(x:('a * 'b)) -> (fst  x )) in let post ['a
+'b||]= (λ(x:('a * 'b)) -> (snd  x )) in let
+forto [||e]=
+            (λ(inv:(nat ->(map{|e } ->prop))) ->
+            (λ(start:nat) ->
+            (λ(end_:nat) ->
+            (λ(f:(nat ->{|e } unit)) ->
+            {((/\  ((inv  start ) cur ))
+             forall (i:nat).
+             ((->  ((/\  ((<=  start ) i )) ((<=  i ) end_ )))
+             forall (m:map{|e }).
+             ((->  ((inv  i ) m ))
+             ((/\  (((pre  f ) i ) m ))
+             forall (n:map{|e }).
+             ((->  (((((post  f ) i ) m ) n ) ())) ((inv  ((+  i ) 1)) n ))))))}
+            param(unit,{|e }) {((inv  ((max  start ) ((+  end_ ) 1))) cur )}))))
+in let
+fordownto [||e]=
+                (λ(inv:(nat ->(map{|e } ->prop))) ->
+                (λ(start:nat) ->
+                (λ(end_:nat) ->
+                (λ(f:(nat ->{|e } unit)) ->
+                {((/\  ((inv  start ) cur ))
+                 forall (i:nat).
+                 ((->  ((/\  ((<=  start ) i )) ((<=  i ) end_ )))
+                 forall (m:map{|e }).
+                 ((->  ((inv  i ) m ))
+                 ((/\  (((pre  f ) i ) m ))
+                 forall (n:map{|e }).
+                 ((->  (((((post  f ) i ) m ) n ) ()))
+                 ((inv  ((-  i ) 1)) n ))))))}
+                param(unit,{|e })
+                {((inv  ((min  start ) ((-  end_ ) 1))) cur )})))) in let
+f = (λ(x:nat) -> (λ(y:nat) ->  ((+  x ) y ) { r : ((=  ((+  x ) y )) r )}))
+in
+()

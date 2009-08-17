@@ -1,0 +1,3 @@
+type array ['a||]
+
+logic get ['a||] : ['a||] array -> int -> 'a

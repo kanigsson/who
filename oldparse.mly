@@ -42,10 +42,6 @@ formula:
     { embrace b.loc f.loc (FTyGen (strip_info l, f)) }
   | f = formbinder(EXISTS,DOT) { f }
 
-formbinder(bind,sep):
-  | b = bind idl = sfunargs sep f = formula %prec forall
-    { embrace b.loc f.loc (make_binder b.v idl f).v }
-
 aterm:
   | f = enclosed_dcurl(formula) { Loc.mk f.loc (PPure f) } 
   | l = LPAREN e = nterm COLON t = aftype r =  RPAREN 
@@ -54,16 +50,7 @@ aterm:
 appterm:
   | REF LCURL i = IDENT RCURL t = aterm { Loc.mk t.loc (PRef(i.v,t)) }
 
-todownto:
-  | TO { `To}
-  | DOWNTO { `Downto}
-
 nterm:
-  | st = FOR i = IDENT EQUAL e1 = nterm dir = todownto e2 = nterm DO 
-       p = pre
-       e3 = nterm 
-    en = DONE
-    { embrace st en (PFor (i.v, e1, e2, e3, p, dir)) }
   | p = LETREGION l = sfunargs IN t = nterm
     { Loc.mk (embrace' p t.loc) (PLetReg (List.map (fun (x,t) -> x.v,t) l,t)) }
 
@@ -89,9 +76,5 @@ decl:
   | REGION xl = sfunargs
     { DRegion (List.map (fun (x,t) -> x.v, t) xl) }
   | CAP xl = nonempty_list(IDENT) { DCap (strip_info xl) }
-  | PARAMETER id = IDENT gl = genlist al = sfunargs COLON
-    t = aftype e = enclosed_curl(effect) p = pre q = post
-    { let al = List.map (fun (x,t) -> x.v, t) al in
-      DParam (id.v,gl,al,(t,e),p,q) }
 
 main: l = nonempty_list(decl) EOF { l }

@@ -15,6 +15,7 @@ exception Error of string * Loc.loc
 let error s loc = raise (Error (s,loc))
 
 let add_var env x g t = { env with vars = SM.add x (g,t) env.vars }
+let add_svar env x t = add_var env x Ty.Generalize.empty t
 let add_ty env x g t = { env with types = SM.add x (g,t) env.types }
 
 let ymemo ff =
@@ -64,6 +65,15 @@ let to_uf_node (tl,rl,el) x =
         (SS.fold (fun x acc -> auxe x :: acc) el []) in 
   real x, (tn,rn,en)
 
+let to_uf_enode (rl,el) = 
+    if SS.is_empty rl && SS.cardinal el = 1 then mke (SS.choose el)
+    else
+      effect (SS.fold (fun x acc -> mkr x :: acc) rl [])
+        (SS.fold (fun x acc -> mke x :: acc) el [])
+
+
+let sto_uf_node x = fst (to_uf_node Ty.Generalize.empty x)
+
 let pref eff (p : ParseT.t) = 
   Ast.ParseT.pure_lam "cur" (Ty.map (to_eff eff)) p p.loc
 
@@ -92,26 +102,29 @@ let rec infer' env t loc = function
       unify t (const (Const.type_of_constant c)) loc;
       Const c, new_e ()
   | PureFun (x,xt,e) ->
-      let nt,_ = to_uf_node Ty.Generalize.empty xt in
+      let nt = sto_uf_node xt in
       let nt' = new_ty () in
-      let env = add_var env x Ty.Generalize.empty xt in
+      let env = add_svar env x xt in
       let e = infer env nt' e in
       unify (parr nt nt') t loc;
       PureFun (x,xt,e), new_e ()
   | Quant (k,x,xt,e) ->
-      let env = add_var env x Ty.Generalize.empty xt in
+      let env = add_svar env x xt in
       let e = infer env t e in
       unify prop t loc;
       Quant (k,x,xt,e), new_e ()
   | Lam (x,xt,p,e,q) ->
-      let nt,_ = to_uf_node Ty.Generalize.empty xt in
+      let nt = sto_uf_node xt in
       let nt' = new_ty () in
-      let env = add_var env x Ty.Generalize.empty xt in
+      let env = add_svar env x xt in
       let e = infer {env with pm = false} nt' e in
       unify (arrow nt nt' e.e) t loc;
       let p = pre env e.e p in
       let q = post env e.e nt' q in
       Lam (x,xt,p,e,q), new_e ()
+  | Param (t',e) -> 
+      unify t (sto_uf_node t') loc;
+      Param (t',e), to_uf_enode e
   | TypeDef (g,t',x,e) -> 
       let env = add_ty env x g t' in
       let e = infer env t e in
@@ -130,8 +143,21 @@ let rec infer' env t loc = function
   | Axiom e -> 
       unify prop t loc;
       Axiom (infer env prop e), new_e ()
+  | For (dir,inv,i,body) ->
+      let env = add_svar env i Ty.int in
+      let body = infer env unit body in
+      let inv = pre env body.e 
+
+    (* pre : λcur. start <= i /\ i <= end_ /\ inv *)
+    (* post : λold.λcurλ(). inv[i -> i + 1] *)
+    (* λi.{pre} body {post} *)
+    let forterm = mk (For (dir,inv,i.c,body)) pos in
+  let em = Ty.Generalize.empty in
+    (* let start = start and end_ = end_ in 
+       forvar inv start end_ body *)
+    let_ em start "%%start" (let_ em end_ "%%end_" forterm end_.loc) start.loc
   | Logic t' -> 
-      let nt, _ = to_uf_node Ty.Generalize.empty t' in
+      let nt = sto_uf_node t' in
       unify nt t loc; 
       Logic t', new_e ()
 
@@ -148,7 +174,7 @@ and post env eff t = function
   | PResult (r,f) ->
       PPlain (infer {env with pm = true} (postty eff t) (postf eff t r f))
 
-let initial = { vars = Initial.typing_env; pm = false; 
+let initial = { vars = SM.empty; pm = false; 
                 types = SM.empty; curloc = Loc.dummy; }
 let infer e = 
   let nt = new_ty () in
@@ -162,6 +188,7 @@ let rec recon' = function
   | Quant (k,x,t,e) -> Quant (k,x,t,recon e)
   | Lam (x,ot,p,e,q) -> 
       Lam (x,ot, Misc.opt_map recon p, recon e, post q)
+  | Param (t,e) -> Param (t,e)
   | Let (g,e1,x,e2) -> Let (g, recon e1, x, recon e2)
   | Ite (e1,e2,e3) -> Ite (recon e1, recon e2, recon e3)
   | Axiom e -> Axiom (recon e)

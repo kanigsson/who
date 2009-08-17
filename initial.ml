@@ -3,6 +3,7 @@ module SM = Misc.StringMap
 module SS = Misc.SS
 
 open Ty
+(*
 let typing_env = 
   let a = "a" and b = "b" and r = "r" and ev = "e" in
   let va = var a and vb = var b and re = Effect.rsingleton r 
@@ -19,5 +20,8 @@ let typing_env =
       "snd", (([a;b],[],[]), parr (tuple va vb) vb);
       "fst", (([a;b],[],[]), parr (tuple va vb) va);
       "+", (([],[],[]), parr int (parr int int));
+      "/\\", (([],[],[]), parr prop (parr prop prop));
+      "->", (([],[],[]), parr prop (parr prop prop));
     ] in
   List.fold_left (fun acc (x,s) -> SM.add x s acc) SM.empty l
+*)

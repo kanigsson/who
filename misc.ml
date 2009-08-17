@@ -63,3 +63,7 @@ let fold_map f acc l =
 let opt_map f = function
   | None -> None
   | Some x -> Some (f x)
+
+let build_string_map sl vl = 
+  List.fold_left2 (fun acc k v -> StringMap.add k v acc) 
+    StringMap.empty sl vl

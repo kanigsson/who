@@ -1,0 +1,51 @@
+logic /\ : prop -> prop -> prop
+logic -> : prop -> prop -> prop
+logic = ['a||] : 'a -> 'a -> prop
+logic <> ['a||] : 'a -> 'a -> prop
+
+logic == ['a||] : 'a -> 'a -> bool
+logic != ['a||] : 'a -> 'a -> bool
+logic !! ['a|r|e] : ref(r,'a) -> <|e> -> 'a
+
+parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r|} =
+  {}
+  {r : !!x = r /\ !!x|old = !!x}
+
+parameter := ['a|r|e] (x : ref(r,'a)) (v : 'a) : unit, {r|} =
+  {}
+  { !!x = v}
+
+logic fst ['a 'b||] : 'a * 'b -> 'a
+logic snd ['a 'b||] : 'a * 'b -> 'b
+logic + : int -> int -> int
+logic - : int -> int -> int
+logic * : int -> int -> int
+logic < : int -> int -> prop
+logic <= : int -> int -> prop
+logic > : int -> int -> prop
+logic <= : int -> int -> prop
+logic max : int -> int -> int
+logic min : int -> int -> int
+
+let pre ['a 'b||]  (x : 'a * 'b) = fst x
+let post ['a 'b||] (x : 'a * 'b) = snd x
+
+parameter forto [||e] (inv : <|e> -> int -> prop) (start end_ : int) 
+  (f : int ->{|e} unit) : unit, {|e} =
+    { inv cur start /\
+          forall (i : int). start <= i /\ i <= end_ ->
+          forall (m : <|e>) . inv m i -> pre f i m /\
+          forall (n : <|e>). post f i m n () -> inv n (i+1)
+    }
+    { inv cur (max start (end_ + 1))} 
+
+
+parameter fordownto [||e] (inv : <|e> -> int -> prop) (start end_ : int) 
+  (f : int ->{|e} unit) : unit, {|e} =
+    { inv cur start /\
+          forall (i : int). start <= i /\ i <= end_ ->
+          forall (m : <|e>) . inv m i -> pre f i m /\
+          forall (n : <|e>). post f i m n () -> inv n (i-1)
+    }
+    { inv cur (min start (end_ - 1)) }
+

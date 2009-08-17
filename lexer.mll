@@ -23,13 +23,21 @@ let id_or_keyword =
         ("let", fun i -> LET (create_info i)  );
         ("axiom", fun i -> AXIOM (create_info i)  );
         ("logic", fun i -> LOGIC (create_info i)  );
+        ("parameter", fun i -> PARAMETER (create_info i)  );
         ("type", fun i -> TYPE (create_info i)  );
         ("forall", fun i -> FORALL (create_info i)  );
         ("exists", fun i -> EXISTS (create_info i)  );
+        ("for", fun i -> FOR (create_info i)  );
+        ("to", fun i -> TO (create_info i)  );
+        ("downto", fun i -> DOWNTO (create_info i)  );
+        ("do", fun i -> DO );
+        ("done", fun i -> DONE (create_info i)  );
         ("bool", fun i -> BOOL  );
         ("int", fun i -> TINT  );
         ("unit", fun i -> UNIT  );
         ("prop", fun i -> PROP  );
+        ("begin", fun i -> BEGIN (create_info i));
+        ("end", fun i -> END (create_info i) );
         ("ref", fun i -> REF  );
         ("in", fun i -> IN );
         ("if", fun i -> IF (create_info i) );
@@ -64,10 +72,10 @@ rule token = parse
   { INT (Loc.mk (create_info lexbuf) (int_of_string i)) }
   | identifier as i { id_or_keyword i lexbuf}
   | tyvar as tv { TYVAR tv}
-  | "->" { ARROW }
-  | "==" { BEQUAL }
-  | '=' { EQUAL }
-  | "<>" { NEQ }
+  | "->" { ARROW (create_info lexbuf) }
+  | "==" { BEQUAL (create_info lexbuf) }
+  | '=' { EQUAL (create_info lexbuf) }
+  | "<>" { NEQ (create_info lexbuf) }
   | "()" { VOID (create_info lexbuf)  }
   | '(' { LPAREN (create_info lexbuf)  }
   | ')' { RPAREN (create_info lexbuf)  }
@@ -76,20 +84,20 @@ rule token = parse
   | '{' { LCURL (create_info lexbuf) }
   | '}' { RCURL   }
   | "!!" { DEXCLAM (create_info lexbuf) }
-  | "!=" { BNEQ }
+  | "!=" { BNEQ (create_info lexbuf) }
   | '!' { EXCLAM (create_info lexbuf) }
-  | ":=" { ASSIGN   }
+  | ":=" { ASSIGN (create_info lexbuf)   }
   | '|' { MID   }
-  | '*' { STAR  }
+  | '*' { STAR (create_info lexbuf)  }
   | ':' { COLON }
-  | ',' { COMMA }
+  | ',' { COMMA (create_info lexbuf) }
   | '.' { DOT }
-  | "<=" { LE  }
-  | "/\\" { AND }
-  | '<' { LT  }
-  | '>' { GT  }
-  | '+' { PLUS  }
-  | '-' { MINUS  }
+  | "<=" { LE (create_info lexbuf)  }
+  | "/\\" { AND (create_info lexbuf) }
+  | '<' { LT (create_info lexbuf)  }
+  | '>' { GT (create_info lexbuf)  }
+  | '+' { PLUS (create_info lexbuf)  }
+  | '-' { MINUS (create_info lexbuf)  }
   | "(*" { comment lexbuf; token lexbuf }
   | eof { EOF  }
   | '\n' { incr_linenum lexbuf ; token lexbuf }

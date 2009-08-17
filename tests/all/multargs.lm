@@ -1,0 +1,4 @@
+let f ( x y : int)=
+  { }
+  x + y
+  { r : x + y = r }

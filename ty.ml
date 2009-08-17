@@ -60,10 +60,14 @@ let to_logic_type t =
   and aux (C x) = aux' x in
   aux t
 
-let subst x t target =
+module SM = Misc.StringMap
+let tlsubst xl tl target = 
+  let map = Misc.build_string_map xl tl in
   let rec aux' = function
-    | Var y when x = y -> let C t = t in t
-    | (Var _ | Const _ | Map _ ) as x -> x
+    | (Var y as t)-> 
+        begin try let C t = SM.find y map in t
+        with Not_found -> t end
+    | (Const _ | Map _ ) as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
     | Arrow (t1,t2,eff) -> Arrow (aux t1, aux t2,eff) 
@@ -72,7 +76,8 @@ let subst x t target =
   and aux (C x) = C (aux' x) in
   aux target
 
-let rsubst x t target =
+let rlsubst rvl rl target = 
+  let map = Misc.build_string_map rvl rl in
   let rec aux' = function
     | (Var _ | Const _) as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
@@ -81,12 +86,12 @@ let rsubst x t target =
     | Ref (r,t) -> Ref (auxr r, aux t)
     | Map e -> Map (effsubst e)
     | App (v,i) -> App (v, Inst.map aux auxr effsubst i)
-  and auxr r = if r = x then t else r
+  and auxr r = try SM.find r map with Not_found -> r
   and effsubst (rl,el) = Effect.map auxr rl, el
   and aux (C x) = C (aux' x) in
   aux target
 
-let esubst e eff target = 
+let elsubst evl effl target = 
   let rec aux' = function
     | (Var _ | Const _ ) as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
@@ -96,12 +101,8 @@ let esubst e eff target =
     | Ref (r,t) -> Ref (r, aux t)
     | App (v,i) -> App (v, Inst.map aux Misc.id effsubst i)
   and aux (C x) = C (aux' x) 
-  and effsubst eff' = Effect.subst e eff eff' in
+  and effsubst eff' = Effect.lsubst evl effl eff' in
   aux target
-
-let lsubst = List.fold_right2 subst
-let rlsubst = List.fold_right2 rsubst
-let elsubst = List.fold_right2 esubst
 
 module Generalize = struct
   type ty = t
@@ -119,7 +120,7 @@ module Generalize = struct
 end
 
 let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target = 
-  elsubst evl el (rlsubst rvl rl (lsubst tvl tl target))
+  elsubst evl el (rlsubst rvl rl (tlsubst tvl tl target))
 
 let rec equal' t1 t2 = 
   match t1, t2 with

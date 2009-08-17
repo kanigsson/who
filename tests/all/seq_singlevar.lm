@@ -1,0 +1,13 @@
+let seq [||e] (f : unit -> {|e} unit ) (g : unit -> {|e} unit) = 
+{ fst f () cur /\ 
+  forall (i : <|e>). True /\ snd f () cur i () -> fst g () i  }
+  let x = f () in 
+    g ()
+{ exists (i : <|e>). (snd f () old i () /\ snd g () i cur () ) } 
+
+let z [|r|] (x :ref(r,int)) = 
+  {}
+  seq (fun (z : unit) -> {} x := 0 { !!x = 0} ) 
+      (fun (z : unit) -> {} x := 1 { !!x = 1})
+  {!!x = 1}
+

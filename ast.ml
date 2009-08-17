@@ -14,6 +14,8 @@ type ('a,'b,'c) t'' =
   | Logic of Ty.t
   | TypeDef of Ty.Generalize.t * Ty.t option * var * ('a,'b,'c) t'
   | Quant of quant * var * Ty.t * ('a,'b,'c) t'
+  | Param of Ty.t * Effect.t
+  | For of var * ('a,'b,'c) t' option * var * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
 and ('a,'b,'c) post = 
   | PNone
@@ -29,21 +31,26 @@ let print pra prb prc fmt t =
     | Var (v,i) -> fprintf fmt "%s %a" v (Inst.print pra prb prc) i
     | App (t1,t2) -> fprintf fmt "@[(%a@ %a)@]" print t1 print t2
     | Lam (x,t,p,e,q) -> 
-        fprintf fmt "@[(λ(%s:%a)@ ->@ %a%a%a)@]" x Ty.print t 
+        fprintf fmt "@[(λ(%s:%a)@ ->@ %a@ %a@ %a)@]" x Ty.print t 
           pre p print e post q
     | PureFun (x,t,e) ->
         fprintf fmt "@[(λ(%s:%a)@ ->@ %a)@]" x Ty.print t print e
     | Let (g,e1,x,e2) -> 
-        fprintf fmt "@[let@ %s %a=@ %a@ in@ %a@]" 
+        fprintf fmt "let@ %s %a=@[@ %a@]@ in@ %a" 
           x Ty.Generalize.print g print e1 print e2
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then %a else %a@]" print e1 print e2 print e3
     | Axiom e -> fprintf fmt "axiom %a" print e
     | Logic t -> fprintf fmt "logic %a" Ty.print t
     | TypeDef (g,t,x,e) -> 
-        fprintf fmt "type %a =@ %a in@ %a" var x (opt_print Ty.print) t print e
+        fprintf fmt "type %a%a =@ %a in@ %a" 
+          var x Ty.Generalize.print g (opt_print Ty.print) t print e
     | Quant (k,x,t,e) ->
         fprintf fmt "@[%a (%a:%a).@ %a@]" quant k var x Ty.print t print e
+    | Param (t,e) -> fprintf fmt "param(%a,%a)" Ty.print t Effect.print e
+    | For (dir,inv,i,t) ->
+        fprintf fmt "%a (%a) %%start %%end (%a)" 
+          var dir (opt_print print) inv print t
   and print fmt t = print' fmt t.v
   and pre fmt = function
     | None -> ()
@@ -92,3 +99,12 @@ module ParseT = struct
   let typedef l t x e = mk (TypeDef (l,t,x,e))
   let quant k x t e = mk (Quant (k,x,t,e))
 end
+
+let concat t1 t2 =
+  let rec aux' = function
+    | Const Const.Void -> t2.v
+    | Let (g,t1,x,t2) -> Let (g,t1,x,aux t2)
+    | TypeDef (g,t,x,t2) -> TypeDef (g,t,x,aux t2)
+    | _ -> assert false 
+  and aux t = { t with v = aux' t.v } in
+  aux t1

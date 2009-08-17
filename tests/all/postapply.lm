@@ -1,5 +1,5 @@
 let apply ['a 'b ||e] (f : 'a ->{|e} 'b) (x : 'a) = 
-  {} 
+  {fst f x cur} 
   f x 
   { k : snd f x old cur k }
 

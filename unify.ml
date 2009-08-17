@@ -82,8 +82,8 @@ let rec unify a b =
   if Uf.equal a b then () else
   match Uf.desc a, Uf.desc b with
   | U, U -> union a b
-  | U _, T _ -> union b a
-  | T _, U _ -> union a b
+  | U , T _ -> union b a
+  | T _, U -> union a b
   | T t1, T t2 ->
       begin match t1, t2 with
       | Ty.Var s1, Ty.Var s2 when s1 = s2 -> ()
@@ -113,8 +113,8 @@ and runify a b =
   if Uf.equal a b then () else
   match Uf.desc a, Uf.desc b with
   | RU, RU -> union a b
-  | RU _, RT _ -> union b a
-  | RT _, RU _ -> union a b
+  | RU , RT _ -> union b a
+  | RT _, RU -> union a b
   | RT s1, RT s2 when s1 = s2 -> ()
   | RT _, RT _ -> 
 (*       printf "runify: %s and %s@." x1 x2; *)
@@ -143,7 +143,7 @@ let to_ty, to_eff, to_r =
     try H.find h x 
     with Not_found -> 
       match Unionfind.desc x with
-      | U _ -> assert false
+      | U -> assert false
       | T t -> 
           let r = ty' t in
           H.add h x r; r

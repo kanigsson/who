@@ -1,6 +1,6 @@
-let parse () = 
-  let ch = open_in !Options.filename in
-let abort () = close_in ch ; exit 1 in
+let parse fn = 
+  let ch = open_in fn in
+  let abort () = close_in ch ; exit 1 in
   let buf = Lexing.from_channel ch in
   try 
     let prog = Parser.main Lexer.token buf in
@@ -8,9 +8,9 @@ let abort () = close_in ch ; exit 1 in
     prog
   with 
   | Parser.Error -> 
-      Error.print_pos_error buf "Parse error"; abort ()
+      Error.print_pos_error fn buf "Parse error"; abort ()
   | Lexer.Error msg -> 
-        Error.print_pos_error buf 
+        Error.print_pos_error fn buf 
           (Format.sprintf "Unexpected character: %s" msg);
         abort ()
 
@@ -20,7 +20,9 @@ let maybe_abort r print f =
 let _ = 
   Options.update ();
   try
-    let p = parse () in
+    let prelude = parse !Options.preludefile in
+    let ast = parse !Options.filename in
+    let p = Ast.concat prelude ast in
     maybe_abort Options.parse_only Ast.ParseT.print p;
     let p = Infer.infer p in
     maybe_abort Options.infer_only Ast.Infer.print p;

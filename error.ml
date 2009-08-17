@@ -4,17 +4,17 @@ open Vars
 
 let bad s = eprintf "%s@." s; exit(1)
 
-let error l c s = 
-  eprintf "%s: line %d char %d : %s @." !Options.filename l c s
+let error fn l c s = 
+  eprintf "%s: line %d char %d : %s @." fn l c s
 
-let print_pos_error buf s =
+let print_pos_error fn buf s =
   let p = buf.lex_curr_p in
   let l = p.pos_lnum in
   let c = p.pos_cnum - p.pos_bol in
-    error l c s
+    error fn l c s
 
 let with_loc msg {Loc.st = (sta,stb); en = _} = 
-  error sta stb msg; exit(1)
+  error !Options.filename sta stb msg; exit(1)
 
 (*
 let incompatible_subst = "incompatible substitution attempted"

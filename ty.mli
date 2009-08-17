@@ -32,9 +32,7 @@ val arg : t -> t
 
 val to_logic_type : t -> t
 
-val subst : tvar -> t -> t -> t
-val rsubst : rvar -> rvar -> t -> t
-val lsubst : tvar list -> t list -> t -> t
+val tlsubst : tvar list -> t list -> t -> t
 val rlsubst : rvar list -> rvar list -> t -> t
 val app : tvar -> (t,rvar,Effect.t) Inst.t -> t
 

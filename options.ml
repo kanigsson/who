@@ -1,4 +1,4 @@
-
+let preludefile = ref "/users/demons/kanig/local/infer/prelude.lm"
 let filename = ref ""
 let store_fn x = filename := x
 let abort cin = close_in cin ; exit 1

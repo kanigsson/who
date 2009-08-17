@@ -1,0 +1,1 @@
+let f [||r] (x : ref(r,int)) = {} !x {}
