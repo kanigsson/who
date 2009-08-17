@@ -73,14 +73,44 @@ module Infer = struct
   let const c = mk_val (Const c) (U.const (Const.type_of_constant c))
 
   let lam x t p e q = mk_val (Lam (x,U.to_ty t,p,e,q)) (U.arrow t e.t e.e)
+(*   let plam x t e = mk_val (PureFun (x,t,e)) (U.parr t e.t) *)
   let lam_anon t e p = lam "__anon" t e p
 
   let print fmt t = print U.print_node U.prvar U.preff fmt t
+
 end
 
 module Recon = struct
   type t = (Ty.t, rvar, Effect.t) t'
   let print fmt t = print Ty.print Vars.rvar Effect.print fmt t
+
+  let mk v t e loc = { v = v; t = t; e = e; loc = loc }
+  let mk_val v t loc = { v = v; t = t; e = Effect.empty; loc = loc }
+
+  let app t1 t2 loc = 
+    let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
+    mk (App (t1,t2)) t (Effect.union t1.e (Effect.union t2.e e)) loc
+
+
+  let app2 t t1 t2 loc = app (app t t1 loc) t2 loc
+  let var s inst (g,t) = mk_val (Var (s,inst)) (Ty.allsubst g inst t) 
+
+  module T = Ty
+  let iip = T.parr T.int (T.parr T.int T.prop)
+  let iii = T.parr T.int (T.parr T.int T.int)
+  let ppp = T.parr T.prop (T.parr T.prop T.prop)
+  let svar s t = var s Inst.empty (T.Generalize.empty,t) 
+  let le t1 t2 loc = app2 (svar "<=" iip loc) t1 t2 loc
+  let and_ t1 t2 loc = app2 (svar "/\\" ppp loc) t1 t2 loc
+  let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
+  let plam x t e loc = mk_val (PureFun (x,t,e)) (T.parr t e.t) loc
+  let efflam x eff e = plam x (T.map eff) e
+  let lam x t p e q = mk_val (Lam (x,t,p,e,q)) (T.arrow t e.t e.e)
+  let ptrue_ loc = mk_val (Const (Const.Ptrue)) T.prop loc
+  let plus t1 t2 loc = app2 (svar "+" iii loc) t1 t2 loc
+  let one = mk_val (Const (Const.Int 1)) T.int 
+  let succ t loc = plus t (one loc) loc
+
 end
 
 module ParseT = struct
@@ -98,6 +128,7 @@ module ParseT = struct
   let pure_lam x t e = mk (PureFun (x,t,e))
   let typedef l t x e = mk (TypeDef (l,t,x,e))
   let quant k x t e = mk (Quant (k,x,t,e))
+
 end
 
 let concat t1 t2 =

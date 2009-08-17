@@ -45,6 +45,17 @@ let int = const (Const.TInt)
 
 let arg = function
   | C (Arrow (t1,_,_)) -> t1
+  | C (PureArr (t1,_)) -> t1
+  | _ -> assert false
+
+let latent_effect = function
+  | C (Arrow (_,_,e)) -> e
+  | C (PureArr _) -> Effect.empty
+  | _ -> assert false
+
+let result = function
+  | C (Arrow (_,t2,_)) -> t2
+  | C (PureArr (_,t2)) -> t2
   | _ -> assert false
 
 let to_logic_type t = 
@@ -138,3 +149,11 @@ let rec equal' t1 t2 =
 
   | _ -> false
 and equal (C a) (C b) = equal' a b
+
+let forty = 
+  let e = "e" in
+  let eff = Effect.esingleton e in
+  ([],[],[e]),
+   parr 
+     (parr int (parr (map eff) prop))
+     (parr int (parr int (arrow (arrow int unit eff) unit eff)))

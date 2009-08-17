@@ -132,7 +132,7 @@ let rec infer' env t loc = function
   | Let (g,e1,x,e2) ->
       let nt = new_ty () in
       let e1 = infer env nt e1 in
-      let xt = to_ty nt in
+      let xt = try to_ty nt with Assert_failure _ -> error x loc  in
       let e2 = infer (add_var env x g xt) t e2 in
       Let (g,e1,x,e2), Unify.effect [] [e1.e; e2.e]
   | Ite (e1,e2,e3) ->
@@ -144,18 +144,11 @@ let rec infer' env t loc = function
       unify prop t loc;
       Axiom (infer env prop e), new_e ()
   | For (dir,inv,i,body) ->
+      unify t unit loc;
       let env = add_svar env i Ty.int in
       let body = infer env unit body in
-      let inv = pre env body.e 
-
-    (* pre : λcur. start <= i /\ i <= end_ /\ inv *)
-    (* post : λold.λcurλ(). inv[i -> i + 1] *)
-    (* λi.{pre} body {post} *)
-    let forterm = mk (For (dir,inv,i.c,body)) pos in
-  let em = Ty.Generalize.empty in
-    (* let start = start and end_ = end_ in 
-       forvar inv start end_ body *)
-    let_ em start "%%start" (let_ em end_ "%%end_" forterm end_.loc) start.loc
+      let inv = pre env body.e inv in
+      For (dir,inv,i,body), body.e
   | Logic t' -> 
       let nt = sto_uf_node t' in
       unify nt t loc; 
@@ -180,6 +173,7 @@ let infer e =
   let nt = new_ty () in
   infer initial nt e
 
+open Recon
 let rec recon' = function
   | Var (x,i) -> Var (x,inst i)
   | Const c -> Const c
@@ -194,6 +188,34 @@ let rec recon' = function
   | Axiom e -> Axiom (recon e)
   | Logic t -> Logic t
   | TypeDef (g,t,x,e) -> TypeDef (g,t,x,recon e)
+  | For (dir,inv,i,body) ->
+      let inv = Misc.opt_map recon inv and body = recon body in
+      let e = body.e and l = body.loc in
+      let inv = match inv with | None -> ptrue_ l | Some f -> f in
+      let inv' = plam "i" Ty.int inv l in
+      let intvar s = svar s Ty.int l in
+      let curvar = svar "cur" (Ty.map e) l in
+      let sv = intvar "%%start" and ev = intvar "%%end_" and iv = intvar i in
+      let pre = 
+        (* pre : λcur. start <= i /\ i <= end_ /\ inv *)
+          efflam "cur" e (and_ (encl sv iv ev l) (app inv curvar l) l) l in
+      let post = 
+        (* post : λold.λcurλ(). inv (i+1) cur *)
+        efflam "old" e
+          (efflam "cur" e
+            (plam "%%anon" Ty.unit
+              (app2 inv' (succ iv l) curvar l) l) l) l in
+      let bodyfun = lam "i" Ty.int (Some pre) body (PPlain post) l in
+      (* forvar inv start end bodyfun *)
+      let t = 
+(* (var dir ([],[],[e]) Ty.forty l) *)
+(*         app2 (var dir ([],[],[e]) Ty.forty l) inv sv l  *)
+
+      app2 (app2 (var dir ([],[],[e]) Ty.forty l) inv' sv l) ev bodyfun l
+
+      in
+      Format.printf "%a@." Ty.print t.t;
+      t.v
 and recon (t : Ast.Infer.t) : Ast.Recon.t = 
   { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e; loc = t.loc }
 and inst (th,rh,eh) =

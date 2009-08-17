@@ -29,6 +29,8 @@ val bool : t
 val int : t
 
 val arg : t -> t
+val result : t -> t
+val latent_effect : t -> Effect.t
 
 val to_logic_type : t -> t
 
@@ -51,3 +53,4 @@ val allsubst :
   Generalize.t -> t list * rvar list * Effect.t list -> 
     t -> t
 
+val forty : Generalize.t * t

@@ -30,22 +30,22 @@ logic min : int -> int -> int
 let pre ['a 'b||]  (x : 'a * 'b) = fst x
 let post ['a 'b||] (x : 'a * 'b) = snd x
 
-parameter forto [||e] (inv : <|e> -> int -> prop) (start end_ : int) 
+parameter forto [||e] (inv : int -> <|e> -> prop) (start end_ : int) 
   (f : int ->{|e} unit) : unit, {|e} =
-    { inv cur start /\
+    { inv start cur /\
           forall (i : int). start <= i /\ i <= end_ ->
-          forall (m : <|e>) . inv m i -> pre f i m /\
-          forall (n : <|e>). post f i m n () -> inv n (i+1)
+          forall (m : <|e>) . inv i m -> pre f i m /\
+          forall (n : <|e>). post f i m n () -> inv (i+1) n
     }
-    { inv cur (max start (end_ + 1))} 
+    { inv (max start (end_ + 1)) cur} 
 
 
-parameter fordownto [||e] (inv : <|e> -> int -> prop) (start end_ : int) 
+parameter fordownto [||e] (inv :  int -> <|e> -> prop) (start end_ : int) 
   (f : int ->{|e} unit) : unit, {|e} =
-    { inv cur start /\
+    { inv start cur /\
           forall (i : int). start <= i /\ i <= end_ ->
-          forall (m : <|e>) . inv m i -> pre f i m /\
-          forall (n : <|e>). post f i m n () -> inv n (i-1)
+          forall (m : <|e>) . inv i m -> pre f i m /\
+          forall (n : <|e>). post f i m n () -> inv (i-1) n
     }
-    { inv cur (min start (end_ - 1)) }
+    { inv (min start (end_ - 1)) cur }
 

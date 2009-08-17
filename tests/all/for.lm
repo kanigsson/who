@@ -1,0 +1,7 @@
+let f [|r|](b : unit) (x : ref(r,int)) = 
+  {}
+  for i = 1 to 5 do
+    { !!x < i * 10}
+    x := !x + i
+  done
+  {}

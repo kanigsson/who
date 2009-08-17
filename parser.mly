@@ -36,11 +36,8 @@
   let let_wconst l t x p = let_ l t x (const (Const.Void) p) p
 
   let forfunction dir i start end_ inv body pos =
-    (* pre : λcur. start <= i /\ i <= end_ /\ inv *)
-    (* post : λold.λcurλ(). inv[i -> i + 1] *)
-    (* λi.{pre} body {post} *)
     let forterm = mk (For (dir,inv,i.c,body)) pos in
-  let em = Ty.Generalize.empty in
+    let em = Ty.Generalize.empty in
     (* let start = start and end_ = end_ in 
        forvar inv start end_ body *)
     let_ em start "%%start" (let_ em end_ "%%end_" forterm end_.loc) start.loc
