@@ -38,3 +38,5 @@ let hash_print ?(bsep=lbrack) ?(endsep=rbrack) prk prv fmt h =
   bsep fmt ();
   Hashtbl.iter (fun k v -> fprintf fmt "%a|->%a;" prk k prv v) h;
   endsep fmt ()
+
+let paren pr fmt x = fprintf fmt "(%a)" pr x

@@ -35,7 +35,7 @@ let rec formtyping' env loc = function
       with Not_found -> 
         error (Myformat.sprintf "unknown variable: %s" s) loc 
       end
-  | Ast.App (e1,e2) ->
+  | Ast.App (e1,e2,_) ->
       let t1 = formtyping env e1 in
       let t2 = formtyping env e2 in
       begin match t1 with
@@ -62,13 +62,14 @@ let rec formtyping' env loc = function
       pre env eff p;
       post env eff t' q;
       to_logic_type (arrow t t' eff)
-  | Let (tl,e1,x,e2) ->
+  | Let (tl,e1,x,e2,r) ->
       let t = formtyping env e1 in
       let env = add_var env x tl t in
       let t = formtyping env e2 in
       t
   | Param _ -> error "effectful parameter in logic" loc
   | For _ -> assert false
+  | Annot (e,t) -> fis_oftype env t e; t
 and formtyping env (e : Ast.Recon.t) : Ty.t =
 (*   Myformat.printf "formtyping %a@." Ast.Recon.print e; *)
   let t = formtyping' env e.loc e.v in
@@ -94,7 +95,7 @@ and typing' env loc = function
       with Not_found -> 
         error (Myformat.sprintf "unknown variable: %s" s) loc
       end
-  | Ast.App (e1,e2) ->
+  | Ast.App (e1,e2,_) ->
       let t2,eff2 = typing env e2 in
       begin match typing env e1 with
       | C (Arrow (ta,tb,eff)), eff1 -> 
@@ -110,7 +111,7 @@ and typing' env loc = function
       pre env eff p;
       post env eff t' q;
       arrow t t' eff, Effect.empty
-  | Let (tl,e1,x,e2) ->
+  | Let (tl,e1,x,e2,r) ->
       let t,eff1 = typing env e1 in
       let env = add_var env x tl t in
       let t, eff2 = typing env e2 in
@@ -131,6 +132,9 @@ and typing' env loc = function
       let t, eff = typing env e in
       t,eff
   | Logic t -> t, Effect.empty
+  | Annot (e,t) -> 
+      let t', eff = typing env e in
+      if Ty.equal t t' then t, eff else error "wrong type annotation" loc
   | Ite (e1,e2,e3) ->
       let t1, eff1 = typing env e1 in
       if Ty.equal t1 Ty.bool then

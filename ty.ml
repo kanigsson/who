@@ -12,12 +12,18 @@ type t = C of (t,rvar,Effect.t) t'
 
 open Myformat
 
-let print' pt pr pe fmt = function
+let is_compound = function
+  | Var _ | Const _ | Ref _ | Map _ -> false
+  | Tuple _ | Arrow _ | PureArr _ | App _ -> true
+
+let print' pt pr pe is_c fmt = function
   | Var x -> pp_print_string fmt x
   | Arrow (t1,t2,eff) -> 
-      fprintf fmt "(%a ->%a %a)" pt t1 pe eff pt t2
+      let p1 = if is_c t1 then paren pt else pt in
+      fprintf fmt "%a ->%a %a" p1 t1 pe eff pt t2
   | PureArr (t1,t2) -> 
-      fprintf fmt "(%a ->%a)" pt t1 pt t2
+      let p1 = if is_c t1 then paren pt else pt in
+      fprintf fmt "%a ->@ %a" p1 t1 pt t2
   | Tuple (t1,t2) -> fprintf fmt "(%a *@ %a)" pt t1 pt t2
   | Const c -> Const.print_ty fmt c
   | Ref (r,t) -> fprintf fmt "ref(%a,%a)" pr r pt t
@@ -25,7 +31,8 @@ let print' pt pr pe fmt = function
   | App (v,i) -> fprintf fmt "%a%a" tvar v (Inst.print pt pr pe) i
 
 let rec print fmt (C x) = 
-  print' print pp_print_string Effect.print fmt x
+  print' print pp_print_string Effect.print 
+    (function C x -> is_compound x) fmt x
 
 let print_list sep fmt t = print_list sep print fmt t
 

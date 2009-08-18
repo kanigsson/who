@@ -84,11 +84,15 @@ let postf eff t res (p : ParseT.t) =
   lameff "old" (lameff "cur" (lam res (to_ty t) p p.loc ) p.loc) p.loc
 
 let rec infer' env t loc = function
-  | App (e1,e2) ->
+  | App (e1,e2,k) ->
       let nt = new_ty () and e = new_e () in
       let e1 = infer env (arrow nt t e) e1 in
       let e2 = infer env nt e2 in
-      App (e1,e2), Unify.effect [] [e;e1.e;e2.e]
+      App (e1,e2,k), Unify.effect [] [e;e1.e;e2.e]
+  | Annot (e,xt) -> 
+      unify (sto_uf_node xt) t loc;
+      let e = infer env t e in
+      Annot (e,xt), e.e
   | Var (x,_) -> 
 (*       Myformat.printf "var %a@." Vars.var x; *)
         let m,xt = 
@@ -129,12 +133,12 @@ let rec infer' env t loc = function
       let env = add_ty env x g t' in
       let e = infer env t e in
       TypeDef (g,t',x,e), new_e ()
-  | Let (g,e1,x,e2) ->
+  | Let (g,e1,x,e2,r) ->
       let nt = new_ty () in
       let e1 = infer env nt e1 in
       let xt = try to_ty nt with Assert_failure _ -> error x loc  in
       let e2 = infer (add_var env x g xt) t e2 in
-      Let (g,e1,x,e2), Unify.effect [] [e1.e; e2.e]
+      Let (g,e1,x,e2,r), Unify.effect [] [e1.e; e2.e]
   | Ite (e1,e2,e3) ->
       let e1 = infer env bool e1 in
       let e2 = infer env t e2 in
@@ -177,13 +181,13 @@ open Recon
 let rec recon' = function
   | Var (x,i) -> Var (x,inst i)
   | Const c -> Const c
-  | App (e1,e2) -> App (recon e1, recon e2)
+  | App (e1,e2,k) -> App (recon e1, recon e2,k)
   | PureFun (x,t,e) -> PureFun (x,t,recon e)
   | Quant (k,x,t,e) -> Quant (k,x,t,recon e)
   | Lam (x,ot,p,e,q) -> 
       Lam (x,ot, Misc.opt_map recon p, recon e, post q)
   | Param (t,e) -> Param (t,e)
-  | Let (g,e1,x,e2) -> Let (g, recon e1, x, recon e2)
+  | Let (g,e1,x,e2,r) -> Let (g, recon e1, x, recon e2,r)
   | Ite (e1,e2,e3) -> Ite (recon e1, recon e2, recon e3)
   | Axiom e -> Axiom (recon e)
   | Logic t -> Logic t
@@ -207,15 +211,8 @@ let rec recon' = function
               (app2 inv' (succ iv l) curvar l) l) l) l in
       let bodyfun = lam "i" Ty.int (Some pre) body (PPlain post) l in
       (* forvar inv start end bodyfun *)
-      let t = 
-(* (var dir ([],[],[e]) Ty.forty l) *)
-(*         app2 (var dir ([],[],[e]) Ty.forty l) inv sv l  *)
-
-      app2 (app2 (var dir ([],[],[e]) Ty.forty l) inv' sv l) ev bodyfun l
-
-      in
-      Format.printf "%a@." Ty.print t.t;
-      t.v
+      (app2 (app2 (var dir ([],[],[e]) Ty.forty l) inv' sv l) ev bodyfun l).v
+  | Annot (e,t) -> Annot (recon e, t)
 and recon (t : Ast.Infer.t) : Ast.Recon.t = 
   { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e; loc = t.loc }
 and inst (th,rh,eh) =

@@ -43,6 +43,7 @@ let id_or_keyword =
         ("if", fun i -> IF (create_info i) );
         ("then", fun i -> THEN );
         ("else", fun i -> ELSE );
+        ("rec", fun i -> REC );
         ("fun", fun i -> FUN (create_info i) );
       ];
     fun s -> try Hashtbl.find h s with Not_found -> 

@@ -14,8 +14,9 @@ type t = C of (t,rvar,Effect.t) t'
 val print : t Myformat.fmt
 val print_list : unit Myformat.fmt -> t list Myformat.fmt
 val print' : 'a Myformat.fmt -> 'b Myformat.fmt -> 'c Myformat.fmt -> 
-              (('a ,'b,'c) t') Myformat.fmt
+              ('a -> bool) -> (('a ,'b,'c) t') Myformat.fmt
 
+val is_compound : ('a,'b,'c) t' -> bool
 val var : tvar -> t
 val const : Const.ty -> t
 val arrow : t -> t -> Effect.t -> t

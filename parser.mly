@@ -9,8 +9,8 @@
 
   let rec merge = function
     | [] -> const Const.Void Loc.dummy
-    | { v = Let (l,t,x,{ v = Const Const.Void }); loc = loc }::xs -> 
-        let_ l t x (merge xs) loc
+    | { v = Let (l,t,x,{ v = Const Const.Void },r); loc = loc }::xs -> 
+        let_ l t x (merge xs) r loc
     | { v = TypeDef (l,t,x,{ v = Const Const.Void }); loc = loc }::xs -> 
         typedef l t x (merge xs) loc
     | _ -> assert false
@@ -33,14 +33,15 @@
   let mk_quant k l e loc = 
     List.fold_right (fun (x,t) acc -> quant k x t acc loc) l e
 
-  let let_wconst l t x p = let_ l t x (const (Const.Void) p) p
+  let let_wconst l t x r p = let_ l t x (const (Const.Void) p) r p
 
   let forfunction dir i start end_ inv body pos =
     let forterm = mk (For (dir,inv,i.c,body)) pos in
     let em = Ty.Generalize.empty in
     (* let start = start and end_ = end_ in 
        forvar inv start end_ body *)
-    let_ em start "%%start" (let_ em end_ "%%end_" forterm end_.loc) start.loc
+    let_ em start "%%start" (let_ em end_ "%%end_" forterm NoRec end_.loc) 
+      NoRec start.loc
 
 
 
@@ -55,7 +56,7 @@
 %token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND
 %token <Loc.loc> ASSIGN GE GT LE LT
 %token EOF
-%token REF
+%token REF REC
 %token <Loc.loc> EXCLAM DEXCLAM IF FUN TRUE FALSE PTRUE PFALSE VOID LET AXIOM
 %token <Loc.loc> LOGIC TYPE FORALL EXISTS PARAMETER TO DOWNTO FOR DONE
 %token COLON MID THEN ELSE   BOOL TINT UNIT PROP DOT DO
@@ -160,6 +161,7 @@ aterm:
   | l = LPAREN x = infix_nopos e = RPAREN { var x (embrace l e) }
   | l = LPAREN t = nterm e = RPAREN { mk t.v (embrace l e) }
   | l = BEGIN t = nterm e = END { mk t.v (embrace l e) }
+  | l = LPAREN e = nterm COLON t = ty r = RPAREN { mk (Annot (e,t)) (embrace l r) }
 
 appterm:
   | t = aterm { t }
@@ -172,7 +174,7 @@ nterm:
     { app2 "!!" (var x.c x.info) t (embrace p t.loc)  }
   | t1 = appterm { t1 }
   | t1 = nterm i = infix_nopos t2 = nterm  
-    { app2 i t1 t2 (embrace t1.loc t2.loc) }
+    { appi i t1 t2 (embrace t1.loc t2.loc) }
   | sp = FUN l = arglist ARROW body = funcbody
     { let p,e,q = body in
       mk_efflam l (snd p) e (snd q) (embrace sp (fst q)) }
@@ -183,15 +185,15 @@ nterm:
   | sp = EXISTS l = arglist DOT e = nterm %prec forall
     { mk_quant EX l e (embrace sp e.loc) }
   | b = letwithoutargs EQUAL t = nterm IN t2 = nterm %prec let_
-    { let p,x,l = b in
-      let_ l t x t2 p}
+    { let p,x,l,r = b in
+      let_ l t x t2 r p}
   | b = letwithargs EQUAL body = funcbody IN t2 = nterm %prec let_
-    { let p,x,l,args = b in
+    { let p,x,l,args,r = b in
       let pre,e,q = body in
-      let_ l (mk_efflam args (snd pre) e (snd q) p) x t2 (embrace p t2.loc) }
+      let_ l (mk_efflam args (snd pre) e (snd q) p) x t2 r (embrace p t2.loc) }
   | b = letwithargs EQUAL t1 = nterm IN t2 = nterm %prec let_
-    { let p,x,l,args = b in
-      let_ l (mk_pure_lam args t1 p) x t2 (embrace p t2.loc) }
+    { let p,x,l,args,r = b in
+      let_ l (mk_pure_lam args t1 p) x t2 r (embrace p t2.loc) }
   | st = IF it = nterm THEN tb = nterm ELSE eb = nterm %prec ifprec
     { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
   | st = FOR i = progvar EQUAL e1 = nterm dir = todownto e2 = nterm DO 
@@ -211,12 +213,15 @@ onetyarg:
 arglist: l = nonempty_list(onetyarg) { List.flatten l }
 
 letwithargs:
-  | p = LET x = defprogvar_no_pos l = optgen args = arglist
-  { p, x, l, args }
+  | p = LET r = mayrec x = defprogvar_no_pos l = optgen args = arglist
+  { p, x, l, args,r }
+mayrec:
+  | REC {Rec}
+  | {NoRec}
 
 letwithoutargs:
-  | p = LET x = defprogvar_no_pos l = optgen 
-    { p,x,l }
+  | p = LET r = mayrec x = defprogvar_no_pos l = optgen 
+    { p,x,l,r }
 
 funcbody:
   p = precond e = nterm q = postcond { p,e,q }
@@ -238,23 +243,23 @@ optgen:
 
 decl:
   | b = letwithoutargs EQUAL t = nterm
-    { let p,x,l = b in
-      let_wconst l t x (embrace p t.loc) }
+    { let p,x,l,r = b in
+      let_wconst l t x r (embrace p t.loc) }
   | b = letwithargs EQUAL body = funcbody
-    { let p,x,l,args = b in
+    { let p,x,l,args,r = b in
       let pre,e,q = body in
-      let_wconst l (mk_efflam args (snd pre) e (snd q) p) x
-        (embrace p e.loc) }
+      let_wconst l (mk_efflam args (snd pre) e (snd q) p) x r (embrace p e.loc) }
   | b = letwithargs EQUAL t1 = nterm
-    { let p,x,l,args = b in
-      let_wconst l (mk_pure_lam args t1 p) x (embrace p t1.loc) }
+    { let p,x,l,args,r = b in
+      let_wconst l (mk_pure_lam args t1 p) x r (embrace p t1.loc) }
   | p = PARAMETER x = defprogvar_no_pos l = optgen args = arglist 
     COLON rt = ty COMMA e = sepeffect EQUAL pre = precond post = postcond
-  { let_wconst l (mk_param args (snd pre) (snd post) rt e p) x (embrace p (fst post))} 
+  { let_wconst l (mk_param args (snd pre) (snd post) rt e p) x NoRec 
+    (embrace p (fst post))} 
   | p = AXIOM x = defprogvar_no_pos l = optgen COLON t = nterm
-    { let_wconst l (mk (Axiom t) p) x (embrace p t.loc) }
+    { let_wconst l (mk (Axiom t) p) x NoRec (embrace p t.loc) }
   | p = LOGIC x = defprogvar_no_pos l = optgen COLON t = ty
-    { let_wconst l (mk (Logic t) p) x p }
+    { let_wconst l (mk (Logic t) p) x NoRec p }
   | p = TYPE x = progvar_no_pos l = optgen
     { typedef l None x (const (Const.Void) p) p }
   | p = TYPE x = progvar_no_pos l = optgen EQUAL t = ty

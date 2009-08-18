@@ -1,10 +1,7 @@
-let parse fn = 
-  let ch = open_in fn in
-  let abort () = close_in ch ; exit 1 in
-  let buf = Lexing.from_channel ch in
+let parse buf close fn = 
+  let abort () = close (); exit 1 in
   try 
     let prog = Parser.main Lexer.token buf in
-    let () = close_in ch in
     prog
   with 
   | Parser.Error -> 
@@ -17,11 +14,21 @@ let parse fn =
 let maybe_abort r print f = 
   if !r then begin Format.printf "%a@." print f; exit 0; end
   
+let parse_file fn = 
+  let ch = open_in fn in
+  let close () = close_in ch in
+  let buf = Lexing.from_channel ch in
+  parse buf close fn
+
+let parse_string ?(string="prelude") s = 
+  let buf = Lexing.from_string s in
+  parse buf (fun () -> ()) string
+
 let _ = 
   Options.update ();
   try
-    let prelude = parse !Options.preludefile in
-    let ast = parse !Options.filename in
+    let prelude = parse_string Prelude.prelude in
+    let ast = parse_file !Options.filename in
     let p = Ast.concat prelude ast in
     maybe_abort Options.parse_only Ast.ParseT.print p;
     let p = Infer.infer p in

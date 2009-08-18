@@ -1,4 +1,5 @@
-logic /\ : prop -> prop -> prop
+let prelude = "
+logic /\\ : prop -> prop -> prop
 logic -> : prop -> prop -> prop
 logic = ['a||] : 'a -> 'a -> prop
 logic <> ['a||] : 'a -> 'a -> prop
@@ -9,7 +10,7 @@ logic !! ['a|r|e] : ref(r,'a) -> <|e> -> 'a
 
 parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r|} =
   {}
-  {r : !!x = r /\ !!x|old = !!x}
+  {r : !!x = r /\\ !!x|old = !!x}
 
 parameter := ['a|r|e] (x : ref(r,'a)) (v : 'a) : unit, {r|} =
   {}
@@ -32,9 +33,9 @@ let post ['a 'b||] (x : 'a * 'b) = snd x
 
 parameter forto [||e] (inv : int -> <|e> -> prop) (start end_ : int) 
   (f : int ->{|e} unit) : unit, {|e} =
-    { inv start cur /\
-          forall (i : int). start <= i /\ i <= end_ ->
-          forall (m : <|e>) . inv i m -> pre f i m /\
+    { inv start cur /\\
+          forall (i : int). start <= i /\\ i <= end_ ->
+          forall (m : <|e>) . inv i m -> pre f i m /\\
           forall (n : <|e>). post f i m n () -> inv (i+1) n
     }
     { inv (max start (end_ + 1)) cur} 
@@ -42,10 +43,11 @@ parameter forto [||e] (inv : int -> <|e> -> prop) (start end_ : int)
 
 parameter fordownto [||e] (inv :  int -> <|e> -> prop) (start end_ : int) 
   (f : int ->{|e} unit) : unit, {|e} =
-    { inv start cur /\
-          forall (i : int). start <= i /\ i <= end_ ->
-          forall (m : <|e>) . inv i m -> pre f i m /\
+    { inv start cur /\\
+          forall (i : int). start <= i /\\ i <= end_ ->
+          forall (m : <|e>) . inv i m -> pre f i m /\\
           forall (n : <|e>). post f i m n () -> inv (i-1) n
     }
     { inv (min start (end_ - 1)) cur }
 
+"
