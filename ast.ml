@@ -114,13 +114,14 @@ module Recon = struct
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
   let mk_val v t loc = { v = v; t = t; e = Effect.empty; loc = loc }
 
-  let app ?(kind=Prefix) t1 t2 loc = 
+  let app ?(kind=Prefix) ?(cap=[]) t1 t2 loc = 
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
-    mk (App (t1,t2,kind,[])) t (Effect.union t1.e (Effect.union t2.e e)) loc
+    mk (App (t1,t2,kind,cap)) t (Effect.union t1.e (Effect.union t2.e e)) loc
 
 
   let app2 t t1 t2 loc = app (app t t1 loc) t2 loc
   let appi t t1 t2 loc = app ~kind:Infix (app t t1 loc) t2 loc
+  let allapp t1 t2 kind cap = app ~kind ~cap t1 t2 
   let var s inst (g,t) = mk_val (Var (s,inst)) (Ty.allsubst g inst t) 
 
   module T = Ty
@@ -138,7 +139,23 @@ module Recon = struct
   let plus t1 t2 loc = appi (svar "+" iii loc) t1 t2 loc
   let one = mk_val (Const (Const.Int 1)) T.int 
   let succ t loc = plus t (one loc) loc
+  let let_ g e1 x e2 r = mk (Let (g,e1,x,e2,r)) e2.t (Effect.union e1.e e2.e)
 
+  let letreg l e = mk (LetReg (l,e)) e.t (Effect.rremove l e.e)
+  let ite e1 e2 e3 = 
+    mk (Ite (e1,e2,e3)) e2.t (Effect.union e1.e (Effect.union e2.e e3.e))
+
+  let typedef g t v e = mk (TypeDef (g,t,v,e)) e.t e.e
+
+  let rec is_value = function
+    | Const _ | Var _ | Lam _ | PureFun _ | Axiom _ | Logic _ | Quant _ -> true
+    | Let _ | Ite _ | For _ | LetReg _ | Param _ | TypeDef _ | Annot _ -> false
+    | App (t1,t2,_,_) -> 
+        match t1.t with
+        | T.C (T.PureArr _) -> true
+        | _ -> false
+  and is_value_node x = is_value x.v
+      
 end
 
 module ParseT = struct
