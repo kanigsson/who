@@ -185,17 +185,18 @@ nterm:
   | sp = EXISTS l = arglist DOT e = nterm %prec forall
     { mk_quant EX l e (embrace sp e.loc) }
   | b = letwithoutargs EQUAL t = nterm IN t2 = nterm %prec let_
-    { let p,x,l,r = b in
-      let_ l t x t2 r p}
+    { let p,x,l = b in
+      let_ l t x t2 NoRec p}
   | b = letwithargs EQUAL body = funcbody IN t2 = nterm %prec let_
-    { let p,x,l,args,r = b in
+    { let p,x,l,args = b in
       let pre,e,q = body in
-      let_ l (mk_efflam args (snd pre) e (snd q) p) x t2 r (embrace p t2.loc) }
+      let_ l (mk_efflam args (snd pre) e (snd q) p) x t2 NoRec (embrace p t2.loc) }
   | b = letwithargs EQUAL t1 = nterm IN t2 = nterm %prec let_
-    { let p,x,l,args,r = b in
-      let_ l (mk_pure_lam args t1 p) x t2 r (embrace p t2.loc) }
+    { let p,x,l,args = b in
+      let_ l (mk_pure_lam args t1 p) x t2 NoRec (embrace p t2.loc) }
   | st = IF it = nterm THEN tb = nterm ELSE eb = nterm %prec ifprec
     { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
+  | f = letrec IN e2 = nterm %prec let_ { (f : ParseT.t -> ParseT.t) e2 }
   | st = FOR i = progvar EQUAL e1 = nterm dir = todownto e2 = nterm DO 
        p = precond
        e3 = nterm 
@@ -213,15 +214,21 @@ onetyarg:
 arglist: l = nonempty_list(onetyarg) { List.flatten l }
 
 letwithargs:
-  | p = LET r = mayrec x = defprogvar_no_pos l = optgen args = arglist
-  { p, x, l, args,r }
-mayrec:
-  | REC {Rec}
-  | {NoRec}
+  | p = LET x = defprogvar_no_pos l = optgen args = arglist
+  { p, x, l, args }
 
 letwithoutargs:
-  | p = LET r = mayrec x = defprogvar_no_pos l = optgen 
-    { p,x,l,r }
+  | p = LET x = defprogvar_no_pos l = optgen 
+    { p,x,l }
+
+letrec:
+  | p = LET REC l = optgen LPAREN x = defprogvar_no_pos 
+    COLON t = ty RPAREN args = arglist EQUAL b = funcbody
+    { let pre,e,q = b in
+      (fun e2 -> let_ l (mk_efflam args (snd pre) e (snd q) p) x e2 (Rec t)
+        (embrace p e2.loc))
+    }
+    
 
 funcbody:
   p = precond e = nterm q = postcond { p,e,q }
@@ -243,15 +250,17 @@ optgen:
 
 decl:
   | b = letwithoutargs EQUAL t = nterm
-    { let p,x,l,r = b in
-      let_wconst l t x r (embrace p t.loc) }
+    { let p,x,l = b in
+      let_wconst l t x NoRec (embrace p t.loc) }
   | b = letwithargs EQUAL body = funcbody
-    { let p,x,l,args,r = b in
+    { let p,x,l,args = b in
       let pre,e,q = body in
-      let_wconst l (mk_efflam args (snd pre) e (snd q) p) x r (embrace p e.loc) }
+      let_wconst l (mk_efflam args (snd pre) e (snd q) p) x 
+        NoRec (embrace p e.loc) }
   | b = letwithargs EQUAL t1 = nterm
-    { let p,x,l,args,r = b in
-      let_wconst l (mk_pure_lam args t1 p) x r (embrace p t1.loc) }
+    { let p,x,l,args = b in
+      let_wconst l (mk_pure_lam args t1 p) x NoRec (embrace p t1.loc) }
+  | f = letrec { (f : ParseT.t -> ParseT.t) (const (Const.Void) dummy) }
   | p = PARAMETER x = defprogvar_no_pos l = optgen args = arglist 
     COLON rt = ty COMMA e = sepeffect EQUAL pre = precond post = postcond
   { let_wconst l (mk_param args (snd pre) (snd post) rt e p) x NoRec 

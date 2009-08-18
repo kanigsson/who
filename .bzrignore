@@ -4,3 +4,4 @@ tests/*/*/Makefile
 _build
 main.native
 tests/*counter
+tests/good/*/*bak

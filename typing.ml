@@ -112,7 +112,11 @@ and typing' env loc = function
       post env eff t' q;
       arrow t t' eff, Effect.empty
   | Let (tl,e1,x,e2,r) ->
-      let t,eff1 = typing env e1 in
+      let env' =
+        match r with 
+        | NoRec -> env
+        | Rec t -> add_svar env x t in
+      let t,eff1 = typing env' e1 in
       let env = add_var env x tl t in
       let t, eff2 = typing env e2 in
       t, Effect.union eff1 eff2

@@ -11,8 +11,8 @@ let
           {(λ(old:map{r |}) ->
            (λ(cur:map{r |}) ->
            (λ(r:'a) ->
-           ((!! ['a|r|{r |}] x cur = ['a||] r) /\
-           (!! ['a|r|{r |}] x old = ['a||] !! ['a|r|{r |}] x cur)))))})
+           ((!! ['a|r|{r |}] x cur) = ['a||] r) /\
+           ((!! ['a|r|{r |}] x old) = ['a||] (!! ['a|r|{r |}] x cur)))))})
 in
 let
 := ['a|r|e]=
@@ -20,7 +20,7 @@ let
             (λ(v:'a) ->  param(unit,{r |})
             {(λ(old:map{r |}) ->
              (λ(cur:map{r |}) ->
-             (λ(:unit) -> (!! ['a|r|{r |}] x cur = ['a||] v))))}))
+             (λ(:unit) -> (!! ['a|r|{r |}] x cur) = ['a||] v)))}))
 in
 let fst ['a 'b||]= logic (('a * 'b)) -> 'a in
 let snd ['a 'b||]= logic (('a * 'b)) -> 'b in
@@ -42,22 +42,22 @@ forto [||e]=
             (λ(end_:nat) ->
             (λ(f:nat ->{|e } unit) ->
             {(λ(cur:map{|e }) ->
-             (inv start cur /\
-             forall (i:nat).
-             (((start <= i) /\ (i <= end_)) ->
-             forall (m:map{|e }).
-             (inv i m ->
-             (pre [nat -> map{|e } -> prop,nat -> map{|e } -> map{|e } ->
-              unit -> prop||] f i m
-             /\
-             forall (n:map{|e }).
-             (post [nat -> map{|e } -> prop,nat -> map{|e } -> map{|e } ->
-              unit -> prop||] f i m n ()
-             -> inv ((i + 1)) n))))))}
+             (inv start cur) /\
+             (forall (i:nat).
+              ((start <= i) /\ (i <= end_)) ->
+              (forall (m:map{|e }).
+               (inv i m) ->
+               ((pre [nat -> map{|e } -> prop,nat -> map{|e } -> map{|e } ->
+                 unit -> prop||] f i m)
+                /\
+                (forall (n:map{|e }).
+                 (post [nat -> map{|e } -> prop,nat -> map{|e } -> map{|e
+                  } -> unit -> prop||] f i m n ())
+                 -> (inv (i + 1) n))))))}
             param(unit,{|e })
             {(λ(old:map{|e }) ->
              (λ(cur:map{|e }) ->
-             (λ(:unit) -> inv (max start ((end_ + 1))) cur)))}))))
+             (λ(:unit) -> inv (max start (end_ + 1)) cur)))}))))
 in
 let
 fordownto [||e]=
@@ -66,20 +66,20 @@ fordownto [||e]=
                 (λ(end_:nat) ->
                 (λ(f:nat ->{|e } unit) ->
                 {(λ(cur:map{|e }) ->
-                 (inv start cur /\
-                 forall (i:nat).
-                 (((start <= i) /\ (i <= end_)) ->
-                 forall (m:map{|e }).
-                 (inv i m ->
-                 (pre [nat -> map{|e } -> prop,nat -> map{|e } -> map{|e } ->
-                  unit -> prop||] f i m
-                 /\
-                 forall (n:map{|e }).
-                 (post [nat -> map{|e } -> prop,nat -> map{|e } -> map{|e
-                  } -> unit -> prop||] f i m n ()
-                 -> inv ((i - 1)) n))))))}
+                 (inv start cur) /\
+                 (forall (i:nat).
+                  ((start <= i) /\ (i <= end_)) ->
+                  (forall (m:map{|e }).
+                   (inv i m) ->
+                   ((pre [nat -> map{|e } -> prop,nat -> map{|e } -> map{|e
+                     } -> unit -> prop||] f i m)
+                    /\
+                    (forall (n:map{|e }).
+                     (post [nat -> map{|e } -> prop,nat -> map{|e } -> map{|e
+                      } -> unit -> prop||] f i m n ())
+                     -> (inv (i - 1) n))))))}
                 param(unit,{|e })
                 {(λ(old:map{|e }) ->
                  (λ(cur:map{|e }) ->
-                 (λ(:unit) -> inv (min start ((end_ - 1))) cur)))}))))
+                 (λ(:unit) -> inv (min start (end_ - 1)) cur)))}))))
 in let f = logic nat -> nat in ()

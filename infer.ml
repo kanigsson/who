@@ -135,7 +135,11 @@ let rec infer' env t loc = function
       TypeDef (g,t',x,e), new_e ()
   | Let (g,e1,x,e2,r) ->
       let nt = new_ty () in
-      let e1 = infer env nt e1 in
+      let env' = 
+        match r with
+        | NoRec -> env
+        | Rec  ty -> (add_svar env x ty) in
+      let e1 = infer env' nt e1 in
       let xt = try to_ty nt with Assert_failure _ -> error x loc  in
       let e2 = infer (add_var env x g xt) t e2 in
       Let (g,e1,x,e2,r), Unify.effect [] [e1.e; e2.e]

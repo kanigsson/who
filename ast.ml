@@ -23,7 +23,7 @@ and ('a,'b,'c) post =
   | PPlain of ('a,'b,'c) t'
   | PResult of var * ('a,'b,'c) t'
 and fix = Infix | Prefix
-and isrec = Rec | NoRec
+and isrec = Rec of Ty.t | NoRec
 
 
 open Myformat
@@ -41,10 +41,9 @@ let print pra prb prc fmt t =
         if Inst.is_empty i then var fmt v
         else fprintf fmt "%a %a" var v (Inst.print pra prb prc) i
     | App ({v = App (op,t1,_)},t2,Infix) -> 
-        fprintf fmt "@[(%a@ %a@ %a)@]" print t1 print op print t2
+        fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 print op with_paren t2
     | App (t1,t2,_) ->
-        let p2 = if is_compound_node t2 then paren print else print in
-          fprintf fmt "@[%a@ %a@]" print t1 p2 t2
+          fprintf fmt "@[%a@ %a@]" print t1 with_paren t2
     | Lam (x,t,p,e,q) -> 
         fprintf fmt "@[(λ(%s:%a)@ ->@ %a@ %a@ %a)@]" x Ty.print t 
           pre p print e post q
@@ -81,7 +80,10 @@ let print pra prb prc fmt t =
     | EX -> pp_print_string fmt "exists"
   and prrec fmt = function
     | NoRec -> ()
-    | Rec -> pp_print_string fmt "rec " in
+    | Rec t -> fprintf fmt "rec(%a) " Ty.print t
+  and with_paren fmt x = 
+    if is_compound_node x then paren print fmt x else print fmt x in
+
   print fmt t
 
 module Infer = struct

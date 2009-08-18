@@ -11,8 +11,8 @@ let
           {(λ(old:map{r |}) ->
            (λ(cur:map{r |}) ->
            (λ(r:'a) ->
-           ((!! ['a|r|{r }] x cur = ['a||] r) /\
-           (!! ['a|r|{r }] x old = ['a||] !! ['a|r|{r }] x cur)))))})
+           ((!! ['a|r|{r }] x cur) = ['a||] r) /\
+           ((!! ['a|r|{r }] x old) = ['a||] (!! ['a|r|{r }] x cur)))))})
 in
 let
 := ['a|r|e]=
@@ -20,7 +20,7 @@ let
             (λ(v:'a) ->  param(unit,{r |})
             {(λ(old:map{r |}) ->
              (λ(cur:map{r |}) ->
-             (λ(:unit) -> (!! ['a|r|{r }] x cur = ['a||] v))))}))
+             (λ(:unit) -> (!! ['a|r|{r }] x cur) = ['a||] v)))}))
 in
 let fst ['a 'b||]= logic (('a * 'b)) -> 'a in
 let snd ['a 'b||]= logic (('a * 'b)) -> 'b in
@@ -42,22 +42,22 @@ forto [||e]=
             (λ(end_:nat) ->
             (λ(f:nat ->{|e } unit) ->
             {(λ(cur:map{|e }) ->
-             (inv start cur /\
-             forall (i:nat).
-             (((start <= i) /\ (i <= end_)) ->
-             forall (m:map{|e }).
-             (inv i m ->
-             (pre [nat -> map{ e e} -> prop,nat -> map{ e e} -> map{ e e} ->
-              unit -> prop||] f i m
-             /\
-             forall (n:map{|e }).
-             (post [nat -> map{ e e e} -> prop,nat -> map{ e e e} -> map{ e e
-              e} -> unit -> prop||] f i m n ()
-             -> inv ((i + 1)) n))))))}
+             (inv start cur) /\
+             (forall (i:nat).
+              ((start <= i) /\ (i <= end_)) ->
+              (forall (m:map{|e }).
+               (inv i m) ->
+               ((pre [nat -> map{ e e} -> prop,nat -> map{ e e} -> map{ e
+                 e} -> unit -> prop||] f i m)
+                /\
+                (forall (n:map{|e }).
+                 (post [nat -> map{ e e e} -> prop,nat -> map{ e e e} ->
+                  map{ e e e} -> unit -> prop||] f i m n ())
+                 -> (inv (i + 1) n))))))}
             param(unit,{|e })
             {(λ(old:map{|e }) ->
              (λ(cur:map{|e }) ->
-             (λ(:unit) -> inv (max start ((end_ + 1))) cur)))}))))
+             (λ(:unit) -> inv (max start (end_ + 1)) cur)))}))))
 in
 let
 fordownto [||e]=
@@ -66,22 +66,22 @@ fordownto [||e]=
                 (λ(end_:nat) ->
                 (λ(f:nat ->{|e } unit) ->
                 {(λ(cur:map{|e }) ->
-                 (inv start cur /\
-                 forall (i:nat).
-                 (((start <= i) /\ (i <= end_)) ->
-                 forall (m:map{|e }).
-                 (inv i m ->
-                 (pre [nat -> map{ e e} -> prop,nat -> map{ e e} -> map{ e
-                  e} -> unit -> prop||] f i m
-                 /\
-                 forall (n:map{|e }).
-                 (post [nat -> map{ e e e} -> prop,nat -> map{ e e e} ->
-                  map{ e e e} -> unit -> prop||] f i m n ()
-                 -> inv ((i - 1)) n))))))}
+                 (inv start cur) /\
+                 (forall (i:nat).
+                  ((start <= i) /\ (i <= end_)) ->
+                  (forall (m:map{|e }).
+                   (inv i m) ->
+                   ((pre [nat -> map{ e e} -> prop,nat -> map{ e e} -> map{ e
+                     e} -> unit -> prop||] f i m)
+                    /\
+                    (forall (n:map{|e }).
+                     (post [nat -> map{ e e e} -> prop,nat -> map{ e e e} ->
+                      map{ e e e} -> unit -> prop||] f i m n ())
+                     -> (inv (i - 1) n))))))}
                 param(unit,{|e })
                 {(λ(old:map{|e }) ->
                  (λ(cur:map{|e }) ->
-                 (λ(:unit) -> inv (min start ((end_ - 1))) cur)))}))))
+                 (λ(:unit) -> inv (min start (end_ - 1)) cur)))}))))
 in
 let
 seq [||e]=
@@ -89,40 +89,40 @@ seq [||e]=
           (λ(g:unit ->{|e } unit) ->
           {(λ(cur:map{|e }) ->
            (fst [unit -> map{ e e} -> prop,unit -> map{ e e} -> map{ e e} ->
-            unit -> prop||] f () cur
+            unit -> prop||] f () cur)
            /\
-           forall (i:map{|e }).
-           ((True /\
-            snd [unit -> map{ e e e} -> prop,unit -> map{ e e e} -> map{ e e
-            e} -> unit -> prop||] f () cur i ())
-           ->
-           fst [unit -> map{ e e} -> prop,unit -> map{ e e} -> map{ e e} ->
-           unit -> prop||] g () i)))}
+           (forall (i:map{|e }).
+            (True /\
+             (snd [unit -> map{ e e e} -> prop,unit -> map{ e e e} -> map{ e
+              e e} -> unit -> prop||] f () cur i ()))
+            ->
+            (fst [unit -> map{ e e} -> prop,unit -> map{ e e} -> map{ e e} ->
+             unit -> prop||] g () i)))}
           let x = f () in g ()
           {(λ(old:map{|e }) ->
            (λ(cur:map{|e }) ->
            (λ(:unit) ->
            exists (i:map{|e }).
            (snd [unit -> map{ e e e} -> prop,unit -> map{ e e e} -> map{ e e
-            e} -> unit -> prop||] f () old i ()
+            e} -> unit -> prop||] f () old i ())
            /\
-           snd [unit -> map{ e e e} -> prop,unit -> map{ e e e} -> map{ e e
-           e} -> unit -> prop||] g () i cur ()))))}))
+           (snd [unit -> map{ e e e} -> prop,unit -> map{ e e e} -> map{ e e
+            e} -> unit -> prop||] g () i cur ()))))}))
 in
 let
 z [|r|]=
         (λ(x:ref(r,nat)) -> 
         seq [||{r r r r {r } { 1419 1428 1431} 1433 {r } { 1339 1348 1351}
         1353}]
-        (λ(z:unit) ->  (x := [nat|r|1343] 0)
+        (λ(z:unit) ->  x := [nat|r|1343] 0
         {(λ(old:map{r |}) ->
          (λ(cur:map{r |}) ->
-         (λ(:unit) -> (!! [nat|r|{r }] x cur = [nat||] 0))))})
-        (λ(z:unit) ->  (x := [nat|r|1423] 1)
+         (λ(:unit) -> (!! [nat|r|{r }] x cur) = [nat||] 0)))})
+        (λ(z:unit) ->  x := [nat|r|1423] 1
         {(λ(old:map{r |}) ->
          (λ(cur:map{r |}) ->
-         (λ(:unit) -> (!! [nat|r|{r }] x cur = [nat||] 1))))})
+         (λ(:unit) -> (!! [nat|r|{r }] x cur) = [nat||] 1)))})
         {(λ(old:map{r |}) ->
          (λ(cur:map{r |}) ->
-         (λ(:unit) -> (!! [nat|r|{r }] x cur = [nat||] 1))))})
+         (λ(:unit) -> (!! [nat|r|{r }] x cur) = [nat||] 1)))})
 in ()
