@@ -54,12 +54,12 @@ forto [||e]=
               ((start <= i) /\ (i <= end_)) ->
               (forall (m:map{|e }).
                (inv i m) ->
-               ((pre [nat -> map{|e e} -> prop,nat -> map{|e e} -> map{|e
-                 e} -> unit -> prop||] f i m)
+               ((pre [nat -> mape -> prop,nat -> mape -> mape -> unit ->
+                 prop||] f i m)
                 /\
                 (forall (n:map{|e }).
-                 (post [nat -> map{|e e e} -> prop,nat -> map{|e e e} ->
-                  map{|e e e} -> unit -> prop||] f i m n ())
+                 (post [nat -> mape -> prop,nat -> mape -> mape -> unit ->
+                  prop||] f i m n ())
                  -> (inv (i + 1) n))))))}
             param(unit,{|e })
             {(λ(old:map{|e }) ->
@@ -78,12 +78,12 @@ fordownto [||e]=
                   ((start <= i) /\ (i <= end_)) ->
                   (forall (m:map{|e }).
                    (inv i m) ->
-                   ((pre [nat -> map{|e e} -> prop,nat -> map{|e e} -> map{|e
-                     e} -> unit -> prop||] f i m)
+                   ((pre [nat -> mape -> prop,nat -> mape -> mape -> unit ->
+                     prop||] f i m)
                     /\
                     (forall (n:map{|e }).
-                     (post [nat -> map{|e e e} -> prop,nat -> map{|e e e} ->
-                      map{|e e e} -> unit -> prop||] f i m n ())
+                     (post [nat -> mape -> prop,nat -> mape -> mape ->
+                      unit -> prop||] f i m n ())
                      -> (inv (i - 1) n))))))}
                 param(unit,{|e })
                 {(λ(old:map{|e }) ->
@@ -94,12 +94,12 @@ let
 f [||e]=
         (λ(g:nat ->{|e } nat) -->
         {(λ(cur:map{|e }) ->
-         fst [nat -> map{|e e} -> prop,nat -> map{|e e} -> map{|e e} ->
-         nat -> prop||] g 5 cur)}
+         fst [nat -> mape -> prop,nat -> mape -> mape -> nat -> prop||] g 5
+         cur)}
         g 5
         {(λ(old:map{|e }) ->
          (λ(cur:map{|e }) ->
          (λ(r:nat) ->
-         snd [nat -> map{|e e e} -> prop,nat -> map{|e e e} -> map{|e e e} ->
-         nat -> prop||] g 5 old cur r)))})
+         snd [nat -> mape -> prop,nat -> mape -> mape -> nat -> prop||] g 5
+         old cur r)))})
 in ()

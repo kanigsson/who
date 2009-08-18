@@ -33,6 +33,9 @@ let smap f x =
 
 let rmap f (r,e,c) = smap f r, e, smap f c
 
+let from_cap_list l = SS.empty,SS.empty, 
+  List.fold_left (fun acc x -> SS.add x acc) SS.empty l
+
 let lsubst el effl (rt,et,c) =
   let map = Misc.build_string_map el effl in
   let (nrt,ne,nc) = 

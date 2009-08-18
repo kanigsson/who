@@ -50,10 +50,19 @@ let eunion a b =
   | EU, EU -> a
   | EU, _ -> b
   | _, EU -> a
-  | EV a, EV b -> ET ([],[mke a; mke b],[])
+  | EV a, EV b when a = b -> EV a
+  | EV a, EV b -> 
+(*       ET ([],[mke a; mke b],[]) *)
+      assert false
+  | EV a, ET _ | ET _, EV a -> 
+      (* let's postulate that the ET _ expression is just another way
+       * of expressing EV a; we keep the simpler one *)
+      EV a
+(*
   | (EV a, ET (rl, el,cl)) 
-  | ET (rl,el,cl), EV a -> ET (rl, (mke a)::el,cl)
-  | ET (rl1,el1,cl1), ET (rl2,el2,cl2) -> ET (rl1 @ rl2, el1 @ el2, cl1 @ cl2)
+  | ET (rl,el,cl), EV a ->  ET (rl, (mke a)::el,cl)
+*)
+  | ET (rl1,el1,cl1), ET (rl2,el2,_) -> ET (rl1@rl2, el1 @ el2, cl1)
 
 let eunion a b = Uf.union eunion a b
 
@@ -112,7 +121,7 @@ let rec unify a b =
       | _ , _ -> 
           raise CannotUnify
       end; 
-      (* We really should unify afterwards, in case of an exception beeing
+      (* We really should unify afterwards, in case of an exception being
        * raised *)
       union a b;
 and runify a b = 
@@ -127,8 +136,13 @@ and runify a b =
 (*       printf "runify: %s and %s@." x1 x2; *)
       raise CannotUnify
 and eunify a b = 
-(*   printf "eunify : %a and %a" preff a preff b; *)
-  if Uf.equal a b then () else eunion a b
+(*   printf "eunify : %a and %a@." preff a preff b; *)
+  if Uf.equal a b then () else 
+    begin match Uf.desc a, Uf.desc b with
+    | ET (_,_,c1), ET (_,_,c2) -> List.iter2 runify c1 c2
+    | _ -> ()
+    end ;
+    eunion a b;
 (*   printf "gives %a@." preff a; *)
       
 module H = Hashtbl.Make (struct 

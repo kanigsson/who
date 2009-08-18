@@ -89,11 +89,13 @@ let postf eff t res (p : ParseT.t) =
   lameff "old" (lameff "cur" (lam res (to_ty t) p p.loc ) p.loc) p.loc
 
 let rec infer' env t loc = function
-  | App (e1,e2,k) ->
-      let nt = new_ty () and e = new_e () in
+  | App (e1,e2,k,cap) ->
+      let nt = new_ty () 
+      and e = if cap = [] then new_e () 
+              else to_uf_enode (Effect.from_cap_list cap) in
       let e1 = infer env (arrow nt t e) e1 in
       let e2 = infer env nt e2 in
-      App (e1,e2,k), Unify.effect [] [e;e1.e;e2.e] []
+      App (e1,e2,k,cap), Unify.effect [] [e;e1.e;e2.e] []
   | Annot (e,xt) -> 
       unify (sto_uf_node xt) t loc;
       let e = infer env t e in
@@ -190,7 +192,7 @@ open Recon
 let rec recon' = function
   | Var (x,i) -> Var (x,inst i)
   | Const c -> Const c
-  | App (e1,e2,k) -> App (recon e1, recon e2,k)
+  | App (e1,e2,k,cap) -> App (recon e1, recon e2,k,cap)
   | PureFun (x,t,e) -> PureFun (x,t,recon e)
   | Quant (k,x,t,e) -> Quant (k,x,t,recon e)
   | Lam (x,ot,p,e,q) -> 

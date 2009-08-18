@@ -54,12 +54,12 @@ forto [||e]=
               ((start <= i) /\ (i <= end_)) ->
               (forall (m:map{|e }).
                (inv i m) ->
-               ((pre [nat -> map{|e e} -> prop,nat -> map{|e e} -> map{|e
-                 e} -> unit -> prop||] f i m)
+               ((pre [nat -> mape -> prop,nat -> mape -> mape -> unit ->
+                 prop||] f i m)
                 /\
                 (forall (n:map{|e }).
-                 (post [nat -> map{|e e e} -> prop,nat -> map{|e e e} ->
-                  map{|e e e} -> unit -> prop||] f i m n ())
+                 (post [nat -> mape -> prop,nat -> mape -> mape -> unit ->
+                  prop||] f i m n ())
                  -> (inv (i + 1) n))))))}
             param(unit,{|e })
             {(λ(old:map{|e }) ->
@@ -78,12 +78,12 @@ fordownto [||e]=
                   ((start <= i) /\ (i <= end_)) ->
                   (forall (m:map{|e }).
                    (inv i m) ->
-                   ((pre [nat -> map{|e e} -> prop,nat -> map{|e e} -> map{|e
-                     e} -> unit -> prop||] f i m)
+                   ((pre [nat -> mape -> prop,nat -> mape -> mape -> unit ->
+                     prop||] f i m)
                     /\
                     (forall (n:map{|e }).
-                     (post [nat -> map{|e e e} -> prop,nat -> map{|e e e} ->
-                      map{|e e e} -> unit -> prop||] f i m n ())
+                     (post [nat -> mape -> prop,nat -> mape -> mape ->
+                      unit -> prop||] f i m n ())
                      -> (inv (i - 1) n))))))}
                 param(unit,{|e })
                 {(λ(old:map{|e }) ->
@@ -95,19 +95,18 @@ let apply ['a
        (λ(f:'a ->{|e } 'b) ->
        (λ(x:'a) -->
        {(λ(cur:map{|e }) ->
-        fst ['a -> map{|e e} -> prop,'a -> map{|e e} -> map{|e e} -> 'b ->
-        prop||] f x cur)}
+        fst ['a -> mape -> prop,'a -> mape -> mape -> 'b -> prop||] f x cur)}
        f x
        {(λ(old:map{|e }) ->
         (λ(cur:map{|e }) ->
         (λ(k:'b) ->
-        snd ['a -> map{|e e e} -> prop,'a -> map{|e e e} -> map{|e e e} ->
-        'b -> prop||] f x old cur k)))}))
+        snd ['a -> mape -> prop,'a -> mape -> mape -> 'b -> prop||] f x old
+        cur k)))}))
 in
 let
 main [|r|]=
            (λ(x:ref(r,nat)) --> 
-           apply [unit,unit||{r r|{r|} {|1245 1253 1256} 1258}]
+           apply [unit,unit||{r r|{r|} {|1203 1211 1214} 1216}]
            (λ(z:unit) -->  x := [nat|r|] 0
            {(λ(old:map{r |}) ->
             (λ(cur:map{r |}) ->

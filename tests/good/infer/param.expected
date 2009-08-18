@@ -54,12 +54,12 @@ forto [||e]=
               ((start <= i) /\ (i <= end_)) ->
               (forall (m:map{|e }).
                (inv i m) ->
-               ((pre [nat -> map{|e e} -> prop,nat -> map{|e e} -> map{|e
-                 e} -> unit -> prop||] f i m)
+               ((pre [nat -> mape -> prop,nat -> mape -> mape -> unit ->
+                 prop||] f i m)
                 /\
                 (forall (n:map{|e }).
-                 (post [nat -> map{|e e e} -> prop,nat -> map{|e e e} ->
-                  map{|e e e} -> unit -> prop||] f i m n ())
+                 (post [nat -> mape -> prop,nat -> mape -> mape -> unit ->
+                  prop||] f i m n ())
                  -> (inv (i + 1) n))))))}
             param(unit,{|e })
             {(λ(old:map{|e }) ->
@@ -78,12 +78,12 @@ fordownto [||e]=
                   ((start <= i) /\ (i <= end_)) ->
                   (forall (m:map{|e }).
                    (inv i m) ->
-                   ((pre [nat -> map{|e e} -> prop,nat -> map{|e e} -> map{|e
-                     e} -> unit -> prop||] f i m)
+                   ((pre [nat -> mape -> prop,nat -> mape -> mape -> unit ->
+                     prop||] f i m)
                     /\
                     (forall (n:map{|e }).
-                     (post [nat -> map{|e e e} -> prop,nat -> map{|e e e} ->
-                      map{|e e e} -> unit -> prop||] f i m n ())
+                     (post [nat -> mape -> prop,nat -> mape -> mape ->
+                      unit -> prop||] f i m n ())
                      -> (inv (i - 1) n))))))}
                 param(unit,{|e })
                 {(λ(old:map{|e }) ->
@@ -95,12 +95,12 @@ apply ['a||e]=
               (λ(g:'a ->{|e } unit) ->
               (λ(x:'a) -->
               {(λ(cur:map{|e }) ->
-               fst ['a -> map{|e e} -> prop,'a -> map{|e e} -> map{|e e} ->
-               unit -> prop||] g x cur)}
+               fst ['a -> mape -> prop,'a -> mape -> mape -> unit -> prop||]
+               g x cur)}
               param(unit,{|e })
               {(λ(old:map{|e }) ->
                (λ(cur:map{|e }) ->
                (λ(r:unit) ->
-               snd ['a -> map{|e e e} -> prop,'a -> map{|e e e} -> map{|e e
-               e} -> unit -> prop||] g x old cur r)))}))
+               snd ['a -> mape -> prop,'a -> mape -> mape -> unit -> prop||]
+               g x old cur r)))}))
 in ()

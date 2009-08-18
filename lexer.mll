@@ -84,6 +84,8 @@ rule token = parse
   | ']' { RBRACKET   }
   | '{' { LCURL (create_info lexbuf) }
   | '}' { RCURL   }
+  | "{{" { DLCURL }
+  | "}}" { DRCURL }
   | "!!" { DEXCLAM (create_info lexbuf) }
   | "!=" { BNEQ (create_info lexbuf) }
   | '!' { EXCLAM (create_info lexbuf) }

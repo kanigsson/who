@@ -61,4 +61,4 @@ fordownto [||e]=
                     (forall (n:map{|e }).
                      (post f i m n ()) -> (inv (i - 1) n)))))}
                 param(unit,{|e }) {inv (min start (end_ - 1)) cur}))))
-in let myref ['a|r|]= (λ(x:'a) -->  (ref x : ref(r,'a)) ) in ()
+in let myref ['a|r|]= (λ(x:'a) -->  ref{r} x ) in ()

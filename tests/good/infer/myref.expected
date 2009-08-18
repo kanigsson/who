@@ -54,12 +54,12 @@ forto [||e]=
               ((start <= i) /\ (i <= end_)) ->
               (forall (m:map{|e }).
                (inv i m) ->
-               ((pre [nat -> map{|e e} -> prop,nat -> map{|e e} -> map{|e
-                 e} -> unit -> prop||] f i m)
+               ((pre [nat -> mape -> prop,nat -> mape -> mape -> unit ->
+                 prop||] f i m)
                 /\
                 (forall (n:map{|e }).
-                 (post [nat -> map{|e e e} -> prop,nat -> map{|e e e} ->
-                  map{|e e e} -> unit -> prop||] f i m n ())
+                 (post [nat -> mape -> prop,nat -> mape -> mape -> unit ->
+                  prop||] f i m n ())
                  -> (inv (i + 1) n))))))}
             param(unit,{|e })
             {(λ(old:map{|e }) ->
@@ -78,15 +78,15 @@ fordownto [||e]=
                   ((start <= i) /\ (i <= end_)) ->
                   (forall (m:map{|e }).
                    (inv i m) ->
-                   ((pre [nat -> map{|e e} -> prop,nat -> map{|e e} -> map{|e
-                     e} -> unit -> prop||] f i m)
+                   ((pre [nat -> mape -> prop,nat -> mape -> mape -> unit ->
+                     prop||] f i m)
                     /\
                     (forall (n:map{|e }).
-                     (post [nat -> map{|e e e} -> prop,nat -> map{|e e e} ->
-                      map{|e e e} -> unit -> prop||] f i m n ())
+                     (post [nat -> mape -> prop,nat -> mape -> mape ->
+                      unit -> prop||] f i m n ())
                      -> (inv (i - 1) n))))))}
                 param(unit,{|e })
                 {(λ(old:map{|e }) ->
                  (λ(cur:map{|e }) ->
                  (λ(:unit) -> inv (min start (end_ - 1)) cur)))}))))
-in let myref ['a|r|]= (λ(x:'a) -->  (ref ['a|r|] x : ref(r,'a)) ) in ()
+in let myref ['a|r|]= (λ(x:'a) -->  ref ['a|r|]{r} x ) in ()

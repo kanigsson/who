@@ -5,7 +5,7 @@ type quant = FA | EX
 type ('a,'b,'c) t'' =
   | Const of Const.t
   | Var of var * ('a,'b,'c) Inst.t
-  | App of ('a,'b,'c) t' * ('a,'b,'c) t' * fix
+  | App of ('a,'b,'c) t' * ('a,'b,'c) t' * fix * rvar list
   | Lam of 
       var * Ty.t * ('a,'b,'c) t' option * ('a,'b,'c) t' * ('a,'b,'c) post 
   | Let of Ty.Generalize.t * ('a,'b,'c) t' * var * ('a,'b,'c) t' * isrec
@@ -41,10 +41,10 @@ let print pra prb prc fmt t =
     | Var (v,i) -> 
         if Inst.is_empty i then var fmt v
         else fprintf fmt "%a %a" var v (Inst.print pra prb prc) i
-    | App ({v = App (op,t1,_)},t2,Infix) -> 
+    | App ({v = App (op,t1,_,_)},t2,Infix,_) -> 
         fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 print op with_paren t2
-    | App (t1,t2,_) ->
-          fprintf fmt "@[%a@ %a@]" print t1 with_paren t2
+    | App (t1,t2,_,cap) ->
+          fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
     | Lam (x,t,p,e,q) -> 
         fprintf fmt "@[(λ(%s:%a)@ -->@ %a@ %a@ %a)@]" x 
           Ty.print t pre p print e post q
@@ -82,6 +82,9 @@ let print pra prb prc fmt t =
   and prrec fmt = function
     | NoRec -> ()
     | Rec t -> fprintf fmt "rec(%a) " Ty.print t
+  and maycap fmt = function
+    | [] -> ()
+    | l -> fprintf fmt "{%a}" (print_list space rvar) l
   and with_paren fmt x = 
     if is_compound_node x then paren print fmt x else print fmt x in
   print fmt t
@@ -110,7 +113,7 @@ module Recon = struct
 
   let app ?(kind=Prefix) t1 t2 loc = 
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
-    mk (App (t1,t2,kind)) t (Effect.union t1.e (Effect.union t2.e e)) loc
+    mk (App (t1,t2,kind,[])) t (Effect.union t1.e (Effect.union t2.e e)) loc
 
 
   let app2 t t1 t2 loc = app (app t t1 loc) t2 loc
@@ -141,7 +144,8 @@ module ParseT = struct
   let print fmt t = print nothing nothing nothing fmt t
 
   let mk v loc = { v = v; t = (); e = (); loc = loc }
-  let app ?(kind=Prefix) t1 t2 = mk (App (t1,t2, kind))
+  let app ?(kind=Prefix) t1 t2 = mk (App (t1,t2, kind,[]))
+  let cap_app t1 t2 cap = mk (App(t1,t2,Prefix,cap))
   let var s = mk (Var (s,Inst.empty))
   let const c = mk (Const c)
   let app2 s t1 t2 loc = app (app (var s loc) t1 loc) t2 loc

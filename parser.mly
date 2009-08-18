@@ -49,7 +49,7 @@
 
 %token <int Loc.t> INT
 %token <Loc.loc> LPAREN RPAREN LCURL BEGIN END
-%token LBRACKET RBRACKET RCURL
+%token LBRACKET RBRACKET RCURL DLCURL DRCURL
 %token <string Loc.t> IDENT
 %token <string> TYVAR
 %token IN 
@@ -171,6 +171,8 @@ aterm:
 
 appterm:
   | t = aterm { t }
+  | t1 = appterm DLCURL l = list(rvar_no_pos) DRCURL t2 = aterm 
+    {cap_app t1 t2 l (embrace t1.loc t2.loc) }
   | t1 = appterm t2 = aterm { app t1 t2 (embrace t1.loc t2.loc) }
 
 nterm:

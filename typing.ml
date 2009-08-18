@@ -39,7 +39,7 @@ let rec formtyping' env loc = function
       with Not_found -> 
         error (Myformat.sprintf "unknown variable: %s" s) loc 
       end
-  | Ast.App (e1,e2,_) ->
+  | Ast.App (e1,e2,_,_) ->
       let t1 = formtyping env e1 in
       let t2 = formtyping env e2 in
       begin match t1 with
@@ -100,7 +100,7 @@ and typing' env loc = function
       with Not_found -> 
         error (Myformat.sprintf "unknown variable: %s" s) loc
       end
-  | Ast.App (e1,e2,_) ->
+  | Ast.App (e1,e2,_,_) ->
       let t1, eff1 = typing env e1 in
       let t2,eff2 = typing env e2 in
       let effi = Effect.union eff2 eff1 in
