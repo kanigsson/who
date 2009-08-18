@@ -1,1 +1,2 @@
-<main.*> : pkg_unix
+<main.*> : pkg_unix, pkg_menhirLib
+<parser.ml>: pkg_menhirLib

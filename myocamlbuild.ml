@@ -92,7 +92,7 @@ let _ = dispatch begin function
         flag ["ocaml"; "pkg_threads"; "link"] (S[A "-thread"]);
         flag ["ocaml"; "compile"; "warn_error" ] (S[A "-w"; A "Z"; A "-warn-error"; A "A"]);
         (* Menhir --explain flag *)
-        flag ["menhir"] (S[A"--explain"])
+        flag ["menhir"] (S[A"--explain"; A"--table"])
       end
 
        
