@@ -4,7 +4,9 @@ open Recon
 
 let new_var = 
   let cnt = ref 0 in
-  fun () -> Printf.sprintf "-tmp%d" !cnt
+  fun () -> incr cnt; Printf.sprintf "-tmp%d" !cnt
+
+let debugcnt = ref 0 
 
 let id x = x
 let rec normalize_term v = normalize v id
@@ -24,14 +26,15 @@ and normalize e k =
         (fun v -> k (ite v (normalize_term e2) (normalize_term e3) loc))
   | Annot (e,_) -> normalize e k
   | App (e1,e2,f,c) ->
-      (* impure application *)
       normalize_name e1
-        (fun v1 -> normalize_name e2 (fun v2 -> allapp v1 v2 f c loc))
+        (fun v1 -> normalize_name e2 
+          (fun v2 -> k (allapp v1 v2 f c loc)))
 
 and normalize_name e k =
   normalize e
     (fun e -> 
-      if is_value_node e then k e else
+      if is_value_node e then k e 
+      else
         let nv = new_var () in
         let nvv = svar nv e.t e.loc in
         let_ Generalize.empty e nv (k nvv) NoRec e.loc)

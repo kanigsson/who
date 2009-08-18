@@ -121,7 +121,7 @@ module Recon = struct
 
   let app2 t t1 t2 loc = app (app t t1 loc) t2 loc
   let appi t t1 t2 loc = app ~kind:Infix (app t t1 loc) t2 loc
-  let allapp t1 t2 kind cap = app ~kind ~cap t1 t2 
+  let allapp t1 t2 kind cap loc = app ~kind ~cap t1 t2 loc
   let var s inst (g,t) = mk_val (Var (s,inst)) (Ty.allsubst g inst t) 
 
   module T = Ty
