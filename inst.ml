@@ -1,5 +1,3 @@
-open Vars
-
 type ('a,'b,'c) t = 'a list * 'b list * 'c list 
 
 let empty = [],[],[]

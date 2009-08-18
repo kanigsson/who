@@ -30,7 +30,8 @@ let _ =
   try
     let prelude = parse_string Prelude.prelude in
     let ast = parse_file !Options.filename in
-    let p = Ast.concat prelude ast in
+    let p = Parsetree.concat prelude ast in
+    let p = Internalize.main p in
     maybe_abort Options.parse_only Ast.ParseT.print p;
     let p = Infer.infer p in
     maybe_abort Options.infer_only Ast.Infer.print p;
@@ -40,6 +41,7 @@ let _ =
     let p = Anf.normalize_term p in
     maybe_abort Options.anf_only Ast.Recon.print p;
     Typing.typing p;
+    p
   with
   | Sys_error e -> Error.bad e
   | Infer.Error (s,loc) 

@@ -1,11 +1,7 @@
 %{
   open Loc
-  open Ast
-  open ParseT
-  module SS = Misc.SS
-
-  let list_to_set x = 
-    List.fold_left (fun acc x -> SS.add x acc) SS.empty x
+  open Const
+  open Parsetree
 
   let rec merge = function
     | [] -> const Const.Void Loc.dummy
@@ -36,11 +32,12 @@
   let let_wconst l t x r p = let_ l t x (const (Const.Void) p) r p
 
   let forfunction dir i start end_ inv body pos =
-    let forterm = mk (For (dir,inv,i.c,body)) pos in
-    let em = Ty.Generalize.empty in
+    let s = "-start" and e = "-end" in
+    let forterm = mk (For (dir,inv,i.c,s,e,body)) pos in
+    let em = [],[],[] in
     (* let start = start and end_ = end_ in 
        forvar inv start end_ body *)
-    let_ em start "%%start" (let_ em end_ "%%end_" forterm NoRec end_.loc) 
+    let_ em start s (let_ em end_ e forterm NoRec end_.loc) 
       NoRec start.loc
 
 
@@ -73,7 +70,7 @@
 %left PLUS MINUS
 %right STAR
 
-%start <Ast.ParseT.t> main
+%start <Parsetree.t> main
 %%
 
 progvar: 
@@ -99,26 +96,26 @@ tconstant:
   | PROP { Const.TProp }
 
 stype:
-  | x = tconstant { Ty.const x }
-  | v = TYVAR { Ty.var v }
+  | x = tconstant { TConst x }
+  | v = TYVAR { TVar v }
   | LPAREN t = ty RPAREN { t }
-  | v = IDENT i = inst { Ty.app v.c i }
+  | v = IDENT i = inst { TApp (v.c,i)  }
 
 effect:
   | lr = list(rvar_no_pos) MID le =  list(effvar_no_pos) cl = maycap
-    { list_to_set lr, list_to_set le, list_to_set cl}
+    { lr, le,  cl}
 
 sepeffect:
   | LCURL e = effect RCURL { e }
 
 ty:
   | t = stype { t }
-  | t1 = ty ARROW t2 = ty { Ty.parr t1 t2 }
+  | t1 = ty ARROW t2 = ty { PureArr (t1, t2) }
   | t1 = ty ARROW e = sepeffect t2 = ty %prec ARROW 
-    { Ty.arrow t1 t2 e }
-  | t1 = ty STAR t2 = ty { Ty.tuple t1 t2 }
-  | LT e = effect GT { Ty.map e }
-  | REF LPAREN id = rvar_no_pos COMMA t = ty  RPAREN { Ty.ref_ id t }
+    { Arrow (t1,t2,e) }
+  | t1 = ty STAR t2 = ty { Tuple (t1, t2) }
+  | LT e = effect GT { Map e }
+  | REF LPAREN id = rvar_no_pos COMMA t = ty  RPAREN { Ref (id,t) }
 
 inst:
   LBRACKET tl = list(ty) MID rl = list(rvar_no_pos) MID el = list(sepeffect) RBRACKET
@@ -206,7 +203,7 @@ nterm:
     { mk (LetReg (l,t)) p }
   | st = IF it = nterm THEN tb = nterm ELSE eb = nterm %prec ifprec
     { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
-  | f = letrec IN e2 = nterm %prec let_ { (f : ParseT.t -> ParseT.t) e2 }
+  | f = letrec IN e2 = nterm %prec let_ { (f : t -> t) e2 }
   | st = FOR i = progvar EQUAL e1 = nterm dir = todownto e2 = nterm DO 
        p = precond
        e3 = nterm 
@@ -270,7 +267,7 @@ decl:
   | b = letwithargs EQUAL t1 = nterm
     { let p,x,l,args = b in
       let_wconst l (mk_pure_lam args t1 p) x NoRec (embrace p t1.loc) }
-  | f = letrec { (f : ParseT.t -> ParseT.t) (const (Const.Void) dummy) }
+  | f = letrec { (f : t -> t) (const (Const.Void) dummy) }
   | p = PARAMETER x = defprogvar_no_pos l = optgen args = arglist 
     COLON rt = ty COMMA e = sepeffect EQUAL pre = precond post = postcond
   { 

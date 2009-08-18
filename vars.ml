@@ -1,15 +1,12 @@
-type var = string
-type tvar = string
-type rvar = string
-type effvar = string
+open Name
+module Var = Name
+module TyVar = Name
+module RVar = Name
+module EffVar = Name
 
-open Myformat
-let var = pp_print_string
-let tvar = pp_print_string
-let rvar = pp_print_string
-let effvar = pp_print_string
+let h = Hashtbl.create 17
 
-let varlist = print_list space var
-let tvarlist = print_list space var
-let rvarlist = print_list space var
-let effvarlist = print_list space var
+let add_var s x = Hashtbl.add h s x
+let get_predef_var s = 
+  try Hashtbl.find h s
+  with Not_found -> failwith ("predef_var: " ^ s)

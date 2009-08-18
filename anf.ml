@@ -1,12 +1,7 @@
+open Vars
 open Ty
 open Ast
 open Recon
-
-let new_var = 
-  let cnt = ref 0 in
-  fun () -> incr cnt; Printf.sprintf "-tmp%d" !cnt
-
-let debugcnt = ref 0 
 
 let id x = x
 let rec normalize_term v = normalize v id
@@ -35,6 +30,6 @@ and normalize_name e k =
     (fun e -> 
       if is_value_node e then k e 
       else
-        let nv = new_var () in
+        let nv = Var.from_string "anf" in
         let nvv = svar nv e.t e.loc in
         let_ Generalize.empty e nv (k nvv) NoRec e.loc)

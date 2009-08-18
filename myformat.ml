@@ -40,3 +40,7 @@ let hash_print ?(bsep=lbrack) ?(endsep=rbrack) prk prv fmt h =
   endsep fmt ()
 
 let paren pr fmt x = fprintf fmt "(%a)" pr x
+
+let print_string_map pr fmt m = 
+  Misc.StringMap.iter (fun x v -> fprintf fmt "%s : %a" x pr v ) m;
+  fprintf fmt "@."

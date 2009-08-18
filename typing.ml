@@ -1,3 +1,4 @@
+open Vars
 open Ast
 open Ty
 module SM = Misc.StringMap
@@ -8,15 +9,15 @@ exception Error of string * Loc.loc
 let error s loc = raise (Error (s,loc))
 
 type env = 
-  { types : (Generalize.t * Ty.t) SM.t; }
+  { types : (Generalize.t * Ty.t) Var.M.t; }
 
 let add_var env x g t = 
-  { types = SM.add x (g,t) env.types }
+  { types = Var.M.add x (g,t) env.types }
 let add_svar env x t = 
-  { types = SM.add x (Generalize.empty,t) env.types }
+  { types = Var.M.add x (Generalize.empty,t) env.types }
 
 
-let type_of_var env x = SM.find x env.types
+let type_of_var env x = Var.M.find x env.types
 
 let ftype_of_var env x = 
   let m,t = type_of_var env x in
@@ -37,7 +38,7 @@ let rec formtyping' env loc = function
 (*         printf "var : %a of type %a@." Vars.var s Ty.print r; r *)
         r
       with Not_found -> 
-        error (Myformat.sprintf "unknown variable: %s" s) loc 
+        error (Myformat.sprintf "unknown variable: %a" Var.print s) loc 
       end
   | Ast.App (e1,e2,_,_) ->
       let t1 = formtyping env e1 in
@@ -84,10 +85,12 @@ and formtyping env (e : Ast.Recon.t) : Ty.t =
   else
     error (Myformat.sprintf "fannotation mismatch: %a and %a@." 
              Ty.print e.t Ty.print t) e.loc
-and pre env eff = function
+and pre env eff (_,x) =
+  match x with
   | None -> ()
   | Some f -> fis_oftype env (prety eff) f
-and post env eff t = function
+and post env eff t (_,_,x) =
+  match x with
   | PNone -> ()
   | PPlain f -> fis_oftype env (postty eff t) f
   | _ -> assert false
@@ -99,7 +102,7 @@ and typing' env loc = function
         let g, t = type_of_var env s in
         Ty.allsubst g i t, Effect.empty
       with Not_found -> 
-        error (Myformat.sprintf "unknown variable: %s" s) loc
+        error (Myformat.sprintf "unknown variable: %a" Var.print s) loc
       end
   | Ast.App (e1,e2,_,_) ->
       let t1, eff1 = typing env e1 in
@@ -177,4 +180,4 @@ and fis_oftype env t e =
       (Myformat.sprintf "typing mismatch: %a and %a" Ty.print t Ty.print t') 
       e.loc
 
-let typing t = ignore (typing { types = SM.empty} t)
+let typing t = ignore (typing { types = Var.M.empty} t)

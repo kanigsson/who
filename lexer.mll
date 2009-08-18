@@ -100,6 +100,7 @@ rule token = parse
   | "/\\" { AND (create_info lexbuf) }
   | '<' { LT (create_info lexbuf)  }
   | '>' { GT (create_info lexbuf)  }
+  | ">=" { GE (create_info lexbuf)  }
   | '+' { PLUS (create_info lexbuf)  }
   | '-' { MINUS (create_info lexbuf)  }
   | "(*" { comment lexbuf; token lexbuf }

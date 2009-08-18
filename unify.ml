@@ -1,5 +1,5 @@
+open Vars
 module Uf = Unionfind
-module SS = Misc.SS
 
 type ty = 
   | U
@@ -9,10 +9,10 @@ and rnode = r Uf.t
 and enode = e Uf.t
 and r = 
   | RU 
-  | RT of string 
+  | RT of RVar.t
 and e = 
   | EU
-  | EV of string
+  | EV of EffVar.t
   | ET of rnode list * enode list * rnode list
 
 let new_ty () = Uf.fresh U
@@ -78,11 +78,11 @@ and is_c x =
 and prvar fmt x = 
   match Uf.desc x with
   | RU -> fprintf fmt "%d" (Uf.tag x)
-  | RT s -> fprintf fmt "%s" s
+  | RT x -> RVar.print fmt x
 and preff fmt x = 
   match Uf.desc x with
   | EU -> fprintf fmt "%d" (Uf.tag x)
-  | EV x -> pp_print_string fmt x
+  | EV x -> EffVar.print fmt x
   | ET (rl,el,cl) -> 
       let pc fmt = function
         | [] -> ()
@@ -175,14 +175,14 @@ let to_ty, to_eff, to_r =
     | RU -> assert false
     | RT s -> s
   and eff x =
-    let f acc x = List.fold_left (fun acc x -> SS.add x acc) acc x in
+    let f acc x = List.fold_left (fun acc x -> RVar.S.add x acc) acc x in
     let rec aux ((racc,eacc,cacc) as acc) x = 
       match Uf.desc x with
       | EU -> acc
-      | EV x -> racc, SS.add x eacc, cacc
+      | EV x -> racc, EffVar.S.add x eacc, cacc
       | ET (rl,el,cl) -> 
           let acc = f racc (List.map rv rl),eacc, f cacc (List.map rv cl) in
           List.fold_left aux acc el in
-    aux (SS.empty, SS.empty, SS.empty) x in
+    aux (RVar.S.empty, EffVar.S.empty, RVar.S.empty) x in
   ty, eff, rv
 

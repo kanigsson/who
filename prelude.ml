@@ -28,7 +28,7 @@ logic * : int -> int -> int
 logic < : int -> int -> prop
 logic <= : int -> int -> prop
 logic > : int -> int -> prop
-logic <= : int -> int -> prop
+logic >= : int -> int -> prop
 logic max : int -> int -> int
 logic min : int -> int -> int
 
