@@ -167,6 +167,7 @@ module ParseT = struct
   let print fmt t = print nothing nothing nothing fmt t
   let mk v loc = { v = v; t = (); e = (); loc = loc }
   let pure_lam x t e = mk (PureFun (x,t,e))
+  let annot e t = mk (Annot (e,t)) 
 end
 
 let concat t1 t2 =

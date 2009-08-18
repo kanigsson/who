@@ -92,6 +92,7 @@ rule token = parse
   | '!' { EXCLAM (create_info lexbuf) }
   | ":=" { ASSIGN (create_info lexbuf)   }
   | '|' { MID   }
+  | ';' { SEMICOLON   }
   | '*' { STAR (create_info lexbuf)  }
   | ':' { COLON }
   | ',' { COMMA (create_info lexbuf) }

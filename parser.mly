@@ -49,7 +49,7 @@
 %token LBRACKET RBRACKET RCURL DLCURL DRCURL
 %token <string Loc.t> IDENT
 %token <string> TYVAR
-%token IN 
+%token IN SEMICOLON
 %token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND
 %token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION
 %token EOF
@@ -178,6 +178,7 @@ nterm:
   | p = DEXCLAM x = progvar MID t = aterm 
     { app2 "!!" (var x.c x.info) t (embrace p t.loc)  }
   | t1 = appterm { t1 }
+  | t1 = appterm SEMICOLON t2 = appterm { mk (Seq (t1,t2)) (embrace t1.loc t2.loc) }
   | t1 = nterm i = infix_nopos t2 = nterm  
     { appi i t1 t2 (embrace t1.loc t2.loc) }
   | sp = FUN l = arglist ARROW body = funcbody

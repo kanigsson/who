@@ -136,6 +136,9 @@ let rec ast' env = function
   | I.LetReg (rl,e) -> 
       let env, nrl = add_rvars env rl in
       LetReg (nrl, ast env e)
+  | I.Seq (e1,e2) -> 
+      Let (Ty.Generalize.empty, ParseT.annot (ast env e1) Ty.unit e1.I.loc, 
+           Var.new_anon (), (ast env e2), NoRec)
 and post env x = 
   let env, old = add_var env "old" in
   let env, cur = add_var env "cur" in

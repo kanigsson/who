@@ -21,6 +21,7 @@ type t' =
   | Const of Const.t
   | Var of var
   | App of t * t * Const.fix * rvar list
+  | Seq of t * t
   | Lam of 
       var * ty * t option * t * post
   | Let of generalize * t * var * t * isrec
