@@ -168,6 +168,9 @@ let rec infer' env t loc = function
       let nt = sto_uf_node t' in
       unify nt t loc; 
       Logic t', new_e ()
+  | LetReg (vl,e) ->
+      let e = infer env t e in
+      LetReg (vl,e), 
 
 and infer env t (e : ParseT.t) : Ast.Infer.t = 
   let e',eff = infer' {env with curloc = e.loc} t e.loc e.v in

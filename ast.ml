@@ -18,6 +18,7 @@ type ('a,'b,'c) t'' =
   | Quant of quant * var * Ty.t * ('a,'b,'c) t'
   | Param of Ty.t * Effect.t
   | For of var * ('a,'b,'c) t' option * var * ('a,'b,'c) t'
+  | LetReg of rvar list * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
 and ('a,'b,'c) post = 
   | PNone
@@ -32,7 +33,7 @@ open Myformat
 let is_compound = function
   | Const _ | Var _ | Lam _ | PureFun _ | Annot _-> false
   | App _ | Let _ | Ite _ | Axiom _ | Logic _ | TypeDef _
-  | Quant _ | Param _ | For _ -> true
+  | Quant _ | Param _ | For _ | LetReg _ -> true
 let is_compound_node t = is_compound t.v
 
 let print pra prb prc fmt t = 
@@ -66,8 +67,10 @@ let print pra prb prc fmt t =
     | For (dir,inv,i,t) ->
         fprintf fmt "%a (%a) %%start %%end (%a)" 
           var dir (opt_print print) inv print t
-    | Annot (e,t) -> 
-        fprintf fmt "(%a : %a)" print e Ty.print t
+    | Annot (e,t) -> fprintf fmt "(%a : %a)" print e Ty.print t
+    | LetReg (v,t) -> 
+        fprintf fmt "@[letregion %a in@ %a@]" (print_list space rvar) v print t
+      
   and print fmt t = print' fmt t.v
   and pre fmt = function
     | None -> ()
