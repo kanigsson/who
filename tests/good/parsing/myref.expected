@@ -61,12 +61,4 @@ fordownto [||e]=
                     (forall (n:map{|e }).
                      (post f i m n ()) -> (inv (i - 1) n)))))}
                 param(unit,{|e }) {inv (min start (end_ - 1)) cur}))))
-in
-let
-f [|r|]=
-        (λ(b:unit) ->
-        (λ(x:ref(r,nat)) --> 
-        let %%start = 1 in
-        let %%end_ = 5 in
-        forto ((!! x cur) < (i * 10)) %start %end (x := ((! x) + i)) ))
-in ()
+in let myref ['a|r|]= (λ(x:'a) -->  (ref x : ref(r,'a)) ) in ()

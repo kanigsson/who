@@ -89,16 +89,4 @@ fordownto [||e]=
                 {(λ(old:map{|e }) ->
                  (λ(cur:map{|e }) ->
                  (λ(:unit) -> inv (min start (end_ - 1)) cur)))}))))
-in
-let seq ['a 'b 'c||e1
-e2]=
-    (λ(f:'a ->{|e1 } 'b) ->
-    (λ(g:'b ->{|e2 } 'c) -> (λ(x:'a) -->  g (f x) )))
-in
-let h [|r1
-r2|]=
-     (λ(x:ref(r1,nat)) ->
-     (λ(y:ref(r2,nat)) --> 
-     seq [nat,nat,nat||{|{r1|} 1159 1162},{|{r2|} 1176 1179}]
-     (λ(z:nat) -->  ! [nat|r1|] x ) (λ(z:nat) -->  ! [nat|r2|] y ) ))
-in ()
+in let myref ['a|r|]= (λ(x:'a) -->  (ref ['a|r|] x : ref(r,'a)) ) in ()

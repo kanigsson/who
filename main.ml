@@ -1,5 +1,6 @@
 let parse buf close fn = 
   let abort () = close (); exit 1 in
+  Lexer.reset buf;
   try 
     let prog = Parser.main Lexer.token buf in
     prog

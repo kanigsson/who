@@ -12,9 +12,13 @@ parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r|} =
   {}
   {r : !!x = r /\\ !!x|old = !!x}
 
-parameter := ['a|r|e] (x : ref(r,'a)) (v : 'a) : unit, {r|} =
+parameter := ['a|r|] (x : ref(r,'a)) (v : 'a) : unit, {r|} =
   {}
   { !!x = v}
+
+parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r||r} =
+  {}
+  { x : !!x = v }
 
 logic fst ['a 'b||] : 'a * 'b -> 'a
 logic snd ['a 'b||] : 'a * 'b -> 'b

@@ -7,7 +7,7 @@ let != ['a||]= logic 'a -> 'a -> bool in
 let !! ['a|r|e]= logic ref(r,'a) -> map{|e } -> 'a in
 let
 ! ['a|r|]=
-          (λ(x:ref(r,'a)) ->  param('a,{r |})
+          (λ(x:ref(r,'a)) -->  param('a,{r |})
           {(λ(old:map{r |}) ->
            (λ(cur:map{r |}) ->
            (λ(r:'a) ->
@@ -15,12 +15,19 @@ let
            ((!! ['a|r|{r |}] x old) = ['a||] (!! ['a|r|{r |}] x cur)))))})
 in
 let
-:= ['a|r|e]=
-            (λ(x:ref(r,'a)) ->
-            (λ(v:'a) ->  param(unit,{r |})
-            {(λ(old:map{r |}) ->
-             (λ(cur:map{r |}) ->
-             (λ(:unit) -> (!! ['a|r|{r |}] x cur) = ['a||] v)))}))
+:= ['a|r|]=
+           (λ(x:ref(r,'a)) ->
+           (λ(v:'a) -->  param(unit,{r |})
+           {(λ(old:map{r |}) ->
+            (λ(cur:map{r |}) ->
+            (λ(:unit) -> (!! ['a|r|{r |}] x cur) = ['a||] v)))}))
+in
+let
+ref ['a|r|]=
+            (λ(v:'a) -->  param(ref(r,'a),{r ||r })
+            {(λ(old:map{r ||r }) ->
+             (λ(cur:map{r ||r }) ->
+             (λ(x:ref(r,'a)) -> (!! ['a|r|{r ||r }] x cur) = ['a||] v)))})
 in
 let fst ['a 'b||]= logic (('a * 'b)) -> 'a in
 let snd ['a 'b||]= logic (('a * 'b)) -> 'b in
@@ -40,7 +47,7 @@ forto [||e]=
             (λ(inv:nat -> map{|e } -> prop) ->
             (λ(start:nat) ->
             (λ(end_:nat) ->
-            (λ(f:nat ->{|e } unit) ->
+            (λ(f:nat ->{|e } unit) -->
             {(λ(cur:map{|e }) ->
              (inv start cur) /\
              (forall (i:nat).
@@ -64,7 +71,7 @@ fordownto [||e]=
                 (λ(inv:nat -> map{|e } -> prop) ->
                 (λ(start:nat) ->
                 (λ(end_:nat) ->
-                (λ(f:nat ->{|e } unit) ->
+                (λ(f:nat ->{|e } unit) -->
                 {(λ(cur:map{|e }) ->
                  (inv start cur) /\
                  (forall (i:nat).
@@ -86,18 +93,18 @@ in
 let
 f [|r|]=
         (λ(b:unit) ->
-        (λ(x:ref(r,nat)) -> 
+        (λ(x:ref(r,nat)) --> 
         let %%start = 1 in
         let %%end_ = 5 in
         forto [||{r |}]
         (λ(i:nat) ->
         (λ(cur:map{r |}) -> (!! [nat|r|{r |}] x cur) < (i * 10))) %%start
         %%end_
-        (λ(i:nat) ->
+        (λ(i:nat) -->
         {(λ(cur:map{r |}) ->
          ((%%start <= i) /\ (i <= %%end_)) /\
          ((λ(cur:map{r |}) -> (!! [nat|r|{r |}] x cur) < (i * 10)) cur))}
-        x := [nat|r|{|}] ((! [nat|r|] x) + i)
+        x := [nat|r|] ((! [nat|r|] x) + i)
         {(λ(old:map{r |}) ->
          (λ(cur:map{r |}) ->
          (λ(%%anon:unit) ->

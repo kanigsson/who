@@ -6,7 +6,6 @@ formula:
   | f1 = formula i = COMBINE f2 = formula 
     { embrace f1.loc f2.loc ( FCombine (f1,f2)) }
   | p = NOT f = aformula { embrace p f.loc (FUnary (Neg, f)) }
-  | f = formbinder(FORALL,DOT) { f }
 
 appterm:
   | REF LCURL i = IDENT RCURL t = aterm { Loc.mk t.loc (PRef(i.v,t)) }

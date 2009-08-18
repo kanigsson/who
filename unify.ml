@@ -13,11 +13,11 @@ and r =
 and e = 
   | EU
   | EV of string
-  | ET of rnode list * enode list
+  | ET of rnode list * enode list * rnode list
 
 let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh (T t)
-let arrow t1 t2 e = mkt (Ty.Arrow (t1,t2,e)) 
+let arrow t1 t2 e = mkt (Ty.Arrow (t1,t2,e))
 let tuple t1 t2 = mkt (Ty.Tuple (t1,t2)) 
 let ref_ r t = mkt (Ty.Ref (r,t))
 let mkr r = Uf.fresh (RT r)
@@ -30,7 +30,7 @@ let parr t1 t2 = mkt (Ty.PureArr (t1,t2))
 let new_e () = Uf.fresh EU
 let mke e = Uf.fresh (EV e)
 
-let effect rl el = Uf.fresh (ET (rl,el))
+let effect rl el cl = Uf.fresh (ET (rl,el,cl))
 
 open Const
 let const =
@@ -50,10 +50,10 @@ let eunion a b =
   | EU, EU -> a
   | EU, _ -> b
   | _, EU -> a
-  | EV a, EV b -> ET ([],[mke a; mke b])
-  | (EV a, ET (rl, el)) 
-  | ET (rl,el), EV a -> ET (rl, (mke a)::el)
-  | ET (rl1,el1), ET (rl2,el2) -> ET (rl1 @ rl2, el1 @ el2)
+  | EV a, EV b -> ET ([],[mke a; mke b],[])
+  | (EV a, ET (rl, el,cl)) 
+  | ET (rl,el,cl), EV a -> ET (rl, (mke a)::el,cl)
+  | ET (rl1,el1,cl1), ET (rl2,el2,cl2) -> ET (rl1 @ rl2, el1 @ el2, cl1 @ cl2)
 
 let eunion a b = Uf.union eunion a b
 
@@ -74,9 +74,12 @@ and preff fmt x =
   match Uf.desc x with
   | EU -> fprintf fmt "%d" (Uf.tag x)
   | EV x -> pp_print_string fmt x
-  | ET (rl,el) -> 
-      let p r = print_list space r in
-      fprintf fmt "{%a %a}" (p prvar) rl (p preff) el
+  | ET (rl,el,cl) -> 
+      let pc fmt = function
+        | [] -> ()
+        | l -> fprintf fmt "|%a" (print_list space prvar) l in
+      fprintf fmt "{%a|%a%a}" (print_list space prvar) rl 
+        (print_list space preff) el pc cl
 
 exception CannotUnify
 
@@ -124,7 +127,9 @@ and runify a b =
 (*       printf "runify: %s and %s@." x1 x2; *)
       raise CannotUnify
 and eunify a b = 
-  if Uf.equal a b then () else eunion a b 
+(*   printf "eunify : %a and %a" preff a preff b; *)
+  if Uf.equal a b then () else eunion a b
+(*   printf "gives %a@." preff a; *)
       
 module H = Hashtbl.Make (struct 
                            type t = node
@@ -157,11 +162,13 @@ let to_ty, to_eff, to_r =
     | RT s -> s
   and eff x =
     let f acc x = List.fold_left (fun acc x -> SS.add x acc) acc x in
-    let rec aux ((racc,eacc) as acc) x = 
+    let rec aux ((racc,eacc,cacc) as acc) x = 
       match Uf.desc x with
       | EU -> acc
-      | EV x -> racc, SS.add x eacc
-      | ET (rl,el) -> List.fold_left aux (f racc (List.map rv rl),eacc) el in
-    aux (SS.empty, SS.empty) x in
+      | EV x -> racc, SS.add x eacc, cacc
+      | ET (rl,el,cl) -> 
+          let acc = f racc (List.map rv rl),eacc, f cacc (List.map rv cl) in
+          List.fold_left aux acc el in
+    aux (SS.empty, SS.empty, SS.empty) x in
   ty, eff, rv
 

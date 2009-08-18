@@ -1,15 +1,19 @@
 open Ast
 open Ty
 module SM = Misc.StringMap
+module SS = Misc.StringSet
 
 exception Error of string * Loc.loc
 
 let error s loc = raise (Error (s,loc))
 
-type env = { types : (Generalize.t * Ty.t) SM.t }
+type env = 
+  { types : (Generalize.t * Ty.t) SM.t; }
 
-let add_var env x g t = { types = SM.add x (g,t) env.types }
-let add_svar env x t = { types = SM.add x (Generalize.empty,t) env.types }
+let add_var env x g t = 
+  { types = SM.add x (g,t) env.types }
+let add_svar env x t = 
+  { types = SM.add x (Generalize.empty,t) env.types }
 
 
 let type_of_var env x = SM.find x env.types
@@ -87,7 +91,8 @@ and post env eff t = function
   | PPlain f -> fis_oftype env (postty eff t) f
   | _ -> assert false
 and typing' env loc = function
-  | Ast.Const c -> Ty.const (Const.type_of_constant c), Effect.empty
+  | Ast.Const c -> 
+      Ty.const (Const.type_of_constant c), Effect.empty
   |Ast.Var (s,i) -> 
       begin try 
         let g, t = type_of_var env s in
@@ -96,13 +101,19 @@ and typing' env loc = function
         error (Myformat.sprintf "unknown variable: %s" s) loc
       end
   | Ast.App (e1,e2,_) ->
+      let t1, eff1 = typing env e1 in
       let t2,eff2 = typing env e2 in
-      begin match typing env e1 with
-      | C (Arrow (ta,tb,eff)), eff1 -> 
-          if ta = t2 then tb, Effect.union eff1 (Effect.union eff2 eff) 
+      let effi = Effect.union eff2 eff1 in
+(*
+      printf "app of %a and %a: eff1:%a eff2:%a@."
+      Recon.print e1 Recon.print e2 Effect.print eff1 Effect.print eff2;
+*)
+      begin match t1 with
+      | C (Arrow (ta,tb,eff)) -> 
+          if ta = t2 then tb, Effect.union eff effi
           else error "type mismatch" loc
-      | C (PureArr (ta,tb)), eff ->
-          if Ty.equal ta t2 then tb, eff else error "type mismatch" loc
+      | C (PureArr (ta,tb)) ->
+          if Ty.equal ta t2 then tb, effi else error "type mismatch" loc
       | _ -> error "no function type" loc
       end
   | Lam (x,t,p,e,q) ->
@@ -125,16 +136,14 @@ and typing' env loc = function
   | PureFun (x,t,e) ->
       let env = add_svar env x t in
       let t', eff = typing env e in
-      if Effect.is_empty eff then parr t t', eff 
+      if Effect.is_empty eff then parr t t', eff
       else error "effectful pure function" loc
   | Quant (_,x,t,e) ->
       let env = add_svar env x t in
       let t', eff = typing env e in
       if Effect.is_empty eff && Ty.equal t' Ty.prop then Ty.prop, eff
       else error "not of type prop" loc
-  | Axiom e ->
-      let t, eff = typing env e in
-      t,eff
+  | Axiom e -> formtyping env e, Effect.empty
   | Logic t -> t, Effect.empty
   | Annot (e,t) -> 
       let t', eff = typing env e in
@@ -144,7 +153,8 @@ and typing' env loc = function
       if Ty.equal t1 Ty.bool then
         let t2, eff2 = typing env e2 in
         let t3, eff3 = typing env e3 in
-        if Ty.equal t2 t3 then t2, Effect.union eff1 (Effect.union eff2 eff3)
+        if Ty.equal t2 t3 then 
+          t2, Effect.union eff1 (Effect.union eff2 eff3)
         else error "mismatch on if branches" loc
       else error "condition is not of boolean type" loc
   | For _ -> assert false
@@ -163,4 +173,4 @@ and fis_oftype env t e =
       (Myformat.sprintf "typing mismatch: %a and %a" Ty.print t Ty.print t') 
       e.loc
 
-let typing t = ignore (typing { types = SM.empty; } t)
+let typing t = ignore (typing { types = SM.empty} t)

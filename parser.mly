@@ -54,9 +54,9 @@
 %token <string> TYVAR
 %token IN 
 %token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND
-%token <Loc.loc> ASSIGN GE GT LE LT
+%token <Loc.loc> ASSIGN GE GT LE LT REF
 %token EOF
-%token REF REC
+%token REC
 %token <Loc.loc> EXCLAM DEXCLAM IF FUN TRUE FALSE PTRUE PFALSE VOID LET AXIOM
 %token <Loc.loc> LOGIC TYPE FORALL EXISTS PARAMETER TO DOWNTO FOR DONE
 %token COLON MID THEN ELSE   BOOL TINT UNIT PROP DOT DO
@@ -102,11 +102,11 @@ stype:
   | x = tconstant { Ty.const x }
   | v = TYVAR { Ty.var v }
   | LPAREN t = ty RPAREN { t }
-  | i = inst v = IDENT { Ty.app v.c i }
+  | v = IDENT i = inst { Ty.app v.c i }
 
 effect:
-  | lr = list(rvar_no_pos) MID le =  list(effvar_no_pos) 
-    { list_to_set lr, list_to_set le}
+  | lr = list(rvar_no_pos) MID le =  list(effvar_no_pos) cl = maycap
+    { list_to_set lr, list_to_set le, list_to_set cl}
 
 sepeffect:
   | LCURL e = effect RCURL { e }
@@ -114,7 +114,8 @@ sepeffect:
 ty:
   | t = stype { t }
   | t1 = ty ARROW t2 = ty { Ty.parr t1 t2 }
-  | t1 = ty ARROW e = sepeffect t2 = ty %prec ARROW { Ty.arrow t1 t2 e }
+  | t1 = ty ARROW e = sepeffect t2 = ty %prec ARROW 
+    { Ty.arrow t1 t2 e }
   | t1 = ty STAR t2 = ty { Ty.tuple t1 t2 }
   | LT e = effect GT { Ty.map e }
   | REF LPAREN id = rvar_no_pos COMMA t = ty  RPAREN { Ty.ref_ id t }
@@ -122,6 +123,10 @@ ty:
 inst:
   LBRACKET tl = list(ty) MID rl = list(rvar_no_pos) MID el = list(sepeffect) RBRACKET
   { tl, rl, el }
+
+maycap:
+  | { [] }
+  | MID l = list(rvar_no_pos) { l }
 
 constant:
   |  n = INT    { n.info, Const.Int n.c }
@@ -153,6 +158,7 @@ constant:
 
 %inline prefix:
   | p = EXCLAM { p, "!" }
+  | p = REF { p, "ref" }
 
 aterm:
   | x = progvar { var x.c x.info }
@@ -263,8 +269,9 @@ decl:
   | f = letrec { (f : ParseT.t -> ParseT.t) (const (Const.Void) dummy) }
   | p = PARAMETER x = defprogvar_no_pos l = optgen args = arglist 
     COLON rt = ty COMMA e = sepeffect EQUAL pre = precond post = postcond
-  { let_wconst l (mk_param args (snd pre) (snd post) rt e p) x NoRec 
-    (embrace p (fst post))} 
+  { 
+    let par = mk_param args (snd pre) (snd post) rt e p in
+    let_wconst l par x NoRec (embrace p (fst post))} 
   | p = AXIOM x = defprogvar_no_pos l = optgen COLON t = nterm
     { let_wconst l (mk (Axiom t) p) x NoRec (embrace p t.loc) }
   | p = LOGIC x = defprogvar_no_pos l = optgen COLON t = ty

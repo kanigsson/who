@@ -6,7 +6,8 @@ type ('a,'b,'c) t'' =
   | Const of Const.t
   | Var of var * ('a,'b,'c) Inst.t
   | App of ('a,'b,'c) t' * ('a,'b,'c) t' * fix
-  | Lam of var * Ty.t * ('a,'b,'c) t' option * ('a,'b,'c) t' * ('a,'b,'c) post
+  | Lam of 
+      var * Ty.t * ('a,'b,'c) t' option * ('a,'b,'c) t' * ('a,'b,'c) post 
   | Let of Ty.Generalize.t * ('a,'b,'c) t' * var * ('a,'b,'c) t' * isrec
   | PureFun of var * Ty.t * ('a,'b,'c) t'
   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
@@ -45,8 +46,8 @@ let print pra prb prc fmt t =
     | App (t1,t2,_) ->
           fprintf fmt "@[%a@ %a@]" print t1 with_paren t2
     | Lam (x,t,p,e,q) -> 
-        fprintf fmt "@[(λ(%s:%a)@ ->@ %a@ %a@ %a)@]" x Ty.print t 
-          pre p print e post q
+        fprintf fmt "@[(λ(%s:%a)@ -->@ %a@ %a@ %a)@]" x 
+          Ty.print t pre p print e post q
     | PureFun (x,t,e) ->
         fprintf fmt "@[(λ(%s:%a)@ ->@ %a)@]" x Ty.print t print e
     | Let (g,e1,x,e2,r) -> 
@@ -83,7 +84,6 @@ let print pra prb prc fmt t =
     | Rec t -> fprintf fmt "rec(%a) " Ty.print t
   and with_paren fmt x = 
     if is_compound_node x then paren print fmt x else print fmt x in
-
   print fmt t
 
 module Infer = struct

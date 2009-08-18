@@ -1,0 +1,4 @@
+let myref ['a|r|] (x : 'a) =
+  {}
+  (ref x : ref(r,'a))
+  {}

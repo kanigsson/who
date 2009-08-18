@@ -20,6 +20,7 @@ val is_compound : ('a,'b,'c) t' -> bool
 val var : tvar -> t
 val const : Const.ty -> t
 val arrow : t -> t -> Effect.t -> t
+val caparrow : t -> t -> Effect.t -> rvar list -> t
 val parr : t -> t -> t
 val tuple : t -> t -> t
 val ref_ : rvar -> t -> t

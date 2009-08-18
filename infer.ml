@@ -43,6 +43,8 @@ let bh f l =
 let prety eff = parr (map eff) prop
 let postty eff t = parr (map eff) (parr (map eff) (parr t prop)) 
 
+let list_from_set_map f l = SS.fold (fun x acc -> f x :: acc) l []
+
 let to_uf_node (tl,rl,el) x = 
   let tn,th = bh new_ty tl and rn,rh = bh new_r rl and en,eh = bh new_e el in
   let rec aux' f = function
@@ -53,24 +55,27 @@ let to_uf_node (tl,rl,el) x =
     | Ty.Ref (r,t) -> ref_ (auxr r) (f t)
     | Ty.Map e -> map (eff e)
     | Ty.PureArr (t1,t2) -> parr (f t1) (f t2)
-    | Ty.App (v,i) -> Unify.app v (Inst.map real auxr eff i) 
+    | Ty.App (v,i) -> Unify.app v (Inst.map f auxr eff i) 
   and aux f (Ty.C x) = aux' f x 
   and real x = ymemo aux x
   and auxr r = try HT.find rh r with Not_found -> mkr r
   and auxe e = try HT.find eh e with Not_found -> mke e 
-  and eff (rl,el) = 
-    if SS.is_empty rl && SS.cardinal el = 1 then auxe (SS.choose el)
+  and eff (rl,el,cl) = 
+    if SS.is_empty rl && SS.is_empty cl && SS.cardinal el = 1 then 
+      auxe (SS.choose el)
     else
-      effect (SS.fold (fun x acc -> auxr x :: acc) rl []) 
-        (SS.fold (fun x acc -> auxe x :: acc) el []) in 
+      effect (list_from_set_map auxr rl)
+             (list_from_set_map auxe el)
+             (list_from_set_map auxr cl) in
   real x, (tn,rn,en)
 
-let to_uf_enode (rl,el) = 
-    if SS.is_empty rl && SS.cardinal el = 1 then mke (SS.choose el)
+let to_uf_enode (rl,el,cl) = 
+    if SS.is_empty rl && SS.is_empty cl && SS.cardinal el = 1 then 
+      mke (SS.choose el)
     else
-      effect (SS.fold (fun x acc -> mkr x :: acc) rl [])
-        (SS.fold (fun x acc -> mke x :: acc) el [])
-
+      effect (list_from_set_map mkr rl)
+             (list_from_set_map mke el)
+             (list_from_set_map mkr cl)
 
 let sto_uf_node x = fst (to_uf_node Ty.Generalize.empty x)
 
@@ -88,7 +93,7 @@ let rec infer' env t loc = function
       let nt = new_ty () and e = new_e () in
       let e1 = infer env (arrow nt t e) e1 in
       let e2 = infer env nt e2 in
-      App (e1,e2,k), Unify.effect [] [e;e1.e;e2.e]
+      App (e1,e2,k), Unify.effect [] [e;e1.e;e2.e] []
   | Annot (e,xt) -> 
       unify (sto_uf_node xt) t loc;
       let e = infer env t e in
@@ -122,7 +127,7 @@ let rec infer' env t loc = function
       let nt' = new_ty () in
       let env = add_svar env x xt in
       let e = infer {env with pm = false} nt' e in
-      unify (arrow nt nt' e.e) t loc;
+      unify (arrow nt nt' e.e ) t loc;
       let p = pre env e.e p in
       let q = post env e.e nt' q in
       Lam (x,xt,p,e,q), new_e ()
@@ -142,12 +147,12 @@ let rec infer' env t loc = function
       let e1 = infer env' nt e1 in
       let xt = try to_ty nt with Assert_failure _ -> error x loc  in
       let e2 = infer (add_var env x g xt) t e2 in
-      Let (g,e1,x,e2,r), Unify.effect [] [e1.e; e2.e]
+      Let (g,e1,x,e2,r), Unify.effect [] [e1.e; e2.e] []
   | Ite (e1,e2,e3) ->
       let e1 = infer env bool e1 in
       let e2 = infer env t e2 in
       let e3 = infer env t e3 in
-      Ite (e1,e2,e3), Unify.effect [] [e1.e;e2.e; e3.e]
+      Ite (e1,e2,e3), Unify.effect [] [e1.e;e2.e; e3.e] []
   | Axiom e -> 
       unify prop t loc;
       Axiom (infer env prop e), new_e ()

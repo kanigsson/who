@@ -16,6 +16,9 @@ let is_compound = function
   | Var _ | Const _ | Ref _ | Map _ -> false
   | Tuple _ | Arrow _ | PureArr _ | App _ -> true
 
+let maycap pr fmt = function
+  | [] -> ()
+  | l -> print_list space pr fmt l
 let print' pt pr pe is_c fmt = function
   | Var x -> pp_print_string fmt x
   | Arrow (t1,t2,eff) -> 
@@ -30,6 +33,7 @@ let print' pt pr pe is_c fmt = function
   | Map e -> fprintf fmt "map%a" pe e
   | App (v,i) -> fprintf fmt "%a%a" tvar v (Inst.print pt pr pe) i
 
+
 let rec print fmt (C x) = 
   print' print pp_print_string Effect.print 
     (function C x -> is_compound x) fmt x
@@ -38,6 +42,7 @@ let print_list sep fmt t = print_list sep print fmt t
 
 let var v = C (Var v)
 let arrow t1 t2 eff = C (Arrow (t1,t2,eff))
+let caparrow t1 t2 eff c = C (Arrow (t1,t2,eff))
 let parr t1 t2 = C (PureArr (t1,t2))
 let tuple t1 t2 = C (Tuple (t1,t2))
 let const c = C (Const c)
@@ -100,12 +105,13 @@ let rlsubst rvl rl target =
     | (Var _ | Const _) as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
-    | Arrow (t1,t2,eff) -> Arrow (aux t1, aux t2,effsubst eff) 
+    | Arrow (t1,t2,eff) -> 
+        Arrow (aux t1, aux t2,effsubst eff) 
     | Ref (r,t) -> Ref (auxr r, aux t)
     | Map e -> Map (effsubst e)
     | App (v,i) -> App (v, Inst.map aux auxr effsubst i)
   and auxr r = try SM.find r map with Not_found -> r
-  and effsubst (rl,el) = Effect.map auxr rl, el
+  and effsubst e = Effect.rmap auxr e
   and aux (C x) = C (aux' x) in
   aux target
 
@@ -148,7 +154,7 @@ let rec equal' t1 t2 =
   | PureArr (ta1,ta2), PureArr (tb1,tb2) -> 
       equal ta1 tb1 && equal ta2 tb2
   | Arrow (ta1,ta2,e1), Arrow (tb1,tb2,e2) -> 
-      equal ta1 tb1 && equal ta2 tb2 && Effect.equal e1 e2
+      equal ta1 tb1 && equal ta2 tb2 && Effect.equal e1 e2 
   | Ref (r1,t1), Ref (r2,t2) -> r1 = r2 && equal t1 t2
   | Map e1, Map e2 -> Effect.equal e1 e2
   | App (v1,i1), App (v2,i2) -> 

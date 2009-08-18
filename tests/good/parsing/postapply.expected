@@ -7,13 +7,16 @@ let != ['a||]= logic 'a -> 'a -> bool in
 let !! ['a|r|e]= logic ref(r,'a) -> map{|e } -> 'a in
 let
 ! ['a|r|]=
-          (λ(x:ref(r,'a)) ->  param('a,{r |})
+          (λ(x:ref(r,'a)) -->  param('a,{r |})
           { r : ((!! x cur) = r) /\ ((!! x old) = (!! x cur))})
 in
 let
-:= ['a|r|e]=
-            (λ(x:ref(r,'a)) ->
-            (λ(v:'a) ->  param(unit,{r |}) {(!! x cur) = v}))
+:= ['a|r|]=
+           (λ(x:ref(r,'a)) ->
+           (λ(v:'a) -->  param(unit,{r |}) {(!! x cur) = v}))
+in
+let
+ref ['a|r|]= (λ(v:'a) -->  param(ref(r,'a),{r ||r }) { x : (!! x cur) = v})
 in
 let fst ['a 'b||]= logic (('a * 'b)) -> 'a in
 let snd ['a 'b||]= logic (('a * 'b)) -> 'b in
@@ -33,7 +36,7 @@ forto [||e]=
             (λ(inv:nat -> map{|e } -> prop) ->
             (λ(start:nat) ->
             (λ(end_:nat) ->
-            (λ(f:nat ->{|e } unit) ->
+            (λ(f:nat ->{|e } unit) -->
             {(inv start cur) /\
              (forall (i:nat).
               ((start <= i) /\ (i <= end_)) ->
@@ -48,7 +51,7 @@ fordownto [||e]=
                 (λ(inv:nat -> map{|e } -> prop) ->
                 (λ(start:nat) ->
                 (λ(end_:nat) ->
-                (λ(f:nat ->{|e } unit) ->
+                (λ(f:nat ->{|e } unit) -->
                 {(inv start cur) /\
                  (forall (i:nat).
                   ((start <= i) /\ (i <= end_)) ->
@@ -62,11 +65,11 @@ in
 let apply ['a
 'b||e]=
        (λ(f:'a ->{|e } 'b) ->
-       (λ(x:'a) -> {fst f x cur} f x { k : snd f x old cur k}))
+       (λ(x:'a) --> {fst f x cur} f x { k : snd f x old cur k}))
 in
 let
 main [|r|]=
-           (λ(x:ref(r,nat)) -> 
-           apply (λ(z:unit) ->  x := 0 {(!! x cur) = 0}) ()
+           (λ(x:ref(r,nat)) --> 
+           apply (λ(z:unit) -->  x := 0 {(!! x cur) = 0}) ()
            {(!! x cur) = 0})
 in ()

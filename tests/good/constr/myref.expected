@@ -11,8 +11,8 @@ let
           {(λ(old:map{r |}) ->
            (λ(cur:map{r |}) ->
            (λ(r:'a) ->
-           ((!! ['a|r|{r|}] x cur) = ['a||] r) /\
-           ((!! ['a|r|{r|}] x old) = ['a||] (!! ['a|r|{r|}] x cur)))))})
+           ((!! ['a|r|{r |}] x cur) = ['a||] r) /\
+           ((!! ['a|r|{r |}] x old) = ['a||] (!! ['a|r|{r |}] x cur)))))})
 in
 let
 := ['a|r|]=
@@ -20,14 +20,14 @@ let
            (λ(v:'a) -->  param(unit,{r |})
            {(λ(old:map{r |}) ->
             (λ(cur:map{r |}) ->
-            (λ(:unit) -> (!! ['a|r|{r|}] x cur) = ['a||] v)))}))
+            (λ(:unit) -> (!! ['a|r|{r |}] x cur) = ['a||] v)))}))
 in
 let
 ref ['a|r|]=
             (λ(v:'a) -->  param(ref(r,'a),{r ||r })
             {(λ(old:map{r ||r }) ->
              (λ(cur:map{r ||r }) ->
-             (λ(x:ref(r,'a)) -> (!! ['a|r|{r||r}] x cur) = ['a||] v)))})
+             (λ(x:ref(r,'a)) -> (!! ['a|r|{r ||r }] x cur) = ['a||] v)))})
 in
 let fst ['a 'b||]= logic (('a * 'b)) -> 'a in
 let snd ['a 'b||]= logic (('a * 'b)) -> 'b in
@@ -54,12 +54,12 @@ forto [||e]=
               ((start <= i) /\ (i <= end_)) ->
               (forall (m:map{|e }).
                (inv i m) ->
-               ((pre [nat -> map{|e e} -> prop,nat -> map{|e e} -> map{|e
-                 e} -> unit -> prop||] f i m)
+               ((pre [nat -> map{|e } -> prop,nat -> map{|e } -> map{|e } ->
+                 unit -> prop||] f i m)
                 /\
                 (forall (n:map{|e }).
-                 (post [nat -> map{|e e e} -> prop,nat -> map{|e e e} ->
-                  map{|e e e} -> unit -> prop||] f i m n ())
+                 (post [nat -> map{|e } -> prop,nat -> map{|e } -> map{|e
+                  } -> unit -> prop||] f i m n ())
                  -> (inv (i + 1) n))))))}
             param(unit,{|e })
             {(λ(old:map{|e }) ->
@@ -78,27 +78,15 @@ fordownto [||e]=
                   ((start <= i) /\ (i <= end_)) ->
                   (forall (m:map{|e }).
                    (inv i m) ->
-                   ((pre [nat -> map{|e e} -> prop,nat -> map{|e e} -> map{|e
-                     e} -> unit -> prop||] f i m)
+                   ((pre [nat -> map{|e } -> prop,nat -> map{|e } -> map{|e
+                     } -> unit -> prop||] f i m)
                     /\
                     (forall (n:map{|e }).
-                     (post [nat -> map{|e e e} -> prop,nat -> map{|e e e} ->
-                      map{|e e e} -> unit -> prop||] f i m n ())
+                     (post [nat -> map{|e } -> prop,nat -> map{|e } -> map{|e
+                      } -> unit -> prop||] f i m n ())
                      -> (inv (i - 1) n))))))}
                 param(unit,{|e })
                 {(λ(old:map{|e }) ->
                  (λ(cur:map{|e }) ->
                  (λ(:unit) -> inv (min start (end_ - 1)) cur)))}))))
-in
-let seq ['a 'b 'c||e1
-e2]=
-    (λ(f:'a ->{|e1 } 'b) ->
-    (λ(g:'b ->{|e2 } 'c) -> (λ(x:'a) -->  g (f x) )))
-in
-let h [|r1
-r2|]=
-     (λ(x:ref(r1,nat)) ->
-     (λ(y:ref(r2,nat)) --> 
-     seq [nat,nat,nat||{|{r1|} 1159 1162},{|{r2|} 1176 1179}]
-     (λ(z:nat) -->  ! [nat|r1|] x ) (λ(z:nat) -->  ! [nat|r2|] y ) ))
-in ()
+in let myref ['a|r|]= (λ(x:'a) -->  (ref ['a|r|] x : ref(r,'a)) ) in ()

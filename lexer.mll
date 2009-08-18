@@ -38,7 +38,7 @@ let id_or_keyword =
         ("prop", fun i -> PROP  );
         ("begin", fun i -> BEGIN (create_info i));
         ("end", fun i -> END (create_info i) );
-        ("ref", fun i -> REF  );
+        ("ref", fun i -> REF (create_info i) );
         ("in", fun i -> IN );
         ("if", fun i -> IF (create_info i) );
         ("then", fun i -> THEN );
@@ -50,11 +50,11 @@ let id_or_keyword =
       fun i -> IDENT (Loc.mk (create_info i) s)
 
 let incr_linenum lexbuf =
-    let pos = lexbuf.Lexing.lex_curr_p in
-    lexbuf.Lexing.lex_curr_p <- 
+    let pos = lexbuf.lex_curr_p in
+    lexbuf.lex_curr_p <- 
        { pos with
-        Lexing.pos_lnum = pos.Lexing.pos_lnum + 1;
-        Lexing.pos_bol = pos.Lexing.pos_cnum;
+        pos_lnum = pos.pos_lnum + 1;
+        pos_bol = pos.pos_cnum;
         }
 
 }
@@ -111,3 +111,9 @@ and comment = parse
   | "*)" { () }
   | eof { raise (Error "unterminated comment") }
   | _ { comment lexbuf } 
+
+{
+  let reset lexbuf = 
+    lexbuf.lex_curr_p <- 
+       { lexbuf.lex_curr_p with pos_lnum = 0; pos_bol = 0; }
+}

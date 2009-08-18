@@ -1,3 +1,3 @@
 type array ['a||]
 
-logic get ['a||] : ['a||] array -> int -> 'a
+logic get ['a||] : array ['a||] -> int -> 'a
