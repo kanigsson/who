@@ -41,6 +41,7 @@ let id_or_keyword =
         ("ref", fun i -> REF (create_info i) );
         ("in", fun i -> IN );
         ("if", fun i -> IF (create_info i) );
+        ("letregion", fun i -> LETREGION (create_info i) );
         ("then", fun i -> THEN );
         ("else", fun i -> ELSE );
         ("rec", fun i -> REC );
@@ -117,5 +118,5 @@ and comment = parse
 {
   let reset lexbuf = 
     lexbuf.lex_curr_p <- 
-       { lexbuf.lex_curr_p with pos_lnum = 0; pos_bol = 0; }
+       { lexbuf.lex_curr_p with pos_lnum = 1; pos_bol = 0; }
 }

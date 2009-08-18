@@ -54,7 +54,7 @@
 %token <string> TYVAR
 %token IN 
 %token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND
-%token <Loc.loc> ASSIGN GE GT LE LT REF
+%token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION
 %token EOF
 %token REC
 %token <Loc.loc> EXCLAM DEXCLAM IF FUN TRUE FALSE PTRUE PFALSE VOID LET AXIOM
@@ -202,6 +202,8 @@ nterm:
   | b = letwithargs EQUAL t1 = nterm IN t2 = nterm %prec let_
     { let p,x,l,args = b in
       let_ l (mk_pure_lam args t1 p) x t2 NoRec (embrace p t2.loc) }
+  | p = LETREGION l = list(rvar_no_pos) IN t = nterm %prec let_
+    { mk (LetReg (l,t)) p }
   | st = IF it = nterm THEN tb = nterm ELSE eb = nterm %prec ifprec
     { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
   | f = letrec IN e2 = nterm %prec let_ { (f : ParseT.t -> ParseT.t) e2 }

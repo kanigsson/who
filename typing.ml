@@ -74,6 +74,7 @@ let rec formtyping' env loc = function
   | Param _ -> error "effectful parameter in logic" loc
   | For _ -> assert false
   | Annot (e,t) -> fis_oftype env t e; t
+  | LetReg _ -> assert false
 and formtyping env (e : Ast.Recon.t) : Ty.t =
 (*   Myformat.printf "formtyping %a@." Ast.Recon.print e; *)
   let t = formtyping' env e.loc e.v in
@@ -157,6 +158,9 @@ and typing' env loc = function
           t2, Effect.union eff1 (Effect.union eff2 eff3)
         else error "mismatch on if branches" loc
       else error "condition is not of boolean type" loc
+  | LetReg (vl,e) ->
+      let t, eff = typing env e in
+      t, Effect.rremove vl eff
   | For _ -> assert false
 
 and typing env (e : Ast.Recon.t) : Ty.t * Effect.t =

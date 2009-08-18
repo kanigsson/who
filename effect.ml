@@ -49,4 +49,6 @@ let equal =
   fun (r1,e1,c1) (r2,e2, c2) ->
     elts r1 = elts r2 && elts e1 = elts e2 && c1 = c2
 
-  
+let rremove l (r,e,c) = 
+  let f = SS.filter (fun x -> not (List.mem x l)) in
+  f r, e, f c

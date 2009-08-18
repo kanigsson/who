@@ -1,0 +1,6 @@
+let main (z : unit) = 
+  { }
+  letregion rho in
+  let x = ref{{rho}} 5 in
+  ! x
+  { r : r = 5}

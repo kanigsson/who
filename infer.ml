@@ -170,7 +170,8 @@ let rec infer' env t loc = function
       Logic t', new_e ()
   | LetReg (vl,e) ->
       let e = infer env t e in
-      LetReg (vl,e), 
+      let eff = Effect.rremove vl (to_eff e.e) in
+      LetReg (vl,e), to_uf_enode eff
 
 and infer env t (e : ParseT.t) : Ast.Infer.t = 
   let e',eff = infer' {env with curloc = e.loc} t e.loc e.v in
@@ -226,6 +227,7 @@ let rec recon' = function
       let bodyfun = lam "i" Ty.int (Some pre) body (PPlain post) l in
       (* forvar inv start end bodyfun *)
       (app2 (app2 (var dir ([],[],[e]) Ty.forty l) inv' sv l) ev bodyfun l).v
+  | LetReg (vl,e) -> LetReg (vl,recon e)
   | Annot (e,t) -> Annot (recon e, t)
 and recon (t : Ast.Infer.t) : Ast.Recon.t = 
   { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e; loc = t.loc }
