@@ -1,3 +1,5 @@
+open Wp
+
 let parse buf close fn = 
   let abort () = close (); exit 1 in
   Lexer.reset buf;

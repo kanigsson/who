@@ -134,6 +134,8 @@ module Recon = struct
   let svar s t = var s Inst.empty (T.Generalize.empty,t) 
   let le t1 t2 loc = appi (pre_defvar "<=" iip loc) t1 t2 loc
   let and_ t1 t2 loc = appi (pre_defvar "/\\" ppp loc) t1 t2 loc
+  let impl t1 t2 loc = 
+    appi (pre_defvar "->" ppp loc) t1 t2 loc
   let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
   let plam x t e loc = mk_val (PureFun (x,t,e)) (T.parr t e.t) loc
   let efflam x eff e = plam x (T.map eff) e
@@ -150,6 +152,12 @@ module Recon = struct
 
   let typedef g t v e = mk (TypeDef (g,t,v,e)) e.t e.e
 
+  let applist l loc = 
+    match l with
+    | [] | [ _ ] -> failwith "not enough arguments given"
+    | a::b::rest ->
+        List.fold_left (fun acc x -> app acc x loc) (app a b loc) rest
+
   let rec is_value = function
     | Const _ | Var _ | Lam _ | PureFun _ | Axiom _ | Logic _ | Quant _ -> true
     | Let _ | Ite _ | For _ | LetReg _ | Param _ | TypeDef _ | Annot _ -> false
@@ -158,6 +166,19 @@ module Recon = struct
         | T.C (T.PureArr _) -> true
         | _ -> false
   and is_value_node x = is_value x.v
+
+  let squant k x t f loc = mk (Quant (k,x,t,f)) f.t f.e loc
+  let sforall x = squant C.FA x
+  let quant ?s k t f loc = 
+    let v = 
+      match s with 
+      | None -> Var.new_anon () 
+      | Some s -> Var.from_string s in
+    let tv = svar v t loc in
+    squant k v t (f tv) loc
+
+  let forall ?s t f loc = quant ?s C.FA t f loc
+  let effFA ?s e f loc = forall ?s (Ty.map e) f loc
       
 end
 
