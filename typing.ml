@@ -126,13 +126,15 @@ and typing' env loc = function
       pre env eff p;
       post env eff t' q;
       arrow t t' eff, Effect.empty
-  | Let (tl,e1,x,e2,r) ->
+  | Let (g,e1,x,e2,r) ->
+      if not ( Generalize.is_empty g || Recon.is_value_node e1) then 
+        error "generalization over non-value" loc;
       let env' =
         match r with 
         | NoRec -> env
         | Rec t -> add_svar env x t in
       let t,eff1 = typing env' e1 in
-      let env = add_var env x tl t in
+      let env = add_var env x g t in
       let t, eff2 = typing env e2 in
       t, Effect.union eff1 eff2
   | Param (t,e) -> t,e

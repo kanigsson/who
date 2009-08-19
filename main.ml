@@ -1,5 +1,3 @@
-open Wp
-
 let parse buf close fn = 
   let abort () = close (); exit 1 in
   Lexer.reset buf;
@@ -43,9 +41,13 @@ let _ =
     let p = Anf.normalize_term p in
     maybe_abort Options.anf_only Ast.Recon.print p;
     Typing.typing p;
+    let p = Wp.main p in
+    maybe_abort Options.wp_only Ast.Recon.print p;
+    Typing.typing p;
     p
   with
   | Sys_error e -> Error.bad e
+  | Wp.Error (s,loc)
   | Infer.Error (s,loc) 
   | Typing.Error (s,loc) -> Error.with_loc s loc 
 

@@ -22,6 +22,7 @@ ref ['a7|r4|]=
 in
 let fst ['b 'a8||]= logic (('a8 * 'b)) -> 'a8 in
 let snd ['b1 'a9||]= logic (('a9 * 'b1)) -> 'b1 in
+let , ['b2 'a10||]= logic 'a10 -> 'b2 -> ('a10 * 'b2) in
 let + = logic nat -> nat -> nat in
 let - = logic nat -> nat -> nat in
 let * = logic nat -> nat -> nat in
@@ -31,8 +32,8 @@ let > = logic nat -> nat -> prop in
 let >= = logic nat -> nat -> prop in
 let max = logic nat -> nat -> nat in
 let min = logic nat -> nat -> nat in
-let pre ['b2 'a10||]= (λ(x3:('a10 * 'b2)) -> fst x3) in
-let post ['b3 'a11||]= (λ(x4:('a11 * 'b3)) -> snd x4) in
+let pre ['b3 'a11||]= (λ(x3:('a11 * 'b3)) -> fst x3) in
+let post ['b4 'a12||]= (λ(x4:('a12 * 'b4)) -> snd x4) in
 let
 forto [||e1]=
              (λ(inv:nat -> map{|e1 } -> prop) ->
@@ -64,6 +65,6 @@ fordownto [||e2]=
                       (post f1 i1 m1 n1 ()) -> (inv1 (i1 - 1) n1)))))}
                  param(unit,{|e2 }) {inv1 (min start1 (end_1 - 1)) cur6}))))
 in
-let f2 ['a12||]= (λ(x5:'a12) -> (λ(y:'a12) -->  x5 == y )) in
-let f3 ['a13||]= (λ(x6:'a13) -->  true ) in
+let f2 ['a13||]= (λ(x5:'a13) -> (λ(y:'a13) -->  x5 == y )) in
+let f3 ['a14||]= (λ(x6:'a14) -->  true ) in
 let g = f3 true in let h = f3 5 in ()

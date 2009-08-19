@@ -22,6 +22,7 @@ ref ['a7|r4|]=
 in
 let fst ['b 'a8||]= logic (('a8 * 'b)) -> 'a8 in
 let snd ['b1 'a9||]= logic (('a9 * 'b1)) -> 'b1 in
+let , ['b2 'a10||]= logic 'a10 -> 'b2 -> ('a10 * 'b2) in
 let + = logic nat -> nat -> nat in
 let - = logic nat -> nat -> nat in
 let * = logic nat -> nat -> nat in
@@ -31,8 +32,8 @@ let > = logic nat -> nat -> prop in
 let >= = logic nat -> nat -> prop in
 let max = logic nat -> nat -> nat in
 let min = logic nat -> nat -> nat in
-let pre ['b2 'a10||]= (λ(x3:('a10 * 'b2)) -> fst x3) in
-let post ['b3 'a11||]= (λ(x4:('a11 * 'b3)) -> snd x4) in
+let pre ['b3 'a11||]= (λ(x3:('a11 * 'b3)) -> fst x3) in
+let post ['b4 'a12||]= (λ(x4:('a12 * 'b4)) -> snd x4) in
 let
 forto [||e1]=
              (λ(inv:nat -> map{|e1 } -> prop) ->
@@ -63,12 +64,12 @@ fordownto [||e2]=
                      (forall (n1:map{|e2 }).
                       (post f1 i1 m1 n1 ()) -> (inv1 (i1 - 1) n1)))))}
                  param(unit,{|e2 }) {inv1 (min start1 (end_1 - 1)) cur6}))))
-in type array['a12||] =  in
-let get ['a13||]= logic nat -> (array['a13||]) -> 'a13 in
-let set ['a14||]= logic nat -> 'a14 -> (array['a14||]) -> array['a14||] in
+in type array['a13||] =  in
+let get ['a14||]= logic nat -> (array['a14||]) -> 'a14 in
+let set ['a15||]= logic nat -> 'a15 -> (array['a15||]) -> array['a15||] in
 let
-get_set_eq ['a15||]=
-                    axiom forall (t:array['a15||]).
+get_set_eq ['a16||]=
+                    axiom forall (t:array['a16||]).
                           forall (i2:nat).
-                          forall (z:'a15). (get i2 (set i2 z t)) = z
+                          forall (z:'a16). (get i2 (set i2 z t)) = z
 in ()

@@ -43,8 +43,8 @@ let print pra prb prc fmt t =
     | Var (v,i) -> 
         if Inst.is_empty i then Var.print fmt v
         else fprintf fmt "%a %a" Var.print v (Inst.print pra prb prc) i
-    | App ({v = App (op,t1,_,_)},t2,C.Infix,_) -> 
-        fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 print op with_paren t2
+    | App ({v = App ({ v = Var(v,_)},t1,_,_)},t2,C.Infix,_) -> 
+        fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 Var.print v with_paren t2
     | App (t1,t2,_,cap) ->
           fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
     | Lam (x,t,p,e,q) -> 
@@ -126,25 +126,65 @@ module Recon = struct
   let var s inst (g,t) = mk_val (Var (s,inst)) (Ty.allsubst g inst t) 
 
   module T = Ty
+  let v = T.var
   let iip = T.parr T.int (T.parr T.int T.prop)
   let iii = T.parr T.int (T.parr T.int T.int)
   let ppp = T.parr T.prop (T.parr T.prop T.prop)
+  let aap a = T.parr (v a) (T.parr (v a) T.prop)
+  let tuple a b = T.tuple (v a) (v b)
   let pre_defvar s t = 
     var (get_predef_var s) Inst.empty (T.Generalize.empty,t) 
+
+  let pre_defvarg s inst (g,t) = 
+    var (get_predef_var s) inst (g,t)
+
   let svar s t = var s Inst.empty (T.Generalize.empty,t) 
   let le t1 t2 loc = appi (pre_defvar "<=" iip loc) t1 t2 loc
   let and_ t1 t2 loc = appi (pre_defvar "/\\" ppp loc) t1 t2 loc
   let impl t1 t2 loc = 
     appi (pre_defvar "->" ppp loc) t1 t2 loc
+
+  let eq t1 t2 loc = 
+    let nv = TyVar.from_string "a" in
+    appi (pre_defvarg "=" ([t1.t],[],[]) (([nv],[],[]),aap nv) loc) t1 t2 loc
+
+  let pre t loc = 
+    match t.t with
+    | T.C (T.Tuple (t1,t2)) ->
+        let a = TyVar.from_string "a" and b = TyVar.from_string "b" in
+        app (pre_defvarg "fst" ([t1;t2],[],[]) 
+              (([a;b],[],[]),Ty.parr (tuple a b) (v a)) loc)
+            t loc
+    | _ -> assert false
+  let post t loc = 
+    match t.t with
+    | T.C (T.Tuple (t1,t2)) ->
+        let a = TyVar.from_string "a" and b = TyVar.from_string "b" in
+        app (pre_defvarg "snd" ([t1;t2],[],[]) 
+              (([a;b],[],[]),Ty.parr (tuple a b) (v b)) loc)
+            t loc
+    | _ -> assert false
+
   let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
   let plam x t e loc = mk_val (PureFun (x,t,e)) (T.parr t e.t) loc
   let efflam x eff e = plam x (T.map eff) e
   let lam x t p e q = mk_val (Lam (x,t,p,e,q)) (T.arrow t e.t e.e)
   let ptrue_ loc = mk_val (Const (Const.Ptrue)) T.prop loc
+  let btrue_ loc = mk_val (Const (Const.Btrue)) T.bool loc
   let plus t1 t2 loc = appi (pre_defvar "+" iii loc) t1 t2 loc
   let one = mk_val (Const (Const.Int 1)) T.int 
   let succ t loc = plus t (one loc) loc
   let let_ g e1 x e2 r = mk (Let (g,e1,x,e2,r)) e2.t (Effect.union e1.e e2.e)
+
+  let axiom e = mk (Axiom e) T.prop e.e
+  let logic t = mk (Logic t) t Effect.empty
+
+  let mk_tuple t1 t2 loc = 
+        let a = TyVar.from_string "a" and b = TyVar.from_string "b" in
+        appi (pre_defvarg "," ([t1.t;t2.t],[],[]) 
+              (([a;b],[],[]),Ty.parr (v a) (Ty.parr (v b) (tuple a b))) loc)
+            t1 t2 loc
+
 
   let letreg l e = mk (LetReg (l,e)) e.t (Effect.rremove l e.e)
   let ite e1 e2 e3 = 
@@ -157,6 +197,11 @@ module Recon = struct
     | [] | [ _ ] -> failwith "not enough arguments given"
     | a::b::rest ->
         List.fold_left (fun acc x -> app acc x loc) (app a b loc) rest
+  let andlist l loc = 
+    match l with
+    | [] | [ _ ] -> failwith "not enough arguments given"
+    | a::b::rest ->
+        List.fold_left (fun acc x -> and_ acc x loc) (app a b loc) rest
 
   let rec is_value = function
     | Const _ | Var _ | Lam _ | PureFun _ | Axiom _ | Logic _ | Quant _ -> true
@@ -179,7 +224,16 @@ module Recon = struct
 
   let forall ?s t f loc = quant ?s C.FA t f loc
   let effFA ?s e f loc = forall ?s (Ty.map e) f loc
-      
+  let plam_ho ?s t f loc = 
+    let v = 
+      match s with 
+      | None -> Var.new_anon () 
+      | Some s -> Var.from_string s in
+    let tv = svar v t loc in
+    plam v t (f tv) loc
+
+  let efflam_ho ?s e f loc = plam_ho ?s (Ty.map e) f loc
+
 end
 
 module ParseT = struct

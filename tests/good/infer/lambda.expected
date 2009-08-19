@@ -32,6 +32,7 @@ ref ['a7|r4|]=
 in
 let fst ['b 'a8||]= logic (('a8 * 'b)) -> 'a8 in
 let snd ['b1 'a9||]= logic (('a9 * 'b1)) -> 'b1 in
+let , ['b2 'a10||]= logic 'a10 -> 'b2 -> ('a10 * 'b2) in
 let + = logic nat -> nat -> nat in
 let - = logic nat -> nat -> nat in
 let * = logic nat -> nat -> nat in
@@ -41,8 +42,8 @@ let > = logic nat -> nat -> prop in
 let >= = logic nat -> nat -> prop in
 let max = logic nat -> nat -> nat in
 let min = logic nat -> nat -> nat in
-let pre ['b2 'a10||]= (λ(x3:('a10 * 'b2)) -> fst ['b2,'a10||] x3) in
-let post ['b3 'a11||]= (λ(x4:('a11 * 'b3)) -> snd ['b3,'a11||] x4) in
+let pre ['b3 'a11||]= (λ(x3:('a11 * 'b3)) -> fst ['b3,'a11||] x3) in
+let post ['b4 'a12||]= (λ(x4:('a12 * 'b4)) -> snd ['b4,'a12||] x4) in
 let
 forto [||e1]=
              (λ(inv:nat -> map{|e1 } -> prop) ->

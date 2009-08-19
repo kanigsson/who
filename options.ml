@@ -5,6 +5,7 @@ let parse_only = ref false
 let infer_only = ref false
 let constr_only = ref false
 let anf_only = ref false
+let wp_only = ref false
 
 let opt_spec = 
   Arg.align
@@ -13,6 +14,7 @@ let opt_spec =
     "-infer-only", Arg.Set infer_only, " do type inference and exit";
     "-constr-only", Arg.Set constr_only, "construct fully typed term and exit";
     "-anf-only", Arg.Set anf_only, "construct anf normal form and exit";
+    "-wp-only", Arg.Set wp_only, "construct wp formula and exit";
   ]
 
 let () = 

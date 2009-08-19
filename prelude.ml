@@ -22,6 +22,7 @@ parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r||r} =
 
 logic fst ['a 'b||] : 'a * 'b -> 'a
 logic snd ['a 'b||] : 'a * 'b -> 'b
+logic , ['a 'b||] : 'a -> 'b -> 'a * 'b
 logic + : int -> int -> int
 logic - : int -> int -> int
 logic * : int -> int -> int
