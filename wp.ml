@@ -7,7 +7,9 @@ module M = Myformat
 exception Error of string * Loc.loc
 let error s loc = raise (Error (s,loc))
 
+let var v = Var.from_name v
 let ty t = Fty.from_ty (Ty.to_logic_type t)
+
 let rec lift_value _ = assert false
 
 (*
@@ -50,7 +52,7 @@ let rec correct v =
   | App (v1,v2,_,_) -> F.and_ (correct v1) (correct v2) l
   | Lam (x,t,p,e,q) -> 
       let lt = Fty.from_ty (Ty.to_logic_type t) in
-      F.effFAho e.e (fun r ->
+      F.effFAho (Fty.from_eff e.e) (fun r ->
         F.forall (Var.from_name x) lt
           (F.impl 
             (match p with 
@@ -64,9 +66,24 @@ let rec correct v =
               e) l) l) l
   | PureFun (x,t,e) -> F.forall (Var.from_name x) (ty t) (correct e) l
   | _ -> assert false
-and to_formula e = 
+and formula e = 
+  let l = e.loc in
   match e.v with
-  | Var (_,_) -> assert false
+  | Var (v,i) -> 
+      F.var (Var.from_name v) 
+        (Inst.map Fty.from_ty RVar.from_name Fty.from_eff i) 
+        (Fty.from_ty e.t) l
+  | Const c -> F.const c l
+  | App (e1,e2,kind,_) -> F.app ~kind (formula e1) (formula e2)
+  | Quant (k,x,t,e) -> F.varbind k (var x) (ty t) (formula e)
+  | PureFun (x,t,e) -> F.varbind `LAM (var x) (ty t) (formula e)
+  | Let (g,e1,x,e2,NoRec) -> 
+      F.polylet_
+
+      of Ty.Generalize.t * ('a,'b,'c) t' * Name.t * ('a,'b,'c) t' * isrec
+  | Axiom _ | Logic _ | Annot _ | TypeDef _ -> assert false
+  | Param _ | For _ | LetReg _ -> 
+(*   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t' *)
   | _ -> assert false
 and wp_node _ _ _ = assert false
       
