@@ -1,1 +1,2 @@
-<main.*> : pkg_unix
+<*.ml> : warn_Z
+<main.*> : pkg_unix, pkg_num

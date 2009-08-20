@@ -17,7 +17,7 @@ module type VARSIG =
 sig
   (** The common signature of all variables kinds *)
 
-  type t
+  type t = private {name : string option; n : int }
   (** The type of a variable *)
 
   type name

@@ -17,9 +17,6 @@ module EffVar : VARSIG
 
 type subst = subst'
 
-val init : unit -> unit
-val get_predef_var : string -> Var.t
-
 (*
 val lookup_var : Var.t
 val assign_var : Var.t

@@ -1,7 +1,7 @@
 (** the module of Names. Names can be constructed from strings, but names with
  * the same underlying string are not necessarily equal (and aren't if
  * both constructed using [from_string]). *)
-type t
+type t = { name : string option ; n : int }
 val compare : t -> t -> int
 val equal : t -> t -> bool
 val new_name : t -> t
@@ -19,7 +19,3 @@ module BSet : MySet.S with type elt = t
 val print_set : S.t Myformat.fmt
 val reset : unit -> unit
 
-val add_var : string -> t -> unit
-val get_predef_var : string -> t
-val iter:
-val table : 

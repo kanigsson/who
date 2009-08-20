@@ -144,3 +144,7 @@ val right : t -> t
 
 val to_lty : t -> Lty.t
 val ltyf : t -> t
+
+val init : unit -> unit
+val get_predef_var : string -> Var.t * TyVar.t list * t
+

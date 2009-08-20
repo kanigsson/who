@@ -1,5 +1,5 @@
 type t = 
-  | Int of int
+  | Int of Big_int.big_int
   | Void
   | Btrue
   | Bfalse
@@ -22,7 +22,7 @@ let type_of_constant = function
 
 open Format
 let print fmt = function
-  | Int i -> pp_print_int fmt i
+  | Int b -> pp_print_string fmt (Big_int.string_of_big_int b)
   | Void -> pp_print_string fmt "()"
   | Btrue -> pp_print_string fmt "true"
   | Bfalse -> pp_print_string fmt "false"

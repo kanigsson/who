@@ -54,3 +54,7 @@ val allsubst :
     t -> t
 
 val forty : Generalize.t * t
+
+val add_var : string -> (Name.t * Generalize.t * t) -> unit
+val get_predef_var : string -> Name.t * Generalize.t * t
+val iter_vars : (string -> (Name.t * Generalize.t * t) -> unit) -> unit

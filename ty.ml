@@ -175,3 +175,12 @@ let forty =
    parr 
      (parr int (parr (map eff) prop))
      (parr int (parr int (arrow (arrow int unit eff) unit eff)))
+
+let h = Hashtbl.create 17
+
+let add_var s x = Hashtbl.add h s x
+let get_predef_var s = 
+  try Hashtbl.find h s
+  with Not_found -> failwith ("predef_var: " ^ s)
+
+let iter_vars f = Hashtbl.iter f h

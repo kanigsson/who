@@ -52,7 +52,7 @@ let rec formtyping' env loc = function
   | PureFun (x,t,e) -> parr t (formtyping (add_svar env x t) e)
   | Logic t -> t
   | Axiom f -> fis_oftype env prop f; prop
-  | Quant (k,x,t,e) -> 
+  | Quant (_,x,t,e) -> 
       fis_oftype (add_svar env x t) prop e;
       prop
   | Ite (e1,e2,e3) ->
@@ -66,7 +66,7 @@ let rec formtyping' env loc = function
       pre env eff p;
       post env eff t' q;
       to_logic_type (arrow t t' eff)
-  | Let (tl,e1,x,e2,r) ->
+  | Let (tl,e1,x,e2,_) ->
       let t = formtyping env e1 in
       let env = add_var env x tl t in
       let t = formtyping env e2 in
@@ -137,7 +137,7 @@ and typing' env loc = function
       let t, eff2 = typing env e2 in
       t, NEffect.union eff1 eff2
   | Param (t,e) -> t,e
-  | TypeDef (tl,t,x,e) -> typing env e
+  | TypeDef (_,_,_,e) -> typing env e
   | PureFun (x,t,e) ->
       let env = add_svar env x t in
       let t', eff = typing env e in
@@ -169,7 +169,7 @@ and typing' env loc = function
 
 and typing env (e : Ast.Recon.t) : Ty.t * NEffect.t =
 (*   Myformat.printf "typing %a@." Ast.Recon.print e; *)
-  let ((t',eff) as x) = typing' env e.loc e.v in
+  let ((t',_) as x) = typing' env e.loc e.v in
   if Ty.equal e.t t' then x else 
     error (Myformat.sprintf "annotation mismatch: %a and %a@." 
              Ty.print e.t Ty.print t') e.loc

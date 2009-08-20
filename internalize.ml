@@ -9,7 +9,6 @@ type env =
     t : Name.t SM.t ;
     r : Name.t SM.t ;
     e : Name.t SM.t ;
-    global : bool;
   }
 
 exception UnknownVar of string
@@ -25,7 +24,6 @@ let effvar env x =
 
 let add_var env x = 
   let y = Name.from_string x in
-  if env.global then Name.add_var x y; 
   { env with v = SM.add x y env.v }, y
 
 let add_ex_var env x y = 
@@ -96,19 +94,20 @@ let rec ast' env = function
   | I.Lam (x,t,p,e,q) ->
       let env, nv = add_var env x in
       Lam (nv,ty env t, pre env p, ast env e, post env q)
-  | I.Let ((tl,rl,el) as g,e1,x,e2,r) ->
+  | I.Let (g,e1,x,e2,r) ->
       let env', g' = add_gen env g in
-(*
-      printf "%s : %a@." x (print_list space pp_print_string) el;
-      print x env';
-*)
       let nv = Name.from_string x in
-      if env.global then Name.add_var x nv;
       let env' = 
         match r with 
         | I.NoRec -> env' 
         | I.Rec _ -> add_ex_var env' x nv in
-      let e1 = ast {env' with global = false} e1 in
+      let e1 = 
+        match e1.I.v with 
+        | I.Logic t ->
+            let t = ty env' t in
+            Ty.add_var x (nv,g',t);
+            { Ast.v = Logic t; loc = e1.I.loc; t = (); e = () }
+        | _ -> ast env' e1 in
       let env = add_ex_var env x nv in
       let e2 = ast env e2 in
       Let (g',e1,nv,e2,rec_ env' r)
@@ -163,6 +162,5 @@ and ast env {I.v = v; loc = loc} =
 let empty = 
   { v = SM.empty; t = SM.empty; 
     r = SM.empty; e = SM.empty;
-    global = true;
   }
 let main t = ast empty t

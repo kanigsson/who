@@ -50,14 +50,14 @@
 
 %}
 
-%token <int Loc.t> INT
+%token <Big_int.big_int Loc.t> INT
 %token <Loc.loc> LPAREN RPAREN LCURL
 %token LBRACKET RBRACKET RCURL DLCURL DRCURL
 %token <string Loc.t> IDENT
 %token <string> TYVAR
 %token IN SEMICOLON
 %token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND
-%token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION
+%token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION TILDE
 %token EOF
 %token REC
 %token <Loc.loc> EXCLAM DEXCLAM IF FUN TRUE FALSE PTRUE PFALSE VOID LET AXIOM
@@ -150,6 +150,7 @@ constant:
 prefix:
   | p = EXCLAM { p, "!" }
   | p = REF { p, "ref" }
+  | p = TILDE { p, "~" }
 
 aterm:
   | x = IDENT { var x.c x.info }

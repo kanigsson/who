@@ -67,9 +67,3 @@ let print_set fmt s =
   S.iter (fun x -> print fmt x ; space fmt ()) s
 
 
-let h = Hashtbl.create 17
-
-let add_var s x = Hashtbl.add h s x
-let get_predef_var s = 
-  try Hashtbl.find h s
-  with Not_found -> failwith ("predef_var: " ^ s)

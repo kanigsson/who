@@ -52,11 +52,6 @@ module RVar = VarBase
 type subst = VarBase.subst
 type subst' = subst
 
-let h = Hashtbl.create 17
-
-let init () = 
-  Hashtbl.iter (fun k v -> Hashtbl.add k (Var.from_name v)) Name.
-
 (*
 let lookup_var = Var.from_string "!"
 let assign_var = Var.from_string ":="

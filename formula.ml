@@ -342,18 +342,20 @@ let app ?(kind=`Prefix) t1 t2 loc =
 let app2 ?k1 ?k2 t1 t2 t3 loc = app ?kind:k2 (app ?kind:k1 t1 t2 loc) t3 loc
 
 let infix = app2 ~k1:`Prefix ~k2:`Infix
-let predef_var v tl loc = 
-  let tvl, t = VM.find v Initdecl.types_of_primitives in
+let predef_var s tl loc = 
+  let v, tvl, t = Fty.get_predef_var s in
   var v [] tl [] (Fty.ltysubst tvl tl t) loc
+
+let spredef_var s loc = predef_var s [] loc
 
 let impl f1 f2 loc =
   match get_sub f1, get_sub f2 with
-  | Const A.CPTrue, _ -> f2
-  | _, Const A.CPTrue -> f1
-  | Const A.CPFalse, _ -> true_ loc
-  | _, _ -> infix (predef_var impl_var [] loc) f1 f2 loc
+  | Const Const.Ptrue, _ -> f2
+  | _, Const Const.Ptrue -> f1
+  | Const Const.Pfalse, _ -> true_ loc
+  | _, _ -> infix (spredef_var "->" loc) f1 f2 loc
 
-let false_ = lmk Fty.prop (Const A.CPFalse)
+let false_ = lmk Fty.prop (Const Const.Pfalse)
 
 let applist l loc = 
   match l with
@@ -363,10 +365,10 @@ let applist l loc =
 
 let and_ f1 f2 loc = 
   match get_sub f1, get_sub f2 with
-  | Const A.CPTrue, _ -> f2
-  | _, Const A.CPTrue -> f1
-  | Const A.CPFalse, _  | _, Const A.CPFalse -> false_ loc
-  | _ -> infix (predef_var and_var [] loc) f1 f2 loc
+  | Const Const.Ptrue, _ -> f2
+  | _, Const Const.Ptrue -> f1
+  | Const Const.Pfalse, _  | _, Const Const.Pfalse -> false_ loc
+  | _ -> infix (spredef_var "/\\" loc) f1 f2 loc
 
 let andlist l loc = 
   match l with
@@ -375,9 +377,9 @@ let andlist l loc =
       List.fold_left (fun acc x -> and_ acc x loc) (and_ a b loc) rest
 
 let tuple f1 f2 loc = 
-  infix (predef_var mk_tuple_var [get_type f1; get_type f2] loc) f1 f2 loc
+  infix (predef_var "," [get_type f1; get_type f2] loc) f1 f2 loc
 
-let not_ f loc = app (predef_var neg_var [] loc) f loc
+let not_ f loc = app (spredef_var "~" loc) f loc
 
 let destruct_infix' = function
   | App ({ v = App ({ v = Var (v,_,_,_)},t1,_) },t2,`Infix) -> Some (v,t1,t2)
@@ -387,18 +389,18 @@ let destruct_infix x = destruct_infix' (get_sub x)
 
 let pre f loc = 
   match destruct_infix f with
-  | Some (v,t1,_) when Var.equal v mk_tuple_var -> t1
+  | Some ({Var.name = Some ","},t1,_) -> t1
   | _ ->
       match get_type f with
-      | `U `Tuple (t1,t2) -> app (predef_var fst_var [t1;t2] loc) f loc
+      | `U `Tuple (t1,t2) -> app (predef_var "fst" [t1;t2] loc) f loc
       | _ -> assert false
 
 let post f loc = 
   match destruct_infix f with
-  | Some (v,_,t2) when Var.equal v mk_tuple_var -> t2
+  | Some ({Var.name = Some ","},_,t2) -> t2
   | _ ->
       match get_type f with
-      | `U `Tuple (t1,t2) -> app (predef_var snd_var [t1;t2] loc) f loc
+      | `U `Tuple (t1,t2) -> app (predef_var "snd" [t1;t2] loc) f loc
       | _ -> assert false
 
 let evgen gl f loc = 
@@ -429,13 +431,13 @@ let polylet_ g x v f loc =
 let let_ v x f loc = 
   lmk (get_type f) (Let (v, close_bind x f)) loc
 
-let eq f1 f2 loc = infix (predef_var eqvar [get_type f1] loc) f1 f2 loc
+let eq f1 f2 loc = infix (predef_var "=" [get_type f1] loc) f1 f2 loc
 
-let btrue = lmk Fty.bool (Const A.CTrue)
-let bfalse = lmk Fty.bool (Const A.CFalse)
+let btrue = lmk Fty.bool (Const Const.Btrue)
+let bfalse = lmk Fty.bool (Const Const.Bfalse)
 
 let one = 
-  lmk Fty.int (Const (A.CInt (Big_int.unit_big_int)))
+  lmk Fty.int (Const (Const.Int (Big_int.unit_big_int)))
 
 module LocImplicit = struct
 
@@ -488,13 +490,13 @@ module LocImplicit = struct
   let efflamho2 eff1 eff2 f =
     efflamho eff1 (fun v -> efflamho eff2 (fun v2 -> f v v2))
 
-  let predef_binop op t a b = applist [svar op t; a; b]
-  let le = predef_binop le_var Fty.iip
-  let lt = predef_binop lt_var Fty.iip
-  let max = predef_binop max_var Fty.iii
-  let min = predef_binop min_var Fty.iii
-  let succ a = predef_binop plus_var Fty.iii a one
-  let prev a = predef_binop minus_var Fty.iii a one
+  let predef_binop op a b = applist [spredef_var op; a; b]
+  let le = predef_binop "<="
+  let lt = predef_binop "<"
+  let max = predef_binop "max"
+  let min = predef_binop "min"
+  let succ a = predef_binop "+" a one
+  let prev a = predef_binop "-" a one
   let preho t eff f = lamho t (fun x -> efflamho eff (fun cur -> f x cur))
   let postho t1 t2 eff f = 
     lamho t1 (fun x -> 

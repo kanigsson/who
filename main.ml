@@ -42,7 +42,7 @@ let _ =
     let p = Anf.normalize_term p in
     maybe_abort Options.anf_only Ast.Recon.print p;
     Typing.typing p;
-    let () = Vars.init () in
+    let () = Fty.init () in
     let p = Wp.main p in
     maybe_abort Options.wp_only Ast.Recon.print p;
     Typing.typing p;

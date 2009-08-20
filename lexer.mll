@@ -30,21 +30,21 @@ let id_or_keyword =
         ("for", fun i -> FOR (create_info i)  );
         ("to", fun i -> TO (create_info i)  );
         ("downto", fun i -> DOWNTO (create_info i)  );
-        ("do", fun i -> DO );
+        ("do", fun _ -> DO );
         ("done", fun i -> DONE (create_info i)  );
-        ("bool", fun i -> BOOL  );
-        ("int", fun i -> TINT  );
-        ("unit", fun i -> UNIT  );
-        ("prop", fun i -> PROP  );
+        ("bool", fun _ -> BOOL  );
+        ("int", fun _ -> TINT  );
+        ("unit", fun _ -> UNIT  );
+        ("prop", fun _ -> PROP  );
         ("begin", fun i -> LPAREN (create_info i));
         ("end", fun i -> RPAREN (create_info i) );
         ("ref", fun i -> REF (create_info i) );
-        ("in", fun i -> IN );
+        ("in", fun _ -> IN );
         ("if", fun i -> IF (create_info i) );
         ("letregion", fun i -> LETREGION (create_info i) );
-        ("then", fun i -> THEN );
-        ("else", fun i -> ELSE );
-        ("rec", fun i -> REC );
+        ("then", fun _ -> THEN );
+        ("else", fun _ -> ELSE );
+        ("rec", fun _ -> REC );
         ("fun", fun i -> FUN (create_info i) );
       ];
     fun s -> try Hashtbl.find h s with Not_found -> 
@@ -71,7 +71,7 @@ rule token = parse
   | [' ' '\t' ]
       { token lexbuf }
   | digit+ as i
-  { INT (Loc.mk (create_info lexbuf) (int_of_string i)) }
+  { INT (Loc.mk (create_info lexbuf) (Big_int.big_int_of_string i)) }
   | identifier as i { id_or_keyword i lexbuf}
   | tyvar as tv { TYVAR tv}
   | "->" { ARROW (create_info lexbuf) }
@@ -97,6 +97,7 @@ rule token = parse
   | ':' { COLON }
   | ',' { COMMA (create_info lexbuf) }
   | '.' { DOT }
+  | '~' { DOT }
   | "<=" { LE (create_info lexbuf)  }
   | "/\\" { AND (create_info lexbuf) }
   | '<' { LT (create_info lexbuf)  }

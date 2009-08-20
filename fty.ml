@@ -126,6 +126,11 @@ struct
     fprintf fmt "[%a|%a|%a]" EffVar.print_list e 
       TyVar.print_list t (region_list ty) r
 
+  let from_g (tl,rl,el) =
+    List.map EffVar.from_name el,
+    List.map TyVar.from_name tl, 
+    List.map (fun r -> RVar.from_name r, unit) rl
+
 end
 module Scheme = 
 struct
@@ -209,3 +214,33 @@ let to_lty x =
   aux x
 
 let ltyf t = lty (to_lty t)
+
+let from_ty, from_eff = 
+  let rec aux' = function
+    | Ty.Var n -> `Var (tvar n)
+    | Ty.Const c -> `Const c
+    | Ty.Tuple (t1,t2) -> `Tuple (aux t1, aux t2)
+    | Ty.PureArr (t1, t2) -> `Arr (aux t1, aux t2)
+    | Ty.Arrow _ -> assert false
+    | Ty.App (n, (tl,rl,el)) -> `App (tvar n, List.map aux tl)
+    | Ty.Ref _ -> assert false
+    | Ty.Map e -> `Map (eff e)
+  and aux (Ty.C t) = `U (aux' t) 
+  and eff (rl,el,_) = 
+    Name.S.fold
+      (fun r acc -> Effect.radd (rvar r) acc) rl
+      (Name.S.fold
+        (fun e acc -> Effect.eadd (EffVar.from_name e) acc)
+        el Effect.empty)
+  and rvar = RVar.from_name
+  and tvar = TyVar.from_name in
+  aux, eff
+
+let h = Hashtbl.create 17
+
+let init () = 
+  Ty.iter_vars (fun k (v,(_,tl,_),t) -> 
+    Hashtbl.add h k (Var.from_name v,List.map TyVar.from_name tl, from_ty t))
+
+let get_predef_var x = Hashtbl.find h x
+

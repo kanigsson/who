@@ -43,14 +43,14 @@ let bool = const TBool
 let int = const TInt
 let unit = const TUnit
 
-let union a b = Uf.union (fun a b -> a) a b
+let union a b = Uf.union (fun a _ -> a) a b
 let eunion a b = 
   match a,b with
   | EU, EU -> a
   | EU, _ -> b
   | _, EU -> a
   | EV a, EV b when a = b -> EV a
-  | EV a, EV b -> 
+  | EV _, EV _ -> 
 (*       ET ([],[mke a; mke b],[]) *)
       assert false
   | EV a, ET _ | ET _, EV a -> 

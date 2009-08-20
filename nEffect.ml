@@ -18,7 +18,7 @@ let esingleton e = S.empty, S.add e S.empty, S.empty
 let radd rv (r,e,c) = S.add rv r, e, c
 let eadd ev (r,e,c) = r, S.add ev e, c
 
-let cadd r (r,e,c) = r,e,S.add r c
+let cadd r (rs,e,c) = rs,e,S.add r c
 
 open Myformat
 let print fmt (r,e,c) = 
@@ -51,7 +51,7 @@ let lsubst el effl (rt,et,c) =
 let equal =
   let relts = S.elements in
   let eelts = S.elements in
-  fun (r1,e1,c1) (r2,e2, c2) ->
+  fun (r1,e1,c1) (r2,_, c2) ->
     Misc.list_equal Name.compare (relts r1) (relts r2) &&
     Misc.list_equal Name.compare (relts c1) (relts c2) &&
     Misc.list_equal Name.compare (eelts e1) (eelts e1)

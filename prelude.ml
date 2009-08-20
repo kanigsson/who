@@ -1,8 +1,12 @@
 let prelude = "
 logic /\\ : prop -> prop -> prop
 logic -> : prop -> prop -> prop
+logic ~ : prop -> prop
 logic = ['a||] : 'a -> 'a -> prop
 logic <> ['a||] : 'a -> 'a -> prop
+logic fst ['a 'b||] : 'a * 'b -> 'a
+logic snd ['a 'b||] : 'a * 'b -> 'b
+logic , ['a 'b||] : 'a -> 'b -> 'a * 'b
 
 logic == ['a||] : 'a -> 'a -> bool
 logic != ['a||] : 'a -> 'a -> bool
@@ -20,9 +24,6 @@ parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r||r} =
   {}
   { x : !!x = v }
 
-logic fst ['a 'b||] : 'a * 'b -> 'a
-logic snd ['a 'b||] : 'a * 'b -> 'b
-logic , ['a 'b||] : 'a -> 'b -> 'a * 'b
 logic + : int -> int -> int
 logic - : int -> int -> int
 logic * : int -> int -> int

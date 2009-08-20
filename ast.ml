@@ -64,7 +64,7 @@ let print pra prb prc fmt t =
     | Quant (k,x,t,e) ->
         fprintf fmt "@[%a (%a:%a).@ %a@]" C.quant k Name.print x Ty.print t print e
     | Param (t,e) -> fprintf fmt "param(%a,%a)" Ty.print t NEffect.print e
-    | For (dir,inv,i,st,en,t) ->
+    | For (dir,inv,_,st,en,t) ->
         fprintf fmt "%a (%a) %a %a (%a)" 
           Name.print dir pre inv Name.print st Name.print en print t
     | Annot (e,t) -> fprintf fmt "(%a : %a)" print e Ty.print t
@@ -126,42 +126,30 @@ module Recon = struct
 
   module T = Ty
   let v = T.var
-  let iip = T.parr T.int (T.parr T.int T.prop)
-  let iii = T.parr T.int (T.parr T.int T.int)
-  let ppp = T.parr T.prop (T.parr T.prop T.prop)
-  let aap a = T.parr (v a) (T.parr (v a) T.prop)
-  let tuple a b = T.tuple (v a) (v b)
-  let pre_defvar s t = 
-    var (Name.get_predef_var s) Inst.empty (T.Generalize.empty,t) 
 
-  let pre_defvarg s inst (g,t) = 
-    var (Name.get_predef_var s) inst (g,t)
+  let pre_defvar s inst = 
+    let v,g,t = Ty.get_predef_var s in
+    var v inst (g,t) 
+
+  let spre_defvar s  = pre_defvar s Inst.empty
 
   let svar s t = var s Inst.empty (T.Generalize.empty,t) 
-  let le t1 t2 loc = appi (pre_defvar "<=" iip loc) t1 t2 loc
-  let and_ t1 t2 loc = appi (pre_defvar "/\\" ppp loc) t1 t2 loc
+  let le t1 t2 loc = appi (spre_defvar "<=" loc) t1 t2 loc
+  let and_ t1 t2 loc = appi (spre_defvar "/\\" loc) t1 t2 loc
   let impl t1 t2 loc = 
-    appi (pre_defvar "->" ppp loc) t1 t2 loc
+    appi (spre_defvar "->" loc) t1 t2 loc
 
   let eq t1 t2 loc = 
-    let nv = Name.from_string "a" in
-    appi (pre_defvarg "=" ([t1.t],[],[]) (([nv],[],[]),aap nv) loc) t1 t2 loc
+    appi (pre_defvar "=" ([t1.t],[],[]) loc) t1 t2 loc
 
   let pre t loc = 
     match t.t with
-    | T.C (T.Tuple (t1,t2)) ->
-        let a = Name.from_string "a" and b = Name.from_string "b" in
-        app (pre_defvarg "fst" ([t1;t2],[],[]) 
-              (([a;b],[],[]),Ty.parr (tuple a b) (v a)) loc)
-            t loc
+    | T.C (T.Tuple (t1,t2)) -> app (pre_defvar "fst" ([t1;t2],[],[]) loc) t loc
     | _ -> assert false
+
   let post t loc = 
     match t.t with
-    | T.C (T.Tuple (t1,t2)) ->
-        let a = Name.from_string "a" and b = Name.from_string "b" in
-        app (pre_defvarg "snd" ([t1;t2],[],[]) 
-              (([a;b],[],[]),Ty.parr (tuple a b) (v b)) loc)
-            t loc
+    | T.C (T.Tuple (t1,t2)) -> app (pre_defvar "snd" ([t1;t2],[],[]) loc) t loc
     | _ -> assert false
 
   let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
@@ -170,8 +158,8 @@ module Recon = struct
   let lam x t p e q = mk_val (Lam (x,t,p,e,q)) (T.arrow t e.t e.e)
   let ptrue_ loc = mk_val (Const (Const.Ptrue)) T.prop loc
   let btrue_ loc = mk_val (Const (Const.Btrue)) T.bool loc
-  let plus t1 t2 loc = appi (pre_defvar "+" iii loc) t1 t2 loc
-  let one = mk_val (Const (Const.Int 1)) T.int 
+  let plus t1 t2 loc = appi (spre_defvar "+" loc) t1 t2 loc
+  let one = mk_val (Const (Const.Int Big_int.unit_big_int)) T.int 
   let succ t loc = plus t (one loc) loc
   let let_ g e1 x e2 r = mk (Let (g,e1,x,e2,r)) e2.t (NEffect.union e1.e e2.e)
 
@@ -179,10 +167,7 @@ module Recon = struct
   let logic t = mk (Logic t) t NEffect.empty
 
   let mk_tuple t1 t2 loc = 
-        let a = Name.from_string "a" and b = Name.from_string "b" in
-        appi (pre_defvarg "," ([t1.t;t2.t],[],[]) 
-              (([a;b],[],[]),Ty.parr (v a) (Ty.parr (v b) (tuple a b))) loc)
-            t1 t2 loc
+    appi (pre_defvar "," ([t1.t;t2.t],[],[]) loc) t1 t2 loc
 
 
   let letreg l e = mk (LetReg (l,e)) e.t (NEffect.rremove l e.e)
@@ -205,7 +190,7 @@ module Recon = struct
   let rec is_value = function
     | Const _ | Var _ | Lam _ | PureFun _ | Axiom _ | Logic _ | Quant _ -> true
     | Let _ | Ite _ | For _ | LetReg _ | Param _ | TypeDef _ | Annot _ -> false
-    | App (t1,t2,_,_) -> 
+    | App (t1,_,_,_) -> 
         match t1.t with
         | T.C (T.PureArr _) -> true
         | _ -> false
@@ -237,7 +222,7 @@ end
 
 module ParseT = struct
   type t = (unit,unit,unit) t'
-  let nothing fmt () = ()
+  let nothing _ () = ()
   let print fmt t = print nothing nothing nothing fmt t
   let mk v loc = { v = v; t = (); e = (); loc = loc }
   let pure_lam x t e = mk (PureFun (x,t,e))

@@ -5,7 +5,7 @@ type t' =
   | Var of Var.t * Effect.t list * Fty.t list * RVar.t list
   | Const of Const.t
   | App of t * t * [`Infix | `Prefix ]
-  | Binder of [ `FA | `Ex | `LAM ] *  Fty.t * varbind
+  | Binder of [ `FA | `EX | `LAM ] *  Fty.t * varbind
   | EvGen of t EffVar.listbind
   | TyGen of t TyVar.listbind
   | RGen of t RVar.listbind * Fty.t list
@@ -103,13 +103,13 @@ val lam : Var.t -> Fty.t -> t -> loc -> t
 val lamho : ?name:string -> Fty.t -> (t -> t) -> loc -> t
 val true_ : loc -> t
 val false_ : loc -> t
-val varbind : [ `FA | `Ex | `LAM ] -> Var.t -> Fty.t -> t -> loc -> t
-val varbindho : ?name:string ->  [ `FA | `Ex | `LAM ] -> Fty.t -> (t -> t) -> loc -> t
+val varbind : [ `FA | `EX | `LAM ] -> Var.t -> Fty.t -> t -> loc -> t
+val varbindho : ?name:string ->  [ `FA | `EX | `LAM ] -> Fty.t -> (t -> t) -> loc -> t
 val evgen : EffVar.t list -> t -> loc -> t
 val tygen : TyVar.t list -> t -> loc -> t
 val polylet_ : generalize -> Var.t -> t -> t -> loc -> t
 val let_ : t -> Var.t -> t -> loc -> t
-val massbind : [ `FA | `Ex | `LAM ] -> (Var.t * Fty.t) list -> t -> loc -> t
+val massbind : [ `FA | `EX | `LAM ] -> (Var.t * Fty.t) list -> t -> loc -> t
 
 val preho : Fty.t -> Effect.t -> (t -> t -> t) -> loc -> t
 val postho : 
