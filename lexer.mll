@@ -36,8 +36,8 @@ let id_or_keyword =
         ("int", fun i -> TINT  );
         ("unit", fun i -> UNIT  );
         ("prop", fun i -> PROP  );
-        ("begin", fun i -> BEGIN (create_info i));
-        ("end", fun i -> END (create_info i) );
+        ("begin", fun i -> LPAREN (create_info i));
+        ("end", fun i -> RPAREN (create_info i) );
         ("ref", fun i -> REF (create_info i) );
         ("in", fun i -> IN );
         ("if", fun i -> IF (create_info i) );

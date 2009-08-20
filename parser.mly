@@ -3,15 +3,19 @@
   open Const
   open Parsetree
 
+  let void = const (Const.Void) Loc.dummy
   let rec merge = function
-    | [] -> const Const.Void Loc.dummy
+    | [] -> void
     | { v = Let (l,t,x,{ v = Const Const.Void },r); loc = loc }::xs -> 
         let_ l t x (merge xs) r loc
     | { v = TypeDef (l,t,x,{ v = Const Const.Void }); loc = loc }::xs -> 
         typedef l t x (merge xs) loc
     | _ -> assert false
 
-  let embrace inf1 inf2 = { st = inf1.st ; en = inf2.en }
+  let embrace inf1 inf2 = 
+    if inf1 = Loc.dummy then inf2 else
+      if inf2 = Loc.dummy then inf1 else
+        { st = inf1.st ; en = inf2.en }
 
   let mk_lam f l loc =
     let l = List.rev l in
@@ -21,7 +25,8 @@
         let acc = f x t loc in
         List.fold_left (fun acc (x,t) -> pure_lam x t acc loc) acc xs
         
-  let mk_pure_lam l e = mk_lam (fun x t -> pure_lam x t e) l 
+  let mk_pure_lam l e loc = 
+    if l = [] then e else mk_lam (fun x t -> pure_lam x t e) l loc
   let mk_efflam l p e q = mk_lam (fun x t -> lam x t p e q) l
   let mk_param l p q rt eff loc = 
     mk_efflam l p (mk (Param (rt,eff)) loc) q loc
@@ -29,7 +34,8 @@
   let mk_quant k l e loc = 
     List.fold_right (fun (x,t) acc -> quant k x t acc loc) l e
 
-  let let_wconst l t x r p = let_ l t x (const (Const.Void) p) r p
+  let let_wconst l t x r p = let_ l t x void r p
+  let strip_info l = List.map (fun x -> x.c) l
 
   let forfunction dir i start end_ inv body pos =
     let s = "-start" and e = "-end" in
@@ -45,7 +51,7 @@
 %}
 
 %token <int Loc.t> INT
-%token <Loc.loc> LPAREN RPAREN LCURL BEGIN END
+%token <Loc.loc> LPAREN RPAREN LCURL
 %token LBRACKET RBRACKET RCURL DLCURL DRCURL
 %token <string Loc.t> IDENT
 %token <string> TYVAR
@@ -73,22 +79,13 @@
 %start <Parsetree.t> main
 %%
 
-progvar: 
-  | x = IDENT { x }
-
 defprogvar:
-  | x = progvar { x }
+  | x = IDENT { x }
   | x = infix { { c = snd x; info = fst x } }
   | x = prefix { { c = snd x; info = fst x } }
   | p = DEXCLAM { Loc.mk p "!!" }
   
-rvar: x = IDENT { x }
-effvar : x = IDENT { x }
-
-progvar_no_pos: x = progvar { x.c }
 defprogvar_no_pos : x = defprogvar { x.c }
-rvar_no_pos : x = rvar { x.c }
-effvar_no_pos : x = effvar { x.c }
 tconstant:
   | BOOL { Const.TBool }
   | TINT { Const.TInt }
@@ -102,8 +99,8 @@ stype:
   | v = IDENT i = inst { TApp (v.c,i)  }
 
 effect:
-  | lr = list(rvar_no_pos) MID le =  list(effvar_no_pos) cl = maycap
-    { lr, le,  cl}
+  | lr = list(IDENT) MID le =  list(IDENT) cl = maycap
+    { strip_info lr, strip_info le,  cl}
 
 sepeffect:
   | LCURL e = effect RCURL { e }
@@ -115,23 +112,23 @@ ty:
     { Arrow (t1,t2,e) }
   | t1 = ty STAR t2 = ty { Tuple (t1, t2) }
   | LT e = effect GT { Map e }
-  | REF LPAREN id = rvar_no_pos COMMA t = ty  RPAREN { Ref (id,t) }
+  | REF LPAREN id = IDENT COMMA t = ty  RPAREN { Ref (id.c,t) }
 
 inst:
-  LBRACKET tl = list(ty) MID rl = list(rvar_no_pos) MID el = list(sepeffect) RBRACKET
-  { tl, rl, el }
+  LBRACKET tl = list(ty) MID rl = list(IDENT) MID el = list(sepeffect) RBRACKET
+  { tl, strip_info rl, el }
 
 maycap:
   | { [] }
-  | MID l = list(rvar_no_pos) { l }
+  | MID l = list(IDENT) { strip_info l }
 
 constant:
-  |  n = INT    { n.info, Const.Int n.c }
-  |  p = TRUE   { p, Const.Btrue }
-  |  p = FALSE  { p, Const.Bfalse }
-  |  p = PTRUE  { p, Const.Ptrue }
-  |  p = PFALSE { p, Const.Pfalse }
-  |  p = VOID   { p, Const.Void }
+  | n = INT    { n.info, Const.Int n.c }
+  | p = TRUE   { p, Const.Btrue }
+  | p = FALSE  { p, Const.Bfalse }
+  | p = PTRUE  { p, Const.Ptrue }
+  | p = PFALSE { p, Const.Pfalse }
+  | p = VOID   { p, Const.Void }
 
 %inline infix:
   | p = MINUS      { p,"-" }
@@ -150,37 +147,33 @@ constant:
   | p = COMMA      { p,"," }
   | p = ARROW      { p,"->" }
 
-%inline infix_nopos:
-  | x = infix { snd x }
-
-%inline prefix:
+prefix:
   | p = EXCLAM { p, "!" }
   | p = REF { p, "ref" }
 
 aterm:
-  | x = progvar { var x.c x.info }
+  | x = IDENT { var x.c x.info }
   | x = prefix { var (snd x) (fst x) }
   | c = constant { let p,c = c in const c p }
-  | l = LPAREN x = infix_nopos e = RPAREN { var x (embrace l e) }
+(*   | l = LPAREN x = infix e = RPAREN { var (snd x) (embrace l e) } *)
   | l = LPAREN t = nterm e = RPAREN { mk t.v (embrace l e) }
-  | l = BEGIN t = nterm e = END { mk t.v (embrace l e) }
   | l = LPAREN e = nterm COLON t = ty r = RPAREN { mk (Annot (e,t)) (embrace l r) }
 
 appterm:
   | t = aterm { t }
-  | t1 = appterm DLCURL l = list(rvar_no_pos) DRCURL t2 = aterm 
-    {cap_app t1 t2 l (embrace t1.loc t2.loc) }
+  | t1 = appterm DLCURL l = list(IDENT) DRCURL t2 = aterm 
+    {cap_app t1 t2 (strip_info l) (embrace t1.loc t2.loc) }
   | t1 = appterm t2 = aterm { app t1 t2 (embrace t1.loc t2.loc) }
 
 nterm:
-  | p = DEXCLAM x = progvar 
+  | p = DEXCLAM x = IDENT 
     { app2 "!!" (var x.c x.info) (var "cur" p) (embrace p x.info) }
-  | p = DEXCLAM x = progvar MID t = aterm 
+  | p = DEXCLAM x = IDENT MID t = aterm 
     { app2 "!!" (var x.c x.info) t (embrace p t.loc)  }
   | t1 = appterm { t1 }
   | t1 = appterm SEMICOLON t2 = appterm { mk (Seq (t1,t2)) (embrace t1.loc t2.loc) }
-  | t1 = nterm i = infix_nopos t2 = nterm  
-    { appi i t1 t2 (embrace t1.loc t2.loc) }
+  | t1 = nterm i = infix t2 = nterm  
+    { appi (snd i) t1 t2 (embrace t1.loc t2.loc) }
   | sp = FUN l = arglist ARROW body = funcbody
     { let p,e,q = body in
       mk_efflam l (snd p) e (snd q) (embrace sp (fst q)) }
@@ -190,22 +183,12 @@ nterm:
     { mk_quant FA l e (embrace sp e.loc) }
   | sp = EXISTS l = arglist DOT e = nterm %prec forall
     { mk_quant EX l e (embrace sp e.loc) }
-  | b = letwithoutargs EQUAL t = nterm IN t2 = nterm %prec let_
-    { let p,x,l = b in
-      let_ l t x t2 NoRec p}
-  | b = letwithargs EQUAL body = funcbody IN t2 = nterm %prec let_
-    { let p,x,l,args = b in
-      let pre,e,q = body in
-      let_ l (mk_efflam args (snd pre) e (snd q) p) x t2 NoRec (embrace p t2.loc) }
-  | b = letwithargs EQUAL t1 = nterm IN t2 = nterm %prec let_
-    { let p,x,l,args = b in
-      let_ l (mk_pure_lam args t1 p) x t2 NoRec (embrace p t2.loc) }
-  | p = LETREGION l = list(rvar_no_pos) IN t = nterm %prec let_
-    { mk (LetReg (l,t)) p }
+  | p = LETREGION l = list(IDENT) IN t = nterm %prec let_
+    { mk (LetReg (strip_info l,t)) p }
   | st = IF it = nterm THEN tb = nterm ELSE eb = nterm %prec ifprec
     { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
-  | f = letrec IN e2 = nterm %prec let_ { (f : t -> t) e2 }
-  | st = FOR i = progvar EQUAL e1 = nterm dir = todownto e2 = nterm DO 
+  | f = alllet IN e2 = nterm %prec let_ {(f : t -> t) e2 }
+  | st = FOR i = IDENT EQUAL e1 = nterm dir = todownto e2 = nterm DO 
        p = precond
        e3 = nterm 
     en = DONE
@@ -220,16 +203,23 @@ onetyarg:
     { List.map (fun x -> x,t) xl }
 
 arglist: l = nonempty_list(onetyarg) { List.flatten l }
+may_empty_arglist: l = list(onetyarg) { List.flatten l}
 
-letwithargs:
-  | p = LET x = defprogvar_no_pos l = optgen args = arglist
-  { p, x, l, args }
+letcommon:
+  | p = LET x = defprogvar_no_pos l = optgen args = may_empty_arglist EQUAL 
+    { p, x ,l,args }
 
-letwithoutargs:
-  | p = LET x = defprogvar_no_pos l = optgen 
-    { p,x,l }
-
-letrec:
+alllet:
+  | b = letcommon t = nterm 
+    { let p,x,l,args = b in
+      fun t2 -> let_ l (mk_pure_lam args t p) x t2 NoRec (embrace p t2.loc) }
+  | b = letcommon body = funcbody 
+    { let p,x,l,args = b in
+      let pre,e,q = body in
+      if args = [] then $syntaxerror;
+      fun t2 -> 
+        let_ l (mk_efflam args (snd pre) e (snd q) p) x t2 NoRec 
+          (embrace p t2.loc) }
   | p = LET REC l = optgen LPAREN x = defprogvar_no_pos 
     COLON t = ty RPAREN args = arglist EQUAL b = funcbody
     { let pre,e,q = b in
@@ -237,13 +227,11 @@ letrec:
         (embrace p e2.loc))
     }
     
-
 funcbody:
   p = precond e = nterm q = postcond { p,e,q }
 
 postcond:
-  | p = LCURL RCURL { p, PNone }
-  | p = LCURL t = nterm RCURL { p, PPlain t}
+  | p = precond { match p with p, None -> p, PNone | p, Some f -> p, PPlain f }
   | p = LCURL x = defprogvar_no_pos COLON t = nterm RCURL { p, PResult (x,t)}
 
 precond:
@@ -252,23 +240,12 @@ precond:
 
 optgen: 
   | { [],[], [] }
-  | LBRACKET tl = list(TYVAR) MID rl=list(rvar_no_pos) MID el =
-    list(effvar_no_pos) RBRACKET 
-    { tl, rl, el }
+  | LBRACKET tl = list(TYVAR) MID rl=list(IDENT) MID el =
+    list(IDENT) RBRACKET 
+    { tl, strip_info rl, strip_info el }
 
 decl:
-  | b = letwithoutargs EQUAL t = nterm
-    { let p,x,l = b in
-      let_wconst l t x NoRec (embrace p t.loc) }
-  | b = letwithargs EQUAL body = funcbody
-    { let p,x,l,args = b in
-      let pre,e,q = body in
-      let_wconst l (mk_efflam args (snd pre) e (snd q) p) x 
-        NoRec (embrace p e.loc) }
-  | b = letwithargs EQUAL t1 = nterm
-    { let p,x,l,args = b in
-      let_wconst l (mk_pure_lam args t1 p) x NoRec (embrace p t1.loc) }
-  | f = letrec { (f : t -> t) (const (Const.Void) dummy) }
+  | f = alllet {(f : t -> t) void }
   | p = PARAMETER x = defprogvar_no_pos l = optgen args = arglist 
     COLON rt = ty COMMA e = sepeffect EQUAL pre = precond post = postcond
   { 
@@ -278,9 +255,9 @@ decl:
     { let_wconst l (mk (Axiom t) p) x NoRec (embrace p t.loc) }
   | p = LOGIC x = defprogvar_no_pos l = optgen COLON t = ty
     { let_wconst l (mk (Logic t) p) x NoRec p }
-  | p = TYPE x = progvar_no_pos l = optgen
-    { typedef l None x (const (Const.Void) p) p }
-  | p = TYPE x = progvar_no_pos l = optgen EQUAL t = ty
-    { typedef l (Some t) x (const (Const.Void) p) p }
+  | p = TYPE x = IDENT l = optgen
+    { typedef l None x.c (const (Const.Void) p) p }
+  | p = TYPE x = IDENT l = optgen EQUAL t = ty
+    { typedef l (Some t) x.c (const (Const.Void) p) p }
 
 main: l = nonempty_list(decl) EOF { merge l }
