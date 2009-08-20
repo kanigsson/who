@@ -1,4 +1,3 @@
-open Names
 open Ty
 open Ast
 open Recon
@@ -8,7 +7,7 @@ let rec normalize_term v = normalize v id
 and normalize e k =
   let loc = e.loc in
   match e.v with
-  | (Const _ | Var _ | Axiom _ | Logic _ | Quant _ | Param _ ) -> k e
+  | (Const _ | Ast.Var _ | Axiom _ | Logic _ | Quant _ | Param _ ) -> k e
   | For _ -> assert false
   | Lam (x,t,p,e,q) -> k (lam x t p (normalize_term e) q loc)
   | PureFun (x,t,e)-> k (plam x t (normalize_term e) loc)
@@ -30,6 +29,6 @@ and normalize_name e k =
     (fun e -> 
       if is_value_node e then k e 
       else
-        let nv = Var.from_string "anf" in
+        let nv = Name.from_string "anf" in
         let nvv = svar nv e.t e.loc in
         let_ Generalize.empty e nv (k nvv) NoRec e.loc)

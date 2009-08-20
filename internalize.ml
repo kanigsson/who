@@ -1,15 +1,14 @@
 module I = Parsetree
-open Names
 open Ast
 
 module SM = Misc.StringMap
 
 type env = 
   { 
-    v : Var.t SM.t ;
-    t : TyVar.t SM.t ;
-    r : RVar.t SM.t ;
-    e : EffVar.t SM.t ;
+    v : Name.t SM.t ;
+    t : Name.t SM.t ;
+    r : Name.t SM.t ;
+    e : Name.t SM.t ;
     global : bool;
   }
 
@@ -25,22 +24,22 @@ let effvar env x =
   try SM.find x env.e with Not_found -> error ("effect var: " ^ x)
 
 let add_var env x = 
-  let y = Var.from_string x in
-  if env.global then Names.add_var x y; 
+  let y = Name.from_string x in
+  if env.global then Name.add_var x y; 
   { env with v = SM.add x y env.v }, y
 
 let add_ex_var env x y = 
   { env with v = SM.add x y env.v }
 
 let add_tvar env x = 
-  let y = TyVar.from_string x in
+  let y = Name.from_string x in
   { env with t = SM.add x y env.t }, y
 
 let add_rvars env l = 
   let r, nl = 
     List.fold_left
       (fun (r,l) x ->
-        let nv = RVar.from_string x in
+        let nv = Name.from_string x in
         SM.add x nv r, nv::l) (env.r,[]) l in
   { env with r = r }, nl
 
@@ -53,7 +52,7 @@ let add_evars env l =
   let e, nl = 
     List.fold_left
       (fun (e,l) x ->
-        let nv = EffVar.from_string x in
+        let nv = Name.from_string x in
         SM.add x nv e, nv::l) (env.e,[]) l in
   { env with e = e }, nl
 
@@ -64,12 +63,12 @@ let add_gen env (tl,rl,el) =
   env, (tl,rl,el)
 
 let rlist_to_set env l = 
-  List.fold_left (fun acc x -> RVar.S.add (rvar env x) acc) RVar.S.empty l
+  List.fold_left (fun acc x -> Name.S.add (rvar env x) acc) Name.S.empty l
 
 let elist_to_set env l = 
   List.fold_left 
     (fun acc x -> 
-      EffVar.S.add (effvar env x) acc) EffVar.S.empty l
+      Name.S.add (effvar env x) acc) Name.S.empty l
 
 let effect env (rl,el,cl) = 
   rlist_to_set env rl, elist_to_set env el, rlist_to_set env cl
@@ -89,7 +88,7 @@ let ty env t =
 
 open Myformat
 let print v env = 
-  printf "%s : %a@." v (print_string_map EffVar.print) env.e
+  printf "%s : %a@." v (print_string_map Name.print) env.e
 let rec ast' env = function
   | I.Const c -> Const c
   | I.Var v -> Var (var env v,([],[],[]))
@@ -103,8 +102,8 @@ let rec ast' env = function
       printf "%s : %a@." x (print_list space pp_print_string) el;
       print x env';
 *)
-      let nv = Var.from_string x in
-      if env.global then Names.add_var x nv;
+      let nv = Name.from_string x in
+      if env.global then Name.add_var x nv;
       let env' = 
         match r with 
         | I.NoRec -> env' 
@@ -138,7 +137,7 @@ let rec ast' env = function
       LetReg (nrl, ast env e)
   | I.Seq (e1,e2) -> 
       Let (Ty.Generalize.empty, ParseT.annot (ast env e1) Ty.unit e1.I.loc, 
-           Var.new_anon (), (ast env e2), NoRec)
+           Name.new_anon (), (ast env e2), NoRec)
 and post env x = 
   let env, old = add_var env "old" in
   let env, cur = add_var env "cur" in

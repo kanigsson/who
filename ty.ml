@@ -1,14 +1,13 @@
-open Names
 type ('a,'b,'c) t' = 
-  | Var of TyVar.t
+  | Var of Name.t
   | Const of Const.ty
   | Tuple of 'a * 'a
   | Arrow of 'a * 'a * 'c
   | PureArr of 'a * 'a
-  | App of TyVar.t * ('a,'b,'c) Inst.t
+  | App of Name.t * ('a,'b,'c) Inst.t
   | Ref of 'b * 'a
   | Map of 'c
-type t = C of (t,RVar.t,Effect.t) t'
+type t = C of (t,Name.t,NEffect.t) t'
 
 open Myformat
 
@@ -20,7 +19,7 @@ let maycap pr fmt = function
   | [] -> ()
   | l -> print_list space pr fmt l
 let print' pt pr pe is_c fmt = function
-  | Var x -> TyVar.print fmt x
+  | Var x -> Name.print fmt x
   | Arrow (t1,t2,eff) -> 
       let p1 = if is_c t1 then paren pt else pt in
       fprintf fmt "%a ->%a %a" p1 t1 pe eff pt t2
@@ -31,11 +30,11 @@ let print' pt pr pe is_c fmt = function
   | Const c -> Const.print_ty fmt c
   | Ref (r,t) -> fprintf fmt "ref(%a,%a)" pr r pt t
   | Map e -> fprintf fmt "map%a" pe e
-  | App (v,i) -> fprintf fmt "%a%a" TyVar.print v (Inst.print pt pr pe) i
+  | App (v,i) -> fprintf fmt "%a%a" Name.print v (Inst.print pt pr pe) i
 
 
 let rec print fmt (C x) = 
-  print' print RVar.print Effect.print 
+  print' print Name.print NEffect.print 
     (function C x -> is_compound x) fmt x
 
 let print_list sep fmt t = print_list sep print fmt t
@@ -62,7 +61,7 @@ let arg = function
 
 let latent_effect = function
   | C (Arrow (_,_,e)) -> e
-  | C (PureArr _) -> Effect.empty
+  | C (PureArr _) -> NEffect.empty
   | _ -> assert false
 
 let result = function
@@ -84,13 +83,13 @@ let to_logic_type t =
   aux t
 
 let build_tvar_map el effl =
-  List.fold_left2 (fun acc k v -> TyVar.M.add k v acc) TyVar.M.empty el effl
+  List.fold_left2 (fun acc k v -> Name.M.add k v acc) Name.M.empty el effl
 
 let tlsubst xl tl target = 
   let map = build_tvar_map xl tl in
   let rec aux' = function
     | (Var y as t)-> 
-        begin try let C t = TyVar.M.find y map in t
+        begin try let C t = Name.M.find y map in t
         with Not_found -> t end
     | (Const _ | Map _ ) as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
@@ -102,7 +101,7 @@ let tlsubst xl tl target =
   aux target
 
 let build_rvar_map el effl =
-  List.fold_left2 (fun acc k v -> RVar.M.add k v acc) RVar.M.empty el effl
+  List.fold_left2 (fun acc k v -> Name.M.add k v acc) Name.M.empty el effl
 
 let rlsubst rvl rl target = 
   let map = build_rvar_map rvl rl in
@@ -115,8 +114,8 @@ let rlsubst rvl rl target =
     | Ref (r,t) -> Ref (auxr r, aux t)
     | Map e -> Map (effsubst e)
     | App (v,i) -> App (v, Inst.map aux auxr effsubst i)
-  and auxr r = try RVar.M.find r map with Not_found -> r
-  and effsubst e = Effect.rmap auxr e
+  and auxr r = try Name.M.find r map with Not_found -> r
+  and effsubst e = NEffect.rmap auxr e
   and aux (C x) = C (aux' x) in
   aux target
 
@@ -130,12 +129,12 @@ let elsubst evl effl target =
     | Ref (r,t) -> Ref (r, aux t)
     | App (v,i) -> App (v, Inst.map aux Misc.id effsubst i)
   and aux (C x) = C (aux' x) 
-  and effsubst eff' = Effect.lsubst evl effl eff' in
+  and effsubst eff' = NEffect.lsubst evl effl eff' in
   aux target
 
 module Generalize = struct
   type ty = t
-  type t = TyVar.t list * RVar.t list * EffVar.t list
+  type t = Name.t list * Name.t list * Name.t list
 
   let empty = [],[],[]
   let is_empty = function
@@ -145,8 +144,8 @@ module Generalize = struct
   open Myformat
   let print fmt ((tl,rl,el) as g) = 
     if is_empty g then ()
-    else fprintf fmt "[%a|%a|%a]" TyVar.print_list tl 
-          RVar.print_list rl EffVar.print_list el
+    else fprintf fmt "[%a|%a|%a]" Name.print_list tl 
+          Name.print_list rl Name.print_list el
 end
 
 let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target = 
@@ -154,24 +153,24 @@ let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target =
 
 let rec equal' t1 t2 = 
   match t1, t2 with
-  | Var x1, Var x2 -> TyVar.equal x1 x2
+  | Var x1, Var x2 -> Name.equal x1 x2
   | Const x1, Const x2 -> x1 = x2
   | Tuple (ta1,ta2), Tuple (tb1,tb2)
   | PureArr (ta1,ta2), PureArr (tb1,tb2) -> 
       equal ta1 tb1 && equal ta2 tb2
   | Arrow (ta1,ta2,e1), Arrow (tb1,tb2,e2) -> 
-      equal ta1 tb1 && equal ta2 tb2 && Effect.equal e1 e2 
-  | Ref (r1,t1), Ref (r2,t2) -> RVar.equal r1 r2 && equal t1 t2
-  | Map e1, Map e2 -> Effect.equal e1 e2
+      equal ta1 tb1 && equal ta2 tb2 && NEffect.equal e1 e2 
+  | Ref (r1,t1), Ref (r2,t2) -> Name.equal r1 r2 && equal t1 t2
+  | Map e1, Map e2 -> NEffect.equal e1 e2
   | App (v1,i1), App (v2,i2) -> 
-      v1 = v2 && Inst.equal equal RVar.equal (Effect.equal) i1 i2
+      v1 = v2 && Inst.equal equal Name.equal (NEffect.equal) i1 i2
 
   | _ -> false
 and equal (C a) (C b) = equal' a b
 
 let forty = 
-  let e = EffVar.from_string "e" in
-  let eff = Effect.esingleton e in
+  let e = Name.from_string "e" in
+  let eff = NEffect.esingleton e in
   ([],[],[e]),
    parr 
      (parr int (parr (map eff) prop))

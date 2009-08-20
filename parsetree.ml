@@ -31,7 +31,7 @@ type t' =
   | Logic of ty
   | Annot of t * ty
   | TypeDef of generalize * ty option * var * t
-  | Quant of C.quant * var * ty * t
+  | Quant of [`FA | `EX] * var * ty * t
   | Param of ty * effect
   | For of var * t option * var * var * var * t
   | LetReg of rvar list * t

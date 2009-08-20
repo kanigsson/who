@@ -1,4 +1,3 @@
-open Names
 module Uf = Unionfind
 
 type ty = 
@@ -9,10 +8,10 @@ and rnode = r Uf.t
 and enode = e Uf.t
 and r = 
   | RU 
-  | RT of RVar.t
+  | RT of Name.t
 and e = 
   | EU
-  | EV of EffVar.t
+  | EV of Name.t
   | ET of rnode list * enode list * rnode list
 
 let new_ty () = Uf.fresh U
@@ -78,11 +77,11 @@ and is_c x =
 and prvar fmt x = 
   match Uf.desc x with
   | RU -> fprintf fmt "%d" (Uf.tag x)
-  | RT x -> RVar.print fmt x
+  | RT x -> Name.print fmt x
 and preff fmt x = 
   match Uf.desc x with
   | EU -> fprintf fmt "%d" (Uf.tag x)
-  | EV x -> EffVar.print fmt x
+  | EV x -> Name.print fmt x
   | ET (rl,el,cl) -> 
       let pc fmt = function
         | [] -> ()
@@ -175,14 +174,14 @@ let to_ty, to_eff, to_r =
     | RU -> assert false
     | RT s -> s
   and eff x =
-    let f acc x = List.fold_left (fun acc x -> RVar.S.add x acc) acc x in
+    let f acc x = List.fold_left (fun acc x -> Name.S.add x acc) acc x in
     let rec aux ((racc,eacc,cacc) as acc) x = 
       match Uf.desc x with
       | EU -> acc
-      | EV x -> racc, EffVar.S.add x eacc, cacc
+      | EV x -> racc, Name.S.add x eacc, cacc
       | ET (rl,el,cl) -> 
           let acc = f racc (List.map rv rl),eacc, f cacc (List.map rv cl) in
           List.fold_left aux acc el in
-    aux (RVar.S.empty, EffVar.S.empty, RVar.S.empty) x in
+    aux (Name.S.empty, Name.S.empty, Name.S.empty) x in
   ty, eff, rv
 

@@ -1,14 +1,12 @@
-open Names
 open Unify
 open Ast
 module SM = Misc.StringMap
 
-module RS = RVar.S
-module ES = EffVar.S
+module S = Name.S
 
 type env = { 
-  vars : (Ty.Generalize.t * Ty.t) Var.M.t ;  
-  types : (Ty.Generalize.t * Ty.t option) TyVar.M.t;
+  vars : (Ty.Generalize.t * Ty.t) Name.M.t ;  
+  types : (Ty.Generalize.t * Ty.t option) Name.M.t;
   pm : bool;
   curloc : Loc.loc;
   }
@@ -17,9 +15,9 @@ exception Error of string * Loc.loc
 
 let error s loc = raise (Error (s,loc))
 
-let add_var env x g t = { env with vars = Var.M.add x (g,t) env.vars }
+let add_var env x g t = { env with vars = Name.M.add x (g,t) env.vars }
 let add_svar env x t = add_var env x Ty.Generalize.empty t
-let add_ty env x g t = { env with types = TyVar.M.add x (g,t) env.types }
+let add_ty env x g t = { env with types = Name.M.add x (g,t) env.types }
 
 let ymemo ff =
   let h = Hashtbl.create 17 in
@@ -46,8 +44,8 @@ let bh f l =
 let prety eff = parr (map eff) prop
 let postty eff t = parr (map eff) (parr (map eff) (parr t prop)) 
 
-let rlist_from_set_map f l = RS.fold (fun x acc -> f x :: acc) l []
-let elist_from_set_map f l = ES.fold (fun x acc -> f x :: acc) l []
+let rlist_from_set_map f l = S.fold (fun x acc -> f x :: acc) l []
+let elist_from_set_map f l = S.fold (fun x acc -> f x :: acc) l []
 
 let to_uf_node (tl,rl,el) x = 
   let tn,th = bh new_ty tl and rn,rh = bh new_r rl and en,eh = bh new_e el in
@@ -65,8 +63,8 @@ let to_uf_node (tl,rl,el) x =
   and auxr r = try HT.find rh r with Not_found -> mkr r
   and auxe e = try HT.find eh e with Not_found -> mke e 
   and eff (rl,el,cl) = 
-    if RS.is_empty rl && RS.is_empty cl && ES.cardinal el = 1 then 
-      auxe (ES.choose el)
+    if S.is_empty rl && S.is_empty cl && S.cardinal el = 1 then 
+      auxe (S.choose el)
     else
       effect (rlist_from_set_map auxr rl)
              (elist_from_set_map auxe el)
@@ -74,8 +72,8 @@ let to_uf_node (tl,rl,el) x =
   real x, (tn,rn,en)
 
 let to_uf_enode (rl,el,cl) = 
-    if RS.is_empty rl && RS.is_empty cl && ES.cardinal el = 1 then 
-      mke (ES.choose el)
+    if S.is_empty rl && S.is_empty cl && S.cardinal el = 1 then 
+      mke (S.choose el)
     else
       effect (rlist_from_set_map mkr rl)
              (elist_from_set_map mke el)
@@ -96,7 +94,7 @@ let rec infer' env t loc = function
   | App (e1,e2,k,cap) ->
       let nt = new_ty () 
       and e = if cap = [] then new_e () 
-              else to_uf_enode (Effect.from_cap_list cap) in
+              else to_uf_enode (NEffect.from_cap_list cap) in
       let e1 = infer env (arrow nt t e) e1 in
       let e2 = infer env nt e2 in
       App (e1,e2,k,cap), Unify.effect [] [e;e1.e;e2.e] []
@@ -107,9 +105,9 @@ let rec infer' env t loc = function
   | Var (x,_) -> 
 (*       Myformat.printf "var %a@." Vars.var x; *)
         let m,xt = 
-          try Var.M.find x env.vars
+          try Name.M.find x env.vars
           with Not_found -> 
-            error (Myformat.sprintf "variable %a not found" Var.print x) loc in
+            error (Myformat.sprintf "variable %a not found" Name.print x) loc in
         let xt = if env.pm then Ty.to_logic_type xt else xt in
         let nt,i = to_uf_node m xt in
         unify nt t loc;
@@ -153,7 +151,7 @@ let rec infer' env t loc = function
         | Rec  ty -> (add_svar env x ty) in
       let e1 = infer env' nt e1 in
       let xt = try to_ty nt 
-               with Assert_failure _ -> error (Var.to_string x) loc  in
+               with Assert_failure _ -> error (Name.to_string x) loc  in
       let e2 = infer (add_var env x g xt) t e2 in
       Let (g,e1,x,e2,r), Unify.effect [] [e1.e; e2.e] []
   | Ite (e1,e2,e3) ->
@@ -176,7 +174,7 @@ let rec infer' env t loc = function
       Logic t', new_e ()
   | LetReg (vl,e) ->
       let e = infer env t e in
-      let eff = Effect.rremove vl (to_eff e.e) in
+      let eff = NEffect.rremove vl (to_eff e.e) in
       LetReg (vl,e), to_uf_enode eff
 
 and infer env t (e : ParseT.t) : Ast.Infer.t = 
@@ -192,14 +190,14 @@ and post env eff t (old,cur,x) =
   | PNone -> PNone
   | PPlain f -> 
       PPlain (infer {env with pm = true} (postty eff t) 
-        (postf eff t old cur (Var.new_anon ()) f))
+        (postf eff t old cur (Name.new_anon ()) f))
   | PResult (r,f) ->
       PPlain (infer {env with pm = true} (postty eff t) 
         (postf eff t old cur r f)) in
   old,cur,p
 
-let initial = { vars = Var.M.empty; pm = false; 
-                types = TyVar.M.empty; curloc = Loc.dummy; }
+let initial = { vars = Name.M.empty; pm = false; 
+                types = Name.M.empty; curloc = Loc.dummy; }
 let infer e = 
   let nt = new_ty () in
   infer initial nt e
@@ -230,12 +228,12 @@ let rec recon' = function
       let pre = 
         (* pre : λcur. start <= i /\ i <= end_ /\ inv *)
           efflam cur e (and_ (encl sv iv ev l) (app inv curvar l) l) l in
-      let old = Var.new_anon () in
+      let old = Name.new_anon () in
       let post = 
         (* post : λold.λcurλ(). inv (i+1) cur *)
         efflam old e
           (efflam cur e
-            (plam (Var.new_anon ()) Ty.unit
+            (plam (Name.new_anon ()) Ty.unit
               (app2 inv' (succ iv l) curvar l) l) l) l in
       let bodyfun = lam i Ty.int (cur,Some pre) body (old,cur,PPlain post) l in
       (* forvar inv start end bodyfun *)

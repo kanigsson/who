@@ -1,0 +1,146 @@
+open Vars
+
+type ('a,'b,'c) t'' = [ ('a,'b) Lty.t'' | `Map of 'c ]
+type 'a t' = ('a,TyVar.t,Effect.t) t''
+type t = [ `U of t t' ]
+
+val print'': 'a Myformat.fmt -> 'b Myformat.fmt -> 'c Myformat.fmt -> ('a,'b,'c) t'' Myformat.fmt
+val print' : 'a Myformat.fmt -> 'a t' Myformat.fmt
+val print : t Myformat.fmt
+val print_list : t list Myformat.fmt
+val binder : (Var.t * t) Myformat.fmt
+
+val map' : 
+  ('a -> 'b) -> 
+      tyvarfun:(TyVar.t -> ([> 'b t'] as 'd)) -> 
+      effectfun:(Effect.t -> Effect.t) ->
+        'a t' -> 'd
+val map : 
+  tyvarfun:(TyVar.t -> t t') -> 
+  effectfun:(Effect.t -> Effect.t) -> 
+    t -> t
+
+val refresh : subst -> t -> t
+(** apply a variable substitution to a logic type *)
+
+(* some predefined type variables *)
+val key_var : TyVar.t
+val map_var : TyVar.t
+val set_var : TyVar.t
+
+
+
+(** smart constructors *)
+val var : TyVar.t -> t
+val arr : t -> t -> t
+val app : TyVar.t -> t list -> t
+val tuple : t -> t -> t
+val mkmap : Effect.t -> t
+val maparr : Effect.t -> t -> t
+val massarrow : t list -> t -> t
+
+(** smart constants *)
+val prop : t
+val int : t
+val bool : t
+val unit : t
+val const : Const.ty -> t
+
+(* predefined types *)
+val iii : t
+val ppp : t
+(* int -> int -> int *)
+val iip : t
+(* int -> int -> prop *)
+val iib : t
+(* int -> int -> bool *)
+val mmm : t
+(* map -> map -> map *)
+val kvmm : t -> t
+(* key -> 'a -> map -> map *)
+val smm : t
+(* set -> map -> map *)
+
+val kss : t
+(* key -> set -> set *)
+val sss : t
+(* set -> set -> set *)
+val ms : t
+(* map -> set *)
+
+
+
+val compare' : ('a -> 'a -> int) -> 'a t' -> 'a t' -> int
+val compare : t -> t -> int
+val equal : t -> t -> bool
+(** comparison and equality *)
+
+val well_formed' : ('a -> bool) -> (TyVar.t -> int) -> 'a t' -> bool
+val well_formed : (TyVar.t -> int) -> t -> bool
+(** wellformedness; the argument is a function that returns the arity of a type
+ * *)
+
+val effsubst : EffVar.t -> Effect.t -> t -> t
+(** effect substitution: [effsubst e eff' t] replaces the effect variable [e]
+ * by the effect [eff'] in [t]. Raises [IncompatibleSubst] if an non-disjoint
+ * union is attempted *)
+
+val rsubst : RVar.t -> RVar.t -> t -> t
+
+val leffsubst : EffVar.t list -> Effect.t list -> t -> t
+(** replace a list of effect variables by a list of effects *)
+
+val tysubst : TyVar.t -> t -> t -> t
+(** type substitution: [tysubst alpha tau' t] replaces the type variable
+ * alpha * by the type [tau'] in [t]. *)
+val ltysubst : TyVar.t list -> t list -> t -> t
+
+val map : 
+  tyvarfun:(TyVar.t -> t t') -> 
+  effectfun:(Effect.t -> Effect.t) -> t -> t
+(** a map over types - specify what to do in the case of variables and effects
+ * *)
+
+module Generalize : sig
+  type 'a t = EffVar.t list * TyVar.t list * (RVar.t * 'a) list
+  type ('a,'b) bind = 
+    ('a RVar.listbind * 'b list) TyVar.listbind EffVar.listbind 
+
+  val is_empty : 'a t -> bool
+  val empty : 'a t
+
+  val open_bind :
+    (Vars.RVar.subst -> 'a -> 'a) -> (Vars.RVar.subst -> 'b -> 'b) ->
+      ('a,'b) bind -> 'b t * 'a
+
+  val open_bind_with :
+    (Vars.RVar.subst -> 'a -> 'a) -> (Vars.RVar.subst -> 'b -> 'b) ->
+      'b t -> ('a,'b) bind -> 'a
+
+  val close_bind : 'b t -> 'a -> ('a,'b) bind
+
+  val print : 'a Myformat.fmt -> 'a t Myformat.fmt
+end
+
+module Scheme : sig
+  (** the module of logic type schemes *)
+  type fty = t
+  type t
+  val fty : fty -> t
+  val instance : t -> Effect.t list -> fty list -> RVar.t list -> fty
+  (** get the instance of a type scheme wrt. lists of effects and types *)
+  val print : t Myformat.fmt
+
+  val open_ : t -> fty Generalize.t * fty
+  val close : fty Generalize.t -> fty -> t
+  (** open and close logic type schemes *)
+end
+
+val domain : t -> Effect.t
+val arg : t -> t
+val result : t -> t
+val left : t -> t
+val right : t -> t
+
+val to_lty : t -> Lty.t
+val ltyf : t -> t

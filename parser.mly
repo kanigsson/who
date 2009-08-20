@@ -180,9 +180,9 @@ nterm:
   | sp = FUN l = arglist ARROW e = nterm 
     { mk_pure_lam l e (embrace sp e.loc) }
   | sp = FORALL l = arglist DOT e = nterm %prec forall
-    { mk_quant FA l e (embrace sp e.loc) }
+    { mk_quant `FA l e (embrace sp e.loc) }
   | sp = EXISTS l = arglist DOT e = nterm %prec forall
-    { mk_quant EX l e (embrace sp e.loc) }
+    { mk_quant `EX l e (embrace sp e.loc) }
   | p = LETREGION l = list(IDENT) IN t = nterm %prec let_
     { mk (LetReg (strip_info l,t)) p }
   | st = IF it = nterm THEN tb = nterm ELSE eb = nterm %prec ifprec

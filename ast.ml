@@ -1,31 +1,30 @@
-open Names
 module U = Unify
 module C = Const
 
 type ('a,'b,'c) t'' =
   | Const of Const.t
-  | Var of Var.t * ('a,'b,'c) Inst.t
-  | App of ('a,'b,'c) t' * ('a,'b,'c) t' * Const.fix * RVar.t list
+  | Var of Name.t * ('a,'b,'c) Inst.t
+  | App of ('a,'b,'c) t' * ('a,'b,'c) t' * Const.fix * Name.t list
   | Lam of 
-      Var.t * Ty.t * ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post 
-  | Let of Ty.Generalize.t * ('a,'b,'c) t' * Var.t * ('a,'b,'c) t' * isrec
-  | PureFun of Var.t * Ty.t * ('a,'b,'c) t'
+      Name.t * Ty.t * ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post 
+  | Let of Ty.Generalize.t * ('a,'b,'c) t' * Name.t * ('a,'b,'c) t' * isrec
+  | PureFun of Name.t * Ty.t * ('a,'b,'c) t'
   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
   | Axiom of ('a,'b,'c) t'
   | Logic of Ty.t
   | Annot of ('a,'b,'c) t' * Ty.t
-  | TypeDef of Ty.Generalize.t * Ty.t option * TyVar.t * ('a,'b,'c) t'
-  | Quant of Const.quant * Var.t * Ty.t * ('a,'b,'c) t'
-  | Param of Ty.t * Effect.t
-  | For of Var.t * ('a,'b,'c) pre * Var.t * Var.t * Var.t * ('a,'b,'c) t'
-  | LetReg of RVar.t list * ('a,'b,'c) t'
+  | TypeDef of Ty.Generalize.t * Ty.t option * Name.t * ('a,'b,'c) t'
+  | Quant of [`FA | `EX ] * Name.t * Ty.t * ('a,'b,'c) t'
+  | Param of Ty.t * NEffect.t
+  | For of Name.t * ('a,'b,'c) pre * Name.t * Name.t * Name.t * ('a,'b,'c) t'
+  | LetReg of Name.t list * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
 and ('a,'b,'c) post' = 
   | PNone
   | PPlain of ('a,'b,'c) t'
-  | PResult of Var.t * ('a,'b,'c) t'
-and ('a,'b,'c) pre = Var.t * ('a,'b,'c) t' option
-and ('a,'b,'c) post = Var.t * Var.t * ('a,'b,'c) post'
+  | PResult of Name.t * ('a,'b,'c) t'
+and ('a,'b,'c) pre = Name.t * ('a,'b,'c) t' option
+and ('a,'b,'c) post = Name.t * Name.t * ('a,'b,'c) post'
 and isrec = Rec of Ty.t | NoRec
 
 
@@ -41,37 +40,37 @@ let print pra prb prc fmt t =
   let rec print' fmt = function
     | Const c -> Const.print fmt c
     | Var (v,i) -> 
-        if Inst.is_empty i then Var.print fmt v
-        else fprintf fmt "%a %a" Var.print v (Inst.print pra prb prc) i
+        if Inst.is_empty i then Name.print fmt v
+        else fprintf fmt "%a %a" Name.print v (Inst.print pra prb prc) i
     | App ({v = App ({ v = Var(v,_)},t1,_,_)},t2,C.Infix,_) -> 
-        fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 Var.print v with_paren t2
+        fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 Name.print v with_paren t2
     | App (t1,t2,_,cap) ->
           fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
     | Lam (x,t,p,e,q) -> 
-        fprintf fmt "@[(λ(%a:%a)@ -->@ %a@ %a@ %a)@]" Var.print x 
+        fprintf fmt "@[(λ(%a:%a)@ -->@ %a@ %a@ %a)@]" Name.print x 
           Ty.print t pre p print e post q
     | PureFun (x,t,e) ->
-        fprintf fmt "@[(λ(%a:%a)@ ->@ %a)@]" Var.print x Ty.print t print e
+        fprintf fmt "@[(λ(%a:%a)@ ->@ %a)@]" Name.print x Ty.print t print e
     | Let (g,e1,x,e2,r) -> 
         fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]" 
-          prrec r Var.print x Ty.Generalize.print g print e1 print e2
+          prrec r Name.print x Ty.Generalize.print g print e1 print e2
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then %a else %a@]" print e1 print e2 print e3
     | Axiom e -> fprintf fmt "axiom %a" print e
     | Logic t -> fprintf fmt "logic %a" Ty.print t
     | TypeDef (g,t,x,e) -> 
         fprintf fmt "type %a%a =@ %a in@ %a" 
-          TyVar.print x Ty.Generalize.print g (opt_print Ty.print) t print e
+          Name.print x Ty.Generalize.print g (opt_print Ty.print) t print e
     | Quant (k,x,t,e) ->
-        fprintf fmt "@[%a (%a:%a).@ %a@]" C.quant k Var.print x Ty.print t print e
-    | Param (t,e) -> fprintf fmt "param(%a,%a)" Ty.print t Effect.print e
+        fprintf fmt "@[%a (%a:%a).@ %a@]" C.quant k Name.print x Ty.print t print e
+    | Param (t,e) -> fprintf fmt "param(%a,%a)" Ty.print t NEffect.print e
     | For (dir,inv,i,st,en,t) ->
         fprintf fmt "%a (%a) %a %a (%a)" 
-          Var.print dir pre inv Var.print st Var.print en print t
+          Name.print dir pre inv Name.print st Name.print en print t
     | Annot (e,t) -> fprintf fmt "(%a : %a)" print e Ty.print t
     | LetReg (v,t) -> 
         fprintf fmt "@[letregion %a in@ %a@]" 
-          (print_list space RVar.print) v print t
+          (print_list space Name.print) v print t
       
   and print fmt t = print' fmt t.v
   and pre fmt (_,x) = 
@@ -82,13 +81,13 @@ let print pra prb prc fmt t =
     match x with
     | PNone -> ()
     | PPlain f -> fprintf fmt "{%a}" print f
-    | PResult (r,f) -> fprintf fmt "{ %a : %a}" Var.print r print f
+    | PResult (r,f) -> fprintf fmt "{ %a : %a}" Name.print r print f
   and prrec fmt = function
     | NoRec -> ()
     | Rec t -> fprintf fmt "rec(%a) " Ty.print t
   and maycap fmt = function
     | [] -> ()
-    | l -> fprintf fmt "{%a}" (print_list space RVar.print) l
+    | l -> fprintf fmt "{%a}" (print_list space Name.print) l
   and with_paren fmt x = 
     if is_compound_node x then paren print fmt x else print fmt x in
   print fmt t
@@ -102,22 +101,22 @@ module Infer = struct
 
   let lam x t p e q = mk_val (Lam (x,U.to_ty t,p,e,q)) (U.arrow t e.t e.e)
 (*   let plam x t e = mk_val (PureFun (x,t,e)) (U.parr t e.t) *)
-  let lam_anon t e p = lam (Var.new_anon ()) t e p
+  let lam_anon t e p = lam (Name.new_anon ()) t e p
 
   let print fmt t = print U.print_node U.prvar U.preff fmt t
 
 end
 
 module Recon = struct
-  type t = (Ty.t, RVar.t, Effect.t) t'
-  let print fmt t = print Ty.print RVar.print Effect.print fmt t
+  type t = (Ty.t, Name.t, NEffect.t) t'
+  let print fmt t = print Ty.print Name.print NEffect.print fmt t
 
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
-  let mk_val v t loc = { v = v; t = t; e = Effect.empty; loc = loc }
+  let mk_val v t loc = { v = v; t = t; e = NEffect.empty; loc = loc }
 
   let app ?(kind=C.Prefix) ?(cap=[]) t1 t2 loc = 
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
-    mk (App (t1,t2,kind,cap)) t (Effect.union t1.e (Effect.union t2.e e)) loc
+    mk (App (t1,t2,kind,cap)) t (NEffect.union t1.e (NEffect.union t2.e e)) loc
 
 
   let app2 t t1 t2 loc = app (app t t1 loc) t2 loc
@@ -133,10 +132,10 @@ module Recon = struct
   let aap a = T.parr (v a) (T.parr (v a) T.prop)
   let tuple a b = T.tuple (v a) (v b)
   let pre_defvar s t = 
-    var (get_predef_var s) Inst.empty (T.Generalize.empty,t) 
+    var (Name.get_predef_var s) Inst.empty (T.Generalize.empty,t) 
 
   let pre_defvarg s inst (g,t) = 
-    var (get_predef_var s) inst (g,t)
+    var (Name.get_predef_var s) inst (g,t)
 
   let svar s t = var s Inst.empty (T.Generalize.empty,t) 
   let le t1 t2 loc = appi (pre_defvar "<=" iip loc) t1 t2 loc
@@ -145,13 +144,13 @@ module Recon = struct
     appi (pre_defvar "->" ppp loc) t1 t2 loc
 
   let eq t1 t2 loc = 
-    let nv = TyVar.from_string "a" in
+    let nv = Name.from_string "a" in
     appi (pre_defvarg "=" ([t1.t],[],[]) (([nv],[],[]),aap nv) loc) t1 t2 loc
 
   let pre t loc = 
     match t.t with
     | T.C (T.Tuple (t1,t2)) ->
-        let a = TyVar.from_string "a" and b = TyVar.from_string "b" in
+        let a = Name.from_string "a" and b = Name.from_string "b" in
         app (pre_defvarg "fst" ([t1;t2],[],[]) 
               (([a;b],[],[]),Ty.parr (tuple a b) (v a)) loc)
             t loc
@@ -159,7 +158,7 @@ module Recon = struct
   let post t loc = 
     match t.t with
     | T.C (T.Tuple (t1,t2)) ->
-        let a = TyVar.from_string "a" and b = TyVar.from_string "b" in
+        let a = Name.from_string "a" and b = Name.from_string "b" in
         app (pre_defvarg "snd" ([t1;t2],[],[]) 
               (([a;b],[],[]),Ty.parr (tuple a b) (v b)) loc)
             t loc
@@ -174,21 +173,21 @@ module Recon = struct
   let plus t1 t2 loc = appi (pre_defvar "+" iii loc) t1 t2 loc
   let one = mk_val (Const (Const.Int 1)) T.int 
   let succ t loc = plus t (one loc) loc
-  let let_ g e1 x e2 r = mk (Let (g,e1,x,e2,r)) e2.t (Effect.union e1.e e2.e)
+  let let_ g e1 x e2 r = mk (Let (g,e1,x,e2,r)) e2.t (NEffect.union e1.e e2.e)
 
   let axiom e = mk (Axiom e) T.prop e.e
-  let logic t = mk (Logic t) t Effect.empty
+  let logic t = mk (Logic t) t NEffect.empty
 
   let mk_tuple t1 t2 loc = 
-        let a = TyVar.from_string "a" and b = TyVar.from_string "b" in
+        let a = Name.from_string "a" and b = Name.from_string "b" in
         appi (pre_defvarg "," ([t1.t;t2.t],[],[]) 
               (([a;b],[],[]),Ty.parr (v a) (Ty.parr (v b) (tuple a b))) loc)
             t1 t2 loc
 
 
-  let letreg l e = mk (LetReg (l,e)) e.t (Effect.rremove l e.e)
+  let letreg l e = mk (LetReg (l,e)) e.t (NEffect.rremove l e.e)
   let ite e1 e2 e3 = 
-    mk (Ite (e1,e2,e3)) e2.t (Effect.union e1.e (Effect.union e2.e e3.e))
+    mk (Ite (e1,e2,e3)) e2.t (NEffect.union e1.e (NEffect.union e2.e e3.e))
 
   let typedef g t v e = mk (TypeDef (g,t,v,e)) e.t e.e
 
@@ -213,22 +212,22 @@ module Recon = struct
   and is_value_node x = is_value x.v
 
   let squant k x t f loc = mk (Quant (k,x,t,f)) f.t f.e loc
-  let sforall x = squant C.FA x
+  let sforall x = squant `FA x
   let quant ?s k t f loc = 
     let v = 
       match s with 
-      | None -> Var.new_anon () 
-      | Some s -> Var.from_string s in
+      | None -> Name.new_anon () 
+      | Some s -> Name.from_string s in
     let tv = svar v t loc in
     squant k v t (f tv) loc
 
-  let forall ?s t f loc = quant ?s C.FA t f loc
+  let forall ?s t f loc = quant ?s `FA t f loc
   let effFA ?s e f loc = forall ?s (Ty.map e) f loc
   let plam_ho ?s t f loc = 
     let v = 
       match s with 
-      | None -> Var.new_anon () 
-      | Some s -> Var.from_string s in
+      | None -> Name.new_anon () 
+      | Some s -> Name.from_string s in
     let tv = svar v t loc in
     plam v t (f tv) loc
 

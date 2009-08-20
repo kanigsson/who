@@ -1,6 +1,5 @@
 open Myformat
 open Lexing
-open Names
 
 let bad s = eprintf "%s@." s; exit(1)
 

@@ -12,7 +12,6 @@ type ty =
   | TUnit
   | TProp
 
-type quant = FA | EX
 type fix = Infix | Prefix
 
 let type_of_constant = function
@@ -37,5 +36,10 @@ let print_ty fmt = function
   | TProp -> pp_print_string fmt "prop"
 
 let quant fmt = function
-  | FA -> pp_print_string fmt "forall"
-  | EX -> pp_print_string fmt "exists"
+  | `FA -> pp_print_string fmt "forall"
+  | `EX -> pp_print_string fmt "exists"
+  | `LAM -> pp_print_string fmt "λ"
+
+let quantsep fmt = function
+  | `FA | `EX -> pp_print_string fmt "."
+  | `LAM -> pp_print_string fmt "->"
