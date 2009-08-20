@@ -2,13 +2,11 @@ open Vars
 module VM = Var.M
 
 type t' = 
-  | Var of Var.t * Effect.t list * Fty.t list * RVar.t list
+  | Var of Var.t * (Effect.t, Fty.t, RVar.t) Inst.t
   | Const of Const.t
   | App of t * t * [ `Infix | `Prefix ]
   | Binder of [ `FA | `EX | `LAM ] *  Fty.t * varbind
-  | EvGen of t EffVar.listbind
-  | TyGen of t TyVar.listbind
-  | RGen of t RVar.listbind * Fty.t list
+  | Gen of letbind
   | PolyLet of letbind * varbind
   | Let of t * varbind
   | Restrict of Effect.t * t
@@ -31,9 +29,9 @@ let with_rec f t = { t with v = f t.v }
 let domain f = Fty.domain (get_type f)
 
 let lmk t v loc = { v = v; t = t; hint = None; loc = loc} 
-let var x el tl rl ty = lmk ty (Var (x,el,tl,rl))
-let var' x el tl rl = Var (x,el,tl,rl)
-let svar l = var l [] [] [] 
+let var x i ty = lmk ty (Var (x,i))
+let var' x i = Var (x,i)
+let svar l = var l Inst.empty
 let const c = lmk (Fty.const (Const.type_of_constant c)) (Const c)
 let void = lmk Fty.unit (Const Const.Void)
 
@@ -57,9 +55,10 @@ struct
   let rec print_head fmt x = 
     match get_sub x with
     | Const c -> Const.print fmt c
-    | Var (v,[],[],[]) -> Var.print fmt v
-    | Var (v,el,tl,rl) -> fprintf fmt "%a [%a | %a | %a]" 
-          Var.print v Effect.print_list el Fty.print_list tl RVar.print_list rl
+    | Var (v,i) when Inst.is_empty i -> Var.print fmt v
+    | Var (v,i) -> 
+        fprintf fmt "%a %a" Var.print v 
+          (Inst.print Effect.print Fty.print RVar.print) i
     | App (t1,_,`Infix) ->
         begin match get_sub t1 with
         | App (op,_,_) -> fprintf fmt "(- %a )" print_head op
@@ -73,25 +72,20 @@ struct
     | Get (r,_) -> fprintf fmt "get(%a)" RVar.print r 
     | Combine (_,_) -> fprintf fmt "combine"
     | Restrict (eff,_) -> fprintf fmt "restrict(%a)" Effect.print eff 
-    | EvGen _ | RGen _ | TyGen _ -> fprintf fmt "gener"
+    | Gen _ -> fprintf fmt "gener"
     | Empty -> fprintf fmt "empty" 
 
 end
 let map ~varfun ~effectfun ~rvarfun 
-              ~tyfun ~varbindfun ~genbindfun 
-              ~evbindfun ~tybindfun ~rbindfun f = 
+              ~tyfun ~varbindfun ~genbindfun f = 
     let rec aux = function
       | (Const _ as t) -> t
-      | Var (v,effl,tl,rl) -> 
-          varfun v (List.map effectfun effl) 
-                   (List.map tyfun tl)
-                   (List.map rvarfun rl)
+      | Var (v,i) -> 
+          varfun v (Inst.map effectfun tyfun rvarfun i)
       | App (t1,t2,p) -> App (aux_node t1, aux_node t2, p)
       | Binder (knd, t, b) -> Binder (knd, tyfun t, varbindfun b)
       | PolyLet (tlb,b) -> PolyLet (genbindfun tlb, varbindfun b)
-      | EvGen b -> EvGen (evbindfun b)
-      | TyGen b -> TyGen (tybindfun b)
-      | RGen (b,tl) -> RGen (rbindfun b, List.map tyfun tl)
+      | Gen tlb -> Gen (genbindfun tlb)
       | Set (r,f1,f2) -> Set (rvarfun r, aux_node f1, aux_node f2)
       | Get (r,f) -> Get (rvarfun r, aux_node f)
       | Combine (f1,f2) -> Combine (aux_node f1, aux_node f2)
@@ -103,15 +97,12 @@ let map ~varfun ~effectfun ~rvarfun
 
 let rec refresh s t = 
   map 
-    ~varfun:(fun x effl tl rl -> Var (Var.refresh s x, effl, tl,rl))
+    ~varfun:(fun x i -> Var (Var.refresh s x, i))
     ~effectfun:(Effect.refresh s)
     ~tyfun:(Fty.refresh s)
     ~rvarfun:(RVar.refresh s)
     ~varbindfun:(Var.refresh_bind s)
-    ~evbindfun:(EffVar.refresh_listbind s)
-    ~tybindfun:(TyVar.refresh_listbind s)
     ~genbindfun:(EffVar.refresh_listbind s)
-    ~rbindfun:(RVar.refresh_listbind s)
     t
 
 let open_bind = Var.open_bind refresh
@@ -152,7 +143,7 @@ struct
   let is_f_compound x = 
     match get_sub x with
     | Const _ | Var _ | Empty -> false
-    | App _ | Binder _ | EvGen _ |PolyLet _ | TyGen _ | RGen _  | Let _
+    | App _ | Binder _ | PolyLet _ | Gen _  | Let _
     | Set _ | Get _ | Combine _ | Restrict _ -> true
 
   let evar_list = print_list space EffVar.print
@@ -167,11 +158,10 @@ struct
     match x with
     | Empty -> fprintf fmt "empty"
     | Const c -> Const.print fmt c
-    | Var (v,[],[],[]) -> 
-        fprintf fmt "%a" Var.print v
-    | Var (v,l,tl,rl) -> 
-        fprintf fmt "%a [%a|%a|%a]" Var.print v Effect.print_list l 
-          Fty.print_list tl RVar.print_list rl
+    | Var (v,i) when Inst.is_empty i -> fprintf fmt "%a" Var.print v
+    | Var (v,i) -> 
+        fprintf fmt "%a %a" Var.print v 
+          (Inst.print Effect.print Fty.print RVar.print) i
     | App (f1,f2,`Infix) ->
         begin match get_sub f1 with
         | App (op,f1,_) -> 
@@ -185,15 +175,9 @@ struct
         let bl,f = get_top_binders k x in
         fprintf fmt "(@[%a %a %a@ %a@])" Const.quant k 
           (print_list space fbind_paren) bl Const.quantsep k formula f
-    | EvGen l -> 
-        let evl, t = open_evgen l in
-        fprintf fmt "forall %a.@ %a" evar_list evl form t
-    | RGen (b,tl) -> 
-        let rl, t = open_rbind b in
-        fprintf fmt "forall %a.@ %a" rvar_list (rl,tl) form t
-    | TyGen l -> 
-        let evl, t = open_tygen l in
-        fprintf fmt "forall %a.@ %a" tyvar_list evl form t
+    | Gen l ->
+        let g,f = open_letgen l in
+        fprintf fmt "forall %a.@ %a" (Fty.Generalize.print Fty.print) g form f
     | PolyLet (lg,vb) -> 
         let g,v = open_letgen lg in
         let x,f = open_bind vb in
@@ -216,18 +200,9 @@ let open_close_map ~varfun ~effectfun ~tyfun ~rvarfun t =
       ~varbindfun:(fun b ->
         let x,f = open_bind b in
         close_bind x (aux f))
-      ~evbindfun:(fun b ->
-        let x,f = open_evgen b in
-        close_evgen x (aux f))
-      ~tybindfun:(fun b ->
-        let x,f = open_tygen b in
-        close_tygen x (aux f))
       ~genbindfun:(fun b ->
         let g,f = open_letgen b in
         close_letgen g (aux f))
-      ~rbindfun:(fun b ->
-        let l,f = open_rbind b in
-        close_rbind l (aux f))
       t
   in
   aux t
@@ -262,16 +237,15 @@ let lrsubst = List.fold_right2 rsubst
 
 let subst x v e =
   open_close_map
-    ~varfun:(fun z effl tl rl -> 
-        if Var.equal z x then v effl tl rl
-        else Var (z,effl,tl,rl))
+    ~varfun:(fun z i -> 
+        if Var.equal z x then v i else Var (z,i))
     ~effectfun:Misc.id
     ~tyfun:Misc.id
     ~rvarfun:Misc.id
     e
 
 let polsubst (el,tl,rl) x v f = 
-  let builder effl tyl nrl = 
+  let builder (effl, tyl, nrl) = 
     get_sub 
       (lrsubst (List.map fst rl) nrl 
         (leffsubst el effl 
@@ -344,7 +318,7 @@ let app2 ?k1 ?k2 t1 t2 t3 loc = app ?kind:k2 (app ?kind:k1 t1 t2 loc) t3 loc
 let infix = app2 ~k1:`Prefix ~k2:`Infix
 let predef_var s tl loc = 
   let v, tvl, t = Fty.get_predef_var s in
-  var v [] tl [] (Fty.ltysubst tvl tl t) loc
+  var v ([], tl, []) (Fty.ltysubst tvl tl t) loc
 
 let spredef_var s loc = predef_var s [] loc
 
@@ -382,7 +356,7 @@ let tuple f1 f2 loc =
 let not_ f loc = app (spredef_var "~" loc) f loc
 
 let destruct_infix' = function
-  | App ({ v = App ({ v = Var (v,_,_,_)},t1,_) },t2,`Infix) -> Some (v,t1,t2)
+  | App ({ v = App ({ v = Var (v,_)},t1,_) },t2,`Infix) -> Some (v,t1,t2)
   | _ -> None
 
 let destruct_infix x = destruct_infix' (get_sub x)
@@ -403,27 +377,15 @@ let post f loc =
       | `U `Tuple (t1,t2) -> app (predef_var "snd" [t1;t2] loc) f loc
       | _ -> assert false
 
-let evgen gl f loc = 
-  match gl with 
-  | [] -> f
-  | _ -> lmk (get_type f) (EvGen (close_evgen gl f)) loc
-
-let rgen' rl tl f loc = 
-  match rl with
-  | [] ->  f
-  | _ -> lmk (get_type f) (RGen (close_rbind rl f, tl)) loc
-
-let rgen gl f loc = 
-  match gl with 
-  | [] -> f
-  | _ -> 
-      let rl,tl = List.split gl in
-      lmk (get_type f) (RGen (close_rbind rl f,tl)) loc
-
-let tygen gl f loc = 
-  match gl with 
-  | [] -> f
-  | _ -> lmk (get_type f) (TyGen (close_tygen gl f)) loc
+let gen g f loc = 
+  match get_sub f with
+  | Const Const.Ptrue -> f
+  | _ when Fty.Generalize.is_empty g -> f
+  | _ -> lmk (get_type f) (Gen (close_letgen g f)) loc
+let evgen gl = gen (gl,[],[])
+let rgen gl = gen ([],[],gl)
+let rgen' rl tl = rgen (List.combine rl tl)
+let tygen gl = gen ([],gl,[])
 
 let polylet_ g x v f loc = 
   lmk (get_type f) (PolyLet (close_letgen g v, close_bind x f)) loc
@@ -467,7 +429,7 @@ module LocImplicit = struct
   let pre f = unary pre f
   let post f = unary post f
   let var = var
-  let svar v = var v [] [] []
+  let svar v = var v Inst.empty
   let evgen vl f = unary (evgen vl) f
   let rgen vl f = unary (rgen vl) f
   let tygen vl f = unary (tygen vl) f
@@ -504,8 +466,7 @@ module LocImplicit = struct
 
   let encl v1 i v2 = and_ (le v1 i) (le i v2)
 
-  let subst x v e loc = 
-    subst x (fun a b c -> get_sub (v a b c loc)) (e loc)
+  let subst x v e loc = subst x (fun i -> get_sub (v i loc)) (e loc)
 end
 
 let ibinary f a b = f (fun _ -> a) (fun _ -> b)

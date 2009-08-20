@@ -222,7 +222,7 @@ let from_ty, from_eff =
     | Ty.Tuple (t1,t2) -> `Tuple (aux t1, aux t2)
     | Ty.PureArr (t1, t2) -> `Arr (aux t1, aux t2)
     | Ty.Arrow _ -> assert false
-    | Ty.App (n, (tl,rl,el)) -> `App (tvar n, List.map aux tl)
+    | Ty.App (n, (tl,_,_)) -> `App (tvar n, List.map aux tl)
     | Ty.Ref _ -> assert false
     | Ty.Map e -> `Map (eff e)
   and aux (Ty.C t) = `U (aux' t) 

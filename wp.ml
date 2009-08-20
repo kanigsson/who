@@ -1,12 +1,16 @@
 open Ast
 open Recon
-
+open Vars
+module F = Formula
 module M = Myformat
 
 exception Error of string * Loc.loc
 let error s loc = raise (Error (s,loc))
 
-let rec lift_value v = 
+let ty t = Fty.from_ty (Ty.to_logic_type t)
+let rec lift_value _ = assert false
+
+(*
   let l = v.loc in
   match v.v with
   | Var _ | Const _ | Logic _ -> v
@@ -19,7 +23,7 @@ let rec lift_value v =
       let _,p = p and _,_,q = q in
       let p = 
         match p with 
-        | None -> plam x t (efflam_ho e.e (fun m -> ptrue_ l) l) l
+        | None -> plam x t (efflam_ho e.e (fun _ -> ptrue_ l) l) l
         | Some p -> plam x t p l 
       and q = 
         match q with
@@ -37,33 +41,36 @@ let rec lift_value v =
       plam x t (lift_value v) l
   | _ -> 
       error (Myformat.sprintf "not a value: %a" print v) l
+*)
 
 let rec correct v = 
-  M.printf "correct@.";
   let l = v.loc in
   match v.v with
-  | Var _ | Const _ | Axiom _ | Logic _  -> ptrue_ l
-  | App (v1,v2,_,_) -> 
-      (* suppose that the application is pure *)
-      and_ (correct v1) (correct v2) l
-  | For _ | Annot _ | Let _ | Ite _ | TypeDef _ | Quant _
-  | Param _ | LetReg _ -> assert false
-  | PureFun (x,t,e) -> sforall x (Ty.to_logic_type t) e l
+  | Var _ | Const _ -> F.true_ l
+  | App (v1,v2,_,_) -> F.and_ (correct v1) (correct v2) l
   | Lam (x,t,p,e,q) -> 
-      let _,p = p and _,_,q = q in
-      match q with
-      | PNone -> ptrue_ l
-      | PResult _ -> assert false
-      | PPlain q ->
-          let lt = Ty.to_logic_type t in
-          effFA e.e (fun r ->
-            let p = 
-              match p with 
-              | None -> ptrue_ l 
-              | Some f -> app f r l in
-            sforall x lt
-              (impl p
-                (wp_node r (app q r l) e) l) l) l
+      let lt = Fty.from_ty (Ty.to_logic_type t) in
+      F.effFAho e.e (fun r ->
+        F.forall (Var.from_name x) lt
+          (F.impl 
+            (match p with 
+              | _,None -> F.true_ l
+              | _,Some f -> F.app (to_formula f) r l)
+            (wp_node r 
+              (match q with 
+                | _,_,PNone -> F.lamho (ty e.t) (fun _ -> F.true_ l) l
+                | _,_,PResult _ -> assert false
+                | _,_,PPlain f -> F.app (to_formula f) r l) 
+              e) l) l) l
+  | PureFun (x,t,e) -> F.forall (Var.from_name x) (ty t) (correct e) l
+  | _ -> assert false
+and to_formula e = 
+  match e.v with
+  | Var (_,_) -> assert false
+  | _ -> assert false
+and wp_node _ _ _ = assert false
+      
+(*
 
 and wp_node m q e = 
   let t = e.t and _ = e.e and l = e.loc in
@@ -81,7 +88,7 @@ and wp_node m q e =
         ite (eq (lift_value v) (btrue_ l) l)
               (wp_node m e1 q) (wp_node m e2 q) l
     | LetReg (r,e) -> letreg r (wp_node m e q) l
-    | Param (t,e) -> ptrue_ l
+    | Param (t,_) -> ptrue_ l
     | App (v1,v2,f,_) ->
         let lv1 = lift_value v1 and lv2 = lift_value v2 in
         andlist 
@@ -114,3 +121,4 @@ let main e =
     wp_node m 
       (efflam_ho e.e (fun _ -> 
         plam_ho Ty.unit (fun x -> ptrue_ l) l) l) e) l
+*)

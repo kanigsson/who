@@ -148,3 +148,5 @@ val ltyf : t -> t
 val init : unit -> unit
 val get_predef_var : string -> Var.t * TyVar.t list * t
 
+val from_ty : Ty.t -> t
+val from_eff : NEffect.t -> Effect.t

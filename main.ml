@@ -43,9 +43,11 @@ let _ =
     maybe_abort Options.anf_only Ast.Recon.print p;
     Typing.typing p;
     let () = Fty.init () in
+(*
     let p = Wp.main p in
     maybe_abort Options.wp_only Ast.Recon.print p;
     Typing.typing p;
+*)
     p
   with
   | Sys_error e -> Error.bad e
