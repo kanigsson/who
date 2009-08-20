@@ -1,4 +1,4 @@
-open Vars
+open Names
 module RS = RVar.S
 module ES = EffVar.S
 type t = RS.t * ES.t * RS.t

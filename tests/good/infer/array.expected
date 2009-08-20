@@ -11,8 +11,8 @@ let
             {(λ(old:map{r1 |}) ->
              (λ(cur:map{r1 |}) ->
              (λ(r2:'a5) ->
-             ((!! ['a5|r1|{r1|}] x cur) = ['a5||] r2) /\
-             ((!! ['a5|r1|{r1|}] x old) = ['a5||] (!! ['a5|r1|{r1|}] x cur)))))})
+             ((!! ['a5|r1|{r1|}] x cur) = r2) /\
+             ((!! ['a5|r1|{r1|}] x old) = (!! ['a5|r1|{r1|}] x cur)))))})
 in
 let
 := ['a6|r3|]=
@@ -20,15 +20,14 @@ let
              (λ(v:'a6) -->  param(unit,{r3 |})
              {(λ(old1:map{r3 |}) ->
               (λ(cur1:map{r3 |}) ->
-              (λ(anon:unit) -> (!! ['a6|r3|{r3|}] x1 cur1) = ['a6||] v)))}))
+              (λ(anon:unit) -> (!! ['a6|r3|{r3|}] x1 cur1) = v)))}))
 in
 let
 ref ['a7|r4|]=
               (λ(v1:'a7) -->  param(ref(r4,'a7),{r4 ||r4 })
               {(λ(old2:map{r4 ||r4 }) ->
                (λ(cur2:map{r4 ||r4 }) ->
-               (λ(x2:ref(r4,'a7)) ->
-               (!! ['a7|r4|{r4||r4}] x2 cur2) = ['a7||] v1)))})
+               (λ(x2:ref(r4,'a7)) -> (!! ['a7|r4|{r4||r4}] x2 cur2) = v1)))})
 in
 let fst ['b 'a8||]= logic (('a8 * 'b)) -> 'a8 in
 let snd ['b1 'a9||]= logic (('a9 * 'b1)) -> 'b1 in
@@ -99,6 +98,5 @@ get_set_eq ['a16||]=
                     axiom forall (t:array['a16||]).
                           forall (i2:nat).
                           forall (z:'a16).
-                          (get ['a16||] i2 (set ['a16||] i2 z t)) = ['a16||]
-                          z
+                          (get ['a16||] i2 (set ['a16||] i2 z t)) = z
 in ()

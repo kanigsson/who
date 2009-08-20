@@ -1,4 +1,4 @@
-open Vars
+open Names
 module U = Unify
 module C = Const
 

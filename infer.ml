@@ -1,4 +1,4 @@
-open Vars
+open Names
 open Unify
 open Ast
 module SM = Misc.StringMap

@@ -1,4 +1,4 @@
-open Vars
+open Names
 open Ty
 open Ast
 open Recon

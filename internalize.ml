@@ -1,5 +1,5 @@
 module I = Parsetree
-open Vars
+open Names
 open Ast
 
 module SM = Misc.StringMap
@@ -26,7 +26,7 @@ let effvar env x =
 
 let add_var env x = 
   let y = Var.from_string x in
-  if env.global then Vars.add_var x y; 
+  if env.global then Names.add_var x y; 
   { env with v = SM.add x y env.v }, y
 
 let add_ex_var env x y = 
@@ -104,7 +104,7 @@ let rec ast' env = function
       print x env';
 *)
       let nv = Var.from_string x in
-      if env.global then Vars.add_var x nv;
+      if env.global then Names.add_var x nv;
       let env' = 
         match r with 
         | I.NoRec -> env' 

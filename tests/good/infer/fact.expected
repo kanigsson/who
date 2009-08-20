@@ -11,8 +11,8 @@ let
             {(λ(old:map{r1 |}) ->
              (λ(cur:map{r1 |}) ->
              (λ(r2:'a5) ->
-             ((!! ['a5|r1|{r1|}] x cur) = ['a5||] r2) /\
-             ((!! ['a5|r1|{r1|}] x old) = ['a5||] (!! ['a5|r1|{r1|}] x cur)))))})
+             ((!! ['a5|r1|{r1|}] x cur) = r2) /\
+             ((!! ['a5|r1|{r1|}] x old) = (!! ['a5|r1|{r1|}] x cur)))))})
 in
 let
 := ['a6|r3|]=
@@ -20,15 +20,14 @@ let
              (λ(v:'a6) -->  param(unit,{r3 |})
              {(λ(old1:map{r3 |}) ->
               (λ(cur1:map{r3 |}) ->
-              (λ(anon:unit) -> (!! ['a6|r3|{r3|}] x1 cur1) = ['a6||] v)))}))
+              (λ(anon:unit) -> (!! ['a6|r3|{r3|}] x1 cur1) = v)))}))
 in
 let
 ref ['a7|r4|]=
               (λ(v1:'a7) -->  param(ref(r4,'a7),{r4 ||r4 })
               {(λ(old2:map{r4 ||r4 }) ->
                (λ(cur2:map{r4 ||r4 }) ->
-               (λ(x2:ref(r4,'a7)) ->
-               (!! ['a7|r4|{r4||r4}] x2 cur2) = ['a7||] v1)))})
+               (λ(x2:ref(r4,'a7)) -> (!! ['a7|r4|{r4||r4}] x2 cur2) = v1)))})
 in
 let fst ['b 'a8||]= logic (('a8 * 'b)) -> 'a8 in
 let snd ['b1 'a9||]= logic (('a9 * 'b1)) -> 'b1 in
@@ -93,17 +92,16 @@ fordownto [||e2]=
                   (λ(anon2:unit) -> inv1 (min start1 (end_1 - 1)) cur6)))}))))
 in
 let fact = logic nat -> nat in
-let fact_zero = axiom (fact 0) = [nat||] 1 in
+let fact_zero = axiom (fact 0) = 1 in
 let
 fact_step =
            axiom forall (n2:nat).
-                 (0 <= n2) -> ((fact (n2 + 1)) = [nat||] (n2 * (fact n2)))
+                 (0 <= n2) -> ((fact (n2 + 1)) = (n2 * (fact n2)))
 in
 let
 rec(nat ->{|} nat) f2 =
                        (λ(x5:nat) --> {(λ(cur7:map{|}) -> 0 <= x5)}
-                       if x5 == [nat||] 0 then 1 else x5 * (f2 (x5 - 1))
+                       if x5 == 0 then 1 else x5 * (f2 (x5 - 1))
                        {(λ(old5:map{|}) ->
-                        (λ(cur8:map{|}) ->
-                        (λ(r5:nat) -> r5 = [nat||] (fact x5))))})
+                        (λ(cur8:map{|}) -> (λ(r5:nat) -> r5 = (fact x5))))})
 in ()

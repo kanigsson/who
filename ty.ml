@@ -1,4 +1,4 @@
-open Vars
+open Names
 type ('a,'b,'c) t' = 
   | Var of TyVar.t
   | Const of Const.ty

@@ -1,4 +1,4 @@
-open Vars
+open Names
 open Ast
 open Ty
 module SM = Misc.StringMap

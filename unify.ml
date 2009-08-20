@@ -1,4 +1,4 @@
-open Vars
+open Names
 module Uf = Unionfind
 
 type ty = 
