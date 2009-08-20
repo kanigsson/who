@@ -88,7 +88,7 @@ let print_list = print_list comma print
 module Generalize = 
 struct
 
-  type 'a t = EffVar.t list * TyVar.t list * (RVar.t * 'a) list
+  type 'a t =  TyVar.t list * (RVar.t * 'a) list * EffVar.t list
 
   type ('a,'b) bind = ('a RVar.listbind * 'b list) TyVar.listbind EffVar.listbind 
 
@@ -99,21 +99,21 @@ struct
     let el, b = EffVar.open_listbind TyVar.refresh_listbind b in
     let tl, (b,rtl) = TyVar.open_listbind (refresh_r brefresh) b in
     let rl, c = RVar.open_listbind arefresh b in
-    (el,tl,List.combine rl rtl), c
+    (tl,List.combine rl rtl,el), c
 
-  let open_bind_with arefresh brefresh (el,tl,rl) c =
+  let open_bind_with arefresh brefresh (tl,rl,el) c =
     let b = EffVar.list_open_with TyVar.refresh_listbind el c in
     let b,_ = TyVar.list_open_with (refresh_r brefresh) tl b in
     RVar.list_open_with arefresh (List.map fst rl) b
 
-  let close_bind (el,tl, rl) c = 
+  let close_bind (tl, rl, el) c = 
     let rl, rtl = List.split rl in
     EffVar.close_listbind el 
       (TyVar.close_listbind tl 
         (RVar.close_listbind rl c, rtl))
 
 
-  let is_empty (el,tl,rl) = el = [] && tl = [] && rl = []
+  let is_empty (tl,rl,el) = el = [] && tl = [] && rl = []
   let empty = [],[],[]
 
   open Myformat
@@ -122,10 +122,10 @@ struct
 
   let region_list ty fmt l = print_list space (region ty) fmt l
 
-  let print ty fmt (e,t,r) = 
-    fprintf fmt "[%a|%a|%a]" EffVar.print_list e 
-      TyVar.print_list t (region_list ty) r
-
+  let print ty fmt (t,r,e) = 
+    fprintf fmt "[%a|%a|%a]" TyVar.print_list t (region_list ty) r 
+      EffVar.print_list e 
+      
   let from_g (tl,rl,el) =
     List.map EffVar.from_name el,
     List.map TyVar.from_name tl, 
@@ -143,7 +143,7 @@ struct
   let fty ft = close ([], [], []) ft
 
   let instance ts effl tyl nrl = 
-    let (el,tl,rl),t = open_ ts in
+    let (tl,rl,el),t = open_ ts in
     lrsubst (List.map fst rl) nrl (ltysubst tl tyl (leffsubst el effl t))
 
   let print fmt s = 

@@ -2,7 +2,7 @@ open Vars
 open Loc
 
 type t' = 
-  | Var of Var.t * (Effect.t, Fty.t, RVar.t) Inst.t
+  | Var of Var.t * (Fty.t, RVar.t, Effect.t) Inst.t
   | Const of Const.t
   | App of t * t * [`Infix | `Prefix ]
   | Binder of [ `FA | `EX | `LAM ] *  Fty.t * varbind
@@ -71,7 +71,7 @@ val with_rec : (t' ->t') -> t -> t
 (** smart constructors - do some very simple simplifications *)
 val void : loc -> t
 val one : loc -> t
-val var : Var.t -> (Effect.t, Fty.t, RVar.t) Inst.t -> Fty.t -> loc -> t
+val var : Var.t -> (Fty.t, RVar.t, Effect.t) Inst.t -> Fty.t -> loc -> t
 val svar : Var.t -> Fty.t -> loc -> t
 val const : Const.t -> loc -> t
 val tuple : t -> t -> loc -> t
@@ -115,7 +115,7 @@ val postho :
 val le : t -> t -> loc -> t
 val lt : t -> t -> loc -> t
 
-val subst : Var.t -> ((Effect.t, Fty.t, RVar.t) Inst.t -> t') 
+val subst : Var.t -> (( Fty.t, RVar.t, Effect.t) Inst.t -> t') 
                -> t -> t
 (** replace a variable (with instantiations) 
  *  by an expression that knows how to deal with these instantiations *)
@@ -162,7 +162,7 @@ module LocImplicit : sig
   val restrict : Effect.t -> t' -> t'
   val rgen : (RVar.t * Fty.t) list -> t' -> t'
   val tygen : TyVar.t list -> t' -> t'
-  val var : Var.t -> (Effect.t, Fty.t,  RVar.t) Inst.t -> Fty.t -> t'
+  val var : Var.t -> ( Fty.t,  RVar.t, Effect.t) Inst.t -> Fty.t -> t'
   val svar : Var.t -> Fty.t ->  t'
   val btrue : t'
   val bfalse : t'
@@ -172,8 +172,7 @@ module LocImplicit : sig
   val max :  t' -> t' -> t'
   val min :  t' -> t' -> t'
   val prev : t' -> t'
-  val subst : 
-    Var.t -> ((Effect.t, Fty.t,  RVar.t) Inst.t -> t') -> t' -> t'
+  val subst : Var.t -> ((Fty.t,  RVar.t, Effect.t) Inst.t -> t') -> t' -> t'
 end
 
 val domain : t -> Effect.t

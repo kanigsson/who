@@ -102,7 +102,7 @@ val map :
  * *)
 
 module Generalize : sig
-  type 'a t = EffVar.t list * TyVar.t list * (RVar.t * 'a) list
+  type 'a t =  TyVar.t list * (RVar.t * 'a) list * EffVar.t list
   type ('a,'b) bind = 
     ('a RVar.listbind * 'b list) TyVar.listbind EffVar.listbind 
 

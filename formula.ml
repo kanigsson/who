@@ -2,7 +2,7 @@ open Vars
 module VM = Var.M
 
 type t' = 
-  | Var of Var.t * (Effect.t, Fty.t, RVar.t) Inst.t
+  | Var of Var.t * (Fty.t, RVar.t, Effect.t) Inst.t
   | Const of Const.t
   | App of t * t * [ `Infix | `Prefix ]
   | Binder of [ `FA | `EX | `LAM ] *  Fty.t * varbind
@@ -58,7 +58,7 @@ struct
     | Var (v,i) when Inst.is_empty i -> Var.print fmt v
     | Var (v,i) -> 
         fprintf fmt "%a %a" Var.print v 
-          (Inst.print Effect.print Fty.print RVar.print) i
+          (Inst.print Fty.print RVar.print Effect.print ) i
     | App (t1,_,`Infix) ->
         begin match get_sub t1 with
         | App (op,_,_) -> fprintf fmt "(- %a )" print_head op
@@ -81,7 +81,7 @@ let map ~varfun ~effectfun ~rvarfun
     let rec aux = function
       | (Const _ as t) -> t
       | Var (v,i) -> 
-          varfun v (Inst.map effectfun tyfun rvarfun i)
+          varfun v (Inst.map tyfun rvarfun effectfun i)
       | App (t1,t2,p) -> App (aux_node t1, aux_node t2, p)
       | Binder (knd, t, b) -> Binder (knd, tyfun t, varbindfun b)
       | PolyLet (tlb,b) -> PolyLet (genbindfun tlb, varbindfun b)
@@ -161,7 +161,7 @@ struct
     | Var (v,i) when Inst.is_empty i -> fprintf fmt "%a" Var.print v
     | Var (v,i) -> 
         fprintf fmt "%a %a" Var.print v 
-          (Inst.print Effect.print Fty.print RVar.print) i
+          (Inst.print Fty.print RVar.print Effect.print) i
     | App (f1,f2,`Infix) ->
         begin match get_sub f1 with
         | App (op,f1,_) -> 
@@ -244,8 +244,8 @@ let subst x v e =
     ~rvarfun:Misc.id
     e
 
-let polsubst (el,tl,rl) x v f = 
-  let builder (effl, tyl, nrl) = 
+let polsubst (tl,rl,el) x v f = 
+  let builder (tyl, nrl, effl) = 
     get_sub 
       (lrsubst (List.map fst rl) nrl 
         (leffsubst el effl 
@@ -318,7 +318,7 @@ let app2 ?k1 ?k2 t1 t2 t3 loc = app ?kind:k2 (app ?kind:k1 t1 t2 loc) t3 loc
 let infix = app2 ~k1:`Prefix ~k2:`Infix
 let predef_var s tl loc = 
   let v, tvl, t = Fty.get_predef_var s in
-  var v ([], tl, []) (Fty.ltysubst tvl tl t) loc
+  var v (tl, [], []) (Fty.ltysubst tvl tl t) loc
 
 let spredef_var s loc = predef_var s [] loc
 
@@ -382,10 +382,10 @@ let gen g f loc =
   | Const Const.Ptrue -> f
   | _ when Fty.Generalize.is_empty g -> f
   | _ -> lmk (get_type f) (Gen (close_letgen g f)) loc
-let evgen gl = gen (gl,[],[])
-let rgen gl = gen ([],[],gl)
+let evgen gl = gen ([],[],gl)
+let rgen gl = gen ([],gl,[])
 let rgen' rl tl = rgen (List.combine rl tl)
-let tygen gl = gen ([],gl,[])
+let tygen gl = gen (gl,[],[])
 
 let polylet_ g x v f loc = 
   lmk (get_type f) (PolyLet (close_letgen g v, close_bind x f)) loc
