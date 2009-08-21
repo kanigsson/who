@@ -1,0 +1,10 @@
+let init ['a|rho|] (l : int) (v : 'a) =
+  {0 <= l}
+  let res = ref{{rho}} (create l : 'a array) in
+    (for i = 0 to l - 1 do
+      { length (!!res) = l /\ 
+        forall (k : int). 0 <= k /\ k < i -> get k (!!res) = v}
+      res := set i v (!res)
+    done) ; 
+    res
+  { r : length (!!r) = l /\ forall (k : int). 0 <= k /\ k < l -> get k (!!r) = v }

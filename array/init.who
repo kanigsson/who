@@ -1,0 +1,16 @@
+let init ['a|out|e]
+  (inv : <|e> -> int -> prop ) (len : int) (f : int ->{|e} 'a) =
+  { 0 <= len /\ inv cur|{e} 0 /\
+    forall (i:int). 0 <= i /\ i < len ->
+    forall (m : <e>).  inv m i -> pre f i m /\
+    forall (n : <e>) (r : 'a).  post f i m n r -> inv n (i+1)
+      }
+  let res = ref{out} (create [|'a|] len) in
+  let () = 
+    for i = 0 to len - 1 do
+      {inv cur|{e} i}
+      res := set [|'a|] i (f i) !res
+    done in
+  res
+  {inv cur|{e} len }
+

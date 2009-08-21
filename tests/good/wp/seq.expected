@@ -31,7 +31,7 @@ let
 in
 let
 ref ['a10|r4|]=
-               (λ(v1:'a10) -> (λ(anon4:map{r4 ||r4 }) -> True)) ,
+               (λ(v1:'a10) -> (λ(anon4:map{r4 |}) -> True)) ,
                (λ(v1:'a10) ->
                (λ(old2:map{r4 ||r4 }) ->
                (λ(cur2:map{r4 ||r4 }) ->
@@ -104,20 +104,65 @@ fordownto [||e2]=
                  (λ(old4:map{|e2 }) ->
                  (λ(cur6:map{|e2 }) ->
                  (λ(anon6:unit) -> inv1 (min start1 (end_1 - 1)) cur6)))))))
+in type array['a13||] =  in
+let get ['a14||]= logic nat -> (array['a14||]) -> 'a14 in
+let set ['a15||]= logic nat -> 'a15 -> (array['a15||]) -> array['a15||] in
+let length ['a16||]= logic (array['a16||]) -> nat in
+let create ['a17||]= logic nat -> array['a17||] in
+let
+update_length ['a18||]=
+                       axiom forall (t:array['a18||]).
+                             forall (i2:nat).
+                             forall (z:'a18).
+                             (length ['a18||] t) =
+                             (length ['a18||] (set ['a18||] i2 z t))
 in
-(forall ['a13 'b5 'c||e12
-e22]. forall (f2:'a13 -> map{|e12 } -> prop * 'a13 -> map{|e12 } -> map{|e12
+let
+get_set_eq ['a19||]=
+                    axiom forall (t1:array['a19||]).
+                          forall (i3:nat).
+                          forall (z1:'a19).
+                          (i3 < (length ['a19||] t1)) ->
+                          ((get ['a19||] i3 (set ['a19||] i3 z1 t1)) = z1)
+in
+let
+get_set_neq ['a20||]=
+                     axiom forall (t2:array['a20||]).
+                           forall (i4:nat).
+                           forall (j:nat).
+                           forall (z2:'a20).
+                           (i4 < (length ['a20||] t2)) ->
+                           ((j < (length ['a20||] t2)) ->
+                            ((i4 <> j) ->
+                             ((get ['a20||] i4 (set ['a20||] j z2 t2)) =
+                              (get ['a20||] i4 t2))))
+in
+let
+length_nonnegative ['a21||]=
+                            axiom forall (t3:array['a21||]).
+                                  0 <= (length ['a21||] t3)
+in
+let
+length_create ['a22||]=
+                       axiom forall (l:nat).
+                             (0 <= l) ->
+                             ((length ['a22||]
+                               (create ['a22||] l : array['a22||]))
+                              = l)
+in
+(forall ['a23 'b5 'c||e12
+e22]. forall (f2:'a23 -> map{|e12 } -> prop * 'a23 -> map{|e12 } -> map{|e12
       } -> 'b5 -> prop).
       forall (g:'b5 -> map{|e22 } -> prop * 'b5 -> map{|e22 } -> map{|e22
       } -> 'c -> prop).
       forall (anon7:map{|e12 e22 }).
-      forall (x5:'a13).
-      (fst ['a13 -> map{|e12 } -> prop,'a13 -> map{|e12 } -> map{|e12 } ->
+      forall (x5:'a23).
+      (fst ['a23 -> map{|e12 } -> prop,'a23 -> map{|e12 } -> map{|e12 } ->
        'b5 -> prop||] f2 x5 anon7)
       /\
       (forall (anon8:map{|e12 }).
        forall (anon9:'b5).
-       (snd ['a13 -> map{|e12 } -> prop,'a13 -> map{|e12 } -> map{|e12 } ->
+       (snd ['a23 -> map{|e12 } -> prop,'a23 -> map{|e12 } -> map{|e12 } ->
         'b5 -> prop||] f2 x5 anon7 anon8 anon9)
        ->
        ((λ(anon10:map{|e12 }) ->
@@ -135,14 +180,14 @@ e22]. forall (f2:'a13 -> map{|e12 } -> prop * 'a13 -> map{|e12 } -> map{|e12
           anon12))))
         anon8 anon9)))
 /\
-(let seq ['a13 'b5 'c||e12
+(let seq ['a23 'b5 'c||e12
  e22]=
-      (λ(f2:'a13 -> map{|e12 } -> prop * 'a13 -> map{|e12 } -> map{|e12 } ->
+      (λ(f2:'a23 -> map{|e12 } -> prop * 'a23 -> map{|e12 } -> map{|e12 } ->
       'b5 -> prop) ->
       (λ(g:'b5 -> map{|e22 } -> prop * 'b5 -> map{|e22 } -> map{|e22 } ->
       'c -> prop) ->
-      (λ(x5:'a13) -> (λ(anon15:map{|e12 e22 }) -> True)) ,
-      (λ(x5:'a13) ->
+      (λ(x5:'a23) -> (λ(anon15:map{|e12 e22 }) -> True)) ,
+      (λ(x5:'a23) ->
       (λ(anon16:map{|e12 e22 }) ->
       (λ(anon17:map{|e12 e22 }) -> (λ(anon18:'c) -> True))))))
  in
@@ -154,17 +199,17 @@ e22]. forall (f2:'a13 -> map{|e12 } -> prop * 'a13 -> map{|e12 } -> map{|e12
         (λ(anon21:nat -> map{r1 r2 |} -> prop * nat -> map{r1 r2 |} ->
         map{r1 r2 |} -> nat -> prop) -> True)) anon19
         (seq [nat,nat,nat||{r1 |},{r2 |}]
-         ((λ(z:nat) -> (λ(anon22:map{r1 |}) -> True)) ,
-          (λ(z:nat) ->
+         ((λ(z3:nat) -> (λ(anon22:map{r1 |}) -> True)) ,
+          (λ(z3:nat) ->
           (λ(anon23:map{r1 |}) ->
           (λ(anon24:map{r1 |}) -> (λ(anon25:nat) -> True)))))
-         ((λ(z1:nat) -> (λ(anon26:map{r2 |}) -> True)) ,
-          (λ(z1:nat) ->
+         ((λ(z4:nat) -> (λ(anon26:map{r2 |}) -> True)) ,
+          (λ(z4:nat) ->
           (λ(anon27:map{r2 |}) ->
           (λ(anon28:map{r2 |}) -> (λ(anon29:nat) -> True)))))))
        /\
        ((forall (anon30:map{r1 |}).
-         forall (z:nat).
+         forall (z3:nat).
          (fst [ref(r1,nat) -> map{r1 |} -> prop,ref(r1,nat) -> map{r1 |} ->
           map{r1 |} -> nat -> prop||] ! [nat|r1|] x6 anon30)
          /\
@@ -176,7 +221,7 @@ e22]. forall (f2:'a13 -> map{|e12 } -> prop * 'a13 -> map{|e12 } -> map{|e12
           ((λ(anon33:map{r1 |}) -> (λ(anon34:nat) -> True)) anon31 anon32)))
         /\
         (forall (anon35:map{r2 |}).
-         forall (z1:nat).
+         forall (z4:nat).
          (fst [ref(r2,nat) -> map{r2 |} -> prop,ref(r2,nat) -> map{r2 |} ->
           map{r2 |} -> nat -> prop||] ! [nat|r2|] y anon35)
          /\

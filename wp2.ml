@@ -7,11 +7,13 @@ let error s loc = raise (Error (s,loc))
 let ty = Ty.to_logic_type
 
 let rec lift_value v = 
+(*   Format.printf "lift: %a@." print v ; *)
   let l = v.loc in
   match v.v with
   | Var _ -> { v with t = ty v.t }
   | Const _ | Logic _ | Axiom _ | Quant _ -> v
   | App (v1,v2,kind,_) -> 
+(*       Format.printf "app: %a,%a@." print v1 print v2; *)
       app ~kind (lift_value v1) (lift_value v2) l
   | PureFun (x,t,e) -> 
       plam x (ty t) (lift_value e) l
@@ -36,6 +38,7 @@ let rec lift_value v =
       error (Myformat.sprintf "not a value: %a" print v) l
 
 let rec correct v = 
+(*   Format.printf "correct: %a@." print v ; *)
   let l = v.loc in
   match v.v with
   | Var _ | Const _ | Axiom _ | Logic _ -> ptrue_ l
@@ -56,6 +59,7 @@ let rec correct v =
   | PureFun (x,t,e) -> sforall x (ty t) (correct e) l
   | _ -> assert false
 and wp m q e = 
+(*   Format.printf "wp: %a@." print e ; *)
   let ft = ty e.t and l = e.loc in
   if is_value_node e then
     and_ (applist [q;m;lift_value e] l) (correct e) l

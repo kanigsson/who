@@ -59,4 +59,30 @@ parameter fordownto [||e] (inv :  int -> <|e> -> prop) (start end_ : int)
     }
     { inv (min start (end_ - 1)) cur }
 
+type array ['a||]
+
+logic get ['a||] : int -> 'a array -> 'a
+logic set ['a||]: int -> 'a -> 'a array -> 'a array 
+logic length ['a||] :  'a array -> int
+logic create ['a||] :  int -> 'a array
+
+axiom update_length ['a||] : 
+  forall (t : 'a array) (i : int) (z : 'a).
+    length t = length (set i z t)
+
+axiom get_set_eq ['a||] : 
+  forall (t : 'a array) (i : int) (z : 'a).
+    i < length t -> get i (set i z t) = z
+
+axiom get_set_neq ['a||] : 
+  forall (t : 'a array ) (i : int) (j : int) (z : 'a).
+    i < length t -> j < length t -> i <> j -> get i (set j z t) = get i t
+
+axiom length_nonnegative ['a||] : 
+  forall (t : array ['a||]).  0 <= length t
+
+axiom length_create ['a||] : 
+  forall (l : int). 0 <= l -> length ((create l : 'a array)) = l
+
 "
+

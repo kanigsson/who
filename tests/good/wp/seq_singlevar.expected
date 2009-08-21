@@ -31,7 +31,7 @@ let
 in
 let
 ref ['a10|r4|]=
-               (λ(v1:'a10) -> (λ(anon4:map{r4 ||r4 }) -> True)) ,
+               (λ(v1:'a10) -> (λ(anon4:map{r4 |}) -> True)) ,
                (λ(v1:'a10) ->
                (λ(old2:map{r4 ||r4 }) ->
                (λ(cur2:map{r4 ||r4 }) ->
@@ -104,6 +104,51 @@ fordownto [||e2]=
                  (λ(old4:map{|e2 }) ->
                  (λ(cur6:map{|e2 }) ->
                  (λ(anon6:unit) -> inv1 (min start1 (end_1 - 1)) cur6)))))))
+in type array['a13||] =  in
+let get ['a14||]= logic nat -> (array['a14||]) -> 'a14 in
+let set ['a15||]= logic nat -> 'a15 -> (array['a15||]) -> array['a15||] in
+let length ['a16||]= logic (array['a16||]) -> nat in
+let create ['a17||]= logic nat -> array['a17||] in
+let
+update_length ['a18||]=
+                       axiom forall (t:array['a18||]).
+                             forall (i2:nat).
+                             forall (z:'a18).
+                             (length ['a18||] t) =
+                             (length ['a18||] (set ['a18||] i2 z t))
+in
+let
+get_set_eq ['a19||]=
+                    axiom forall (t1:array['a19||]).
+                          forall (i3:nat).
+                          forall (z1:'a19).
+                          (i3 < (length ['a19||] t1)) ->
+                          ((get ['a19||] i3 (set ['a19||] i3 z1 t1)) = z1)
+in
+let
+get_set_neq ['a20||]=
+                     axiom forall (t2:array['a20||]).
+                           forall (i4:nat).
+                           forall (j:nat).
+                           forall (z2:'a20).
+                           (i4 < (length ['a20||] t2)) ->
+                           ((j < (length ['a20||] t2)) ->
+                            ((i4 <> j) ->
+                             ((get ['a20||] i4 (set ['a20||] j z2 t2)) =
+                              (get ['a20||] i4 t2))))
+in
+let
+length_nonnegative ['a21||]=
+                            axiom forall (t3:array['a21||]).
+                                  0 <= (length ['a21||] t3)
+in
+let
+length_create ['a22||]=
+                       axiom forall (l:nat).
+                             (0 <= l) ->
+                             ((length ['a22||]
+                               (create ['a22||] l : array['a22||]))
+                              = l)
 in
 (forall [||e3]. forall (f2:unit -> map{|e3 } -> prop * unit -> map{|e3 } ->
                 map{|e3 } -> unit -> prop).
@@ -114,13 +159,13 @@ in
                  (fst [unit -> map{|e3 } -> prop,unit -> map{|e3 } -> map{|e3
                   } -> unit -> prop||] f2 () cur7)
                  /\
-                 (forall (i2:map{|e3 }).
+                 (forall (i5:map{|e3 }).
                   (True /\
                    (snd [unit -> map{|e3 } -> prop,unit -> map{|e3 } ->
-                    map{|e3 } -> unit -> prop||] f2 () cur7 i2 ()))
+                    map{|e3 } -> unit -> prop||] f2 () cur7 i5 ()))
                   ->
                   (fst [unit -> map{|e3 } -> prop,unit -> map{|e3 } ->
-                   map{|e3 } -> unit -> prop||] g () i2)))
+                   map{|e3 } -> unit -> prop||] g () i5)))
                  anon7)
                 ->
                 ((fst [unit -> map{|e3 } -> prop,unit -> map{|e3 } -> map{|e3
@@ -146,12 +191,12 @@ in
                     ((λ(old5:map{|e3 }) ->
                      (λ(cur8:map{|e3 }) ->
                      (λ(anon13:unit) ->
-                     exists (i3:map{|e3 }).
+                     exists (i6:map{|e3 }).
                      (snd [unit -> map{|e3 } -> prop,unit -> map{|e3 } ->
-                      map{|e3 } -> unit -> prop||] f2 () old5 i3 ())
+                      map{|e3 } -> unit -> prop||] f2 () old5 i6 ())
                      /\
                      (snd [unit -> map{|e3 } -> prop,unit -> map{|e3 } ->
-                      map{|e3 } -> unit -> prop||] g () i3 cur8 ()))))
+                      map{|e3 } -> unit -> prop||] g () i6 cur8 ()))))
                      anon7 anon11 anon12))))
                    anon8 anon9))))
 /\
@@ -165,30 +210,30 @@ in
             (fst [unit -> map{|e3 } -> prop,unit -> map{|e3 } -> map{|e3 } ->
              unit -> prop||] f2 () cur7)
             /\
-            (forall (i2:map{|e3 }).
+            (forall (i5:map{|e3 }).
              (True /\
               (snd [unit -> map{|e3 } -> prop,unit -> map{|e3 } -> map{|e3
-               } -> unit -> prop||] f2 () cur7 i2 ()))
+               } -> unit -> prop||] f2 () cur7 i5 ()))
              ->
              (fst [unit -> map{|e3 } -> prop,unit -> map{|e3 } -> map{|e3
-              } -> unit -> prop||] g () i2))))
+              } -> unit -> prop||] g () i5))))
             ,
             (λ(g:unit -> map{|e3 } -> prop * unit -> map{|e3 } -> map{|e3
             } -> unit -> prop) ->
             (λ(old5:map{|e3 }) ->
             (λ(cur8:map{|e3 }) ->
             (λ(anon13:unit) ->
-            exists (i3:map{|e3 }).
+            exists (i6:map{|e3 }).
             (snd [unit -> map{|e3 } -> prop,unit -> map{|e3 } -> map{|e3 } ->
-             unit -> prop||] f2 () old5 i3 ())
+             unit -> prop||] f2 () old5 i6 ())
             /\
             (snd [unit -> map{|e3 } -> prop,unit -> map{|e3 } -> map{|e3 } ->
-             unit -> prop||] g () i3 cur8 ()))))))
+             unit -> prop||] g () i6 cur8 ()))))))
  in
  (forall [|r5|]. forall (anon14:map{r5 |}).
                  forall (x6:ref(r5,nat)).
                  (((forall (anon15:map{r5 |}).
-                    forall (z:unit).
+                    forall (z3:unit).
                     (fst [nat -> map{r5 |} -> prop,nat -> map{r5 |} -> map{r5
                      |} -> unit -> prop||] (:= [nat|r5|] x6) 0 anon15)
                     /\
@@ -204,7 +249,7 @@ in
                       anon15 anon16 anon17)))
                    /\
                    (forall (anon19:map{r5 |}).
-                    forall (z1:unit).
+                    forall (z4:unit).
                     (fst [nat -> map{r5 |} -> prop,nat -> map{r5 |} -> map{r5
                      |} -> unit -> prop||] (:= [nat|r5|] x6) 1 anon19)
                     /\
@@ -224,13 +269,13 @@ in
                    map{r5 |} -> prop * unit -> map{r5 |} -> map{r5 |} ->
                    unit -> prop) -> map{r5 |} -> map{r5 |} -> unit -> prop||]
                    (seq [||{r5 |}]
-                    ((λ(z:unit) -> (λ(anon23:map{r5 |}) -> True)) ,
-                     (λ(z:unit) ->
+                    ((λ(z3:unit) -> (λ(anon23:map{r5 |}) -> True)) ,
+                     (λ(z3:unit) ->
                      (λ(old6:map{r5 |}) ->
                      (λ(cur9:map{r5 |}) ->
                      (λ(anon18:unit) -> (!! [nat|r5|{r5 |}] x6 cur9) = 0))))))
-                   ((λ(z1:unit) -> (λ(anon24:map{r5 |}) -> True)) ,
-                    (λ(z1:unit) ->
+                   ((λ(z4:unit) -> (λ(anon24:map{r5 |}) -> True)) ,
+                    (λ(z4:unit) ->
                     (λ(old7:map{r5 |}) ->
                     (λ(cur10:map{r5 |}) ->
                     (λ(anon22:unit) -> (!! [nat|r5|{r5 |}] x6 cur10) = 1)))))
@@ -243,13 +288,13 @@ in
                    map{r5 |} -> prop * unit -> map{r5 |} -> map{r5 |} ->
                    unit -> prop) -> map{r5 |} -> map{r5 |} -> unit -> prop||]
                    (seq [||{r5 |}]
-                    ((λ(z:unit) -> (λ(anon23:map{r5 |}) -> True)) ,
-                     (λ(z:unit) ->
+                    ((λ(z3:unit) -> (λ(anon23:map{r5 |}) -> True)) ,
+                     (λ(z3:unit) ->
                      (λ(old6:map{r5 |}) ->
                      (λ(cur9:map{r5 |}) ->
                      (λ(anon18:unit) -> (!! [nat|r5|{r5 |}] x6 cur9) = 0))))))
-                   ((λ(z1:unit) -> (λ(anon24:map{r5 |}) -> True)) ,
-                    (λ(z1:unit) ->
+                   ((λ(z4:unit) -> (λ(anon24:map{r5 |}) -> True)) ,
+                    (λ(z4:unit) ->
                     (λ(old7:map{r5 |}) ->
                     (λ(cur10:map{r5 |}) ->
                     (λ(anon22:unit) -> (!! [nat|r5|{r5 |}] x6 cur10) = 1)))))
@@ -261,7 +306,7 @@ in
                    anon14 anon25 anon26)))
  /\
  (let
-  z2 [|r5|]=
+  z5 [|r5|]=
             (λ(x6:ref(r5,nat)) -> (λ(anon28:map{r5 |}) -> True)) ,
             (λ(x6:ref(r5,nat)) ->
             (λ(old8:map{r5 |}) ->

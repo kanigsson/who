@@ -97,6 +97,9 @@ stype:
   | v = TYVAR { TVar v }
   | LPAREN t = ty RPAREN { t }
   | v = IDENT i = inst { TApp (v.c,i)  }
+  | t = stype v = IDENT {TApp (v.c,([t],[],[])) }
+  | LPAREN t = ty COMMA l = separated_list(COMMA,ty) RPAREN v = IDENT
+    { TApp(v.c,(t::l,[],[])) }
 
 effect:
   | lr = list(IDENT) MID le =  list(IDENT) cl = maycap
@@ -115,7 +118,8 @@ ty:
   | REF LPAREN id = IDENT COMMA t = ty  RPAREN { Ref (id.c,t) }
 
 inst:
-  LBRACKET tl = list(ty) MID rl = list(IDENT) MID el = list(sepeffect) RBRACKET
+  LBRACKET tl = separated_list(COMMA,ty) MID rl = list(IDENT) 
+  MID el = list(sepeffect) RBRACKET
   { tl, strip_info rl, el }
 
 maycap:

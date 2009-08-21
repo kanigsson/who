@@ -31,7 +31,7 @@ let
 in
 let
 ref ['a10|r4|]=
-               (λ(v1:'a10) -> (λ(anon4:map{r4 ||r4 }) -> True)) ,
+               (λ(v1:'a10) -> (λ(anon4:map{r4 |}) -> True)) ,
                (λ(v1:'a10) ->
                (λ(old2:map{r4 ||r4 }) ->
                (λ(cur2:map{r4 ||r4 }) ->
@@ -104,6 +104,51 @@ fordownto [||e2]=
                  (λ(old4:map{|e2 }) ->
                  (λ(cur6:map{|e2 }) ->
                  (λ(anon6:unit) -> inv1 (min start1 (end_1 - 1)) cur6)))))))
+in type array['a13||] =  in
+let get ['a14||]= logic nat -> (array['a14||]) -> 'a14 in
+let set ['a15||]= logic nat -> 'a15 -> (array['a15||]) -> array['a15||] in
+let length ['a16||]= logic (array['a16||]) -> nat in
+let create ['a17||]= logic nat -> array['a17||] in
+let
+update_length ['a18||]=
+                       axiom forall (t:array['a18||]).
+                             forall (i2:nat).
+                             forall (z:'a18).
+                             (length ['a18||] t) =
+                             (length ['a18||] (set ['a18||] i2 z t))
+in
+let
+get_set_eq ['a19||]=
+                    axiom forall (t1:array['a19||]).
+                          forall (i3:nat).
+                          forall (z1:'a19).
+                          (i3 < (length ['a19||] t1)) ->
+                          ((get ['a19||] i3 (set ['a19||] i3 z1 t1)) = z1)
+in
+let
+get_set_neq ['a20||]=
+                     axiom forall (t2:array['a20||]).
+                           forall (i4:nat).
+                           forall (j:nat).
+                           forall (z2:'a20).
+                           (i4 < (length ['a20||] t2)) ->
+                           ((j < (length ['a20||] t2)) ->
+                            ((i4 <> j) ->
+                             ((get ['a20||] i4 (set ['a20||] j z2 t2)) =
+                              (get ['a20||] i4 t2))))
+in
+let
+length_nonnegative ['a21||]=
+                            axiom forall (t3:array['a21||]).
+                                  0 <= (length ['a21||] t3)
+in
+let
+length_create ['a22||]=
+                       axiom forall (l:nat).
+                             (0 <= l) ->
+                             ((length ['a22||]
+                               (create ['a22||] l : array['a22||]))
+                              = l)
 in
 (forall [|r5|]. forall (anon7:map{r5 |}).
                 forall (x5:ref(r5,nat)).

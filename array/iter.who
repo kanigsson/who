@@ -1,0 +1,54 @@
+type 'a array
+
+logic get : forall 'a. int -> 'a array -> 'a
+logic set : forall 'a. int -> 'a -> 'a array -> 'a array
+logic length : forall 'a. 'a array -> int
+
+axiom update_length : 
+  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
+    length [| 'a|] t = length [|'a|] (set [|'a|] i z t)
+
+axiom get_set_eq : 
+  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
+    i < length [|'a|] t -> get [|'a|] i (set [|'a|] i z t) = z
+
+axiom get_set_neq : 
+  forall 'a. forall (t : 'a array) (i : int) (j : int) (z : 'a).
+    i < length [|'a|] t -> j < length [|'a|] t -> i <> j -> 
+    get [|'a|] i (set [|'a|] j z t) = get [|'a|] i t
+
+axiom length_nonnegative : 
+  forall 'a. forall (t : 'a array).  0 <= length [|'a|] t
+
+use (ar : int array)
+
+let iter [e||] (inv : <ar e> -> int ->  prop) (f : int ->{e} unit) =
+  { inv cur 0 /\ 
+    forall (i:int). 0 <= i /\ i < length [|int|] ar ->
+    forall (m : <ar e>). 
+      inv m i /\ ar|m = ar -> pre f (get [|int|] i ar|m) m|{e} /\
+    forall (n : <ar e>).  
+      ar|n = ar -> post f (get [|int|] i ar|m) m|{e} n|{e} () -> inv n (i+1)
+  }
+  let a = !ar in
+  for i = 0 to length [|int|] !ar - 1 do 
+    { inv cur i /\ ar = a }
+    f (get [|int|] i !ar)
+  done
+  {inv cur (length [|int|] ar|old) /\ ar = ar|old }
+
+logic sum_array : int -> int array -> int
+axiom sum_array_none : 
+  forall (t : int array). sum_array 0 t = 0
+axiom sum_array_step : 
+  forall (t : int array) (i : int). 
+    0 <= i -> i < length [|int|] t ->
+    sum_array (i+1) t = sum_array i t + get [|int|] i t
+
+use (sum : int)
+let main () =
+  {sum = 0}
+  iter [{sum}||]
+    {{ fun (s : <ar sum>) (k:int) -> sum|s = sum_array k ar|s }}
+    (fun (z : int) -> {} sum := !sum + z { sum = sum|old + z} )
+  {sum = sum_array (length [|int|] ar) ar /\ ar = ar|old  }

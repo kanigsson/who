@@ -70,9 +70,48 @@ fordownto [||e2]=
 in type array['a13||] =  in
 let get ['a14||]= logic nat -> (array['a14||]) -> 'a14 in
 let set ['a15||]= logic nat -> 'a15 -> (array['a15||]) -> array['a15||] in
+let length ['a16||]= logic (array['a16||]) -> nat in
+let create ['a17||]= logic nat -> array['a17||] in
 let
-get_set_eq ['a16||]=
-                    axiom forall (t:array['a16||]).
-                          forall (i2:nat).
-                          forall (z:'a16). (get i2 (set i2 z t)) = z
+update_length ['a18||]=
+                       axiom forall (t:array['a18||]).
+                             forall (i2:nat).
+                             forall (z:'a18).
+                             (length t) = (length (set i2 z t))
+in
+let
+get_set_eq ['a19||]=
+                    axiom forall (t1:array['a19||]).
+                          forall (i3:nat).
+                          forall (z1:'a19).
+                          (i3 < (length t1)) ->
+                          ((get i3 (set i3 z1 t1)) = z1)
+in
+let
+get_set_neq ['a20||]=
+                     axiom forall (t2:array['a20||]).
+                           forall (i4:nat).
+                           forall (j:nat).
+                           forall (z2:'a20).
+                           (i4 < (length t2)) ->
+                           ((j < (length t2)) ->
+                            ((i4 <> j) ->
+                             ((get i4 (set j z2 t2)) = (get i4 t2))))
+in
+let
+length_nonnegative ['a21||]=
+                            axiom forall (t3:array['a21||]). 0 <= (length t3)
+in
+let
+length_create ['a22||]=
+                       axiom forall (l:nat).
+                             (0 <= l) -> ((length (create l)) = l)
+in type array1['a23||] =  in
+let get1 ['a24||]= logic nat -> (array1['a24||]) -> 'a24 in
+let set1 ['a25||]= logic nat -> 'a25 -> (array1['a25||]) -> array1['a25||] in
+let
+get_set_eq1 ['a26||]=
+                     axiom forall (t4:array1['a26||]).
+                           forall (i5:nat).
+                           forall (z3:'a26). (get1 i5 (set1 i5 z3 t4)) = z3
 in ()

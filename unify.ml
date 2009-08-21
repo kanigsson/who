@@ -93,7 +93,7 @@ exception CannotUnify
 
 open Format
 let rec unify a b =
-(*   printf "unify: %a and %a@." print_node a print_node b; *)
+  printf "unify: %a and %a@." print_node a print_node b;
   if Uf.equal a b then () else
   match Uf.desc a, Uf.desc b with
   | U, U -> union a b
@@ -138,7 +138,9 @@ and eunify a b =
 (*   printf "eunify : %a and %a@." preff a preff b; *)
   if Uf.equal a b then () else 
     begin match Uf.desc a, Uf.desc b with
-    | ET (_,_,c1), ET (_,_,c2) -> List.iter2 runify c1 c2
+    | ET (_,_,c1), ET (_,_,c2) -> 
+        begin try List.iter2 runify c1 c2 
+        with Invalid_argument _ -> raise CannotUnify end
     | _ -> ()
     end ;
     eunion a b;

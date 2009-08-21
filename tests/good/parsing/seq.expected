@@ -67,15 +67,54 @@ fordownto [||e2]=
                      (forall (n1:map{|e2 }).
                       (post f1 i1 m1 n1 ()) -> (inv1 (i1 - 1) n1)))))}
                  param(unit,{|e2 }) {inv1 (min start1 (end_1 - 1)) cur6}))))
+in type array['a13||] =  in
+let get ['a14||]= logic nat -> (array['a14||]) -> 'a14 in
+let set ['a15||]= logic nat -> 'a15 -> (array['a15||]) -> array['a15||] in
+let length ['a16||]= logic (array['a16||]) -> nat in
+let create ['a17||]= logic nat -> array['a17||] in
+let
+update_length ['a18||]=
+                       axiom forall (t:array['a18||]).
+                             forall (i2:nat).
+                             forall (z:'a18).
+                             (length t) = (length (set i2 z t))
 in
-let seq ['a13 'b5 'c||e12
+let
+get_set_eq ['a19||]=
+                    axiom forall (t1:array['a19||]).
+                          forall (i3:nat).
+                          forall (z1:'a19).
+                          (i3 < (length t1)) ->
+                          ((get i3 (set i3 z1 t1)) = z1)
+in
+let
+get_set_neq ['a20||]=
+                     axiom forall (t2:array['a20||]).
+                           forall (i4:nat).
+                           forall (j:nat).
+                           forall (z2:'a20).
+                           (i4 < (length t2)) ->
+                           ((j < (length t2)) ->
+                            ((i4 <> j) ->
+                             ((get i4 (set j z2 t2)) = (get i4 t2))))
+in
+let
+length_nonnegative ['a21||]=
+                            axiom forall (t3:array['a21||]). 0 <= (length t3)
+in
+let
+length_create ['a22||]=
+                       axiom forall (l:nat).
+                             (0 <= l) -> ((length (create l)) = l)
+in
+let seq ['a23 'b5 'c||e12
 e22]=
-     (λ(f2:'a13 ->{|e12 } 'b5) ->
-     (λ(g:'b5 ->{|e22 } 'c) -> (λ(x5:'a13) -->  g (f2 x5) )))
+     (λ(f2:'a23 ->{|e12 } 'b5) ->
+     (λ(g:'b5 ->{|e22 } 'c) -> (λ(x5:'a23) -->  g (f2 x5) )))
 in
 let h [|r1
 r2|]=
      (λ(x6:ref(r1,nat)) ->
      (λ(y:ref(r2,nat)) --> 
-     seq (λ(z:nat) -->  ! x6 ) (λ(z1:nat) -->  ! y ) ))
+     seq (λ(z3:nat) -->  ! x6 ) (λ(z4:nat) -->  ! y ) ))
 in ()

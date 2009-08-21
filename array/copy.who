@@ -1,0 +1,45 @@
+type 'a array
+
+logic get : forall 'a. int -> 'a array -> 'a
+logic set : forall 'a. int -> 'a -> 'a array -> 'a array
+logic length : forall 'a. 'a array -> int
+logic create : forall 'a. int -> 'a array
+
+axiom update_length : 
+  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
+    length [| 'a|] t = length [|'a|] (set [|'a|] i z t)
+
+axiom get_set_eq : 
+  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
+    i < length [|'a|] t -> get [|'a|] i (set [|'a|] i z t) = z
+
+axiom get_set_neq : 
+  forall 'a. forall (t : 'a array) (i : int) (j : int) (z : 'a).
+    i < length [|'a|] t -> j < length [|'a|] t -> i <> j -> 
+    get [|'a|] i (set [|'a|] j z t) = get [|'a|] i t
+
+axiom length_nonnegative : 
+  forall 'a. forall (t : 'a array).  0 <= length [|'a|] t
+
+axiom length_create : 
+  forall 'a. forall (l : int). 0 <= l -> length [|'a|] (create [|'a|] l) = l
+
+predicate identical ['a] (x y : 'a array) = 
+  length [|'a|] x = length [|'a|] y /\ 
+    forall (k : int).
+      0 <= k -> k < length [|'a|] x -> get [|'a|] k x = get [|'a|] k y
+
+let copy [|'a|(rho:'a array) (rho2:'a array)] cap(rho2) (ar : ref(rho))  =
+  {}
+  let l = length [|'a|] !ar in
+  let res = ref{rho2} (create [|'a|] l) in
+  let oldar = ! ar in
+  let () = 
+    for i = 0 to l - 1 do
+      {  identical [|'a|] oldar ar /\ length [|'a|] res = l /\ 
+          forall (k : int).  
+            0 <= k /\ k < i -> get [|'a|] k res = get [|'a|] k ar } 
+      res := set [|'a|] i (get [|'a|] i !ar) !res 
+    done
+  in res
+  { identical [|'a|] ar (ar|old) /\ identical [|'a|] ar rho2}

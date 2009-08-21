@@ -1,0 +1,37 @@
+type 'a array
+
+logic get : forall 'a. int -> 'a array -> 'a
+logic set : forall 'a. int -> 'a -> 'a array -> 'a array
+logic length : forall 'a. 'a array -> int
+
+axiom update_length : 
+  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
+    length [| 'a|] t = length [|'a|] (set [|'a|] i z t)
+
+axiom get_set_eq : 
+  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
+    i < length [|'a|] t -> get [|'a|] i (set [|'a|] i z t) = z
+
+axiom get_set_neq : 
+  forall 'a. forall (t : 'a array) (i : int) (j : int) (z : 'a).
+    i < length [|'a|] t -> j < length [|'a|] t -> i <> j -> 
+    get [|'a|] i (set [|'a|] j z t) = get [|'a|] i t
+
+axiom length_nonnegative : 
+  forall 'a. forall (t : 'a array).  0 <= length [|'a|] t
+
+let iter [e|'a|(rho:'a array)] 
+  (inv : <rho e> -> int ->  prop) (f : int -> 'a ->{e} unit) (ar:ref(rho)) =
+  { inv cur 0 /\ 
+    forall (i:int). 0 <= i /\ i < length [|'a|] ar ->
+    forall (m : <ar e>). 
+      inv m i /\ ar|m = ar -> pre (f i) (get [|'a|] i ar|m) m|{e} /\
+    forall (n : <ar e>).  
+      ar|n = ar -> post (f i) (get [|'a|] i ar|m) m|{e} n|{e} () -> inv n (i+1)
+  }
+  let b = !ar in
+  for i = 0 to length [|'a|] !ar - 1 do
+    {inv cur i /\ ar = b}
+    f i (get [|'a|] i !ar)
+  done
+  {inv cur (length [|'a|] rho|old) /\ rho = rho|old }

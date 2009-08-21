@@ -1,0 +1,35 @@
+type 'a array
+
+logic get : forall 'a. int -> 'a array -> 'a
+logic set : forall 'a. int -> 'a -> 'a array -> 'a array
+logic length : forall 'a. 'a array -> int
+
+axiom update_length : 
+  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
+    length [| 'a|] t = length [|'a|] (set [|'a|] i z t)
+
+axiom get_set_eq : 
+  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
+    i < length [|'a|] t -> get [|'a|] i (set [|'a|] i z t) = z
+
+axiom get_set_neq : 
+  forall 'a. forall (t : 'a array) (i : int) (j : int) (z : 'a).
+    i < length [|'a|] t -> j < length [|'a|] t -> i <> j -> 
+    get [|'a|] i (set [|'a|] j z t) = get [|'a|] i t
+
+axiom length_nonnegative : 
+  forall 'a. forall (t : 'a array).  0 <= length [|'a|] t
+
+use (ar : int array)
+
+let fill (ofs : int) (len : int) (v:int) =
+  {0 <= ofs /\ 0 <= len /\ ofs <= length [|int|] ar - len }
+  let l = length [|int|] !ar in
+  for i = ofs to ofs + len - 1 do
+    { length [|int|] ar = l /\
+      forall (k : int). ofs <= k -> k < i -> get [|int|] k ar = v }
+    ar := set [|int|] i v !ar
+  done
+  {forall (i : int). 
+    ofs <= i -> i <= ofs + len - 1 -> 
+      get [|int|] i ar = v }
