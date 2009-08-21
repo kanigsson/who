@@ -66,6 +66,7 @@ let rec formtyping' env loc = function
       pre env eff p;
       post env eff t' q;
       to_logic_type (arrow t t' eff)
+  | Gen (_,e) -> formtyping env e
   | Let (tl,e1,x,e2,_) ->
       let t = formtyping env e1 in
       let env = add_var env x tl t in
@@ -166,6 +167,7 @@ and typing' env loc = function
       let t, eff = typing env e in
       t, NEffect.rremove vl eff
   | For _ -> assert false
+  | Gen _ -> assert false
 
 and typing env (e : Ast.Recon.t) : Ty.t * NEffect.t =
 (*   Myformat.printf "typing %a@." Ast.Recon.print e; *)
@@ -182,3 +184,5 @@ and fis_oftype env t e =
       e.loc
 
 let typing t = ignore (typing { types = Name.M.empty} t)
+
+let formtyping t = ignore (formtyping {types = Name.M.empty} t)

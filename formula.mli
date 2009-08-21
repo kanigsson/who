@@ -80,6 +80,7 @@ val applist : t list -> loc -> t
 val not_ : t -> loc -> t
 val impl : t -> t -> loc -> t
 val and_ : t -> t -> loc -> t
+val andlist : t list -> loc -> t
 val eq : t -> t -> loc -> t
 val pre : t -> loc -> t
 val post : t -> loc -> t
@@ -94,6 +95,7 @@ val combine : t -> t -> loc -> t
 val restrict : Effect.t -> t -> loc ->  t
 val forall : Var.t -> Fty.t -> t -> loc -> t
 val forallho : ?name:string -> Fty.t -> (t -> t) -> loc -> t
+val gen : Fty.Generalize.t -> t -> loc -> t
 val rgen : RVar.t list -> t -> loc ->  t
 val lam : Var.t -> Fty.t -> t -> loc -> t
 val lamho : ?name:string -> Fty.t -> (t -> t) -> loc -> t
@@ -106,6 +108,8 @@ val tygen : TyVar.t list -> t -> loc -> t
 val polylet_ : generalize -> Var.t -> t -> t -> loc -> t
 val let_ : t -> Var.t -> t -> loc -> t
 val massbind : [ `FA | `EX | `LAM ] -> (Var.t * Fty.t) list -> t -> loc -> t
+val btrue : loc -> t
+val bfalse : loc -> t
 
 val preho : Fty.t -> Effect.t -> (t -> t -> t) -> loc -> t
 val postho : 

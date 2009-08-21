@@ -1,37 +1,38 @@
 let /\ = logic prop -> prop -> prop in
 let -> = logic prop -> prop -> prop in
+let ~ = logic prop -> prop in
 let = ['a||]= logic 'a -> 'a -> prop in
 let <> ['a1||]= logic 'a1 -> 'a1 -> prop in
-let == ['a2||]= logic 'a2 -> 'a2 -> bool in
-let != ['a3||]= logic 'a3 -> 'a3 -> bool in
-let !! ['a4|r|e]= logic ref(r,'a4) -> map{|e } -> 'a4 in
+let fst ['a2 'b||]= logic ('a2 * 'b) -> 'a2 in
+let snd ['a3 'b1||]= logic ('a3 * 'b1) -> 'b1 in
+let , ['a4 'b2||]= logic 'a4 -> 'b2 -> 'a4 * 'b2 in
+let == ['a5||]= logic 'a5 -> 'a5 -> bool in
+let != ['a6||]= logic 'a6 -> 'a6 -> bool in
+let !! ['a7|r|e]= logic ref(r,'a7) -> map{|e } -> 'a7 in
 let
-! ['a5|r1|]=
-            (λ(x:ref(r1,'a5)) -->  param('a5,{r1 |})
+! ['a8|r1|]=
+            (λ(x:ref(r1,'a8)) -->  param('a8,{r1 |})
             {(λ(old:map{r1 |}) ->
              (λ(cur:map{r1 |}) ->
-             (λ(r2:'a5) ->
-             ((!! ['a5|r1|{r1|}] x cur) = r2) /\
-             ((!! ['a5|r1|{r1|}] x old) = (!! ['a5|r1|{r1|}] x cur)))))})
+             (λ(r2:'a8) ->
+             ((!! ['a8|r1|{r1|}] x cur) = r2) /\
+             ((!! ['a8|r1|{r1|}] x old) = (!! ['a8|r1|{r1|}] x cur)))))})
 in
 let
-:= ['a6|r3|]=
-             (λ(x1:ref(r3,'a6)) ->
-             (λ(v:'a6) -->  param(unit,{r3 |})
+:= ['a9|r3|]=
+             (λ(x1:ref(r3,'a9)) ->
+             (λ(v:'a9) -->  param(unit,{r3 |})
              {(λ(old1:map{r3 |}) ->
               (λ(cur1:map{r3 |}) ->
-              (λ(anon:unit) -> (!! ['a6|r3|{r3|}] x1 cur1) = v)))}))
+              (λ(anon:unit) -> (!! ['a9|r3|{r3|}] x1 cur1) = v)))}))
 in
 let
-ref ['a7|r4|]=
-              (λ(v1:'a7) -->  param(ref(r4,'a7),{r4 ||r4 })
-              {(λ(old2:map{r4 ||r4 }) ->
-               (λ(cur2:map{r4 ||r4 }) ->
-               (λ(x2:ref(r4,'a7)) -> (!! ['a7|r4|{r4||r4}] x2 cur2) = v1)))})
+ref ['a10|r4|]=
+               (λ(v1:'a10) -->  param(ref(r4,'a10),{r4 ||r4 })
+               {(λ(old2:map{r4 ||r4 }) ->
+                (λ(cur2:map{r4 ||r4 }) ->
+                (λ(x2:ref(r4,'a10)) -> (!! ['a10|r4|{r4||r4}] x2 cur2) = v1)))})
 in
-let fst ['b 'a8||]= logic (('a8 * 'b)) -> 'a8 in
-let snd ['b1 'a9||]= logic (('a9 * 'b1)) -> 'b1 in
-let , ['b2 'a10||]= logic 'a10 -> 'b2 -> ('a10 * 'b2) in
 let + = logic nat -> nat -> nat in
 let - = logic nat -> nat -> nat in
 let * = logic nat -> nat -> nat in
@@ -41,8 +42,10 @@ let > = logic nat -> nat -> prop in
 let >= = logic nat -> nat -> prop in
 let max = logic nat -> nat -> nat in
 let min = logic nat -> nat -> nat in
-let pre ['b3 'a11||]= (λ(x3:('a11 * 'b3)) -> fst ['b3,'a11||] x3) in
-let post ['b4 'a12||]= (λ(x4:('a12 * 'b4)) -> snd ['b4,'a12||] x4) in
+let pre ['a11 'b3||]= (λ(x3:'a11 * 'b3) -> fst ['a11,'b3||] x3) in
+let post ['a12 'b4||]= (λ(x4:'a12 * 'b4) -> snd ['a12,'b4||] x4) in
+let combine [||e1 e2]= logic map{|e1 } -> map{|e2 } -> map{|e1 e2 } in
+let restrict [||e11 e21]= logic map{|e11 } -> map{|e21 } in
 let
 forto [||e1]=
              (λ(inv:nat -> map{|e1 } -> prop) ->
@@ -55,12 +58,12 @@ forto [||e1]=
                ((start <= i) /\ (i <= end_)) ->
                (forall (m:map{|e1 }).
                 (inv i m) ->
-                ((pre [nat -> mape1 -> mape1 -> unit -> prop,nat -> mape1 ->
+                ((pre [nat -> mape1 -> prop,nat -> mape1 -> mape1 -> unit ->
                   prop||] f i m)
                  /\
                  (forall (n:map{|e1 }).
-                  (post [nat -> mape1 -> mape1 -> unit -> prop,nat ->
-                   mape1 -> prop||] f i m n ())
+                  (post [nat -> mape1 -> prop,nat -> mape1 -> mape1 ->
+                   unit -> prop||] f i m n ())
                   -> (inv (i + 1) n))))))}
              param(unit,{|e1 })
              {(λ(old3:map{|e1 }) ->
@@ -79,27 +82,27 @@ fordownto [||e2]=
                    ((start1 <= i1) /\ (i1 <= end_1)) ->
                    (forall (m1:map{|e2 }).
                     (inv1 i1 m1) ->
-                    ((pre [nat -> mape2 -> mape2 -> unit -> prop,nat ->
-                      mape2 -> prop||] f1 i1 m1)
+                    ((pre [nat -> mape2 -> prop,nat -> mape2 -> mape2 ->
+                      unit -> prop||] f1 i1 m1)
                      /\
                      (forall (n1:map{|e2 }).
-                      (post [nat -> mape2 -> mape2 -> unit -> prop,nat ->
-                       mape2 -> prop||] f1 i1 m1 n1 ())
+                      (post [nat -> mape2 -> prop,nat -> mape2 -> mape2 ->
+                       unit -> prop||] f1 i1 m1 n1 ())
                       -> (inv1 (i1 - 1) n1))))))}
                  param(unit,{|e2 })
                  {(λ(old4:map{|e2 }) ->
                   (λ(cur6:map{|e2 }) ->
                   (λ(anon2:unit) -> inv1 (min start1 (end_1 - 1)) cur6)))}))))
 in
-let seq ['c 'b5 'a13||e2
-e1]=
-    (λ(f2:'a13 ->{|e1 } 'b5) ->
-    (λ(g:'b5 ->{|e2 } 'c) -> (λ(x5:'a13) -->  g (f2 x5) )))
+let seq ['a13 'b5 'c||e12
+e22]=
+     (λ(f2:'a13 ->{|e12 } 'b5) ->
+     (λ(g:'b5 ->{|e22 } 'c) -> (λ(x5:'a13) -->  g (f2 x5) )))
 in
-let h [|r2
-r1|]=
+let h [|r1
+r2|]=
      (λ(x6:ref(r1,nat)) ->
      (λ(y:ref(r2,nat)) --> 
-     seq [nat,nat,nat||{|{r2|} 1149 1152},{|{r1|} 1132 1135}]
+     seq [nat,nat,nat||{|{r1|} 1154 1157},{|{r2|} 1171 1174}]
      (λ(z:nat) -->  ! [nat|r1|] x6 ) (λ(z1:nat) -->  ! [nat|r2|] y ) ))
 in ()

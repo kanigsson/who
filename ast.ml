@@ -16,6 +16,7 @@ type ('a,'b,'c) t'' =
   | TypeDef of Ty.Generalize.t * Ty.t option * Name.t * ('a,'b,'c) t'
   | Quant of [`FA | `EX ] * Name.t * Ty.t * ('a,'b,'c) t'
   | Param of Ty.t * NEffect.t
+  | Gen of Ty.Generalize.t * ('a,'b,'c) t'
   | For of Name.t * ('a,'b,'c) pre * Name.t * Name.t * Name.t * ('a,'b,'c) t'
   | LetReg of Name.t list * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
@@ -33,7 +34,7 @@ open Myformat
 let is_compound = function
   | Const _ | Var _ | Lam _ | PureFun _ | Annot _-> false
   | App _ | Let _ | Ite _ | Axiom _ | Logic _ | TypeDef _
-  | Quant _ | Param _ | For _ | LetReg _ -> true
+  | Quant _ | Param _ | For _ | LetReg _ | Gen _ -> true
 let is_compound_node t = is_compound t.v
 
 let print pra prb prc fmt t = 
@@ -68,6 +69,7 @@ let print pra prb prc fmt t =
         fprintf fmt "%a (%a) %a %a (%a)" 
           Name.print dir pre inv Name.print st Name.print en print t
     | Annot (e,t) -> fprintf fmt "(%a : %a)" print e Ty.print t
+    | Gen (g,t) -> fprintf fmt "forall %a. %a" Ty.Generalize.print g print t
     | LetReg (v,t) -> 
         fprintf fmt "@[letregion %a in@ %a@]" 
           (print_list space Name.print) v print t
@@ -115,6 +117,7 @@ module Recon = struct
   let mk_val v t loc = { v = v; t = t; e = NEffect.empty; loc = loc }
 
   let app ?(kind=`Prefix) ?(cap=[]) t1 t2 loc = 
+(*     Format.printf "termapp: %a and %a@." print t1 print t2; *)
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
     mk (App (t1,t2,kind,cap)) t (NEffect.union t1.e (NEffect.union t2.e e)) loc
 
@@ -122,7 +125,12 @@ module Recon = struct
   let app2 t t1 t2 loc = app (app t t1 loc) t2 loc
   let appi t t1 t2 loc = app ~kind:`Infix (app t t1 loc) t2 loc
   let allapp t1 t2 kind cap loc = app ~kind ~cap t1 t2 loc
-  let var s inst (g,t) = mk_val (Var (s,inst)) (Ty.allsubst g inst t) 
+  let var s inst (g,t) = 
+(*
+    Format.printf "%a : (%a,%a) -> %a@." Name.print s Ty.Generalize.print g Ty.print
+    t (Inst.print Ty.print Name.print NEffect.print) inst;
+*)
+    mk_val (Var (s,inst)) (Ty.allsubst g inst t) 
 
   module T = Ty
   let v = T.var
@@ -133,11 +141,28 @@ module Recon = struct
 
   let spre_defvar s  = pre_defvar s Inst.empty
 
+  open Const
+
+  let ptrue_ loc = mk_val (Const (Ptrue)) T.prop loc
+  let btrue_ loc = mk_val (Const (Btrue)) T.bool loc
+  let bfalse_ loc = mk_val (Const (Bfalse)) T.bool loc
+
   let svar s t = var s Inst.empty (T.Generalize.empty,t) 
   let le t1 t2 loc = appi (spre_defvar "<=" loc) t1 t2 loc
-  let and_ t1 t2 loc = appi (spre_defvar "/\\" loc) t1 t2 loc
+  let and_ t1 t2 loc = 
+    match t1.v,t2.v with
+    | Const Ptrue, _ -> t2
+    | _, Const Ptrue -> t1
+    | Const Pfalse, _ -> t1
+    | _, Const Pfalse -> t2
+    | _ -> appi (spre_defvar "/\\" loc) t1 t2 loc
+
   let impl t1 t2 loc = 
-    appi (spre_defvar "->" loc) t1 t2 loc
+    match t1.v,t2.v with
+    | Const Ptrue, _ -> t2
+    | _, Const Ptrue -> t2
+    | Const Pfalse, _ -> ptrue_ loc
+    | _ -> appi (spre_defvar "->" loc) t1 t2 loc
 
   let eq t1 t2 loc = 
     appi (pre_defvar "=" ([t1.t],[],[]) loc) t1 t2 loc
@@ -156,10 +181,8 @@ module Recon = struct
   let plam x t e loc = mk_val (PureFun (x,t,e)) (T.parr t e.t) loc
   let efflam x eff e = plam x (T.map eff) e
   let lam x t p e q = mk_val (Lam (x,t,p,e,q)) (T.arrow t e.t e.e)
-  let ptrue_ loc = mk_val (Const (Const.Ptrue)) T.prop loc
-  let btrue_ loc = mk_val (Const (Const.Btrue)) T.bool loc
   let plus t1 t2 loc = appi (spre_defvar "+" loc) t1 t2 loc
-  let one = mk_val (Const (Const.Int Big_int.unit_big_int)) T.int 
+  let one = mk_val (Const (Int Big_int.unit_big_int)) T.int 
   let succ t loc = plus t (one loc) loc
   let let_ g e1 x e2 r = mk (Let (g,e1,x,e2,r)) e2.t (NEffect.union e1.e e2.e)
 
@@ -185,18 +208,31 @@ module Recon = struct
     match l with
     | [] | [ _ ] -> failwith "not enough arguments given"
     | a::b::rest ->
-        List.fold_left (fun acc x -> and_ acc x loc) (app a b loc) rest
+        List.fold_left (fun acc x -> and_ acc x loc) (and_ a b loc) rest
 
   let rec is_value = function
     | Const _ | Var _ | Lam _ | PureFun _ | Axiom _ | Logic _ | Quant _ -> true
-    | Let _ | Ite _ | For _ | LetReg _ | Param _ | TypeDef _ | Annot _ -> false
+    | Let _ | Ite _ | For _ | LetReg _ | Param _ | TypeDef _ 
+    | Annot _ | Gen _ -> false
     | App (t1,_,_,_) -> 
         match t1.t with
         | T.C (T.PureArr _) -> true
         | _ -> false
   and is_value_node x = is_value x.v
 
-  let squant k x t f loc = mk (Quant (k,x,t,f)) f.t f.e loc
+  let squant k x t f loc = 
+    match f.v with
+    | Const Ptrue -> f
+    | _ -> mk (Quant (k,x,t,f)) f.t f.e loc
+
+  let gen g e l = 
+    match e.v with
+    | Const Ptrue -> e
+    | _ -> mk (Gen (g,e)) e.t e.e l
+
+  let rgen rl e = gen ([],rl,[]) e
+
+
   let sforall x = squant `FA x
   let quant ?s k t f loc = 
     let v = 
@@ -208,7 +244,7 @@ module Recon = struct
 
   let forall ?s t f loc = quant ?s `FA t f loc
   let effFA ?s e f loc = forall ?s (Ty.map e) f loc
-  let plam_ho ?s t f loc = 
+  let plamho ?s t f loc = 
     let v = 
       match s with 
       | None -> Name.new_anon () 
@@ -216,7 +252,26 @@ module Recon = struct
     let tv = svar v t loc in
     plam v t (f tv) loc
 
-  let efflam_ho ?s e f loc = plam_ho ?s (Ty.map e) f loc
+  let efflamho ?s e f loc = plamho ?s (Ty.map e) f loc
+
+  let rec is_param e = 
+    match e.v with
+    | Param _ -> true
+    | Lam (_,_,_,e,_) -> is_param e
+    | PureFun (_,_,e) -> is_param e
+    | _ -> false
+
+  let domain t = 
+    match t.t with
+    | Ty.C Ty.Map e -> e
+    | _ -> assert false
+
+  let combine t1 t2 l = 
+    app2 (pre_defvar "combine" ([],[],[domain t1;domain t2]) l) t1 t2 l
+
+  let restrict eff t l =
+    app (pre_defvar "restrict" ([],[],[domain t; eff]) l) t l
+
 
 end
 

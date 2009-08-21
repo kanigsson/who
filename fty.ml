@@ -1,6 +1,6 @@
 open Vars
 
-type ('a,'b,'c) t'' = [ ('a,'b) Lty.t'' | `Map of 'c ]
+type ('a,'b,'c) t'' = [ ('a,'b) Lty.t'' | `Map of 'c | `Ref of RVar.t * 'a ]
 type 'a t' = ('a,TyVar.t,Effect.t) t''
 type t = [ `U of t t' ]
 
@@ -46,32 +46,37 @@ let lift' f x = lty' (f x)
 
 let var = lift Lty.var
 
-let map' r ~tyvarfun ~effectfun = function
+let map' r ~tyvarfun ~effectfun ~rvarfun = function
   | #Lty.t' as t -> Lty.map' r ~tyvarfun t
   | `Map e -> `Map (effectfun e)
+  | `Ref (rv,e) -> `Ref (rvarfun rv, r e)
 
-let map ~tyvarfun ~effectfun t = 
-  let rec aux (`U t) = `U (map' aux ~tyvarfun ~effectfun t) in
+let map ~tyvarfun ~effectfun ~rvarfun t = 
+  let rec aux (`U t) = `U (map' aux ~tyvarfun ~effectfun ~rvarfun t) in
   aux t
 
 let refresh s t = 
   map ~tyvarfun:(fun v -> `Var (TyVar.refresh s v)) 
-      ~effectfun:(Effect.refresh s) t
+      ~effectfun:(Effect.refresh s) 
+      ~rvarfun:(RVar.refresh s) 
+      t
 
 let effsubst ev eff t = 
   map ~tyvarfun:(fun v -> `Var v)
-      ~effectfun:(Effect.effsubst ev eff) t
+      ~effectfun:(Effect.effsubst ev eff) ~rvarfun:Misc.id t
 
 let tysubst tv (`U t) ft = 
   map ~tyvarfun:(fun v -> if TyVar.equal v tv then t else `Var v)
-      ~effectfun:Misc.id ft
+      ~effectfun:Misc.id ~rvarfun:Misc.id ft
 
 let leffsubst = List.fold_right2 effsubst
 let ltysubst = List.fold_right2 tysubst
 
 let rsubst r nr t = 
   map ~tyvarfun:(fun v -> `Var v)
-      ~effectfun:(Effect.rsubst r nr) t
+      ~effectfun:(Effect.rsubst r nr) 
+      ~rvarfun:(fun v -> if RVar.equal v r then nr else v)
+        t
 
 let lrsubst = List.fold_right2 rsubst
 
@@ -79,6 +84,7 @@ open Myformat
 let print'' pra prb prc fmt = function
   | #Lty.t'' as t -> Lty.print'' pra prb fmt t
   | `Map e -> fprintf fmt "map%a" prc e
+  | `Ref (r,t) -> fprintf fmt "ref(%a,%a)" RVar.print r pra t
 
 let print' pra fmt x = print'' pra TyVar.print Effect.print fmt x
 let rec print fmt (`U t) = print' print fmt t
@@ -151,6 +157,11 @@ let compare' cmp a b =
   | `Map e1, `Map e2 -> Effect.compare e1 e2
   | `Map _, _ -> 1
   | _, `Map _ -> -1
+  | `Ref (r1,t1), `Ref (r2,t2) -> 
+      let c = RVar.compare r1 r2 in
+      if c = 0 then cmp t1 t2 else c
+  | `Ref _, _ -> 1
+  | _, `Ref _ -> -1
 let rec compare (`U a) (`U b) = compare' compare a b
 
 let equal a b = compare a b = 0
@@ -172,6 +183,7 @@ let well_formed' wf arity x =
   match x with
   | #Lty.t' as t -> Lty.well_formed' wf arity t
   | `Map _ -> true
+  | `Ref (_,t) -> wf t
 let well_formed arity t = 
   let rec aux (`U t) = well_formed' aux arity t in 
   aux t
@@ -203,7 +215,8 @@ let to_lty x =
   | `U `Tuple (t1,t2) -> Lty.tuple (aux t1) (aux t2)
   | `U `Arr (t1,t2) -> Lty.arr (aux t1) (aux t2)
   | `U `App (v,tl) -> Lty.app v (List.map aux tl)
-  | `U `Map _ -> Lty.var map_var in
+  | `U `Map _ -> Lty.var map_var
+  | `U `Ref _ -> assert false in
   aux x
 
 let ltyf t = lty (to_lty t)
@@ -216,7 +229,7 @@ let from_ty, from_eff =
     | Ty.PureArr (t1, t2) -> `Arr (aux t1, aux t2)
     | Ty.Arrow _ -> assert false
     | Ty.App (n, (tl,_,_)) -> `App (tvar n, List.map aux tl)
-    | Ty.Ref _ -> assert false
+    | Ty.Ref (r,t) -> `Ref (RVar.from_name r, aux t)
     | Ty.Map e -> `Map (eff e)
   and aux (Ty.C t) = `U (aux' t) 
   and eff (rl,el,_) = 
@@ -232,8 +245,14 @@ let from_ty, from_eff =
 let h = Hashtbl.create 17
 
 let init () = 
-  Ty.iter_vars (fun k (v,(_,tl,_),t) -> 
+  Ty.iter_vars (fun k (v,(tl,_,_),t) -> 
     Hashtbl.add h k (Var.from_name v,List.map TyVar.from_name tl, from_ty t))
+(*
+  Hashtbl.iter
+    (fun k (v,tl,t) ->
+      Format.printf "%s : (%a,%a,%a)@." k Var.print v TyVar.print_list tl
+      print t) h
+*)
 
 let get_predef_var x = Hashtbl.find h x
 

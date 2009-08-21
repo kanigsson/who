@@ -58,7 +58,7 @@ let add_gen env (tl,rl,el) =
   let env, tl = add_tvars env tl in
   let env, rl = add_rvars env rl in
   let env, el = add_evars env el in
-  env, (tl,rl,el)
+  env, (List.rev tl,List.rev rl,List.rev el)
 
 let rlist_to_set env l = 
   List.fold_left (fun acc x -> Name.S.add (rvar env x) acc) Name.S.empty l

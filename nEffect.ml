@@ -59,3 +59,5 @@ let equal =
 let rremove l (r,e,c) = 
   let f = S.filter (fun x -> not (List.mem x l)) in
   f r, e, f c
+
+let clean (r,e,_) = r,e,S.empty

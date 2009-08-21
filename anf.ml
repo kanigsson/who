@@ -8,7 +8,7 @@ and normalize e k =
   let loc = e.loc in
   match e.v with
   | (Const _ | Ast.Var _ | Axiom _ | Logic _ | Quant _ | Param _ ) -> k e
-  | For _ -> assert false
+  | For _ | Gen _ -> assert false
   | Lam (x,t,p,e,q) -> k (lam x t p (normalize_term e) q loc)
   | PureFun (x,t,e)-> k (plam x t (normalize_term e) loc)
   | Let (g,e1,x,e2,r) ->

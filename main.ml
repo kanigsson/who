@@ -1,4 +1,4 @@
-open Formula
+open Wp2
 let parse buf close fn = 
   let abort () = close (); exit 1 in
   Lexer.reset buf;
@@ -42,12 +42,9 @@ let _ =
     let p = Anf.normalize_term p in
     maybe_abort Options.anf_only Ast.Recon.print p;
     Typing.typing p;
-    let () = Fty.init () in
-(*
-    let p = Wp.main p in
+    let p = Wp2.main p in
     maybe_abort Options.wp_only Ast.Recon.print p;
-    Typing.typing p;
-*)
+    Typing.formtyping p;
     p
   with
   | Sys_error e -> Error.bad e

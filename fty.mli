@@ -1,6 +1,6 @@
 open Vars
 
-type ('a,'b,'c) t'' = [ ('a,'b) Lty.t'' | `Map of 'c ]
+type ('a,'b,'c) t'' = [ ('a,'b) Lty.t'' | `Map of 'c | `Ref of RVar.t * 'a ]
 type 'a t' = ('a,TyVar.t,Effect.t) t''
 type t = [ `U of t t' ]
 
@@ -14,10 +14,12 @@ val map' :
   ('a -> 'b) -> 
       tyvarfun:(TyVar.t -> ([> 'b t'] as 'd)) -> 
       effectfun:(Effect.t -> Effect.t) ->
+      rvarfun:(RVar.t -> RVar.t) ->
         'a t' -> 'd
 val map : 
   tyvarfun:(TyVar.t -> t t') -> 
   effectfun:(Effect.t -> Effect.t) -> 
+  rvarfun:(RVar.t -> RVar.t) ->
     t -> t
 
 val refresh : subst -> t -> t
@@ -94,12 +96,6 @@ val tysubst : TyVar.t -> t -> t -> t
 (** type substitution: [tysubst alpha tau' t] replaces the type variable
  * alpha * by the type [tau'] in [t]. *)
 val ltysubst : TyVar.t list -> t list -> t -> t
-
-val map : 
-  tyvarfun:(TyVar.t -> t t') -> 
-  effectfun:(Effect.t -> Effect.t) -> t -> t
-(** a map over types - specify what to do in the case of variables and effects
- * *)
 
 module Generalize : sig
   type t =  TyVar.t list * RVar.t list * EffVar.t list

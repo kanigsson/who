@@ -1,28 +1,29 @@
 let /\ = logic prop -> prop -> prop in
 let -> = logic prop -> prop -> prop in
+let ~ = logic prop -> prop in
 let = ['a||]= logic 'a -> 'a -> prop in
 let <> ['a1||]= logic 'a1 -> 'a1 -> prop in
-let == ['a2||]= logic 'a2 -> 'a2 -> bool in
-let != ['a3||]= logic 'a3 -> 'a3 -> bool in
-let !! ['a4|r|e]= logic ref(r,'a4) -> map{|e } -> 'a4 in
+let fst ['a2 'b||]= logic ('a2 * 'b) -> 'a2 in
+let snd ['a3 'b1||]= logic ('a3 * 'b1) -> 'b1 in
+let , ['a4 'b2||]= logic 'a4 -> 'b2 -> 'a4 * 'b2 in
+let == ['a5||]= logic 'a5 -> 'a5 -> bool in
+let != ['a6||]= logic 'a6 -> 'a6 -> bool in
+let !! ['a7|r|e]= logic ref(r,'a7) -> map{|e } -> 'a7 in
 let
-! ['a5|r1|]=
-            (λ(x:ref(r1,'a5)) -->  param('a5,{r1 |})
+! ['a8|r1|]=
+            (λ(x:ref(r1,'a8)) -->  param('a8,{r1 |})
             { r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))})
 in
 let
-:= ['a6|r3|]=
-             (λ(x1:ref(r3,'a6)) ->
-             (λ(v:'a6) -->  param(unit,{r3 |}) {(!! x1 cur1) = v}))
+:= ['a9|r3|]=
+             (λ(x1:ref(r3,'a9)) ->
+             (λ(v:'a9) -->  param(unit,{r3 |}) {(!! x1 cur1) = v}))
 in
 let
-ref ['a7|r4|]=
-              (λ(v1:'a7) -->  param(ref(r4,'a7),{r4 ||r4 })
-              { x2 : (!! x2 cur2) = v1})
+ref ['a10|r4|]=
+               (λ(v1:'a10) -->  param(ref(r4,'a10),{r4 ||r4 })
+               { x2 : (!! x2 cur2) = v1})
 in
-let fst ['b 'a8||]= logic (('a8 * 'b)) -> 'a8 in
-let snd ['b1 'a9||]= logic (('a9 * 'b1)) -> 'b1 in
-let , ['b2 'a10||]= logic 'a10 -> 'b2 -> ('a10 * 'b2) in
 let + = logic nat -> nat -> nat in
 let - = logic nat -> nat -> nat in
 let * = logic nat -> nat -> nat in
@@ -32,8 +33,10 @@ let > = logic nat -> nat -> prop in
 let >= = logic nat -> nat -> prop in
 let max = logic nat -> nat -> nat in
 let min = logic nat -> nat -> nat in
-let pre ['b3 'a11||]= (λ(x3:('a11 * 'b3)) -> fst x3) in
-let post ['b4 'a12||]= (λ(x4:('a12 * 'b4)) -> snd x4) in
+let pre ['a11 'b3||]= (λ(x3:'a11 * 'b3) -> fst x3) in
+let post ['a12 'b4||]= (λ(x4:'a12 * 'b4) -> snd x4) in
+let combine [||e1 e2]= logic map{|e1 } -> map{|e2 } -> map{|e1 e2 } in
+let restrict [||e11 e21]= logic map{|e11 } -> map{|e21 } in
 let
 forto [||e1]=
              (λ(inv:nat -> map{|e1 } -> prop) ->
@@ -65,6 +68,6 @@ fordownto [||e2]=
                       (post f1 i1 m1 n1 ()) -> (inv1 (i1 - 1) n1)))))}
                  param(unit,{|e2 }) {inv1 (min start1 (end_1 - 1)) cur6}))))
 in
-let apply ['b5
-'a13||e3]= (λ(f2:'a13 ->{|e3 } 'b5) -> (λ(x5:'a13) -->  f2 x5 )) in
+let apply ['a13
+'b5||e3]= (λ(f2:'a13 ->{|e3 } 'b5) -> (λ(x5:'a13) -->  f2 x5 )) in
 let h [|r5|]= (λ(x6:ref(r5,nat)) -->  apply (λ(z:nat) -->  ! x6 ) 5 ) in ()

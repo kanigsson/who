@@ -1,0 +1,128 @@
+forall (anon:map{|}).
+let /\ = logic prop -> prop -> prop in
+let -> = logic prop -> prop -> prop in
+let ~ = logic prop -> prop in
+let = ['a||]= logic 'a -> 'a -> prop in
+let <> ['a1||]= logic 'a1 -> 'a1 -> prop in
+let fst ['a2 'b||]= logic ('a2 * 'b) -> 'a2 in
+let snd ['a3 'b1||]= logic ('a3 * 'b1) -> 'b1 in
+let , ['a4 'b2||]= logic 'a4 -> 'b2 -> 'a4 * 'b2 in
+let == ['a5||]= logic 'a5 -> 'a5 -> bool in
+let != ['a6||]= logic 'a6 -> 'a6 -> bool in
+let !! ['a7|r|e]= logic ref(r,'a7) -> map{|e } -> 'a7 in
+let
+! ['a8|r1|]=
+            (λ(x:ref(r1,'a8)) -> (λ(anon1:map{r1 |}) -> True)) ,
+            (λ(x:ref(r1,'a8)) ->
+            (λ(old:map{r1 |}) ->
+            (λ(cur:map{r1 |}) ->
+            (λ(r2:'a8) ->
+            ((!! ['a8|r1|{r1 |}] x cur) = r2) /\
+            ((!! ['a8|r1|{r1 |}] x old) = (!! ['a8|r1|{r1 |}] x cur))))))
+in
+let
+:= ['a9|r3|]=
+             (λ(x1:ref(r3,'a9)) ->
+             (λ(v:'a9) -> (λ(anon2:map{r3 |}) -> True)) ,
+             (λ(v:'a9) ->
+             (λ(old1:map{r3 |}) ->
+             (λ(cur1:map{r3 |}) ->
+             (λ(anon3:unit) -> (!! ['a9|r3|{r3 |}] x1 cur1) = v)))))
+in
+let
+ref ['a10|r4|]=
+               (λ(v1:'a10) -> (λ(anon4:map{r4 ||r4 }) -> True)) ,
+               (λ(v1:'a10) ->
+               (λ(old2:map{r4 ||r4 }) ->
+               (λ(cur2:map{r4 ||r4 }) ->
+               (λ(x2:ref(r4,'a10)) ->
+               (!! ['a10|r4|{r4 ||r4 }] x2 cur2) = v1))))
+in
+let + = logic nat -> nat -> nat in
+let - = logic nat -> nat -> nat in
+let * = logic nat -> nat -> nat in
+let < = logic nat -> nat -> prop in
+let <= = logic nat -> nat -> prop in
+let > = logic nat -> nat -> prop in
+let >= = logic nat -> nat -> prop in
+let max = logic nat -> nat -> nat in
+let min = logic nat -> nat -> nat in
+let pre ['a11 'b3||]= (λ(x3:'a11 * 'b3) -> fst ['a11,'b3||] x3) in
+let post ['a12 'b4||]= (λ(x4:'a12 * 'b4) -> snd ['a12,'b4||] x4) in
+let combine [||e1 e2]= logic map{|e1 } -> map{|e2 } -> map{|e1 e2 } in
+let restrict [||e11 e21]= logic map{|e11 } -> map{|e21 } in
+let
+forto [||e1]=
+             (λ(inv:nat -> map{|e1 } -> prop) ->
+             (λ(start:nat) ->
+             (λ(end_:nat) ->
+             (λ(f:nat -> map{|e1 } -> prop * nat -> map{|e1 } -> map{|e1
+             } -> unit -> prop) ->
+             (λ(cur3:map{|e1 }) ->
+             (inv start cur3) /\
+             (forall (i:nat).
+              ((start <= i) /\ (i <= end_)) ->
+              (forall (m:map{|e1 }).
+               (inv i m) ->
+               ((pre [nat -> map{|e1 } -> prop,nat -> map{|e1 } -> map{|e1
+                 } -> unit -> prop||] f i m)
+                /\
+                (forall (n:map{|e1 }).
+                 (post [nat -> map{|e1 } -> prop,nat -> map{|e1 } -> map{|e1
+                  } -> unit -> prop||] f i m n ())
+                 -> (inv (i + 1) n)))))))
+             ,
+             (λ(f:nat -> map{|e1 } -> prop * nat -> map{|e1 } -> map{|e1
+             } -> unit -> prop) ->
+             (λ(old3:map{|e1 }) ->
+             (λ(cur4:map{|e1 }) ->
+             (λ(anon5:unit) -> inv (max start (end_ + 1)) cur4)))))))
+in
+let
+fordownto [||e2]=
+                 (λ(inv1:nat -> map{|e2 } -> prop) ->
+                 (λ(start1:nat) ->
+                 (λ(end_1:nat) ->
+                 (λ(f1:nat -> map{|e2 } -> prop * nat -> map{|e2 } ->
+                 map{|e2 } -> unit -> prop) ->
+                 (λ(cur5:map{|e2 }) ->
+                 (inv1 start1 cur5) /\
+                 (forall (i1:nat).
+                  ((start1 <= i1) /\ (i1 <= end_1)) ->
+                  (forall (m1:map{|e2 }).
+                   (inv1 i1 m1) ->
+                   ((pre [nat -> map{|e2 } -> prop,nat -> map{|e2 } ->
+                     map{|e2 } -> unit -> prop||] f1 i1 m1)
+                    /\
+                    (forall (n1:map{|e2 }).
+                     (post [nat -> map{|e2 } -> prop,nat -> map{|e2 } ->
+                      map{|e2 } -> unit -> prop||] f1 i1 m1 n1 ())
+                     -> (inv1 (i1 - 1) n1)))))))
+                 ,
+                 (λ(f1:nat -> map{|e2 } -> prop * nat -> map{|e2 } ->
+                 map{|e2 } -> unit -> prop) ->
+                 (λ(old4:map{|e2 }) ->
+                 (λ(cur6:map{|e2 }) ->
+                 (λ(anon6:unit) -> inv1 (min start1 (end_1 - 1)) cur6)))))))
+in
+(forall [|r5|]. forall (anon7:map{r5 |}).
+                forall (x5:ref(r5,nat)).
+                (fst [ref(r5,nat) -> map{r5 |} -> prop,ref(r5,nat) -> map{r5
+                 |} -> map{r5 |} -> nat -> prop||] ! [nat|r5|] x5 anon7)
+                /\
+                (forall (anon8:map{r5 |}).
+                 forall (anon9:nat).
+                 (snd [ref(r5,nat) -> map{r5 |} -> prop,ref(r5,nat) -> map{r5
+                  |} -> map{r5 |} -> nat -> prop||] ! [nat|r5|] x5 anon7
+                  anon8 anon9)
+                 ->
+                 ((λ(anon10:map{r5 |}) -> (λ(anon11:nat) -> True)) anon8
+                  anon9)))
+/\
+(let
+ f2 [|r5|]=
+           (λ(x5:ref(r5,nat)) -> (λ(anon12:map{r5 |}) -> True)) ,
+           (λ(x5:ref(r5,nat)) ->
+           (λ(anon13:map{r5 |}) ->
+           (λ(anon14:map{r5 |}) -> (λ(anon15:nat) -> True))))
+ in (λ(anon16:map{|}) -> (λ(anon17:unit) -> True)) anon ())

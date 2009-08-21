@@ -97,7 +97,7 @@ rule token = parse
   | ':' { COLON }
   | ',' { COMMA (create_info lexbuf) }
   | '.' { DOT }
-  | '~' { DOT }
+  | '~' { TILDE (create_info lexbuf) }
   | "<=" { LE (create_info lexbuf)  }
   | "/\\" { AND (create_info lexbuf) }
   | '<' { LT (create_info lexbuf)  }

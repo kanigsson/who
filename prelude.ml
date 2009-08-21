@@ -37,6 +37,9 @@ logic min : int -> int -> int
 let pre ['a 'b||]  (x : 'a * 'b) = fst x
 let post ['a 'b||] (x : 'a * 'b) = snd x
 
+logic combine [||e1 e2] : <|e1> -> <|e2> -> <|e1 e2>
+logic restrict [||e1 e2] : <|e1> -> <|e2>
+
 parameter forto [||e] (inv : int -> <|e> -> prop) (start end_ : int) 
   (f : int ->{|e} unit) : unit, {|e} =
     { inv start cur /\\

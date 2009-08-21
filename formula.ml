@@ -305,7 +305,10 @@ let combine t1 t2 =
 
 let true_ = lmk Fty.prop (Const Const.Ptrue)
 let app ?(kind=`Prefix) t1 t2 loc = 
-  let t = Fty.result (get_type t1) in
+  let t' = get_type t1 in
+  let _ = Format.printf "appf: %a (%a,%a)@." Fty.print t' Print.form t1
+  Print.form t2 in
+  let t = Fty.result t' in
   lmk t (App (t1,t2,kind)) loc
 
 let app2 ?k1 ?k2 t1 t2 t3 loc = app ?kind:k2 (app ?kind:k1 t1 t2 loc) t3 loc

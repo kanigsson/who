@@ -26,7 +26,7 @@ let print' pt pr pe is_c fmt = function
   | PureArr (t1,t2) -> 
       let p1 = if is_c t1 then paren pt else pt in
       fprintf fmt "%a ->@ %a" p1 t1 pt t2
-  | Tuple (t1,t2) -> fprintf fmt "(%a *@ %a)" pt t1 pt t2
+  | Tuple (t1,t2) -> fprintf fmt "%a *@ %a" pt t1 pt t2
   | Const c -> Const.print_ty fmt c
   | Ref (r,t) -> fprintf fmt "ref(%a,%a)" pr r pt t
   | Map e -> fprintf fmt "map%a" pe e
@@ -74,12 +74,14 @@ let to_logic_type t =
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)
     | Arrow (t1,t2,e) -> 
-        tuple (parr t1 (parr (map e) (prop))) 
-          (parr t1 (parr (map e) (parr (map e) (parr t2 (prop)))))
-    | Ref (x,t) -> ref_ x t
+        let t = aux t1 in
+        let e = NEffect.clean e in
+        tuple (parr t (parr (map e) (prop))) 
+          (parr t (parr (map e) (parr (map e) (parr (aux t2) (prop)))))
+    | Ref (x,t) -> ref_ x (aux t)
     | App (v,i) -> app v i 
   and aux (C x) = aux' x in
-  aux t
+  aux t 
 
 let build_tvar_map el effl =
   List.fold_left2 (fun acc k v -> Name.M.add k v acc) Name.M.empty el effl
