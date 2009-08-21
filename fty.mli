@@ -102,24 +102,22 @@ val map :
  * *)
 
 module Generalize : sig
-  type 'a t =  TyVar.t list * (RVar.t * 'a) list * EffVar.t list
-  type ('a,'b) bind = 
-    ('a RVar.listbind * 'b list) TyVar.listbind EffVar.listbind 
+  type t =  TyVar.t list * RVar.t list * EffVar.t list
+  type 'a bind = 
+    'a RVar.listbind TyVar.listbind EffVar.listbind 
 
-  val is_empty : 'a t -> bool
-  val empty : 'a t
+  val is_empty : t -> bool
+  val empty : t
 
   val open_bind :
-    (Vars.RVar.subst -> 'a -> 'a) -> (Vars.RVar.subst -> 'b -> 'b) ->
-      ('a,'b) bind -> 'b t * 'a
+    (Vars.RVar.subst -> 'a -> 'a) -> 'a bind -> t * 'a
 
   val open_bind_with :
-    (Vars.RVar.subst -> 'a -> 'a) -> (Vars.RVar.subst -> 'b -> 'b) ->
-      'b t -> ('a,'b) bind -> 'a
+    (Vars.RVar.subst -> 'a -> 'a) -> t -> 'a bind -> 'a
 
-  val close_bind : 'b t -> 'a -> ('a,'b) bind
+  val close_bind : t -> 'a -> 'a bind
 
-  val print : 'a Myformat.fmt -> 'a t Myformat.fmt
+  val print : t Myformat.fmt
 end
 
 module Scheme : sig
@@ -131,8 +129,8 @@ module Scheme : sig
   (** get the instance of a type scheme wrt. lists of effects and types *)
   val print : t Myformat.fmt
 
-  val open_ : t -> fty Generalize.t * fty
-  val close : fty Generalize.t -> fty -> t
+  val open_ : t -> Generalize.t * fty
+  val close : Generalize.t -> fty -> t
   (** open and close logic type schemes *)
 end
 

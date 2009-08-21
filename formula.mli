@@ -15,8 +15,8 @@ type t' =
   | Set of RVar.t * t * t
   | Empty
 and varbind = t Var.bind
-and letbind = (t,Fty.t) Fty.Generalize.bind
-and generalize = Fty.t Fty.Generalize.t
+and letbind = t Fty.Generalize.bind
+and generalize = Fty.Generalize.t
 and t = { v : t'; t : Fty.t ; hint : string option ; loc : Loc.loc }
 
 val lmk : Fty.t -> t' -> Loc.loc -> t
@@ -94,8 +94,7 @@ val combine : t -> t -> loc -> t
 val restrict : Effect.t -> t -> loc ->  t
 val forall : Var.t -> Fty.t -> t -> loc -> t
 val forallho : ?name:string -> Fty.t -> (t -> t) -> loc -> t
-val rgen : (RVar.t * Fty.t) list -> t -> loc ->  t
-val rgen' : RVar.t list -> Fty.t list -> t -> loc ->  t
+val rgen : RVar.t list -> t -> loc ->  t
 val lam : Var.t -> Fty.t -> t -> loc -> t
 val lamho : ?name:string -> Fty.t -> (t -> t) -> loc -> t
 val true_ : loc -> t
@@ -120,7 +119,7 @@ val subst : Var.t -> (( Fty.t, RVar.t, Effect.t) Inst.t -> t')
 (** replace a variable (with instantiations) 
  *  by an expression that knows how to deal with these instantiations *)
 
-val polsubst : Fty.t Fty.Generalize.t -> Var.t -> t -> t -> t
+val polsubst : Fty.Generalize.t -> Var.t -> t -> t -> t
 (** the polymorphic substitution *)
 
 module LocImplicit : sig
@@ -160,7 +159,7 @@ module LocImplicit : sig
   val set : RVar.t -> t' -> t' -> t'
   val combine : t' -> t' -> t'
   val restrict : Effect.t -> t' -> t'
-  val rgen : (RVar.t * Fty.t) list -> t' -> t'
+  val rgen : RVar.t list -> t' -> t'
   val tygen : TyVar.t list -> t' -> t'
   val var : Var.t -> ( Fty.t,  RVar.t, Effect.t) Inst.t -> Fty.t -> t'
   val svar : Var.t -> Fty.t ->  t'

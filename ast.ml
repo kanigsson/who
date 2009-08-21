@@ -4,7 +4,7 @@ module C = Const
 type ('a,'b,'c) t'' =
   | Const of Const.t
   | Var of Name.t * ('a,'b,'c) Inst.t
-  | App of ('a,'b,'c) t' * ('a,'b,'c) t' * Const.fix * Name.t list
+  | App of ('a,'b,'c) t' * ('a,'b,'c) t' * [`Infix | `Prefix ] * Name.t list
   | Lam of 
       Name.t * Ty.t * ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post 
   | Let of Ty.Generalize.t * ('a,'b,'c) t' * Name.t * ('a,'b,'c) t' * isrec
@@ -42,7 +42,7 @@ let print pra prb prc fmt t =
     | Var (v,i) -> 
         if Inst.is_empty i then Name.print fmt v
         else fprintf fmt "%a %a" Name.print v (Inst.print pra prb prc) i
-    | App ({v = App ({ v = Var(v,_)},t1,_,_)},t2,C.Infix,_) -> 
+    | App ({v = App ({ v = Var(v,_)},t1,_,_)},t2,`Infix,_) -> 
         fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 Name.print v with_paren t2
     | App (t1,t2,_,cap) ->
           fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
@@ -114,13 +114,13 @@ module Recon = struct
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
   let mk_val v t loc = { v = v; t = t; e = NEffect.empty; loc = loc }
 
-  let app ?(kind=C.Prefix) ?(cap=[]) t1 t2 loc = 
+  let app ?(kind=`Prefix) ?(cap=[]) t1 t2 loc = 
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
     mk (App (t1,t2,kind,cap)) t (NEffect.union t1.e (NEffect.union t2.e e)) loc
 
 
   let app2 t t1 t2 loc = app (app t t1 loc) t2 loc
-  let appi t t1 t2 loc = app ~kind:C.Infix (app t t1 loc) t2 loc
+  let appi t t1 t2 loc = app ~kind:`Infix (app t t1 loc) t2 loc
   let allapp t1 t2 kind cap loc = app ~kind ~cap t1 t2 loc
   let var s inst (g,t) = mk_val (Var (s,inst)) (Ty.allsubst g inst t) 
 

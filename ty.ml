@@ -41,7 +41,6 @@ let print_list sep fmt t = print_list sep print fmt t
 
 let var v = C (Var v)
 let arrow t1 t2 eff = C (Arrow (t1,t2,eff))
-let caparrow t1 t2 eff c = C (Arrow (t1,t2,eff))
 let parr t1 t2 = C (PureArr (t1,t2))
 let tuple t1 t2 = C (Tuple (t1,t2))
 let const c = C (Const c)

@@ -18,7 +18,7 @@ val is_compound : ('a,'b,'c) t' -> bool
 val var : Name.t -> t
 val const : Const.ty -> t
 val arrow : t -> t -> NEffect.t -> t
-val caparrow : t -> t -> NEffect.t -> Name.t list -> t
+(* val caparrow : t -> t -> NEffect.t -> Name.t list -> t *)
 val parr : t -> t -> t
 val tuple : t -> t -> t
 val ref_ : Name.t -> t -> t

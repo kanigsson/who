@@ -20,7 +20,7 @@ and inst = (ty, rvar, effect) Inst.t
 type t' =
   | Const of Const.t
   | Var of var
-  | App of t * t * Const.fix * rvar list
+  | App of t * t * [`Infix | `Prefix ] * rvar list
   | Seq of t * t
   | Lam of 
       var * ty * t option * t * post
@@ -44,12 +44,12 @@ and isrec = Rec of ty | NoRec
 and generalize = tvar list * rvar list * effvar list
 
 let mk v loc = { v = v; loc = loc }
-let app ?(kind=C.Prefix) t1 t2 = mk (App (t1,t2, kind,[]))
-let cap_app t1 t2 cap = mk (App(t1,t2,C.Prefix,cap))
+let app ?(kind=`Prefix) t1 t2 = mk (App (t1,t2, kind,[]))
+let cap_app t1 t2 cap = mk (App(t1,t2,`Prefix,cap))
 let var s = mk (Var s)
 let const c = mk (Const c)
 let app2 s t1 t2 loc = app (app (var s loc) t1 loc) t2 loc
-let appi s t1 t2 loc = app ~kind:C.Infix (app (var s loc) t1 loc) t2 loc
+let appi s t1 t2 loc = app ~kind:`Infix (app (var s loc) t1 loc) t2 loc
 let let_ l e1 x e2 r = mk (Let (l,e1,x,e2,r)) 
 let lam x t p e q = mk (Lam (x,t,p,e,q))
 let pure_lam x t e = mk (PureFun (x,t,e))

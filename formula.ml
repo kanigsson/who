@@ -15,8 +15,8 @@ type t' =
   | Set of RVar.t * t * t
   | Empty
 and varbind = t Var.bind
-and letbind = (t,Fty.t) Fty.Generalize.bind
-and generalize = Fty.t Fty.Generalize.t
+and letbind = t Fty.Generalize.bind
+and generalize = Fty.Generalize.t
 and t = { v : t'; t : Fty.t ; hint : string option ; loc : Loc.loc }
 
 let get_sub f = f.v
@@ -112,9 +112,8 @@ let open_tygen = TyVar.open_listbind refresh
 let open_tygen_with = TyVar.list_open_with refresh
 let open_evgen = EffVar.open_listbind refresh
 let open_evgen_with = EffVar.list_open_with refresh
-let open_letgen c = Fty.Generalize.open_bind refresh Fty.refresh c
-let open_letgen_with g c = 
-  Fty.Generalize.open_bind_with refresh Fty.refresh g c
+let open_letgen c = Fty.Generalize.open_bind refresh c
+let open_letgen_with g c = Fty.Generalize.open_bind_with refresh g c
 
 let close_evgen = EffVar.close_listbind
 let close_tygen = TyVar.close_listbind
@@ -177,12 +176,12 @@ struct
           (print_list space fbind_paren) bl Const.quantsep k formula f
     | Gen l ->
         let g,f = open_letgen l in
-        fprintf fmt "forall %a.@ %a" (Fty.Generalize.print Fty.print) g form f
+        fprintf fmt "forall %a.@ %a" Fty.Generalize.print g form f
     | PolyLet (lg,vb) -> 
         let g,v = open_letgen lg in
         let x,f = open_bind vb in
         fprintf fmt "%a[%a.%a|->%a]" 
-          form f (Fty.Generalize.print Fty.print) g Var.print x form v
+          form f Fty.Generalize.print g Var.print x form v
     | Let (f,vb) -> 
         let x,body = open_bind vb in
         fprintf fmt "let %a = %a in %a" Var.print x form f form body
@@ -246,11 +245,7 @@ let subst x v e =
 
 let polsubst (tl,rl,el) x v f = 
   let builder (tyl, nrl, effl) = 
-    get_sub 
-      (lrsubst (List.map fst rl) nrl 
-        (leffsubst el effl 
-          (ltysubst tl tyl v))) 
-  in
+    get_sub (lrsubst rl nrl (leffsubst el effl (ltysubst tl tyl v))) in
   subst x builder f
 
 let varbind kind x t f = 
@@ -384,7 +379,6 @@ let gen g f loc =
   | _ -> lmk (get_type f) (Gen (close_letgen g f)) loc
 let evgen gl = gen ([],[],gl)
 let rgen gl = gen ([],gl,[])
-let rgen' rl tl = rgen (List.combine rl tl)
 let tygen gl = gen (gl,[],[])
 
 let polylet_ g x v f loc = 

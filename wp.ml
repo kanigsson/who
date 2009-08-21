@@ -57,12 +57,12 @@ let rec correct v =
           (F.impl 
             (match p with 
               | _,None -> F.true_ l
-              | _,Some f -> F.app (to_formula f) r l)
+              | _,Some f -> F.app (formula f) r l)
             (wp_node r 
               (match q with 
                 | _,_,PNone -> F.lamho (ty e.t) (fun _ -> F.true_ l) l
                 | _,_,PResult _ -> assert false
-                | _,_,PPlain f -> F.app (to_formula f) r l) 
+                | _,_,PPlain f -> F.app (formula f) r l) 
               e) l) l) l
   | PureFun (x,t,e) -> F.forall (Var.from_name x) (ty t) (correct e) l
   | _ -> assert false
@@ -74,15 +74,16 @@ and formula e =
         (Inst.map Fty.from_ty RVar.from_name Fty.from_eff i) 
         (Fty.from_ty e.t) l
   | Const c -> F.const c l
-  | App (e1,e2,kind,_) -> F.app ~kind (formula e1) (formula e2)
-  | Quant (k,x,t,e) -> F.varbind k (var x) (ty t) (formula e)
-  | PureFun (x,t,e) -> F.varbind `LAM (var x) (ty t) (formula e)
-  | Let (g,e1,x,e2,NoRec) -> 
-      F.polylet_
+  | App (e1,e2,kind,_) -> F.app ~kind (formula e1) (formula e2) l
+  | Quant (k,x,t,e) -> 
+      F.varbind (k :> [`EX | `FA | `LAM ]) (var x) (ty t) (formula e) l
+  | PureFun (x,t,e) -> F.varbind `LAM (var x) (ty t) (formula e) l
+  | Let (_,_,_,_,NoRec) -> assert false
+(*       F.polylet_ *)
 
-      of Ty.Generalize.t * ('a,'b,'c) t' * Name.t * ('a,'b,'c) t' * isrec
+(*       of Ty.Generalize.t * ('a,'b,'c) t' * Name.t * ('a,'b,'c) t' * isrec *)
   | Axiom _ | Logic _ | Annot _ | TypeDef _ -> assert false
-  | Param _ | For _ | LetReg _ -> 
+  | Param _ | For _ | LetReg _ -> assert false
 (*   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t' *)
   | _ -> assert false
 and wp_node _ _ _ = assert false

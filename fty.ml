@@ -88,67 +88,60 @@ let print_list = print_list comma print
 module Generalize = 
 struct
 
-  type 'a t =  TyVar.t list * (RVar.t * 'a) list * EffVar.t list
+  type t =  TyVar.t list * RVar.t list * EffVar.t list
 
-  type ('a,'b) bind = ('a RVar.listbind * 'b list) TyVar.listbind EffVar.listbind 
+  type 'a bind = 'a RVar.listbind TyVar.listbind EffVar.listbind 
 
   let refresh_r brefresh s (rl, bl) = 
     (RVar.refresh_listbind s rl, List.map (brefresh s) bl)
 
-  let open_bind arefresh brefresh b = 
+  let open_bind r b = 
     let el, b = EffVar.open_listbind TyVar.refresh_listbind b in
-    let tl, (b,rtl) = TyVar.open_listbind (refresh_r brefresh) b in
-    let rl, c = RVar.open_listbind arefresh b in
-    (tl,List.combine rl rtl,el), c
+    let tl, b = TyVar.open_listbind RVar.refresh_listbind b in
+    let rl, c = RVar.open_listbind r b in
+    (tl,rl,el), c
 
-  let open_bind_with arefresh brefresh (tl,rl,el) c =
+  let open_bind_with arefresh (tl,rl,el) c =
     let b = EffVar.list_open_with TyVar.refresh_listbind el c in
-    let b,_ = TyVar.list_open_with (refresh_r brefresh) tl b in
-    RVar.list_open_with arefresh (List.map fst rl) b
+    let b = TyVar.list_open_with (RVar.refresh_listbind) tl b in
+    RVar.list_open_with arefresh rl b
 
   let close_bind (tl, rl, el) c = 
-    let rl, rtl = List.split rl in
     EffVar.close_listbind el 
-      (TyVar.close_listbind tl 
-        (RVar.close_listbind rl c, rtl))
+      (TyVar.close_listbind tl (RVar.close_listbind rl c))
 
 
   let is_empty (tl,rl,el) = el = [] && tl = [] && rl = []
   let empty = [],[],[]
 
   open Myformat
-  let region ty fmt (r,a) = 
-    fprintf fmt "%a : %a" RVar.print r ty a
-
-  let region_list ty fmt l = print_list space (region ty) fmt l
-
-  let print ty fmt (t,r,e) = 
-    fprintf fmt "[%a|%a|%a]" TyVar.print_list t (region_list ty) r 
+  let print fmt (t,r,e) = 
+    fprintf fmt "[%a|%a|%a]" TyVar.print_list t RVar.print_list r 
       EffVar.print_list e 
       
   let from_g (tl,rl,el) =
     List.map EffVar.from_name el,
     List.map TyVar.from_name tl, 
-    List.map (fun r -> RVar.from_name r, unit) rl
+    List.map RVar.from_name rl
 
 end
 module Scheme = 
 struct
   type fty = t
-  type t = (fty, fty) Generalize.bind
+  type t = fty Generalize.bind
 
-  let open_ x = Generalize.open_bind refresh refresh x
+  let open_ x = Generalize.open_bind refresh x
   let close = Generalize.close_bind
 
   let fty ft = close ([], [], []) ft
 
   let instance ts effl tyl nrl = 
     let (tl,rl,el),t = open_ ts in
-    lrsubst (List.map fst rl) nrl (ltysubst tl tyl (leffsubst el effl t))
+    lrsubst rl nrl (ltysubst tl tyl (leffsubst el effl t))
 
   let print fmt s = 
     let g, t = open_ s in
-    Format.fprintf fmt "%a.%a" (Generalize.print print) g print t 
+    Format.fprintf fmt "%a.%a" Generalize.print g print t 
 
 end
 
