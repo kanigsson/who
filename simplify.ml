@@ -21,6 +21,7 @@ let logic_simpl l t x =
         end
     | Ite ({v = Const Ptrue}, th, _) -> Simple_change th
     | Ite ({v = Const Pfalse}, _, el) -> Simple_change el
+    | Ite (_, a, b) when equal a b -> Simple_change a
     | x ->
         match destruct_infix' x with
         | Some ({name = Some "/\\" }, t1, t2) ->
@@ -121,7 +122,7 @@ let quant_over_true l _ x =
    * substitutions *)
   | Quant (_,_,(_,_,{v = Const Ptrue})) -> s
   | Gen (_,{v = Const Ptrue}) -> s
-  | Let (_,{v = (Logic _ | Axiom _)},(_,_,{v = Const Ptrue}), _) -> s
+  | Let (_,_,(_,_,{v = Const Ptrue}), _) -> s
   | TypeDef (_,_,_,{v = Const Ptrue}) -> s
   | _ -> Nochange
 
@@ -129,12 +130,11 @@ let beta_reduce _ _ = function
   | App ({v = PureFun (_, l)} ,f2,_,_) ->
       let x,body = vopen l in
       Change_rerun (subst x (fun _ -> f2.v) body)
-(*
-  | Let (p,l) -> 
-      let g,v = open_letgen p in
-      let x,e = open_bind l in
+  | Let (_,{v = Axiom _ | Logic _ },_,_) ->
+      Nochange
+  | Let (g,v,l,_) -> 
+      let x,e = vopen l in
       Change_rerun (polsubst g x v e)
-*)
   | _ -> Nochange
 
 let simplifiers =
@@ -160,7 +160,7 @@ let exhaust f =
   aux false f simplifiers
 
 let rec simplify f = 
-  Format.printf "simplify: %a@." print f;
+(*   Format.printf "simplify: %a@." print f; *)
   let f = 
     { f with v = 
     match f.v with

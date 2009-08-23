@@ -301,25 +301,30 @@ let concat t1 t2 =
   and aux t = { t with v = aux' t.v } in
   aux t1
 
-let map ~varfun ~varbindfun f = 
+let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f = 
   let rec aux' = function
-    | (Const _ | Logic _ | Param _ ) as t -> t
-    | Var (v,i) -> varfun v i
+    | (Const _ | Param _ ) as t -> t
+    | Logic t -> Logic (tyfun t)
+    | Var (v,i) -> varfun v (Inst.map tyfun rvarfun effectfun i)
     | App (t1,t2,p,_) -> App (aux t1, aux t2, p, [])
-    | Lam _ | Annot _ | For _ | LetReg _ -> assert false
+    | Annot (e,t) -> Annot (aux e, tyfun t)
+    | Lam _ | For _ | LetReg _ -> assert false
     | Let (g,e1,b,r) -> Let (g,aux e1,varbindfun b, r)
-    | PureFun (t,b) -> PureFun (t, varbindfun b)
+    | PureFun (t,b) -> PureFun (tyfun t, varbindfun b)
     | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
     | Axiom e -> Axiom (aux e)
     | TypeDef (g,t,x,e) -> TypeDef (g,t,x,aux e)
-    | Quant (k,t,b) -> Quant (k,t,varbindfun b)
+    | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
     | Gen (g,e) -> Gen (g,aux e)
-  and aux t = {t with v = aux' t.v} in
+  and aux t = {t with v = aux' t.v; t = tyfun t.t} in
   aux f
 
 let refresh s t =
   map ~varfun:(fun x i -> Var (Name.refresh s x, i))
-    ~varbindfun:(Name.refresh_bind s) t
+    ~varbindfun:(Name.refresh_bind s) 
+    ~tyfun:Misc.id 
+    ~rvarfun:Misc.id
+    ~effectfun:Misc.id t
 
 let vopen = Name.open_bind refresh
 let close = Name.close_bind
@@ -362,15 +367,41 @@ let destruct_infix' = function
 
 let destruct_infix x = destruct_infix' (x.v)
 
-let open_close_map ~varfun t =
+let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
   let rec aux t = 
     map ~varfun 
-      ~varbindfun:(fun b -> let x,f = vopen b in close x (aux f)) t
+      ~varbindfun:(fun b -> let x,f = vopen b in close x (aux f))
+      ~tyfun ~rvarfun ~effectfun t
   in
   aux t
+
+let tsubst tvl tl e =
+  open_close_map ~varfun:(fun v i -> Var (v,i)) 
+                 ~tyfun:(Ty.tlsubst tvl tl) 
+                 ~rvarfun:Misc.id
+                 ~effectfun:Misc.id
+                 e
+
+let rsubst rvl rl e = 
+  open_close_map ~varfun:(fun v i -> Var (v,i)) 
+                 ~tyfun:(Ty.rlsubst rvl rl) 
+                 ~rvarfun:(Ty.rsubst rvl rl)
+                 ~effectfun:(NEffect.rmap (Ty.rsubst rvl rl))
+                 e
+
+let esubst evl el e =
+  open_close_map ~varfun:(fun v i -> Var (v,i))
+    ~tyfun:(Ty.elsubst evl el)
+    ~rvarfun:Misc.id
+    ~effectfun:(NEffect.lsubst evl el) e
 
 let subst x v e =
   open_close_map
     ~varfun:(fun z i -> 
         if Name.equal z x then v i else Var (z,i))
+    ~tyfun:Misc.id ~rvarfun:Misc.id ~effectfun:Misc.id
     e
+
+let polsubst (tvl,rvl,evl) x v e =
+  let builder (tl,rl,el)= (esubst evl el (rsubst rvl rl (tsubst tvl tl v))).v in
+  subst x builder e

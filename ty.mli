@@ -36,6 +36,8 @@ val to_logic_type : t -> t
 
 val tlsubst : Name.t list -> t list -> t -> t
 val rlsubst : Name.t list -> Name.t list -> t -> t
+val elsubst : Name.t list -> NEffect.t list -> t -> t
+val rsubst : Name.t list -> Name.t list -> Name.t -> Name.t
 val app : Name.t -> (t,Name.t,NEffect.t) Inst.t -> t
 
 val equal : t -> t -> bool

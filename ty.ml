@@ -120,6 +120,13 @@ let rlsubst rvl rl target =
   and aux (C x) = C (aux' x) in
   aux target
 
+exception Found of Name.t
+let rsubst rvl rl r = 
+  try List.iter2 (fun k v -> 
+    if Name.equal k r then raise (Found v) else ()) rvl rl;
+    r
+  with Found v -> v
+
 let elsubst evl effl target = 
   let rec aux' = function
     | (Var _ | Const _ ) as x -> x

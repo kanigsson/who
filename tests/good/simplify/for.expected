@@ -1,0 +1,93 @@
+forall (anon:map{|}).
+let /\ = logic prop -> prop -> prop in
+let -> = logic prop -> prop -> prop in
+let ~ = logic prop -> prop in
+let = ['a||]= logic 'a -> 'a -> prop in
+let <> ['a1||]= logic 'a1 -> 'a1 -> prop in
+let fst ['a2 'b||]= logic ('a2 * 'b) -> 'a2 in
+let snd ['a3 'b1||]= logic ('a3 * 'b1) -> 'b1 in
+let , ['a4 'b2||]= logic 'a4 -> 'b2 -> 'a4 * 'b2 in
+let == ['a5||]= logic 'a5 -> 'a5 -> bool in
+let != ['a6||]= logic 'a6 -> 'a6 -> bool in
+let !! ['a7|r|e]= logic ref(r,'a7) -> map{|e } -> 'a7 in
+let + = logic nat -> nat -> nat in
+let - = logic nat -> nat -> nat in
+let * = logic nat -> nat -> nat in
+let < = logic nat -> nat -> prop in
+let <= = logic nat -> nat -> prop in
+let > = logic nat -> nat -> prop in
+let >= = logic nat -> nat -> prop in
+let max = logic nat -> nat -> nat in
+let min = logic nat -> nat -> nat in
+let combine [||e1 e2]= logic map{|e1 } -> map{|e2 } -> map{|e1 e2 } in
+let restrict [||e11 e21]= logic map{|e11 } -> map{|e21 } in
+type array['a8||] =  in
+let get ['a9||]= logic nat -> (array['a9||]) -> 'a9 in
+let set ['a10||]= logic nat -> 'a10 -> (array['a10||]) -> array['a10||] in
+let length ['a11||]= logic (array['a11||]) -> nat in
+let create ['a12||]= logic nat -> array['a12||] in
+let
+update_length ['a13||]=
+                       axiom forall (t:array['a13||]).
+                             forall (i:nat).
+                             forall (z:'a13).
+                             (length1 ['a13||] t) =
+                             (length1 ['a13||] (set1 ['a13||] i z t))
+in
+let
+get_set_eq ['a14||]=
+                    axiom forall (t1:array['a14||]).
+                          forall (i1:nat).
+                          forall (z1:'a14).
+                          (i1 <1 (length1 ['a14||] t1)) ->
+                          ((get1 ['a14||] i1 (set1 ['a14||] i1 z1 t1)) = z1)
+in
+let
+get_set_neq ['a15||]=
+                     axiom forall (t2:array['a15||]).
+                           forall (i2:nat).
+                           forall (j:nat).
+                           forall (z2:'a15).
+                           (i2 <1 (length1 ['a15||] t2)) ->
+                           ((j <1 (length1 ['a15||] t2)) ->
+                            ((i2 <> j) ->
+                             ((get1 ['a15||] i2 (set1 ['a15||] j z2 t2)) =
+                              (get1 ['a15||] i2 t2))))
+in
+let
+length_nonnegative ['a16||]=
+                            axiom forall (t3:array['a16||]).
+                                  0 <=1 (length1 ['a16||] t3)
+in
+let
+length_create ['a17||]=
+                       axiom forall (l:nat).
+                             (0 <=1 l) ->
+                             ((length1 ['a17||]
+                               (create1 ['a17||] l : array['a17||]))
+                              = l)
+in
+forall [|r1|]. forall (anon1:map{r1 |}).
+               forall (x:ref(r1,nat)).
+               (forall (anon2:map{r1 |}).
+                forall (i3:nat).
+                (1 <= i3) ->1
+                ((i3 <= 5) ->1
+                 (((!! [nat|r1|{r1 |}] x anon2) < (i3 * 10)) ->1
+                  (forall (anon3:map{r1 |}).
+                   ((!! [nat|r1|{r1 |}] x anon2) =
+                    (!! [nat|r1|{r1 |}] x anon3))
+                   ->1
+                   (forall (anon4:map{r1 |}).
+                    ((!! [nat|r1|{r1 |}] x anon4) =
+                     ((!! [nat|r1|{r1 |}] x anon3) + i3))
+                    -> ((!! [nat|r1|{r1 |}] x anon4) < ((i3 + 1) * 10)))))))
+               /\
+               (((!! [nat|r1|{r1 |}] x anon1) < (1 * 10)) /\
+                (forall (i4:nat).
+                 (1 <= i4) ->1
+                 ((i4 <= 5) ->1
+                  (forall (m:map{r1 |}).
+                   ((!! [nat|r1|{r1 |}] x m) < (i4 * 10)) ->
+                   (((1 <= i4) /\ (i4 <= 5)) /\
+                    ((!! [nat|r1|{r1 |}] x m) < (i4 * 10)))))))

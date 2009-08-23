@@ -162,6 +162,10 @@ prefix:
   | p = TILDE { p, "~" }
 
 aterm:
+  | p = DEXCLAM x = IDENT 
+    { app2 "!!" (var x.c x.info) (var "cur" p) (embrace p x.info) }
+  | p = DEXCLAM x = IDENT MID t = aterm 
+    { app2 "!!" (var x.c x.info) t (embrace p t.loc)  }
   | x = IDENT { var x.c x.info }
   | x = prefix { var (snd x) (fst x) }
   | c = constant { let p,c = c in const c p }
@@ -176,10 +180,6 @@ appterm:
   | t1 = appterm t2 = aterm { app t1 t2 (embrace t1.loc t2.loc) }
 
 nterm:
-  | p = DEXCLAM x = IDENT 
-    { app2 "!!" (var x.c x.info) (var "cur" p) (embrace p x.info) }
-  | p = DEXCLAM x = IDENT MID t = aterm 
-    { app2 "!!" (var x.c x.info) t (embrace p t.loc)  }
   | t1 = appterm { t1 }
   | t1 = appterm SEMICOLON t2 = appterm { mk (Seq (t1,t2)) (embrace t1.loc t2.loc) }
   | t1 = nterm i = infix t2 = nterm  
