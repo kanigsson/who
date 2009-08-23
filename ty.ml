@@ -178,21 +178,24 @@ end
 let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target = 
   elsubst evl el (rlsubst rvl rl (tlsubst tvl tl target))
 
-let rec equal' t1 t2 = 
+let rec equal' eff t1 t2 = 
   match t1, t2 with
   | Var x1, Var x2 -> Name.equal x1 x2
   | Const x1, Const x2 -> x1 = x2
   | Tuple (ta1,ta2), Tuple (tb1,tb2)
   | PureArr (ta1,ta2), PureArr (tb1,tb2) -> 
-      equal ta1 tb1 && equal ta2 tb2
+      equal eff ta1 tb1 && equal eff ta2 tb2
   | Arrow (ta1,ta2,e1), Arrow (tb1,tb2,e2) -> 
-      equal ta1 tb1 && equal ta2 tb2 && NEffect.equal e1 e2 
-  | Ref (r1,t1), Ref (r2,t2) -> Name.equal r1 r2 && equal t1 t2
-  | Map e1, Map e2 -> NEffect.equal e1 e2
+      equal eff ta1 tb1 && equal eff ta2 tb2 && eff e1 e2 
+  | Ref (r1,t1), Ref (r2,t2) -> Name.equal r1 r2 && equal eff t1 t2
+  | Map e1, Map e2 -> eff e1 e2
   | App (v1,i1), App (v2,i2) -> 
-      v1 = v2 && Inst.equal equal Name.equal (NEffect.equal) i1 i2
+      v1 = v2 && Inst.equal (equal eff) Name.equal (NEffect.equal) i1 i2
   | _ -> false
-and equal (C a) (C b) = equal' a b
+and equal eff (C a) (C b) = equal' eff a b
+
+let sequal = equal NEffect.sequal
+let equal = equal NEffect.equal
 (*
   Format.printf "equal: %a and %a: %b@." print t1 print t2 r;
   r

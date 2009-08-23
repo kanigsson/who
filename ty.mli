@@ -41,6 +41,7 @@ val rsubst : Name.t list -> Name.t list -> Name.t -> Name.t
 val app : Name.t -> (t,Name.t,NEffect.t) Inst.t -> t
 
 val equal : t -> t -> bool
+val sequal : t -> t -> bool
 
 module Generalize : sig
   type t = Name.t list * Name.t list * Name.t list

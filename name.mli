@@ -31,6 +31,7 @@ val refresh_listbind : subst -> 'a listbind -> 'a listbind
 (** apply a variable substitution to an object under a list binder *)
 
 val open_bind : (subst -> 'a -> 'a) -> 'a bind -> t * 'a
+val sopen : (subst -> 'a -> 'a) -> 'a bind -> t * 'a
 val close_bind : t -> 'a -> 'a bind
 (** open / close a binder *)
 

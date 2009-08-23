@@ -44,7 +44,7 @@ expected: clean-expected $(GOOD_EXPECTED)
 
 %.good-output:%.$(EXT)
 	@ (echo TEST >> good-counter);					 \
-          ($(TIME) -o $(TIMETMP) -f "[ OK %U ] $<" $(PROGRAM) $< 1> $@ 2> $@  	 \
+          ($(TIME) -o $(TIMETMP) -f "[ OK %S ] $<" $(PROGRAM) $< 1> $@ 2> $@  	 \
 	   && (diff -u $@ $*.expected 1> /dev/null 2> /dev/null) && 	 \
 	  (cat $(TIMETMP); (echo "OK $@" >> good-ok-counter))) \
 	  || (echo "[ KO ]   --> " $<); if [ x$$VERBOSE = x1 ]; then	 \

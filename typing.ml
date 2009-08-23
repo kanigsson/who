@@ -44,8 +44,10 @@ let rec formtyping' env loc = function
   | Ast.App (e1,e2,_,_) ->
       let t1 = formtyping env e1 in
       let t2 = formtyping env e2 in
+(*
       printf "app of %a and %a of types %a and %a@."
       Recon.print e1 Recon.print e2 Ty.print t1 Ty.print t2;
+*)
       begin match t1 with
       | C (Arrow _) -> error "effectful application not allowed in logic" loc
       | C (PureArr (ta,tb)) ->
@@ -54,10 +56,13 @@ let rec formtyping' env loc = function
       | _ -> error "no function type" loc
       end
   | TypeDef (_,_,_,e) -> formtyping env e
-  | PureFun (t,(_,x,e)) -> parr t (formtyping (add_svar env x t) e)
+  | PureFun (t,b) -> 
+      let x,e = sopen b in
+      parr t (formtyping (add_svar env x t) e)
   | Logic t -> t
   | Axiom f -> fis_oftype env prop f; prop
-  | Quant (_,t,(_,x,e)) -> 
+  | Quant (_,t,b) -> 
+      let x,e = sopen b in
       fis_oftype (add_svar env x t) prop e;
       prop
   | Ite (e1,e2,e3) ->
@@ -72,7 +77,8 @@ let rec formtyping' env loc = function
       post env eff t' q;
       to_logic_type (arrow t t' eff)
   | Gen (_,e)-> formtyping env e
-  | Let (g,e1,(_,x,e2),_) ->
+  | Let (g,e1,b,_) ->
+      let x,e2 = sopen b in
       let t = formtyping env e1 in
       let env = add_var env x g t in
       let t = formtyping env e2 in

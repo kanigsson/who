@@ -29,6 +29,35 @@ and ('a,'b,'c) pre = Name.t * ('a,'b,'c) t' option
 and ('a,'b,'c) post = Name.t * Name.t * ('a,'b,'c) post'
 and isrec = Rec of Ty.t | NoRec
 
+let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f = 
+  let rec aux' = function
+    | (Const _ | Param _ ) as t -> t
+    | Logic t -> Logic (tyfun t)
+    | Var (v,i) -> varfun v (Inst.map tyfun rvarfun effectfun i)
+    | App (t1,t2,p,_) -> App (aux t1, aux t2, p, [])
+    | Annot (e,t) -> Annot (aux e, tyfun t)
+    | Lam _ | For _ | LetReg _ -> assert false
+    | Let (g,e1,b,r) -> Let (g,aux e1,varbindfun b, r)
+    | PureFun (t,b) -> PureFun (tyfun t, varbindfun b)
+    | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
+    | Axiom e -> Axiom (aux e)
+    | TypeDef (g,t,x,e) -> TypeDef (g,t,x,aux e)
+    | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
+    | Gen (g,e) -> Gen (g,aux e)
+  and aux t = {t with v = aux' t.v; t = tyfun t.t} in
+  aux f
+
+let refresh s t =
+  map ~varfun:(fun x i -> Var (Name.refresh s x, i))
+    ~varbindfun:(Name.refresh_bind s) 
+    ~tyfun:Misc.id 
+    ~rvarfun:Misc.id
+    ~effectfun:Misc.id t
+
+let vopen = Name.open_bind refresh
+let close = Name.close_bind
+let sopen = Name.sopen refresh
+let vopen_with x = Name.open_with refresh x
 
 open Myformat
 
@@ -38,7 +67,7 @@ let is_compound = function
   | Quant _ | Param _ | For _ | LetReg _ | Gen _ -> true
 let is_compound_node t = is_compound t.v
 
-let print pra prb prc fmt t = 
+let print pra prb prc open_ fmt t = 
   let rec print' fmt = function
     | Const c -> Const.print fmt c
     | Var (v,i) -> 
@@ -51,9 +80,11 @@ let print pra prb prc fmt t =
     | Lam (x,t,p,e,q) -> 
         fprintf fmt "@[(λ(%a:%a)@ -->@ %a@ %a@ %a)@]" Name.print x 
           Ty.print t pre p print e post q
-    | PureFun (t,(_,x,e)) ->
+    | PureFun (t,b) ->
+        let x,e = open_ b in
         fprintf fmt "@[(λ(%a:%a)@ ->@ %a)@]" Name.print x Ty.print t print e
-    | Let (g,e1,(_,x,e2),r) -> 
+    | Let (g,e1,b,r) -> 
+        let x,e2 = open_ b in
         fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]" 
           prrec r Name.print x G.print g print e1 print e2
     | Ite (e1,e2,e3) ->
@@ -63,7 +94,8 @@ let print pra prb prc fmt t =
     | TypeDef (g,t,x,e) -> 
         fprintf fmt "type %a%a =@ %a in@ %a" 
           Name.print x G.print g (opt_print Ty.print) t print e
-    | Quant (k,t,(_,x,e)) ->
+    | Quant (k,t,b) ->
+        let x,e = open_ b in
         fprintf fmt "@[%a (%a:%a).@ %a@]" C.quant k Name.print x Ty.print t print e
     | Param (t,e) -> fprintf fmt "param(%a,%a)" Ty.print t NEffect.print e
     | For (dir,inv,_,st,en,t) ->
@@ -107,13 +139,13 @@ module Infer = struct
 (*   let plam x t e = mk_val (PureFun (x,t,e)) (U.parr t e.t) *)
   let lam_anon t e p = lam (Name.new_anon ()) t e p
 
-  let print fmt t = print U.print_node U.prvar U.preff fmt t
+  let print fmt t = print U.print_node U.prvar U.preff (fun (_,x,e) -> x,e) fmt t
 
 end
 
 module Recon = struct
   type t = (Ty.t, Name.t, NEffect.t) t'
-  let print fmt t = print Ty.print Name.print NEffect.print fmt t
+  let print fmt t = print Ty.print Name.print NEffect.print sopen fmt t
 
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
   let mk_val v t loc = { v = v; t = t; e = NEffect.empty; loc = loc }
@@ -121,6 +153,7 @@ module Recon = struct
   let app ?(kind=`Prefix) ?(cap=[]) t1 t2 loc = 
 (*     Format.printf "termapp: %a and %a@." print t1 print t2; *)
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
+    assert (Ty.sequal (Ty.arg t1.t) t2.t);
     mk (App (t1,t2,kind,cap)) t (NEffect.union t1.e (NEffect.union t2.e e)) loc
 
 
@@ -288,7 +321,7 @@ end
 module ParseT = struct
   type t = (unit,unit,unit) t'
   let nothing _ () = ()
-  let print fmt t = print nothing nothing nothing fmt t
+  let print fmt t = print nothing nothing nothing (fun (_,x,e) -> x,e) fmt t
   let mk v loc = { v = v; t = (); e = (); loc = loc }
   let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
   let annot e t = mk (Annot (e,t)) 
@@ -302,35 +335,6 @@ let concat t1 t2 =
     | _ -> assert false 
   and aux t = { t with v = aux' t.v } in
   aux t1
-
-let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f = 
-  let rec aux' = function
-    | (Const _ | Param _ ) as t -> t
-    | Logic t -> Logic (tyfun t)
-    | Var (v,i) -> varfun v (Inst.map tyfun rvarfun effectfun i)
-    | App (t1,t2,p,_) -> App (aux t1, aux t2, p, [])
-    | Annot (e,t) -> Annot (aux e, tyfun t)
-    | Lam _ | For _ | LetReg _ -> assert false
-    | Let (g,e1,b,r) -> Let (g,aux e1,varbindfun b, r)
-    | PureFun (t,b) -> PureFun (tyfun t, varbindfun b)
-    | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
-    | Axiom e -> Axiom (aux e)
-    | TypeDef (g,t,x,e) -> TypeDef (g,t,x,aux e)
-    | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
-    | Gen (g,e) -> Gen (g,aux e)
-  and aux t = {t with v = aux' t.v; t = tyfun t.t} in
-  aux f
-
-let refresh s t =
-  map ~varfun:(fun x i -> Var (Name.refresh s x, i))
-    ~varbindfun:(Name.refresh_bind s) 
-    ~tyfun:Misc.id 
-    ~rvarfun:Misc.id
-    ~effectfun:Misc.id t
-
-let vopen = Name.open_bind refresh
-let close = Name.close_bind
-let vopen_with x = Name.open_with refresh x
 
 let rec equal' a b =
   match a, b with

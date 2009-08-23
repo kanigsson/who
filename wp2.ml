@@ -62,7 +62,6 @@ let rec correct v =
       Format.printf "correct: not a value: %a@." print v;
       assert false
 and wp m q e = 
-(*   Format.printf "wp: %a@." print e ; *)
   let ft = ty e.t and l = e.loc in
   if is_value_node e then
     and_ (applist [q;m;lift_value e] l) (correct e) l
@@ -79,6 +78,8 @@ and wp m q e =
     | App (v1,v2,_,_) -> 
         let lv1 = lift_value v1 and lv2 = lift_value v2 
         and eff = NEffect.clean e.e in
+(*         Format.printf "app; v1 of type %a; effect : %a@." *)
+(*         Ty.print v1.t NEffect.print eff; *)
 (*         Format.printf "app: %a; %a : %a@." print e print lv1 Ty.print lv1.t;
  *         *)
         andlist 
@@ -101,7 +102,8 @@ and wp m q e =
 
         else
           let t = ty e1.t in
-          let f = efflamho e1.e (fun m2 ->
+          let eff = e.e in
+          let f = efflamho eff (fun m2 ->
             plam x t (wp_node (combine m m2 l) q e2) l) l in
           wp_node m f e1
     | Ite (c,th,el) ->
@@ -116,13 +118,15 @@ and wp m q e =
     | TypeDef (g,k,x,e) -> typedef g k x (wp_node m q e) l
     | _ -> assert false
 and wp_node m q e = 
-  if NEffect.equal (domain m) e.e then wp m q e
-  else 
+  if NEffect.sequal (domain m) e.e then wp m q e
+  else begin
+(*     Format.printf "q: %a; effects: %a <= %a@."  *)
+(*       print q NEffect.print e.e NEffect.print (domain m); *)
     let l = e.loc in
     wp (restrict e.e m l) 
-      (efflamho e.e (fun m2 ->
-        app q (combine m m2 l) l) l) 
+      (efflamho e.e (fun m2 -> app q (combine m m2 l) l) l) 
       e
+  end
 
 let main e = 
   let l = e.loc in

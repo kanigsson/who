@@ -48,13 +48,13 @@ let lsubst el effl (rt,et,c) =
       et empty in
   S.union rt nrt, ne, S.union c nc
 
-let equal =
-  let relts = S.elements in
-  let eelts = S.elements in
-  fun (r1,e1,c1) (r2,_, c2) ->
-    Misc.list_equal Name.compare (relts r1) (relts r2) &&
-    Misc.list_equal Name.compare (relts c1) (relts c2) &&
-    Misc.list_equal Name.compare (eelts e1) (eelts e1)
+let equal = 
+  let cmp a b = Misc.list_equal Name.compare (S.elements a) (S.elements b) in
+  fun (r1,e1,c1) (r2, e2, c2) -> cmp r1 r2 && cmp e1 e2 && cmp c1 c2
+
+let sequal = 
+  let cmp a b = Misc.list_equal Name.compare (S.elements a) (S.elements b) in
+  fun (r1,e1,_) (r2,e2, _) -> cmp r1 r2 && cmp e1 e2
 
 let rremove l (r,e,c) = 
   let f = S.filter (fun x -> not (List.mem x l)) in

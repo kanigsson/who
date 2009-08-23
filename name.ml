@@ -32,6 +32,10 @@ let open_bind f ((_,v,_) as k) =
 
 let close_bind nv t = ([],nv,t)
 
+let sopen f (s,v,t) =
+  let t = f s t in
+  v, t
+
 let list_open_with f nvl (s,vl,t) =
   let subst = List.combine vl nvl in
   let t = f subst t in

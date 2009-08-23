@@ -178,12 +178,6 @@ let rec simplify f =
         Quant (k,t, close x (simplify e))
     | Ite (e1,e2,e3) -> Ite (simplify e1, simplify e2, simplify e3)
     | TypeDef (g,t,x,e) -> TypeDef (g,t,x,simplify e) 
-(*
-    | PolyLet (p,l) -> 
-        let g,v = open_letgen p in
-        let x,e = open_bind l in
-        get_sub (simplify_node env (polsubst g x v e))
-*)
     | Lam _ | Annot _ | Param _ | For _ | LetReg _ -> assert false } in
   match exhaust f with
   | Nochange -> f
