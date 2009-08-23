@@ -40,6 +40,10 @@ let < = logic nat -> nat -> prop in
 let <= = logic nat -> nat -> prop in
 let > = logic nat -> nat -> prop in
 let >= = logic nat -> nat -> prop in
+let << = logic nat -> nat -> bool in
+let <<= = logic nat -> nat -> bool in
+let >> = logic nat -> nat -> bool in
+let >>= = logic nat -> nat -> bool in
 let max = logic nat -> nat -> nat in
 let min = logic nat -> nat -> nat in
 let pre ['a11 'b3||]= (λ(x3:'a11 * 'b3) -> fst ['a11,'b3||] x3) in
@@ -144,6 +148,6 @@ let apply ['a23
 let
 h [|r5|]=
          (λ(x6:ref(r5,nat)) --> 
-         apply [nat,nat||{|{r5|} 1554 1557}]
+         apply [nat,nat||{|{r5|} 1570 1573}]
          (λ(z3:nat) -->  ! [nat|r5|] x6 ) 5 )
 in ()

@@ -40,6 +40,10 @@ let < = logic nat -> nat -> prop in
 let <= = logic nat -> nat -> prop in
 let > = logic nat -> nat -> prop in
 let >= = logic nat -> nat -> prop in
+let << = logic nat -> nat -> bool in
+let <<= = logic nat -> nat -> bool in
+let >> = logic nat -> nat -> bool in
+let >>= = logic nat -> nat -> bool in
 let max = logic nat -> nat -> nat in
 let min = logic nat -> nat -> nat in
 let pre ['a11 'b3||]= (λ(x3:'a11 * 'b3) -> fst ['a11,'b3||] x3) in
@@ -156,7 +160,7 @@ in
 let
 main [|r5|]=
             (λ(x6:ref(r5,nat)) --> 
-            apply [unit,unit||{r5 r5|{r5|} {|1657 1665 1668} 1670}]
+            apply [unit,unit||{r5 r5|{r5|} {|1673 1681 1684} 1686}]
             (λ(z3:unit) -->  x6 := 0
             {(λ(old6:map{r5 |}) ->
              (λ(cur9:map{r5 |}) ->

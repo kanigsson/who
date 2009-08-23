@@ -42,8 +42,8 @@ let _ =
     maybe_abort Options.anf_only Ast.Recon.print p;
     Typing.typing p;
     let p = Wp2.main p in
-    Typing.formtyping p;
     maybe_abort Options.wp_only Ast.Recon.print p;
+    Typing.formtyping p;
     let p = Simplify.simplify p in
     maybe_abort Options.simplify_only Ast.Recon.print p;
     Typing.formtyping p;

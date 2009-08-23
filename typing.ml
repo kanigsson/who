@@ -44,10 +44,13 @@ let rec formtyping' env loc = function
   | Ast.App (e1,e2,_,_) ->
       let t1 = formtyping env e1 in
       let t2 = formtyping env e2 in
+      printf "app of %a and %a of types %a and %a@."
+      Recon.print e1 Recon.print e2 Ty.print t1 Ty.print t2;
       begin match t1 with
       | C (Arrow _) -> error "effectful application not allowed in logic" loc
       | C (PureArr (ta,tb)) ->
-          if Ty.equal ta t2 then tb else error "type mismatch" loc
+          if Ty.equal ta t2 then tb else 
+            error (Error.ty_app_mismatch t2 ta) loc
       | _ -> error "no function type" loc
       end
   | TypeDef (_,_,_,e) -> formtyping env e
@@ -116,10 +119,11 @@ and typing' env loc = function
 *)
       begin match t1 with
       | C (Arrow (ta,tb,eff)) -> 
-          if ta = t2 then tb, NEffect.union eff effi
-          else error "type mismatch" loc
+          if Ty.equal ta t2 then tb, NEffect.union eff effi
+          else error (Error.ty_app_mismatch t2 ta) loc
       | C (PureArr (ta,tb)) ->
-          if Ty.equal ta t2 then tb, effi else error "type mismatch" loc
+          if Ty.equal ta t2 then tb, effi else 
+            error (Error.ty_app_mismatch t2 ta) loc
       | _ -> error "no function type" loc
       end
   | Lam (x,t,p,e,q) ->

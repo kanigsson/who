@@ -191,9 +191,12 @@ let rec equal' t1 t2 =
   | Map e1, Map e2 -> NEffect.equal e1 e2
   | App (v1,i1), App (v2,i2) -> 
       v1 = v2 && Inst.equal equal Name.equal (NEffect.equal) i1 i2
-
   | _ -> false
 and equal (C a) (C b) = equal' a b
+(*
+  Format.printf "equal: %a and %a: %b@." print t1 print t2 r;
+  r
+*)
 
 let forty = 
   let e = Name.from_string "e" in

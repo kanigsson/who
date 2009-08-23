@@ -15,14 +15,15 @@ let print_pos_error fn buf s =
 let with_loc msg {Loc.st = (sta,stb); en = _} = 
   error !Options.filename sta stb msg; exit(1)
 
+let mismatch f1 f2 arg1 arg2 t1 t2 = 
+  sprintf "%s is of type %a, but %s is of type %a" arg1 f1 t1 arg2 f2 t2
+
+let ty_mismatch = mismatch Ty.print Ty.print
+let ty_app_mismatch = ty_mismatch "expression" "function argument"
+
 (*
 let incompatible_subst = "incompatible substitution attempted"
 let effect_inst_nbr = "invalid number of effect instantiations" 
-
-let mismatch f1 f2 arg1 arg2 t1 t2 = 
-  mysprintf "%s is of type %a, but %s is of type %a" arg1 f1 t1 arg2 f2 t2
-
-let ty_mismatch = mismatch Ty.print Ty.print
 
 let fty_mismatch = mismatch Fty.print Fty.print
 
@@ -30,7 +31,6 @@ let lty_mismatch = mismatch Lty.print Lty.print
 
 let ty_rec_mismatch = ty_mismatch "recursive function" "declaration"
 let ty_aff_mismatch = ty_mismatch "expression" "reference"
-let ty_app_mismatch = ty_mismatch "expression" "function argument"
 let fty_app_mismatch = fty_mismatch "expression" "function argument"
 let fty_form_mismatch = fty_mismatch "formula" "expected formula"
 

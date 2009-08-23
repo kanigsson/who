@@ -31,6 +31,10 @@ let < = logic nat -> nat -> prop in
 let <= = logic nat -> nat -> prop in
 let > = logic nat -> nat -> prop in
 let >= = logic nat -> nat -> prop in
+let << = logic nat -> nat -> bool in
+let <<= = logic nat -> nat -> bool in
+let >> = logic nat -> nat -> bool in
+let >>= = logic nat -> nat -> bool in
 let max = logic nat -> nat -> nat in
 let min = logic nat -> nat -> nat in
 let pre ['a11 'b3||]= (λ(x3:'a11 * 'b3) -> fst x3) in

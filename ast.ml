@@ -275,7 +275,9 @@ module Recon = struct
     | _ -> assert false
 
   let combine t1 t2 l = 
-    app2 (pre_defvar "combine" ([],[],[domain t1;domain t2]) l) t1 t2 l
+    let d1 = domain t1 and d2 = domain t2 in
+    if NEffect.equal d1 d2 then t2 
+    else app2 (pre_defvar "combine" ([],[],[d1;d2]) l) t1 t2 l
 
   let restrict eff t l =
     app (pre_defvar "restrict" ([],[],[domain t; eff]) l) t l

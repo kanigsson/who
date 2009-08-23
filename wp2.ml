@@ -42,7 +42,7 @@ let rec correct v =
 (*   Format.printf "correct: %a@." print v ; *)
   let l = v.loc in
   match v.v with
-  | Var _ | Const _ | Axiom _ | Logic _ -> ptrue_ l
+  | Var _ | Const _ | Axiom _ | Logic _ | Quant _ -> ptrue_ l
   | App (v1,v2,_,_) -> and_ (correct v1) (correct v2) l
   | Lam (x,t,p,e,q) -> 
       let lt = ty t and eff = NEffect.clean e.e in
@@ -58,7 +58,9 @@ let rec correct v =
                 | _,_,PPlain f -> app f r l in
         sforall x lt (impl p (wp_node r q e) l) l) l
   | PureFun (t,(_,x,e)) -> sforall x (ty t) (correct e) l
-  | _ -> assert false
+  | _ -> 
+      Format.printf "correct: not a value: %a@." print v;
+      assert false
 and wp m q e = 
 (*   Format.printf "wp: %a@." print e ; *)
   let ft = ty e.t and l = e.loc in
@@ -113,7 +115,14 @@ and wp m q e =
     | Param _ -> ptrue_ l
     | TypeDef (g,k,x,e) -> typedef g k x (wp_node m q e) l
     | _ -> assert false
-and wp_node m q e = wp m q e
+and wp_node m q e = 
+  if NEffect.equal (domain m) e.e then wp m q e
+  else 
+    let l = e.loc in
+    wp (restrict e.e m l) 
+      (efflamho e.e (fun m2 ->
+        app q (combine m m2 l) l) l) 
+      e
 
 let main e = 
   let l = e.loc in
