@@ -150,7 +150,8 @@ in
 let
 rec(nat ->{|} nat) f2 =
                        (λ(x5:nat) --> {(λ(cur7:map{|}) -> 0 <= x5)}
-                       if x5 == 0 then 1 else x5 * (f2 (x5 - 1))
+                       if x5 == 0 then 1 else let anf = f2 (x5 - 1) in
+                                              x5 * anf
                        {(λ(old5:map{|}) ->
                         (λ(cur8:map{|}) -> (λ(r5:nat) -> r5 = (fact x5))))})
 in ()

@@ -1,8 +1,7 @@
-open Vars
 open Loc
 
 type t' = 
-  | Var of Var.t * (Fty.t, RVar.t, Effect.t) Inst.t
+  | Name of Name.t * (Fty.t, Name.t, Effect.t) Inst.t
   | Const of Const.t
   | App of t * t * [`Infix | `Prefix ]
   | Binder of [ `FA | `EX | `LAM ] *  Fty.t * varbind
@@ -11,10 +10,10 @@ type t' =
   | Let of t * varbind
   | Restrict of Effect.t * t
   | Combine of t * t
-  | Get of RVar.t * t
-  | Set of RVar.t * t * t
+  | Get of Name.t * t
+  | Set of Name.t * t * t
   | Empty
-and varbind = t Var.bind
+and varbind = t Name.bind
 and letbind = t Fty.Generalize.bind
 and generalize = Fty.Generalize.t
 and t = { v : t'; t : Fty.t ; hint : string option ; loc : Loc.loc }
@@ -30,34 +29,34 @@ val print : t Myformat.fmt
 val print_node : t' Myformat.fmt
 val print_head : t Myformat.fmt
 
-val effsubst : EffVar.t -> Effect.t -> t -> t
+val effsubst : Name.t -> Effect.t -> t -> t
 (** effect substitution: [effsubst e eff' f] replaces the effect variable [e]
  * by the effect [eff'] in [f]. Raises [IncompatibleSubst] if an non-disjoint
  * union is attempted *)
 
-val leffsubst : EffVar.t list -> Effect.t list -> t -> t
+val leffsubst : Name.t list -> Effect.t list -> t -> t
 (** substitution of a list of effect variables for a list of effects *)
 
-val open_bind : varbind -> Var.t * t
+val open_bind : varbind -> Name.t * t
 (** open a variable binder *)
-val open_bind_with : Var.t -> t Var.bind -> t
+val open_bind_with : Name.t -> t Name.bind -> t
 
-val close_bind : Var.t -> t -> varbind
+val close_bind : Name.t -> t -> varbind
 (** close a variable binder *)
 
-val open_tygen : t TyVar.listbind -> TyVar.t list * t
-val open_tygen_with : TyVar.t list -> t TyVar.listbind -> t
-val close_tygen : TyVar.t list -> t -> t TyVar.listbind
+val open_tygen : t Name.listbind -> Name.t list * t
+val open_tygen_with : Name.t list -> t Name.listbind -> t
+val close_tygen : Name.t list -> t -> t Name.listbind
 (** open and close a type generalization *)
 
-val open_rbind : t RVar.listbind -> RVar.t list * t
-val open_rbind_with : RVar.t list -> t RVar.listbind -> t
-val close_rbind : RVar.t list -> t -> t RVar.listbind
+val open_rbind : t Name.listbind -> Name.t list * t
+val open_rbind_with : Name.t list -> t Name.listbind -> t
+val close_rbind : Name.t list -> t -> t Name.listbind
 (** open and close a reference generalization *)
 
-val open_evgen : t EffVar.listbind -> EffVar.t list * t
-val open_evgen_with : EffVar.t list -> t EffVar.listbind -> t
-val close_evgen : EffVar.t list -> t -> t EffVar.listbind
+val open_evgen : t Name.listbind -> Name.t list * t
+val open_evgen_with : Name.t list -> t Name.listbind -> t
+val close_evgen : Name.t list -> t -> t Name.listbind
 (** open and close an effect generalization *)
 
 val open_letgen : letbind -> generalize * t
@@ -71,8 +70,8 @@ val with_rec : (t' ->t') -> t -> t
 (** smart constructors - do some very simple simplifications *)
 val void : loc -> t
 val one : loc -> t
-val var : Var.t -> (Fty.t, RVar.t, Effect.t) Inst.t -> Fty.t -> loc -> t
-val svar : Var.t -> Fty.t -> loc -> t
+val var : Name.t -> (Fty.t, Name.t, Effect.t) Inst.t -> Fty.t -> loc -> t
+val svar : Name.t -> Fty.t -> loc -> t
 val const : Const.t -> loc -> t
 val tuple : t -> t -> loc -> t
 val app : ?kind:[`Infix | `Prefix] -> t -> t -> loc -> t
@@ -84,30 +83,30 @@ val andlist : t list -> loc -> t
 val eq : t -> t -> loc -> t
 val pre : t -> loc -> t
 val post : t -> loc -> t
-val efflam : Var.t -> Effect.t -> t -> loc -> t
+val efflam : Name.t -> Effect.t -> t -> loc -> t
 val efflamho : ?name:string -> Effect.t -> (t -> t) -> loc -> t
-val effFA : Var.t -> Effect.t -> t -> loc -> t
+val effFA : Name.t -> Effect.t -> t -> loc -> t
 val effFAho : ?name:string -> Effect.t -> (t -> t) -> loc -> t
 val map_empty : loc -> t
-val get : RVar.t -> t -> Fty.t -> loc -> t
-val set : RVar.t -> t -> t -> loc -> t
+val get : Name.t -> t -> Fty.t -> loc -> t
+val set : Name.t -> t -> t -> loc -> t
 val combine : t -> t -> loc -> t
 val restrict : Effect.t -> t -> loc ->  t
-val forall : Var.t -> Fty.t -> t -> loc -> t
+val forall : Name.t -> Fty.t -> t -> loc -> t
 val forallho : ?name:string -> Fty.t -> (t -> t) -> loc -> t
 val gen : Fty.Generalize.t -> t -> loc -> t
-val rgen : RVar.t list -> t -> loc ->  t
-val lam : Var.t -> Fty.t -> t -> loc -> t
+val rgen : Name.t list -> t -> loc ->  t
+val lam : Name.t -> Fty.t -> t -> loc -> t
 val lamho : ?name:string -> Fty.t -> (t -> t) -> loc -> t
 val true_ : loc -> t
 val false_ : loc -> t
-val varbind : [ `FA | `EX | `LAM ] -> Var.t -> Fty.t -> t -> loc -> t
+val varbind : [ `FA | `EX | `LAM ] -> Name.t -> Fty.t -> t -> loc -> t
 val varbindho : ?name:string ->  [ `FA | `EX | `LAM ] -> Fty.t -> (t -> t) -> loc -> t
-val evgen : EffVar.t list -> t -> loc -> t
-val tygen : TyVar.t list -> t -> loc -> t
-val polylet_ : generalize -> Var.t -> t -> t -> loc -> t
-val let_ : t -> Var.t -> t -> loc -> t
-val massbind : [ `FA | `EX | `LAM ] -> (Var.t * Fty.t) list -> t -> loc -> t
+val evgen : Name.t list -> t -> loc -> t
+val tygen : Name.t list -> t -> loc -> t
+val polylet_ : generalize -> Name.t -> t -> t -> loc -> t
+val let_ : t -> Name.t -> t -> loc -> t
+val massbind : [ `FA | `EX | `LAM ] -> (Name.t * Fty.t) list -> t -> loc -> t
 val btrue : loc -> t
 val bfalse : loc -> t
 
@@ -118,12 +117,12 @@ val postho :
 val le : t -> t -> loc -> t
 val lt : t -> t -> loc -> t
 
-val subst : Var.t -> (( Fty.t, RVar.t, Effect.t) Inst.t -> t') 
+val subst : Name.t -> (( Fty.t, Name.t, Effect.t) Inst.t -> t') 
                -> t -> t
 (** replace a variable (with instantiations) 
  *  by an expression that knows how to deal with these instantiations *)
 
-val polsubst : Fty.Generalize.t -> Var.t -> t -> t -> t
+val polsubst : Fty.Generalize.t -> Name.t -> t -> t -> t
 (** the polymorphic substitution *)
 
 module LocImplicit : sig
@@ -131,13 +130,13 @@ module LocImplicit : sig
    * formula construction. More convenient to build large formulas. *)
   type t' = Loc.loc -> t
 
-  val effFA : Var.t -> Effect.t -> t' -> t'
+  val effFA : Name.t -> Effect.t -> t' -> t'
   val effFAho : ?name:string -> Effect.t -> (t' -> t') -> t'
-  val efflam : Var.t -> Effect.t -> t' -> t'
+  val efflam : Name.t -> Effect.t -> t' -> t'
   val efflamho : ?name:string -> Effect.t -> (t' -> t') -> t'
-  val forall : Var.t -> Fty.t -> t' -> t'
+  val forall : Name.t -> Fty.t -> t' -> t'
   val forallho : ?name:string -> Fty.t -> (t' -> t') -> t'
-  val lam : Var.t -> Fty.t -> t' -> t'
+  val lam : Name.t -> Fty.t -> t' -> t'
   val lamho : ?name:string -> Fty.t -> (t' -> t') -> t'
   val lamho2 : Fty.t -> Fty.t -> (t' -> t' -> t') -> t'
   val lamho3 : ?name1:string -> ?name2:string -> ?name3:string ->
@@ -156,17 +155,17 @@ module LocImplicit : sig
   val andlist : t' list -> t'
   val pre : t' -> t'
   val post : t' -> t'
-  val polylet_ : generalize -> Var.t -> t' -> t' -> t'
-  val let_ : t' -> Var.t ->  t' -> t'
-  val evgen : EffVar.t list -> t' -> t'
-  val get : RVar.t -> t' -> Fty.t -> t'
-  val set : RVar.t -> t' -> t' -> t'
+  val polylet_ : generalize -> Name.t -> t' -> t' -> t'
+  val let_ : t' -> Name.t ->  t' -> t'
+  val evgen : Name.t list -> t' -> t'
+  val get : Name.t -> t' -> Fty.t -> t'
+  val set : Name.t -> t' -> t' -> t'
   val combine : t' -> t' -> t'
   val restrict : Effect.t -> t' -> t'
-  val rgen : RVar.t list -> t' -> t'
-  val tygen : TyVar.t list -> t' -> t'
-  val var : Var.t -> ( Fty.t,  RVar.t, Effect.t) Inst.t -> Fty.t -> t'
-  val svar : Var.t -> Fty.t ->  t'
+  val rgen : Name.t list -> t' -> t'
+  val tygen : Name.t list -> t' -> t'
+  val var : Name.t -> ( Fty.t,  Name.t, Effect.t) Inst.t -> Fty.t -> t'
+  val svar : Name.t -> Fty.t ->  t'
   val btrue : t'
   val bfalse : t'
   val le : t' -> t' -> t'
@@ -175,10 +174,10 @@ module LocImplicit : sig
   val max :  t' -> t' -> t'
   val min :  t' -> t' -> t'
   val prev : t' -> t'
-  val subst : Var.t -> ((Fty.t,  RVar.t, Effect.t) Inst.t -> t') -> t' -> t'
+  val subst : Name.t -> ((Fty.t,  Name.t, Effect.t) Inst.t -> t') -> t' -> t'
 end
 
 val domain : t -> Effect.t
 
-val destruct_infix : t -> (Var.t * t * t) option
-val destruct_infix' : t' -> (Var.t * t * t) option
+val destruct_infix : t -> (Name.t * t * t) option
+val destruct_infix' : t' -> (Name.t * t * t) option

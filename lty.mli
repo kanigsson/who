@@ -1,32 +1,30 @@
-open Vars
-
 type ('a,'b) t'' = 
   [
     | `Const of Const.ty
-    | `Var of 'b
+    | `Name of 'b
     | `Arr of 'a * 'a
     | `Tuple of 'a * 'a
     | `App of 'b * 'a list
   ]
 
-type 'a t' = ('a,TyVar.t) t''
+type 'a t' = ('a,Name.t) t''
 type t = [ `U of t t' ]
 
-val map' : ('a -> 'b) -> tyvarfun:(TyVar.t -> ([> 'b t'] as 'd)) -> 'a t' -> 'd
-val map : tyvarfun:(TyVar.t -> t t') -> t -> t
+val map' : ('a -> 'b) -> tyvarfun:(Name.t -> ([> 'b t'] as 'd)) -> 'a t' -> 'd
+val map : tyvarfun:(Name.t -> t t') -> t -> t
 
 val print'': 'a Myformat.fmt -> 'b Myformat.fmt -> ('a,'b) t'' Myformat.fmt
 val print' : 'a Myformat.fmt -> 'a t' Myformat.fmt
 
 val print : t Myformat.fmt
-val binder : (Var.t * t) Myformat.fmt
+val binder : (Name.t * t) Myformat.fmt
 
-val var : TyVar.t -> t
+val var : Name.t -> t
 val const : Const.ty -> t
 val tuple : t -> t -> t
 val arr : t -> t -> t
-val app : TyVar.t -> t list -> t
-val refresh : subst -> t -> t
+val app : Name.t -> t list -> t
+val refresh : Name.subst -> t -> t
 
 
 val unit : t
@@ -43,10 +41,10 @@ module Scheme : sig
   type t
   val lty : lty -> t
   val instance : t -> lty list -> lty
-  val open_ : t -> TyVar.t list * lty
-  val close : TyVar.t list -> lty -> t
+  val open_ : t -> Name.t list * lty
+  val close : Name.t list -> lty -> t
   val print : t Myformat.fmt
 end
 
-val well_formed' : ('a -> bool) -> (TyVar.t -> int) -> 'a t' -> bool
-val well_formed : (TyVar.t -> int) -> t -> bool
+val well_formed' : ('a -> bool) -> (Name.t -> int) -> 'a t' -> bool
+val well_formed : (Name.t -> int) -> t -> bool

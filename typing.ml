@@ -3,17 +3,19 @@ open Ty
 module SM = Misc.StringMap
 module SS = Misc.StringSet
 
+module G = Generalize
+
 exception Error of string * Loc.loc
 
 let error s loc = raise (Error (s,loc))
 
 type env = 
-  { types : (Generalize.t * Ty.t) Name.M.t; }
+  { types : (G.t * Ty.t) Name.M.t; }
 
 let add_var env x g t = 
   { types = Name.M.add x (g,t) env.types }
 let add_svar env x t = 
-  { types = Name.M.add x (Generalize.empty,t) env.types }
+  { types = Name.M.add x (G.empty,t) env.types }
 
 
 let type_of_var env x = Name.M.find x env.types
@@ -49,10 +51,10 @@ let rec formtyping' env loc = function
       | _ -> error "no function type" loc
       end
   | TypeDef _ -> assert false
-  | PureFun (x,t,e) -> parr t (formtyping (add_svar env x t) e)
+  | PureFun (t,(_,x,e)) -> parr t (formtyping (add_svar env x t) e)
   | Logic t -> t
   | Axiom f -> fis_oftype env prop f; prop
-  | Quant (_,x,t,e) -> 
+  | Quant (_,t,(_,x,e)) -> 
       fis_oftype (add_svar env x t) prop e;
       prop
   | Ite (e1,e2,e3) ->
@@ -66,8 +68,9 @@ let rec formtyping' env loc = function
       pre env eff p;
       post env eff t' q;
       to_logic_type (arrow t t' eff)
-  | Gen (_,e) -> formtyping env e
-  | Let (tl,e1,x,e2,_) ->
+  | Gen b -> let _,e = G.sopen_ b in formtyping env e
+  | Let (b,(_,x,e2),_) ->
+      let tl, e1 = G.sopen_ b in
       let t = formtyping env e1 in
       let env = add_var env x tl t in
       let t = formtyping env e2 in
@@ -126,8 +129,9 @@ and typing' env loc = function
       pre env eff p;
       post env eff t' q;
       arrow t t' eff, NEffect.empty
-  | Let (g,e1,x,e2,r) ->
-      if not ( Generalize.is_empty g || Recon.is_value_node e1) then 
+  | Let (b,(_,x,e2),r) ->
+      let g,e1 = G.sopen_ b in
+      if not ( G.is_empty g || Recon.is_value_node e1) then 
         error "generalization over non-value" loc;
       let env' =
         match r with 
@@ -139,12 +143,12 @@ and typing' env loc = function
       t, NEffect.union eff1 eff2
   | Param (t,e) -> t,e
   | TypeDef (_,_,_,e) -> typing env e
-  | PureFun (x,t,e) ->
+  | PureFun (t,(_,x,e)) ->
       let env = add_svar env x t in
       let t', eff = typing env e in
       if NEffect.is_empty eff then parr t t', eff
       else error "effectful pure function" loc
-  | Quant (_,x,t,e) ->
+  | Quant (_,t,(_,x,e)) ->
       let env = add_svar env x t in
       let t', eff = typing env e in
       if NEffect.is_empty eff && Ty.equal t' Ty.prop then Ty.prop, eff

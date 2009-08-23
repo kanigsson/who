@@ -105,5 +105,6 @@ in
 let
 length_create ['a22||]=
                        axiom forall (l:nat).
-                             (0 <= l) -> ((length (create l)) = l)
+                             (0 <= l) ->
+                             ((length (create l : array['a22||])) = l)
 in let myref ['a23|r5|]= (λ(x5:'a23) -->  ref{r5} x5 ) in ()

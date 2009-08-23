@@ -1,16 +1,15 @@
 open Ast
 open Recon
-open Vars
 module F = Formula
 module M = Myformat
 
 exception Error of string * Loc.loc
 let error s loc = raise (Error (s,loc))
 
-let var v = Var.from_name v
-let tyvar v = TyVar.from_name v
-let rvar v = RVar.from_name v
-let effvar v = EffVar.from_name v
+let var v = Name.from_name v
+let tyvar v = Name.from_name v
+let rvar v = Name.from_name v
+let effvar v = Name.from_name v
 let ty t = Fty.from_ty (Ty.to_logic_type t)
 let effect = Fty.from_eff 
 
@@ -21,7 +20,7 @@ let gen_restrict (tl,_,_) = List.map tyvar tl
 let rec lift_value v = 
   let l = v.loc in
   match v.v with
-  | Var _ | Const _ | Logic _ -> formula v
+  | Name _ | Const _ | Logic _ -> formula v
   | App (v1,v2,kind,_) -> F.app ~kind (lift_value v1) (lift_value v2) l
   | PureFun (x,t,e) -> F.lam (var x) (ty t) (lift_value e) l
   | Lam (x,t,p,e,q) ->
@@ -48,7 +47,7 @@ let rec lift_value v =
 and correct v = 
   let l = v.loc in
   match v.v with
-  | Var _ | Const _ -> F.true_ l
+  | Name _ | Const _ -> F.true_ l
   | App (v1,v2,_,_) -> F.and_ (correct v1) (correct v2) l
   | Lam (x,t,p,e,q) -> 
       let lt = ty t in
@@ -71,8 +70,8 @@ and correct v =
 and formula e = 
   let l = e.loc in
   match e.v with
-  | Var (v,i) -> 
-      F.var (Var.from_name v) (Inst.map ty rvar effect i) (ty e.t) l
+  | Name (v,i) -> 
+      F.var (Name.from_name v) (Inst.map ty rvar effect i) (ty e.t) l
   | Const c -> F.const c l
   | App (e1,e2,kind,_) -> F.app ~kind (formula e1) (formula e2) l
   | Quant (k,x,t,e) -> 
@@ -170,7 +169,7 @@ and wp_node m q e =
     and_ (applist [q;m;lift_value e] l) (correct e) l
   else
     match e.v with
-    | Const _ | Var _ | Lam _ | PureFun _ | For _ | Annot _ -> 
+    | Const _ | Name _ | Lam _ | PureFun _ | For _ | Annot _ -> 
         assert false
     | Axiom t -> axiom t l
     | Logic t -> logic t l

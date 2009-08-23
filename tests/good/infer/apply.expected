@@ -135,13 +135,15 @@ let
 length_create ['a22||]=
                        axiom forall (l:nat).
                              (0 <= l) ->
-                             ((length [1492||] (create [1492||] l)) = l)
+                             ((length ['a22||]
+                               (create ['a22||] l : array['a22||]))
+                              = l)
 in
 let apply ['a23
 'b5||e3]= (λ(f2:'a23 ->{|e3 } 'b5) -> (λ(x5:'a23) -->  f2 x5 )) in
 let
 h [|r5|]=
          (λ(x6:ref(r5,nat)) --> 
-         apply [nat,nat||{|{r5|} 1552 1555}]
+         apply [nat,nat||{|{r5|} 1554 1557}]
          (λ(z3:nat) -->  ! [nat|r5|] x6 ) 5 )
 in ()

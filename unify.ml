@@ -93,7 +93,7 @@ exception CannotUnify
 
 open Format
 let rec unify a b =
-  printf "unify: %a and %a@." print_node a print_node b;
+(*   printf "unify: %a and %a@." print_node a print_node b; *)
   if Uf.equal a b then () else
   match Uf.desc a, Uf.desc b with
   | U, U -> union a b

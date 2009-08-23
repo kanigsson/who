@@ -135,6 +135,8 @@ let
 length_create ['a22||]=
                        axiom forall (l:nat).
                              (0 <= l) ->
-                             ((length [1492||] (create [1492||] l)) = l)
+                             ((length ['a22||]
+                               (create ['a22||] l : array['a22||]))
+                              = l)
 in type array1['a23||] =  in
 let get1 ['a24||]= logic (array1['a24||]) -> nat -> 'a24 in ()

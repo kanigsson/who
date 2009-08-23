@@ -135,7 +135,9 @@ let
 length_create ['a22||]=
                        axiom forall (l:nat).
                              (0 <= l) ->
-                             ((length [1492||] (create [1492||] l)) = l)
+                             ((length ['a22||]
+                               (create ['a22||] l : array['a22||]))
+                              = l)
 in
 let seq ['a23 'b5 'c||e12
 e22]=
@@ -146,6 +148,6 @@ let h [|r1
 r2|]=
      (λ(x6:ref(r1,nat)) ->
      (λ(y:ref(r2,nat)) --> 
-     seq [nat,nat,nat||{|{r1|} 1577 1580},{|{r2|} 1594 1597}]
+     seq [nat,nat,nat||{|{r1|} 1579 1582},{|{r2|} 1596 1599}]
      (λ(z3:nat) -->  ! [nat|r1|] x6 ) (λ(z4:nat) -->  ! [nat|r2|] y ) ))
 in ()

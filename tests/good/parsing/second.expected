@@ -105,7 +105,8 @@ in
 let
 length_create ['a22||]=
                        axiom forall (l:nat).
-                             (0 <= l) -> ((length (create l)) = l)
+                             (0 <= l) ->
+                             ((length (create l : array['a22||])) = l)
 in
 let f2 ['a23||]= (λ(x5:'a23) -> (λ(y:'a23) -->  x5 == y )) in
 let f3 ['a24||]= (λ(x6:'a24) -->  true ) in

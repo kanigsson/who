@@ -1,5 +1,6 @@
 open Ast
 open Recon
+module G = Ty.Generalize
 
 exception Error of string * Loc.loc
 let error s loc = raise (Error (s,loc))
@@ -15,7 +16,7 @@ let rec lift_value v =
   | App (v1,v2,kind,_) -> 
 (*       Format.printf "app: %a,%a@." print v1 print v2; *)
       app ~kind (lift_value v1) (lift_value v2) l
-  | PureFun (x,t,e) -> 
+  | PureFun (t,(_,x,e)) -> 
       plam x (ty t) (lift_value e) l
   | Lam (x,t,p,e,q) ->
       let t = ty t and eff = NEffect.clean e.e in
@@ -56,7 +57,7 @@ let rec correct v =
                 | _,_,PResult _ -> assert false
                 | _,_,PPlain f -> app f r l in
         sforall x lt (impl p (wp_node r q e) l) l) l
-  | PureFun (x,t,e) -> sforall x (ty t) (correct e) l
+  | PureFun (t,(_,x,e)) -> sforall x (ty t) (correct e) l
   | _ -> assert false
 and wp m q e = 
 (*   Format.printf "wp: %a@." print e ; *)
@@ -85,7 +86,8 @@ and wp m q e =
             forall ft (fun x ->
               impl (applist [post lv1 l; lv2; m; m2; x] l)
                 (applist [q;m2; x] l) l) l) l ] l 
-    | Let (g,e1,x,e2,_) -> 
+    | Let (b,(_,x,e2),_) -> 
+        let g,e1 = G.sopen_ b in
         (* TODO recursive case *)
         if is_value_node e1 then
           let lv = lift_value e1 in

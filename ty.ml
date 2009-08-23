@@ -134,8 +134,9 @@ let elsubst evl effl target =
   aux target
 
 module Generalize = struct
-  type ty = t
+  (* order : ty,r,e *)
   type t = Name.t list * Name.t list * Name.t list
+  type 'a bind = 'a Name.listbind Name.listbind Name.listbind
 
   let empty = [],[],[]
   let is_empty = function
@@ -143,10 +144,25 @@ module Generalize = struct
     | _ -> false
 
   open Myformat
+
   let print fmt ((tl,rl,el) as g) = 
     if is_empty g then ()
     else fprintf fmt "[%a|%a|%a]" Name.print_list tl 
           Name.print_list rl Name.print_list el
+
+  let open_ r b = 
+    let tl,b = Name.open_listbind Name.refresh_listbind b in
+    let rl,b = Name.open_listbind Name.refresh_listbind b in
+    let el,a = Name.open_listbind r b in
+    (tl,rl,el), a
+
+  let sopen_ (_,tl,(_,rl,(_,el,t))) = (tl,rl,el),t
+
+  let close (tl,rl,el) a = 
+    Name.close_listbind tl (Name.close_listbind rl (Name.close_listbind el a))
+
+
+
 end
 
 let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target = 

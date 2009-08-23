@@ -42,11 +42,15 @@ val equal : t -> t -> bool
 
 module Generalize : sig
   type t = Name.t list * Name.t list * Name.t list
+  type 'a bind = 'a Name.listbind Name.listbind Name.listbind
 
   val empty : t 
   val is_empty : t -> bool
 
   val print : t Myformat.fmt
+  val open_ : (Name.subst -> 'a -> 'a) -> 'a bind -> t * 'a
+  val sopen_ : 'a bind -> t * 'a
+  val close : t -> 'a -> 'a bind 
 end
 
 val allsubst : 

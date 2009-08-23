@@ -1,4 +1,3 @@
-open Wp2
 let parse buf close fn = 
   let abort () = close (); exit 1 in
   Lexer.reset buf;
@@ -48,7 +47,6 @@ let _ =
     p
   with
   | Sys_error e -> Error.bad e
-  | Wp.Error (s,loc)
   | Infer.Error (s,loc) 
   | Typing.Error (s,loc) -> Error.with_loc s loc 
 

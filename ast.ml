@@ -1,5 +1,6 @@
 module U = Unify
 module C = Const
+module G = Ty.Generalize
 
 type ('a,'b,'c) t'' =
   | Const of Const.t
@@ -7,16 +8,16 @@ type ('a,'b,'c) t'' =
   | App of ('a,'b,'c) t' * ('a,'b,'c) t' * [`Infix | `Prefix ] * Name.t list
   | Lam of 
       Name.t * Ty.t * ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post 
-  | Let of Ty.Generalize.t * ('a,'b,'c) t' * Name.t * ('a,'b,'c) t' * isrec
-  | PureFun of Name.t * Ty.t * ('a,'b,'c) t'
+  | Let of ('a,'b,'c) t' G.bind * ('a,'b,'c) t' Name.bind * isrec
+  | PureFun of Ty.t * ('a,'b,'c) t' Name.bind
   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
   | Axiom of ('a,'b,'c) t'
   | Logic of Ty.t
   | Annot of ('a,'b,'c) t' * Ty.t
-  | TypeDef of Ty.Generalize.t * Ty.t option * Name.t * ('a,'b,'c) t'
-  | Quant of [`FA | `EX ] * Name.t * Ty.t * ('a,'b,'c) t'
+  | TypeDef of G.t * Ty.t option * Name.t * ('a,'b,'c) t'
+  | Quant of [`FA | `EX ] * Ty.t * ('a,'b,'c) t' Name.bind
   | Param of Ty.t * NEffect.t
-  | Gen of Ty.Generalize.t * ('a,'b,'c) t'
+  | Gen of ('a,'b,'c) t' G.bind
   | For of Name.t * ('a,'b,'c) pre * Name.t * Name.t * Name.t * ('a,'b,'c) t'
   | LetReg of Name.t list * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
@@ -50,26 +51,29 @@ let print pra prb prc fmt t =
     | Lam (x,t,p,e,q) -> 
         fprintf fmt "@[(λ(%a:%a)@ -->@ %a@ %a@ %a)@]" Name.print x 
           Ty.print t pre p print e post q
-    | PureFun (x,t,e) ->
+    | PureFun (t,(_,x,e)) ->
         fprintf fmt "@[(λ(%a:%a)@ ->@ %a)@]" Name.print x Ty.print t print e
-    | Let (g,e1,x,e2,r) -> 
+    | Let (b,(_,x,e2),r) -> 
+        let g,e1 = G.sopen_ b in
         fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]" 
-          prrec r Name.print x Ty.Generalize.print g print e1 print e2
+          prrec r Name.print x G.print g print e1 print e2
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then %a else %a@]" print e1 print e2 print e3
     | Axiom e -> fprintf fmt "axiom %a" print e
     | Logic t -> fprintf fmt "logic %a" Ty.print t
     | TypeDef (g,t,x,e) -> 
         fprintf fmt "type %a%a =@ %a in@ %a" 
-          Name.print x Ty.Generalize.print g (opt_print Ty.print) t print e
-    | Quant (k,x,t,e) ->
+          Name.print x G.print g (opt_print Ty.print) t print e
+    | Quant (k,t,(_,x,e)) ->
         fprintf fmt "@[%a (%a:%a).@ %a@]" C.quant k Name.print x Ty.print t print e
     | Param (t,e) -> fprintf fmt "param(%a,%a)" Ty.print t NEffect.print e
     | For (dir,inv,_,st,en,t) ->
         fprintf fmt "%a (%a) %a %a (%a)" 
           Name.print dir pre inv Name.print st Name.print en print t
     | Annot (e,t) -> fprintf fmt "(%a : %a)" print e Ty.print t
-    | Gen (g,t) -> fprintf fmt "forall %a. %a" Ty.Generalize.print g print t
+    | Gen (b) -> 
+        let g,t = G.sopen_ b in
+        fprintf fmt "forall %a. %a" G.print g print t
     | LetReg (v,t) -> 
         fprintf fmt "@[letregion %a in@ %a@]" 
           (print_list space Name.print) v print t
@@ -147,7 +151,7 @@ module Recon = struct
   let btrue_ loc = mk_val (Const (Btrue)) T.bool loc
   let bfalse_ loc = mk_val (Const (Bfalse)) T.bool loc
 
-  let svar s t = var s Inst.empty (T.Generalize.empty,t) 
+  let svar s t = var s Inst.empty (G.empty,t) 
   let le t1 t2 loc = appi (spre_defvar "<=" loc) t1 t2 loc
   let and_ t1 t2 loc = 
     match t1.v,t2.v with
@@ -178,13 +182,15 @@ module Recon = struct
     | _ -> assert false
 
   let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
-  let plam x t e loc = mk_val (PureFun (x,t,e)) (T.parr t e.t) loc
+  let plam x t e loc = 
+    mk_val (PureFun (t,Name.close_bind x e)) (T.parr t e.t) loc
   let efflam x eff e = plam x (T.map eff) e
   let lam x t p e q = mk_val (Lam (x,t,p,e,q)) (T.arrow t e.t e.e)
   let plus t1 t2 loc = appi (spre_defvar "+" loc) t1 t2 loc
   let one = mk_val (Const (Int Big_int.unit_big_int)) T.int 
   let succ t loc = plus t (one loc) loc
-  let let_ g e1 x e2 r = mk (Let (g,e1,x,e2,r)) e2.t (NEffect.union e1.e e2.e)
+  let let_ g e1 x e2 r = 
+    mk (Let (G.close g e1,Name.close_bind x e2,r)) e2.t (NEffect.union e1.e e2.e)
 
   let axiom e = mk (Axiom e) T.prop e.e
   let logic t = mk (Logic t) t NEffect.empty
@@ -223,12 +229,12 @@ module Recon = struct
   let squant k x t f loc = 
     match f.v with
     | Const Ptrue -> f
-    | _ -> mk (Quant (k,x,t,f)) f.t f.e loc
+    | _ -> mk (Quant (k,t,Name.close_bind x f)) f.t f.e loc
 
   let gen g e l = 
     match e.v with
     | Const Ptrue -> e
-    | _ -> mk (Gen (g,e)) e.t e.e l
+    | _ -> mk (Gen (G.close g e)) e.t e.e l
 
   let rgen rl e = gen ([],rl,[]) e
 
@@ -258,7 +264,7 @@ module Recon = struct
     match e.v with
     | Param _ -> true
     | Lam (_,_,_,e,_) -> is_param e
-    | PureFun (_,_,e) -> is_param e
+    | PureFun (_,(_,_,e)) -> is_param e
     | _ -> false
 
   let domain t = 
@@ -280,14 +286,14 @@ module ParseT = struct
   let nothing _ () = ()
   let print fmt t = print nothing nothing nothing fmt t
   let mk v loc = { v = v; t = (); e = (); loc = loc }
-  let pure_lam x t e = mk (PureFun (x,t,e))
+  let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
   let annot e t = mk (Annot (e,t)) 
 end
 
 let concat t1 t2 =
   let rec aux' = function
     | Const Const.Void -> t2.v
-    | Let (g,t1,x,t2,r) -> Let (g,t1,x,aux t2,r)
+    | Let (b,(_,x,t2),r) -> Let (b, Name.close_bind x (aux t2), r)
     | TypeDef (g,t,x,t2) -> TypeDef (g,t,x,aux t2)
     | _ -> assert false 
   and aux t = { t with v = aux' t.v } in

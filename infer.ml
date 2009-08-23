@@ -1,12 +1,13 @@
 open Unify
 open Ast
 module SM = Misc.StringMap
+module G = Ty.Generalize
 
 module S = Name.S
 
 type env = { 
-  vars : (Ty.Generalize.t * Ty.t) Name.M.t ;  
-  types : (Ty.Generalize.t * Ty.t option) Name.M.t;
+  vars : (G.t * Ty.t) Name.M.t ;  
+  types : (G.t * Ty.t option) Name.M.t;
   pm : bool;
   curloc : Loc.loc;
   }
@@ -16,7 +17,7 @@ exception Error of string * Loc.loc
 let error s loc = raise (Error (s,loc))
 
 let add_var env x g t = { env with vars = Name.M.add x (g,t) env.vars }
-let add_svar env x t = add_var env x Ty.Generalize.empty t
+let add_svar env x t = add_var env x G.empty t
 let add_ty env x g t = { env with types = Name.M.add x (g,t) env.types }
 
 let ymemo ff =
@@ -79,7 +80,7 @@ let to_uf_enode (rl,el,cl) =
              (elist_from_set_map mke el)
              (rlist_from_set_map mkr cl)
 
-let sto_uf_node x = fst (to_uf_node Ty.Generalize.empty x)
+let sto_uf_node x = fst (to_uf_node G.empty x)
 
 let pref eff cur (p : ParseT.t) = 
   Ast.ParseT.pure_lam cur (Ty.map (to_eff eff)) p p.loc
@@ -115,18 +116,18 @@ let rec infer' env t loc = function
   | Const c -> 
       unify t (const (Const.type_of_constant c)) loc;
       Const c, new_e ()
-  | PureFun (x,xt,e) ->
+  | PureFun (xt,(_,x,e)) ->
       let nt = sto_uf_node xt in
       let nt' = new_ty () in
       let env = add_svar env x xt in
       let e = infer env nt' e in
       unify (parr nt nt') t loc;
-      PureFun (x,xt,e), new_e ()
-  | Quant (k,x,xt,e) ->
+      PureFun (xt,Name.close_bind x e), new_e ()
+  | Quant (k,xt,(_,x,e)) ->
       let env = add_svar env x xt in
       let e = infer env t e in
       unify prop t loc;
-      Quant (k,x,xt,e), new_e ()
+      Quant (k,xt,Name.close_bind x e), new_e ()
   | Lam (x,xt,p,e,q) ->
       let nt = sto_uf_node xt in
       let nt' = new_ty () in
@@ -143,7 +144,8 @@ let rec infer' env t loc = function
       let env = add_ty env x g t' in
       let e = infer env t e in
       TypeDef (g,t',x,e), new_e ()
-  | Let (g,e1,x,e2,r) ->
+  | Let (b,(_,x,e2),r) ->
+      let g, e1 = G.sopen_ b in
       let nt = new_ty () in
       let env' = 
         match r with
@@ -153,7 +155,8 @@ let rec infer' env t loc = function
       let xt = try to_ty nt 
                with Assert_failure _ -> error (Name.to_string x) loc  in
       let e2 = infer (add_var env x g xt) t e2 in
-      Let (g,e1,x,e2,r), Unify.effect [] [e1.e; e2.e] []
+      Let (G.close g e1,Name.close_bind x e2,r), 
+      Unify.effect [] [e1.e; e2.e] []
   | Ite (e1,e2,e3) ->
       let e1 = infer env bool e1 in
       let e2 = infer env t e2 in
@@ -208,12 +211,14 @@ let rec recon' = function
   | Var (x,i) -> Var (x,inst i)
   | Const c -> Const c
   | App (e1,e2,k,cap) -> App (recon e1, recon e2,k,cap)
-  | PureFun (x,t,e) -> PureFun (x,t,recon e)
-  | Quant (k,x,t,e) -> Quant (k,x,t,recon e)
+  | PureFun (t,(s,x,e)) -> PureFun (t,(s,x, recon e))
+  | Quant (k,t,(s,x,e)) -> Quant (k,t,(s,x, recon e))
   | Lam (x,ot,p,e,q) -> 
       Lam (x,ot, pre p, recon e, post q)
   | Param (t,e) -> Param (t,e)
-  | Let (g,e1,x,e2,r) -> Let (g, recon e1, x, recon e2,r)
+  | Let (b,(_,x,e2),r) -> 
+      let g,e1 = G.sopen_ b in
+      Let (G.close g (recon e1), Name.close_bind x (recon e2),r)
   | Ite (e1,e2,e3) -> Ite (recon e1, recon e2, recon e3)
   | Axiom e -> Axiom (recon e)
   | Logic t -> Logic t

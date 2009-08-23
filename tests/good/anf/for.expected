@@ -155,7 +155,7 @@ f2 [|r5|]=
            ((-start <= i5) /\ (i5 <= -end)) /\
            ((λ(cur7:map{r5 |}) -> (!! [nat|r5|{r5 |}] x5 cur7) < (i5 * 10))
             cur7))}
-          x5 := ((! [nat|r5|] x5) + i5)
+          let anf = ! [nat|r5|] x5 in x5 := (anf + i5)
           {(λ(anon3:map{r5 |}) ->
            (λ(cur7:map{r5 |}) ->
            (λ(anon4:unit) ->

@@ -10,8 +10,10 @@ and normalize e k =
   | (Const _ | Ast.Var _ | Axiom _ | Logic _ | Quant _ | Param _ ) -> k e
   | For _ | Gen _ -> assert false
   | Lam (x,t,p,e,q) -> k (lam x t p (normalize_term e) q loc)
-  | PureFun (x,t,e)-> k (plam x t (normalize_term e) loc)
-  | Let (g,e1,x,e2,r) -> normalize e1 (fun v -> let_ g v x (normalize e2 k) r loc)
+  | PureFun (t,(_,x,e))-> k (plam x t (normalize_term e) loc)
+  | Let (b,(_,x,e2),r) -> 
+      let g,e1 = Generalize.sopen_ b in
+      normalize e1 (fun v -> let_ g v x (normalize e2 k) r loc)
   | LetReg (l,e) -> k (letreg l e loc)
   | TypeDef (g,t,v,e) -> k (typedef g t v (normalize_term e) loc)
   | Ite (e1,e2,e3) ->

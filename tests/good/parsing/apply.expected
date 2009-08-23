@@ -105,7 +105,8 @@ in
 let
 length_create ['a22||]=
                        axiom forall (l:nat).
-                             (0 <= l) -> ((length (create l)) = l)
+                             (0 <= l) ->
+                             ((length (create l : array['a22||])) = l)
 in
 let apply ['a23
 'b5||e3]= (λ(f2:'a23 ->{|e3 } 'b5) -> (λ(x5:'a23) -->  f2 x5 )) in
