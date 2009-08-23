@@ -111,7 +111,7 @@ let rec ast' env = function
         | _ -> ast env' e1 in
       let env = add_ex_var env x nv in
       let e2 = ast env e2 in
-      Let (G.close g' e1,Name.close_bind nv e2,rec_ env' r)
+      Let (g', e1,Name.close_bind nv e2,rec_ env' r)
   | I.PureFun (x,t,e) ->
       let env, x = add_var env x in
       PureFun (ty env t, Name.close_bind x (ast env e))
@@ -136,7 +136,7 @@ let rec ast' env = function
       let env, nrl = add_rvars env rl in
       LetReg (nrl, ast env e)
   | I.Seq (e1,e2) -> 
-      Let (G.close G.empty (ParseT.annot (ast env e1) Ty.unit e1.I.loc), 
+      Let (G.empty, ParseT.annot (ast env e1) Ty.unit e1.I.loc, 
            Name.close_bind (Name.new_anon ()) (ast env e2), NoRec)
 and post env x = 
   let env, old = add_var env "old" in

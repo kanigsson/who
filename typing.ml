@@ -68,11 +68,10 @@ let rec formtyping' env loc = function
       pre env eff p;
       post env eff t' q;
       to_logic_type (arrow t t' eff)
-  | Gen b -> let _,e = G.sopen_ b in formtyping env e
-  | Let (b,(_,x,e2),_) ->
-      let tl, e1 = G.sopen_ b in
+  | Gen (_,e)-> formtyping env e
+  | Let (g,e1,(_,x,e2),_) ->
       let t = formtyping env e1 in
-      let env = add_var env x tl t in
+      let env = add_var env x g t in
       let t = formtyping env e2 in
       t
   | Param _ -> error "effectful parameter in logic" loc
@@ -129,8 +128,7 @@ and typing' env loc = function
       pre env eff p;
       post env eff t' q;
       arrow t t' eff, NEffect.empty
-  | Let (b,(_,x,e2),r) ->
-      let g,e1 = G.sopen_ b in
+  | Let (g,e1,(_,x,e2),r) ->
       if not ( G.is_empty g || Recon.is_value_node e1) then 
         error "generalization over non-value" loc;
       let env' =

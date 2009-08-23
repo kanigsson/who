@@ -86,8 +86,7 @@ and wp m q e =
             forall ft (fun x ->
               impl (applist [post lv1 l; lv2; m; m2; x] l)
                 (applist [q;m2; x] l) l) l) l ] l 
-    | Let (b,(_,x,e2),_) -> 
-        let g,e1 = G.sopen_ b in
+    | Let (g,e1,(_,x,e2),_) -> 
         (* TODO recursive case *)
         if is_value_node e1 then
           let lv = lift_value e1 in

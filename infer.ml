@@ -1,7 +1,7 @@
-open Unify
 open Ast
 module SM = Misc.StringMap
 module G = Ty.Generalize
+module U = Unify
 
 module S = Name.S
 
@@ -32,8 +32,8 @@ let ymemo ff =
 module HT = Hashtbl
 
 let unify t1 t2 loc = 
-  try unify t1 t2 
-  with CannotUnify ->
+  try U.unify t1 t2 
+  with U.CannotUnify ->
     error 
       (Myformat.sprintf "type mismatch between %a and %a" 
         U.print_node t1 U.print_node t2) loc
@@ -42,61 +42,62 @@ let bh f l =
   let h = Hashtbl.create 3 in
   List.map (fun x -> let n = f () in Hashtbl.add h x n; n) l,h
 
-let prety eff = parr (map eff) prop
-let postty eff t = parr (map eff) (parr (map eff) (parr t prop)) 
+let prety eff = U.parr (U.map eff) U.prop
+let postty eff t = 
+  U.parr (U.map eff) (U.parr (U.map eff) (U.parr t U.prop)) 
 
 let rlist_from_set_map f l = S.fold (fun x acc -> f x :: acc) l []
 let elist_from_set_map f l = S.fold (fun x acc -> f x :: acc) l []
 
 let to_uf_node (tl,rl,el) x = 
-  let tn,th = bh new_ty tl and rn,rh = bh new_r rl and en,eh = bh new_e el in
+  let tn,th = bh U.new_ty tl and rn,rh = bh U.new_r rl 
+  and en,eh = bh U.new_e el in
   let rec aux' f = function
     | (Ty.Const c) -> Unify.const c
-    | Ty.Arrow (t1,t2,e) -> arrow (f t1) (f t2) (eff e)
-    | Ty.Tuple (t1,t2) -> tuple (f t1) (f t2)
-    | Ty.Var x -> (try HT.find th x with Not_found -> var x)
-    | Ty.Ref (r,t) -> ref_ (auxr r) (f t)
-    | Ty.Map e -> map (eff e)
-    | Ty.PureArr (t1,t2) -> parr (f t1) (f t2)
+    | Ty.Arrow (t1,t2,e) -> U.arrow (f t1) (f t2) (eff e)
+    | Ty.Tuple (t1,t2) -> U.tuple (f t1) (f t2)
+    | Ty.Var x -> (try HT.find th x with Not_found -> U.var x)
+    | Ty.Ref (r,t) -> U.ref_ (auxr r) (f t)
+    | Ty.Map e -> U.map (eff e)
+    | Ty.PureArr (t1,t2) -> U.parr (f t1) (f t2)
     | Ty.App (v,i) -> Unify.app v (Inst.map f auxr eff i) 
   and aux f (Ty.C x) = aux' f x 
   and real x = ymemo aux x
-  and auxr r = try HT.find rh r with Not_found -> mkr r
-  and auxe e = try HT.find eh e with Not_found -> mke e 
+  and auxr r = try HT.find rh r with Not_found -> U.mkr r
+  and auxe e = try HT.find eh e with Not_found -> U.mke e 
   and eff (rl,el,cl) = 
     if S.is_empty rl && S.is_empty cl && S.cardinal el = 1 then 
       auxe (S.choose el)
     else
-      effect (rlist_from_set_map auxr rl)
+      U.effect (rlist_from_set_map auxr rl)
              (elist_from_set_map auxe el)
              (rlist_from_set_map auxr cl) in
   real x, (tn,rn,en)
 
 let to_uf_enode (rl,el,cl) = 
     if S.is_empty rl && S.is_empty cl && S.cardinal el = 1 then 
-      mke (S.choose el)
-    else
-      effect (rlist_from_set_map mkr rl)
-             (elist_from_set_map mke el)
-             (rlist_from_set_map mkr cl)
+      U.mke (S.choose el)
+    else U.effect (rlist_from_set_map U.mkr rl)
+             (elist_from_set_map U.mke el)
+             (rlist_from_set_map U.mkr cl)
 
 let sto_uf_node x = fst (to_uf_node G.empty x)
 
 let pref eff cur (p : ParseT.t) = 
-  Ast.ParseT.pure_lam cur (Ty.map (to_eff eff)) p p.loc
+  Ast.ParseT.pure_lam cur (Ty.map (U.to_eff eff)) p p.loc
 
 let postf eff t old cur res (p : ParseT.t) = 
-  let et = Ty.map (to_eff eff) in
+  let et = Ty.map (U.to_eff eff) in
   let lam = Ast.ParseT.pure_lam in
   let lameff s = lam s et in
-  lameff old (lameff cur (lam res (to_ty t) p p.loc ) p.loc) p.loc
+  lameff old (lameff cur (lam res (U.to_ty t) p p.loc ) p.loc) p.loc
 
 let rec infer' env t loc = function
   | App (e1,e2,k,cap) ->
-      let nt = new_ty () 
-      and e = if cap = [] then new_e () 
+      let nt = U.new_ty () 
+      and e = if cap = [] then U.new_e () 
               else to_uf_enode (NEffect.from_cap_list cap) in
-      let e1 = infer env (arrow nt t e) e1 in
+      let e1 = infer env (U.arrow nt t e) e1 in
       let e2 = infer env nt e2 in
       App (e1,e2,k,cap), Unify.effect [] [e;e1.e;e2.e] []
   | Annot (e,xt) -> 
@@ -112,72 +113,71 @@ let rec infer' env t loc = function
         let xt = if env.pm then Ty.to_logic_type xt else xt in
         let nt,i = to_uf_node m xt in
         unify nt t loc;
-        Var (x, i), new_e ()
+        Var (x, i), U.new_e ()
   | Const c -> 
-      unify t (const (Const.type_of_constant c)) loc;
-      Const c, new_e ()
+      unify t (U.const (Const.type_of_constant c)) loc;
+      Const c, U.new_e ()
   | PureFun (xt,(_,x,e)) ->
       let nt = sto_uf_node xt in
-      let nt' = new_ty () in
+      let nt' = U.new_ty () in
       let env = add_svar env x xt in
       let e = infer env nt' e in
-      unify (parr nt nt') t loc;
-      PureFun (xt,Name.close_bind x e), new_e ()
+      unify (U.parr nt nt') t loc;
+      PureFun (xt,Name.close_bind x e), U.new_e ()
   | Quant (k,xt,(_,x,e)) ->
       let env = add_svar env x xt in
       let e = infer env t e in
-      unify prop t loc;
-      Quant (k,xt,Name.close_bind x e), new_e ()
+      unify U.prop t loc;
+      Quant (k,xt,Name.close_bind x e), U.new_e ()
   | Lam (x,xt,p,e,q) ->
       let nt = sto_uf_node xt in
-      let nt' = new_ty () in
+      let nt' = U.new_ty () in
       let env = add_svar env x xt in
       let e = infer {env with pm = false} nt' e in
-      unify (arrow nt nt' e.e ) t loc;
+      unify (U.arrow nt nt' e.e ) t loc;
       let p = pre env e.e p in
       let q = post env e.e nt' q in
-      Lam (x,xt,p,e,q), new_e ()
+      Lam (x,xt,p,e,q), U.new_e ()
   | Param (t',e) -> 
       unify t (sto_uf_node t') loc;
       Param (t',e), to_uf_enode e
   | TypeDef (g,t',x,e) -> 
       let env = add_ty env x g t' in
       let e = infer env t e in
-      TypeDef (g,t',x,e), new_e ()
-  | Let (b,(_,x,e2),r) ->
-      let g, e1 = G.sopen_ b in
-      let nt = new_ty () in
+      TypeDef (g,t',x,e), U.new_e ()
+  | Let (g,e1,(_,x,e2),r) ->
+      let nt = U.new_ty () in
       let env' = 
         match r with
         | NoRec -> env
         | Rec  ty -> (add_svar env x ty) in
       let e1 = infer env' nt e1 in
-      let xt = try to_ty nt 
+      let xt = try U.to_ty nt 
                with Assert_failure _ -> error (Name.to_string x) loc  in
       let e2 = infer (add_var env x g xt) t e2 in
-      Let (G.close g e1,Name.close_bind x e2,r), 
-      Unify.effect [] [e1.e; e2.e] []
+      Let (g, e1,Name.close_bind x e2,r), 
+      U.effect [] [e1.e; e2.e] []
   | Ite (e1,e2,e3) ->
-      let e1 = infer env bool e1 in
+      let e1 = infer env U.bool e1 in
       let e2 = infer env t e2 in
       let e3 = infer env t e3 in
-      Ite (e1,e2,e3), Unify.effect [] [e1.e;e2.e; e3.e] []
+      Ite (e1,e2,e3), U.effect [] [e1.e;e2.e; e3.e] []
   | Axiom e -> 
-      unify prop t loc;
-      Axiom (infer env prop e), new_e ()
+      unify U.prop t loc;
+      Axiom (infer env U.prop e), U.new_e ()
   | For (dir,inv,i,s,e,body) ->
-      unify t unit loc;
+      unify t U.unit loc;
       let env = add_svar env i Ty.int in
-      let body = infer env unit body in
+      let body = infer env U.unit body in
       let inv = pre env body.e inv in
       For (dir,inv,i,s,e,body), body.e
   | Logic t' -> 
       let nt = sto_uf_node t' in
       unify nt t loc; 
-      Logic t', new_e ()
+      Logic t', U.new_e ()
   | LetReg (vl,e) ->
       let e = infer env t e in
-      let eff = NEffect.rremove vl (to_eff e.e) in
+      let eff = NEffect.rremove vl (U.to_eff e.e) in
       LetReg (vl,e), to_uf_enode eff
   | Gen _ -> assert false
 
@@ -203,7 +203,7 @@ and post env eff t (old,cur,x) =
 let initial = { vars = Name.M.empty; pm = false; 
                 types = Name.M.empty; curloc = Loc.dummy; }
 let infer e = 
-  let nt = new_ty () in
+  let nt = U.new_ty () in
   infer initial nt e
 
 open Recon
@@ -216,9 +216,8 @@ let rec recon' = function
   | Lam (x,ot,p,e,q) -> 
       Lam (x,ot, pre p, recon e, post q)
   | Param (t,e) -> Param (t,e)
-  | Let (b,(_,x,e2),r) -> 
-      let g,e1 = G.sopen_ b in
-      Let (G.close g (recon e1), Name.close_bind x (recon e2),r)
+  | Let (g,e1,(_,x,e2),r) -> 
+      Let (g, recon e1, Name.close_bind x (recon e2),r)
   | Ite (e1,e2,e3) -> Ite (recon e1, recon e2, recon e3)
   | Axiom e -> Axiom (recon e)
   | Logic t -> Logic t

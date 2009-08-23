@@ -95,7 +95,7 @@ let map ~varfun ~effectfun ~rvarfun
     and aux_node f = { f with v = aux f.v; t = tyfun f.t; } in 
     aux_node f
 
-let rec refresh s t = 
+let refresh s t = 
   map 
     ~varfun:(fun x i -> Var (Var.refresh s x, i))
     ~effectfun:(Effect.refresh s)

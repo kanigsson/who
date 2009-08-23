@@ -201,3 +201,13 @@ let get_predef_var s =
   with Not_found -> failwith ("predef_var: " ^ s)
 
 let iter_vars f = Hashtbl.iter f h
+
+(*
+let map ~tyvarfun ~effectfun ~rvarfun t =
+  let rec aux' = function
+  | (Const _ as t) -> t
+  | `Tuple (t1,t2) -> `Tuple (aux t1, aux t2)
+  | `Arr (t1,t2) -> `Arr (aux t1, aux t2)
+  | `Var v -> tyvarfun v
+  | `App (v,tl) -> `App (v, List.map r tl)
+*)
