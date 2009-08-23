@@ -57,7 +57,7 @@ let print pra prb prc fmt t =
         fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]" 
           prrec r Name.print x G.print g print e1 print e2
     | Ite (e1,e2,e3) ->
-        fprintf fmt "@[if %a then %a else %a@]" print e1 print e2 print e3
+        fprintf fmt "@[if %a then@ %a else@ %a@]" print e1 print e2 print e3
     | Axiom e -> fprintf fmt "axiom %a" print e
     | Logic t -> fprintf fmt "logic %a" Ty.print t
     | TypeDef (g,t,x,e) -> 
@@ -145,9 +145,11 @@ module Recon = struct
 
   open Const
 
-  let ptrue_ loc = mk_val (Const (Ptrue)) T.prop loc
-  let btrue_ loc = mk_val (Const (Btrue)) T.bool loc
-  let bfalse_ loc = mk_val (Const (Bfalse)) T.bool loc
+  let ptrue_ loc = mk_val (Const Ptrue) T.prop loc
+  let pfalse_ loc = mk_val (Const Pfalse) T.prop loc
+  let btrue_ loc = mk_val (Const Btrue) T.bool loc
+  let bfalse_ loc = mk_val (Const Bfalse) T.bool loc
+  let void loc = mk_val (Const Void) T.unit loc
 
   let svar s t = var s Inst.empty (G.empty,t) 
   let le t1 t2 loc = appi (spre_defvar "<=" loc) t1 t2 loc
@@ -158,6 +160,7 @@ module Recon = struct
     | Const Pfalse, _ -> t1
     | _, Const Pfalse -> t2
     | _ -> appi (spre_defvar "/\\" loc) t1 t2 loc
+
 
   let impl t1 t2 loc = 
     match t1.v,t2.v with
@@ -174,6 +177,7 @@ module Recon = struct
     | T.C (T.Tuple (t1,t2)) -> app (pre_defvar "fst" ([t1;t2],[],[]) loc) t loc
     | _ -> assert false
 
+  let neg f l = app (spre_defvar "~" l) f l
   let post t loc = 
     match t.t with
     | T.C (T.Tuple (t1,t2)) -> app (pre_defvar "snd" ([t1;t2],[],[]) loc) t loc
@@ -316,3 +320,57 @@ let map ~varfun ~varbindfun f =
 let refresh s t =
   map ~varfun:(fun x i -> Var (Name.refresh s x, i))
     ~varbindfun:(Name.refresh_bind s) t
+
+let vopen = Name.open_bind refresh
+let close = Name.close_bind
+let vopen_with x = Name.open_with refresh x
+
+let rec equal' a b =
+  match a, b with
+  | Const c1, Const c2 -> Const.compare c1 c2 = 0
+  | Var (v1,i1), Var (v2,i2) ->
+      Name.equal v1 v2 && 
+      Inst.equal Ty.equal Name.equal NEffect.equal i1 i2
+  | App (a1,b1,_,_), App (a2,b2,_,_) -> equal a1 a2 && equal b1 b2
+  | Gen (g1,t1), Gen (g2,t2) ->
+      G.equal g1 g2 && equal t1 t2
+  | Ite (a1,b1,c1), Ite (a2,b2,c2) -> equal a1 a2 && equal b1 b2 && equal c1 c2
+  | Axiom e1, Axiom e2 -> equal e1 e2
+  | Logic t1, Logic t2 -> Ty.equal t1 t2
+
+  | Let (g1,ea1,b1,_), Let (g2,ea2,b2,_) ->
+      G.equal g1 g2 && equal ea1 ea2 && bind_equal b1 b2
+  | PureFun (t1,b1), PureFun (t2,b2) -> Ty.equal t1 t2 && bind_equal b1 b2
+  | Quant (k1,t1,b1), Quant (k2,t2,b2) ->
+      k1 = k2 && Ty.equal t1 t2 && bind_equal b1 b2
+  | TypeDef (g1,t1,x1,e1), TypeDef (g2,t2,x2,e2) ->
+      G.equal g1 g2 && Misc.opt_equal Ty.equal t1 t2 && Name.equal x1 x2
+      && equal e1 e2
+  | For _, _ | LetReg _, _ | Annot _, _ | Param _, _  
+  | Lam _, _ -> assert false
+  | _, _ -> false
+and bind_equal b1 b2 = 
+  (let x,eb1 = vopen b1 in
+   let eb2 = vopen_with x b2 in
+   equal eb1 eb2)
+
+and equal a b = equal' a.v b.v
+
+let destruct_infix' = function
+  | App ({ v = App ({ v = Var (v,_)},t1,_,_) },t2,`Infix,_) -> Some (v,t1,t2)
+  | _ -> None
+
+let destruct_infix x = destruct_infix' (x.v)
+
+let open_close_map ~varfun t =
+  let rec aux t = 
+    map ~varfun 
+      ~varbindfun:(fun b -> let x,f = vopen b in close x (aux f)) t
+  in
+  aux t
+
+let subst x v e =
+  open_close_map
+    ~varfun:(fun z i -> 
+        if Name.equal z x then v i else Var (z,i))
+    e

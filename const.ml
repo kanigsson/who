@@ -43,3 +43,8 @@ let quant fmt = function
 let quantsep fmt = function
   | `FA | `EX -> pp_print_string fmt "."
   | `LAM -> pp_print_string fmt "->"
+
+let compare a b = 
+  match a,b with
+  | Int i1, Int i2 -> Big_int.compare_big_int i1 i2
+  | _, _ -> Pervasives.compare a b

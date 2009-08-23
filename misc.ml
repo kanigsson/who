@@ -7,6 +7,8 @@ let pair_compare cmpa cmpb (a1,b1) (a2,b2) =
   let c = cmpa a1 a2 in
   if c = 0 then cmpb b1 b2 else c
 
+let pair_equal eqa eqb (a1,b1) (a2,b2) = eqa a1 a2 && eqb b1 b2
+
 let cnt =
   let x = ref 0 in
     fun () -> incr x ; !x
@@ -21,8 +23,12 @@ let rec list_compare cmp l1 l2 =
       if c <> 0 then c
       else list_compare cmp r1 r2
 
-let list_equal cmp l1 l2 =
-  list_compare cmp l1 l2 = 0
+let list_equal cmp l1 l2 = list_compare cmp l1 l2 = 0
+let opt_equal eq o1 o2 = 
+  match o1, o2 with
+  | None, None -> true
+  | Some t1, Some t2 -> eq t1 t2
+  | _, _ -> false
 
 module StringMap = Map.Make(String)
 module StringSet = Set.Make(String)

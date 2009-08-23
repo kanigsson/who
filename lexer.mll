@@ -101,6 +101,10 @@ rule token = parse
   | "<=" { LE (create_info lexbuf)  }
   | "/\\" { AND (create_info lexbuf) }
   | '<' { LT (create_info lexbuf)  }
+  | "<<" { BLT (create_info lexbuf) }
+  | ">>" { BGT (create_info lexbuf) }
+  | "<<=" { BLE (create_info lexbuf) }
+  | ">>=" { BGE (create_info lexbuf) }
   | '>' { GT (create_info lexbuf)  }
   | ">=" { GE (create_info lexbuf)  }
   | '+' { PLUS (create_info lexbuf)  }

@@ -161,7 +161,10 @@ module Generalize = struct
   let close (tl,rl,el) a = 
     Name.close_listbind tl (Name.close_listbind rl (Name.close_listbind el a))
 
-
+  let equal =
+    let eq = Misc.list_equal Name.compare in
+    fun (tl1,rl1,el1) (tl2,rl2,el2) ->
+      eq tl1 tl2 && eq rl1 rl2 && eq el1 el2
 
 end
 

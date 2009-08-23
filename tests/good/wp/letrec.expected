@@ -150,6 +150,21 @@ length_create ['a22||]=
                                (create ['a22||] l : array['a22||]))
                               = l)
 in
+let
+apply ['a23||e3]=
+                 (λ(g:'a23 -> map{|e3 } -> prop * 'a23 -> map{|e3 } ->
+                 map{|e3 } -> 'a23 -> prop) ->
+                 (λ(x5:'a23) ->
+                 (λ(cur7:map{|e3 }) ->
+                 pre ['a23 -> map{|e3 } -> prop,'a23 -> map{|e3 } -> map{|e3
+                 } -> 'a23 -> prop||] g x5 cur7)) ,
+                 (λ(x5:'a23) ->
+                 (λ(old5:map{|e3 }) ->
+                 (λ(cur8:map{|e3 }) ->
+                 (λ(r5:'a23) ->
+                 post ['a23 -> map{|e3 } -> prop,'a23 -> map{|e3 } -> map{|e3
+                 } -> 'a23 -> prop||] g x5 old5 cur8 r5)))))
+in
 (forall ['a23||e3]. forall (g:'a23 -> map{|e3 } -> prop * 'a23 -> map{|e3
                     } -> map{|e3 } -> 'a23 -> prop).
                     forall (anon7:map{|e3 }).
@@ -172,19 +187,4 @@ in
                        post ['a23 -> map{|e3 } -> prop,'a23 -> map{|e3 } ->
                        map{|e3 } -> 'a23 -> prop||] g x5 old5 cur8 r5)))
                        anon7 anon8 anon9))))
-/\
-(let
- apply ['a23||e3]=
-                  (λ(g:'a23 -> map{|e3 } -> prop * 'a23 -> map{|e3 } ->
-                  map{|e3 } -> 'a23 -> prop) ->
-                  (λ(x5:'a23) ->
-                  (λ(cur7:map{|e3 }) ->
-                  pre ['a23 -> map{|e3 } -> prop,'a23 -> map{|e3 } -> map{|e3
-                  } -> 'a23 -> prop||] g x5 cur7)) ,
-                  (λ(x5:'a23) ->
-                  (λ(old5:map{|e3 }) ->
-                  (λ(cur8:map{|e3 }) ->
-                  (λ(r5:'a23) ->
-                  post ['a23 -> map{|e3 } -> prop,'a23 -> map{|e3 } ->
-                  map{|e3 } -> 'a23 -> prop||] g x5 old5 cur8 r5)))))
- in (λ(anon10:map{|}) -> (λ(anon11:unit) -> True)) anon ())
+/\ ((λ(anon10:map{|}) -> (λ(anon11:unit) -> True)) anon ())

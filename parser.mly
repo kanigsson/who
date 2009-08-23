@@ -58,6 +58,7 @@
 %token IN SEMICOLON
 %token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND
 %token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION TILDE
+%token <Loc.loc> BLE BLT BGT BGE
 %token EOF
 %token REC
 %token <Loc.loc> EXCLAM DEXCLAM IF FUN TRUE FALSE PTRUE PFALSE VOID LET AXIOM
@@ -69,7 +70,7 @@
 %right ARROW
 %nonassoc ifprec
 %left AND
-%nonassoc LE LT GE GT
+%nonassoc LE LT GE GT BLE BLT BGT BGE
 %nonassoc ASSIGN
 %right EQUAL NEQ BEQUAL BNEQ
 %right COMMA
@@ -135,13 +136,13 @@ constant:
   | p = VOID   { p, Const.Void }
 
 %inline infix:
+  | p = GT         { p,">" }
+  | p = LT         { p,"<" }
   | p = MINUS      { p,"-" }
   | p = PLUS       { p,"+" }
   | p = STAR       { p,"*" }
   | p = ASSIGN     { p,":=" }
-  | p = LT         { p,"<" }
   | p = LE         { p,"<=" }
-  | p = GT         { p,">" }
   | p = GE         { p,">=" }
   | p = EQUAL      { p,"=" }
   | p = BEQUAL     { p,"==" }
@@ -150,6 +151,10 @@ constant:
   | p = AND        { p,"/\\" }
   | p = COMMA      { p,"," }
   | p = ARROW      { p,"->" }
+  | p = BLE         { p,"<<=" }
+  | p = BGE         { p,">>=" }
+  | p = BGT         { p,">>" }
+  | p = BLT         { p,"<<" }
 
 prefix:
   | p = EXCLAM { p, "!" }

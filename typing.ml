@@ -50,7 +50,7 @@ let rec formtyping' env loc = function
           if Ty.equal ta t2 then tb else error "type mismatch" loc
       | _ -> error "no function type" loc
       end
-  | TypeDef _ -> assert false
+  | TypeDef (_,_,_,e) -> formtyping env e
   | PureFun (t,(_,x,e)) -> parr t (formtyping (add_svar env x t) e)
   | Logic t -> t
   | Axiom f -> fis_oftype env prop f; prop

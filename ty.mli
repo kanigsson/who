@@ -51,6 +51,8 @@ module Generalize : sig
   val open_ : (Name.subst -> 'a -> 'a) -> 'a bind -> t * 'a
   val sopen_ : 'a bind -> t * 'a
   val close : t -> 'a -> 'a bind 
+
+  val equal : t -> t -> bool
 end
 
 val allsubst : 

@@ -86,21 +86,30 @@ and wp m q e =
             forall ft (fun x ->
               impl (applist [post lv1 l; lv2; m; m2; x] l)
                 (applist [q;m2; x] l) l) l) l ] l 
-    | Let (g,e1,(_,x,e2),_) -> 
+    | Let (g,e1,(_,x,e2),r) -> 
         (* TODO recursive case *)
         if is_value_node e1 then
           let lv = lift_value e1 in
           let f = gen g (correct e1) l in
-          and_ f (let_ g lv x (wp_node m q e2) NoRec l) l
+          let wp = wp_node m q e2 in
+          let gen f = let_ g lv x f NoRec l in
+          match r with
+          | NoRec -> and_ f (gen wp) l
+          | Rec _ -> gen (and_ f wp l)
+
         else
           let t = ty e1.t in
           let f = efflamho e1.e (fun m2 ->
             plam x t (wp_node (combine m m2 l) q e2) l) l in
           wp_node m f e1
     | Ite (c,th,el) ->
+        ite (eq (lift_value c) (btrue_ l) l) 
+          (wp_node m q th) (wp_node m q el) l
+(*
         let lc = lift_value c in
         let branch boolean e = impl (eq lc (boolean l) l) (wp_node m q e) l in
         and_ (branch btrue_ th) (branch bfalse_ el) l
+*)
     | Param _ -> ptrue_ l
     | TypeDef (g,k,x,e) -> typedef g k x (wp_node m q e) l
     | _ -> assert false

@@ -152,11 +152,9 @@ length_create ['a22||]=
 in
 (forall . forall (anon7:map{|}).
           forall (b:bool).
-          ((b = true) ->
-           ((λ(anon8:map{|}) -> (λ(anon9:nat) -> True)) anon7 5))
-          /\
-          ((b = false) ->
-           ((λ(anon8:map{|}) -> (λ(anon9:nat) -> True)) anon7 3)))
+          if b = true then
+          (λ(anon8:map{|}) -> (λ(anon9:nat) -> True)) anon7 5 else
+          (λ(anon8:map{|}) -> (λ(anon9:nat) -> True)) anon7 3)
 /\
 (let
  f2 =

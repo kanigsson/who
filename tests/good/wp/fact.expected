@@ -157,32 +157,29 @@ fact_step =
            axiom forall (n2:nat).
                  (0 <= n2) -> ((fact (n2 + 1)) = (n2 * (fact n2)))
 in
+let
+f2 =
+    (λ(x5:nat) -> (λ(cur7:map{|}) -> 0 <= x5)) ,
+    (λ(x5:nat) ->
+    (λ(old5:map{|}) -> (λ(cur8:map{|}) -> (λ(r5:nat) -> r5 = (fact x5)))))
+in
 (forall . forall (anon7:map{|}).
           forall (x5:nat).
           ((λ(cur7:map{|}) -> 0 <= x5) anon7) ->
-          ((((x5 == 0) = true) ->
-            ((λ(old5:map{|}) ->
-             (λ(cur8:map{|}) -> (λ(r5:nat) -> r5 = (fact x5)))) anon7 anon7
-             1))
+          (if (x5 == 0) = true then
+           (λ(old5:map{|}) ->
+           (λ(cur8:map{|}) -> (λ(r5:nat) -> r5 = (fact x5)))) anon7 anon7 1 else
+           (fst [nat -> map{|} -> prop,nat -> map{|} -> map{|} -> nat ->
+            prop||] f2 (x5 - 1) anon7)
            /\
-           (((x5 == 0) = false) ->
-            ((fst [nat -> map{|} -> prop,nat -> map{|} -> map{|} -> nat ->
-              prop||] f2 (x5 - 1) anon7)
-             /\
-             (forall (anon8:map{|}).
-              forall (anon9:nat).
-              (snd [nat -> map{|} -> prop,nat -> map{|} -> map{|} -> nat ->
-               prop||] f2 (x5 - 1) anon7 anon8 anon9)
-              ->
-              ((λ(anon10:map{|}) ->
-               (λ(anf:nat) ->
-               (λ(old5:map{|}) ->
-               (λ(cur8:map{|}) -> (λ(r5:nat) -> r5 = (fact x5)))) anon7
-               (combine [||{|},{|}] anon7 anon10) (x5 * anf))) anon8 anon9))))))
-/\
-(let
- f2 =
-     (λ(x5:nat) -> (λ(cur7:map{|}) -> 0 <= x5)) ,
-     (λ(x5:nat) ->
-     (λ(old5:map{|}) -> (λ(cur8:map{|}) -> (λ(r5:nat) -> r5 = (fact x5)))))
- in (λ(anon11:map{|}) -> (λ(anon12:unit) -> True)) anon ())
+           (forall (anon8:map{|}).
+            forall (anon9:nat).
+            (snd [nat -> map{|} -> prop,nat -> map{|} -> map{|} -> nat ->
+             prop||] f2 (x5 - 1) anon7 anon8 anon9)
+            ->
+            ((λ(anon10:map{|}) ->
+             (λ(anf:nat) ->
+             (λ(old5:map{|}) ->
+             (λ(cur8:map{|}) -> (λ(r5:nat) -> r5 = (fact x5)))) anon7
+             (combine [||{|},{|}] anon7 anon10) (x5 * anf))) anon8 anon9))))
+/\ ((λ(anon11:map{|}) -> (λ(anon12:unit) -> True)) anon ())
