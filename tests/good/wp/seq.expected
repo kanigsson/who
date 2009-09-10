@@ -162,27 +162,30 @@ e22]. forall (f2:'a23 -> map{|e12 } -> prop * 'a23 -> map{|e12 } -> map{|e12
       forall (anon7:map{|e12 e22 }).
       forall (x5:'a23).
       (fst ['a23 -> map{|e12 } -> prop,'a23 -> map{|e12 } -> map{|e12 } ->
-       'b5 -> prop||] f2 x5 anon7)
+       'b5 -> prop||] f2 x5 (restrict [||{|e12 e22 },{|e12 }] anon7))
       /\
       (forall (anon8:map{|e12 }).
        forall (anon9:'b5).
        (snd ['a23 -> map{|e12 } -> prop,'a23 -> map{|e12 } -> map{|e12 } ->
-        'b5 -> prop||] f2 x5 anon7 anon8 anon9)
+        'b5 -> prop||] f2 x5 (restrict [||{|e12 e22 },{|e12 }] anon7) anon8
+        anon9)
        ->
        ((λ(anon10:map{|e12 }) ->
+        (λ(anon11:map{|e12 e22 }) ->
         (λ(anf:'b5) ->
         (fst ['b5 -> map{|e22 } -> prop,'b5 -> map{|e22 } -> map{|e22 } ->
-         'c -> prop||] g anf (combine [||{|e12 e22 },{|e12 }] anon7 anon10))
+         'c -> prop||] g anf (restrict [||{|e12 e22 },{|e22 }] anon11))
         /\
-        (forall (anon11:map{|e22 }).
-         forall (anon12:'c).
+        (forall (anon12:map{|e22 }).
+         forall (anon13:'c).
          (snd ['b5 -> map{|e22 } -> prop,'b5 -> map{|e22 } -> map{|e22 } ->
-          'c -> prop||] g anf (combine [||{|e12 e22 },{|e12 }] anon7 anon10)
-          anon11 anon12)
+          'c -> prop||] g anf (restrict [||{|e12 e22 },{|e22 }] anon11)
+          anon12 anon13)
          ->
-         ((λ(anon13:map{|e12 e22 }) -> (λ(anon14:'c) -> True)) anon11
-          anon12))))
-        anon8 anon9)))
+         ((λ(anon14:map{|e22 }) ->
+          (λ(anon15:map{|e12 e22 }) -> (λ(anon16:'c) -> True))
+          (combine [||{|e12 e22 },{|e22 }] anon11 anon14)) anon12 anon13))))
+        (combine [||{|e12 e22 },{|e12 }] anon7 anon10)) anon8 anon9)))
 /\
 (let seq ['a23 'b5 'c||e12
  e22]=
@@ -190,59 +193,59 @@ e22]. forall (f2:'a23 -> map{|e12 } -> prop * 'a23 -> map{|e12 } -> map{|e12
       'b5 -> prop) ->
       (λ(g:'b5 -> map{|e22 } -> prop * 'b5 -> map{|e22 } -> map{|e22 } ->
       'c -> prop) ->
-      (λ(x5:'a23) -> (λ(anon15:map{|e12 e22 }) -> True)) ,
+      (λ(x5:'a23) -> (λ(anon17:map{|e12 e22 }) -> True)) ,
       (λ(x5:'a23) ->
-      (λ(anon16:map{|e12 e22 }) ->
-      (λ(anon17:map{|e12 e22 }) -> (λ(anon18:'c) -> True))))))
+      (λ(anon18:map{|e12 e22 }) ->
+      (λ(anon19:map{|e12 e22 }) -> (λ(anon20:'c) -> True))))))
  in
  (forall [|r1
  r2|]. forall (x6:ref(r1,nat)).
-       forall (anon19:map{|}).
+       forall (anon21:map{|}).
        forall (y:ref(r2,nat)).
-       ((λ(anon20:map{|}) ->
-        (λ(anon21:nat -> map{r1 r2 |} -> prop * nat -> map{r1 r2 |} ->
-        map{r1 r2 |} -> nat -> prop) -> True)) anon19
+       ((λ(anon22:map{|}) ->
+        (λ(anon23:nat -> map{r1 r2 |} -> prop * nat -> map{r1 r2 |} ->
+        map{r1 r2 |} -> nat -> prop) -> True)) anon21
         (seq [nat,nat,nat||{r1 |},{r2 |}]
-         ((λ(z3:nat) -> (λ(anon22:map{r1 |}) -> True)) ,
+         ((λ(z3:nat) -> (λ(anon24:map{r1 |}) -> True)) ,
           (λ(z3:nat) ->
-          (λ(anon23:map{r1 |}) ->
-          (λ(anon24:map{r1 |}) -> (λ(anon25:nat) -> True)))))
-         ((λ(z4:nat) -> (λ(anon26:map{r2 |}) -> True)) ,
+          (λ(anon25:map{r1 |}) ->
+          (λ(anon26:map{r1 |}) -> (λ(anon27:nat) -> True)))))
+         ((λ(z4:nat) -> (λ(anon28:map{r2 |}) -> True)) ,
           (λ(z4:nat) ->
-          (λ(anon27:map{r2 |}) ->
-          (λ(anon28:map{r2 |}) -> (λ(anon29:nat) -> True)))))))
+          (λ(anon29:map{r2 |}) ->
+          (λ(anon30:map{r2 |}) -> (λ(anon31:nat) -> True)))))))
        /\
-       ((forall (anon30:map{r1 |}).
+       ((forall (anon32:map{r1 |}).
          forall (z3:nat).
          (fst [ref(r1,nat) -> map{r1 |} -> prop,ref(r1,nat) -> map{r1 |} ->
-          map{r1 |} -> nat -> prop||] ! [nat|r1|] x6 anon30)
+          map{r1 |} -> nat -> prop||] ! [nat|r1|] x6 anon32)
          /\
-         (forall (anon31:map{r1 |}).
-          forall (anon32:nat).
+         (forall (anon33:map{r1 |}).
+          forall (anon34:nat).
           (snd [ref(r1,nat) -> map{r1 |} -> prop,ref(r1,nat) -> map{r1 |} ->
-           map{r1 |} -> nat -> prop||] ! [nat|r1|] x6 anon30 anon31 anon32)
+           map{r1 |} -> nat -> prop||] ! [nat|r1|] x6 anon32 anon33 anon34)
           ->
-          ((λ(anon33:map{r1 |}) -> (λ(anon34:nat) -> True)) anon31 anon32)))
+          ((λ(anon35:map{r1 |}) -> (λ(anon36:nat) -> True)) anon33 anon34)))
         /\
-        (forall (anon35:map{r2 |}).
+        (forall (anon37:map{r2 |}).
          forall (z4:nat).
          (fst [ref(r2,nat) -> map{r2 |} -> prop,ref(r2,nat) -> map{r2 |} ->
-          map{r2 |} -> nat -> prop||] ! [nat|r2|] y anon35)
+          map{r2 |} -> nat -> prop||] ! [nat|r2|] y anon37)
          /\
-         (forall (anon36:map{r2 |}).
-          forall (anon37:nat).
+         (forall (anon38:map{r2 |}).
+          forall (anon39:nat).
           (snd [ref(r2,nat) -> map{r2 |} -> prop,ref(r2,nat) -> map{r2 |} ->
-           map{r2 |} -> nat -> prop||] ! [nat|r2|] y anon35 anon36 anon37)
+           map{r2 |} -> nat -> prop||] ! [nat|r2|] y anon37 anon38 anon39)
           ->
-          ((λ(anon38:map{r2 |}) -> (λ(anon39:nat) -> True)) anon36 anon37)))))
+          ((λ(anon40:map{r2 |}) -> (λ(anon41:nat) -> True)) anon38 anon39)))))
  /\
  (let h [|r1
   r2|]=
        (λ(x6:ref(r1,nat)) ->
-       (λ(y:ref(r2,nat)) -> (λ(anon40:map{|}) -> True)) ,
+       (λ(y:ref(r2,nat)) -> (λ(anon42:map{|}) -> True)) ,
        (λ(y:ref(r2,nat)) ->
-       (λ(anon41:map{|}) ->
-       (λ(anon42:map{|}) ->
-       (λ(anon43:nat -> map{r1 r2 |} -> prop * nat -> map{r1 r2 |} -> map{r1
+       (λ(anon43:map{|}) ->
+       (λ(anon44:map{|}) ->
+       (λ(anon45:nat -> map{r1 r2 |} -> prop * nat -> map{r1 r2 |} -> map{r1
        r2 |} -> nat -> prop) -> True)))))
-  in (λ(anon44:map{|}) -> (λ(anon45:unit) -> True)) anon ()))
+  in (λ(anon46:map{|}) -> (λ(anon47:unit) -> True)) anon ()))

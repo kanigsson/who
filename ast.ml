@@ -8,7 +8,7 @@ type ('a,'b,'c) t'' =
   | App of ('a,'b,'c) t' * ('a,'b,'c) t' * [`Infix | `Prefix ] * Name.t list
   | Lam of 
       Name.t * Ty.t * ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post 
-  | Let of G.t * ('a,'b,'c) t' * ('a,'b,'c) t' Name.bind * isrec
+  | Let of bool * G.t * ('a,'b,'c) t' * ('a,'b,'c) t' Name.bind * isrec
   | PureFun of Ty.t * ('a,'b,'c) t' Name.bind
   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
   | Axiom of ('a,'b,'c) t'
@@ -36,14 +36,23 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
     | Var (v,i) -> varfun v (Inst.map tyfun rvarfun effectfun i)
     | App (t1,t2,p,_) -> App (aux t1, aux t2, p, [])
     | Annot (e,t) -> Annot (aux e, tyfun t)
-    | Lam _ | For _ | LetReg _ -> assert false
-    | Let (g,e1,b,r) -> Let (g,aux e1,varbindfun b, r)
+    | Lam (x,t,p,e,q) -> Lam (x,tyfun t, pre p, aux e, post q)
+    | LetReg (l,e) -> LetReg (l,aux e)
+    | For _ -> assert false
+    | Let (p,g,e1,b,r) -> Let (p,g,aux e1,varbindfun b, r)
     | PureFun (t,b) -> PureFun (tyfun t, varbindfun b)
     | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
     | Axiom e -> Axiom (aux e)
     | TypeDef (g,t,x,e) -> TypeDef (g,t,x,aux e)
     | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
     | Gen (g,e) -> Gen (g,aux e)
+  and pre (x,o) = (x, Misc.opt_map aux o)
+  and post (x,y,f) = 
+    let f = match f with
+    | PNone -> PNone
+    | PPlain f -> PPlain (aux f)
+    | PResult (r,f) -> PResult (r,aux f) in
+    x, y, f
   and aux t = {t with v = aux' t.v; t = tyfun t.t} in
   aux f
 
@@ -83,7 +92,7 @@ let print pra prb prc open_ fmt t =
     | PureFun (t,b) ->
         let x,e = open_ b in
         fprintf fmt "@[(λ(%a:%a)@ ->@ %a)@]" Name.print x Ty.print t print e
-    | Let (g,e1,b,r) -> 
+    | Let (_,g,e1,b,r) -> 
         let x,e2 = open_ b in
         fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]" 
           prrec r Name.print x G.print g print e1 print e2
@@ -224,8 +233,9 @@ module Recon = struct
   let plus t1 t2 loc = appi (spre_defvar "+" loc) t1 t2 loc
   let one = mk_val (Const (Int Big_int.unit_big_int)) T.int 
   let succ t loc = plus t (one loc) loc
-  let let_ g e1 x e2 r = 
-    mk (Let (g, e1,Name.close_bind x e2,r)) e2.t (NEffect.union e1.e e2.e)
+  let let_ ?(prelude=false) g e1 x e2 r = 
+    mk (Let (prelude, g, e1,Name.close_bind x e2,r)) 
+      e2.t (NEffect.union e1.e e2.e)
 
   let axiom e = mk (Axiom e) T.prop e.e
   let logic t = mk (Logic t) t NEffect.empty
@@ -313,7 +323,9 @@ module Recon = struct
     else app2 (pre_defvar "combine" ([],[],[d1;d2]) l) t1 t2 l
 
   let restrict eff t l =
-    app (pre_defvar "restrict" ([],[],[domain t; eff]) l) t l
+    let d = domain t in
+    if NEffect.sequal d eff then t else
+      app (pre_defvar "restrict" ([],[],[domain t; eff]) l) t l
 
 
 end
@@ -330,7 +342,7 @@ end
 let concat t1 t2 =
   let rec aux' = function
     | Const Const.Void -> t2.v
-    | Let (g,e1,(_,x,t2),r) -> Let (g,e1, Name.close_bind x (aux t2), r)
+    | Let (p,g,e1,(_,x,t2),r) -> Let (p,g,e1, Name.close_bind x (aux t2), r)
     | TypeDef (g,t,x,t2) -> TypeDef (g,t,x,aux t2)
     | _ -> assert false 
   and aux t = { t with v = aux' t.v } in
@@ -349,7 +361,7 @@ let rec equal' a b =
   | Axiom e1, Axiom e2 -> equal e1 e2
   | Logic t1, Logic t2 -> Ty.equal t1 t2
 
-  | Let (g1,ea1,b1,_), Let (g2,ea2,b2,_) ->
+  | Let (_,g1,ea1,b1,_), Let (_,g2,ea2,b2,_) ->
       G.equal g1 g2 && equal ea1 ea2 && bind_equal b1 b2
   | PureFun (t1,b1), PureFun (t2,b2) -> Ty.equal t1 t2 && bind_equal b1 b2
   | Quant (k1,t1,b1), Quant (k2,t2,b2) ->

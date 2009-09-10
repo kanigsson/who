@@ -185,5 +185,5 @@ in
              (λ(anf:nat) ->
              (λ(old5:map{|}) ->
              (λ(cur8:map{|}) -> (λ(r5:nat) -> r5 = (fact x5)))) anon7
-             (combine [||{|},{|}] anon7 anon10) (x5 * anf))) anon8 anon9))))
+             anon10 (x5 * anf))) anon8 anon9))))
 /\ ((λ(anon11:map{|}) -> (λ(anon12:unit) -> True)) anon ())

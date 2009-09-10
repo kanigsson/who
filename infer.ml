@@ -145,7 +145,7 @@ let rec infer' env t loc = function
       let env = add_ty env x g t' in
       let e = infer env t e in
       TypeDef (g,t',x,e), U.new_e ()
-  | Let (g,e1,(_,x,e2),r) ->
+  | Let (p,g,e1,(_,x,e2),r) ->
       let nt = U.new_ty () in
       let env' = 
         match r with
@@ -155,7 +155,7 @@ let rec infer' env t loc = function
       let xt = try U.to_ty nt 
                with Assert_failure _ -> error (Name.to_string x) loc  in
       let e2 = infer (add_var env x g xt) t e2 in
-      Let (g, e1,Name.close_bind x e2,r), 
+      Let (p,g, e1,Name.close_bind x e2,r), 
       U.effect [] [e1.e; e2.e] []
   | Ite (e1,e2,e3) ->
       let e1 = infer env U.bool e1 in
@@ -216,8 +216,8 @@ let rec recon' = function
   | Lam (x,ot,p,e,q) -> 
       Lam (x,ot, pre p, recon e, post q)
   | Param (t,e) -> Param (t,e)
-  | Let (g,e1,(_,x,e2),r) -> 
-      Let (g, recon e1, Name.close_bind x (recon e2),r)
+  | Let (p,g,e1,(_,x,e2),r) -> 
+      Let (p,g, recon e1, Name.close_bind x (recon e2),r)
   | Ite (e1,e2,e3) -> Ite (recon e1, recon e2, recon e3)
   | Axiom e -> Axiom (recon e)
   | Logic t -> Logic t

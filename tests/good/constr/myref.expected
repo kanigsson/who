@@ -143,4 +143,4 @@ length_create ['a22||]=
                              ((length ['a22||]
                                (create ['a22||] l : array['a22||]))
                               = l)
-in let myref ['a23|r5|]= (λ(x5:'a23) -->  ref ['a23|r5|]{r5} x5 ) in ()
+in let myref ['a23|r5|]= (λ(x5:'a23) -->  ref ['a23|r5|] x5 ) in ()

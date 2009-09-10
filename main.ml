@@ -1,4 +1,7 @@
-let parse buf close fn = 
+open Sectionize
+
+let parse ?(prelude=false) buf close fn = 
+  if prelude then Options.prelude := true else Options.prelude := false;
   let abort () = close (); exit 1 in
   Lexer.reset buf;
   try 
@@ -15,20 +18,20 @@ let parse buf close fn =
 let maybe_abort r print f = 
   if !r then begin Format.printf "%a@." print f; exit 0; end
   
-let parse_file fn = 
+let parse_file ?prelude fn = 
   let ch = open_in fn in
   let close () = close_in ch in
   let buf = Lexing.from_channel ch in
-  parse buf close fn
+  parse ?prelude buf close fn
 
-let parse_string ?(string="prelude") s = 
+let parse_string ?prelude ?(string="prelude") s = 
   let buf = Lexing.from_string s in
-  parse buf (fun () -> ()) string
+  parse ?prelude buf (fun () -> ()) string
 
 let _ = 
   Options.update ();
   try
-    let prelude = parse_string Prelude.prelude in
+    let prelude = parse_string ~prelude:true Prelude.prelude in
     let ast = parse_file !Options.filename in
     let p = Parsetree.concat prelude ast in
     let p = Internalize.main p in
@@ -47,7 +50,9 @@ let _ =
     let p = Simplify.simplify p in
     maybe_abort Options.simplify_only Ast.Recon.print p;
     Typing.formtyping p;
-    p
+    let s = Sectionize.section p in
+    maybe_abort Options.sectionize_only Sectionize.print s;
+    s
   with
   | Sys_error e -> Error.bad e
   | Infer.Error (s,loc) 

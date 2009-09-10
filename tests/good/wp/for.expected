@@ -181,14 +181,13 @@ in
                      (λ(anf:nat) ->
                      (fst [nat -> map{r5 |} -> prop,nat -> map{r5 |} ->
                       map{r5 |} -> unit -> prop||] (:= [nat|r5|] x5)
-                      (anf + i5) (combine [||{r5 |},{r5 |}] anon8 anon11))
+                      (anf + i5) anon11)
                      /\
                      (forall (anon12:map{r5 |}).
                       forall (anon13:unit).
                       (snd [nat -> map{r5 |} -> prop,nat -> map{r5 |} ->
                        map{r5 |} -> unit -> prop||] (:= [nat|r5|] x5)
-                       (anf + i5) (combine [||{r5 |},{r5 |}] anon8 anon11)
-                       anon12 anon13)
+                       (anf + i5) anon11 anon12 anon13)
                       ->
                       ((λ(anon14:map{r5 |}) ->
                        (λ(cur7:map{r5 |}) ->

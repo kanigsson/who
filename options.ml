@@ -7,6 +7,8 @@ let constr_only = ref false
 let anf_only = ref false
 let wp_only = ref false
 let simplify_only = ref false
+let sectionize_only = ref false
+let prelude = ref false
 
 let opt_spec = 
   Arg.align
@@ -17,6 +19,7 @@ let opt_spec =
     "-anf-only", Arg.Set anf_only, "construct anf normal form and exit";
     "-wp-only", Arg.Set wp_only, "construct wp formula and exit";
     "-simplify-only", Arg.Set simplify_only, "construct simplified wp formula and exit";
+    "-sectionize-only", Arg.Set sectionize_only, "construct sectionized wp formula and exit";
   ]
 
 let () = 

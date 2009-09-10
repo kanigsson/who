@@ -183,14 +183,12 @@ in
                   ((λ(anon10:map{|e3 }) ->
                    (λ(x5:unit) ->
                    (fst [unit -> map{|e3 } -> prop,unit -> map{|e3 } ->
-                    map{|e3 } -> unit -> prop||] g ()
-                    (combine [||{|e3 },{|e3 }] anon7 anon10))
+                    map{|e3 } -> unit -> prop||] g () anon10)
                    /\
                    (forall (anon11:map{|e3 }).
                     forall (anon12:unit).
                     (snd [unit -> map{|e3 } -> prop,unit -> map{|e3 } ->
-                     map{|e3 } -> unit -> prop||] g ()
-                     (combine [||{|e3 },{|e3 }] anon7 anon10) anon11 anon12)
+                     map{|e3 } -> unit -> prop||] g () anon10 anon11 anon12)
                     ->
                     ((λ(old5:map{|e3 }) ->
                      (λ(cur8:map{|e3 }) ->

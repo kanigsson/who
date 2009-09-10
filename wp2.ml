@@ -67,14 +67,15 @@ and wp m q e =
     and_ (applist [q;m;lift_value e] l) (correct e) l
   else 
     match e.v with
-    | LetReg (rl,e) -> 
+    | LetReg (rl,se) -> 
         let ef = List.fold_right NEffect.radd rl NEffect.empty in 
-        let eff = NEffect.clean  e.e in
+        let eff = NEffect.clean se.e in
+        let resteff = NEffect.clean e.e in
         rgen rl 
-        (effFA eff (fun cur ->
+        (effFA ef (fun cur ->
           wp_node (combine m cur l)
             (efflamho (NEffect.union eff ef) (fun s -> 
-              app q (restrict eff s l) l) l) e) l) l
+              app q (restrict resteff s l) l) l) se) l) l
     | App (v1,v2,_,_) -> 
         let lv1 = lift_value v1 and lv2 = lift_value v2 
         and eff = NEffect.clean e.e in
@@ -89,13 +90,14 @@ and wp m q e =
             forall ft (fun x ->
               impl (applist [post lv1 l; lv2; m; m2; x] l)
                 (applist [q;m2; x] l) l) l) l ] l 
-    | Let (g,e1,(_,x,e2),r) -> 
+    | Let (p,g,e1,b,r) -> 
+        let x,e2 = sopen b in
         (* TODO recursive case *)
         if is_value_node e1 then
           let lv = lift_value e1 in
           let f = gen g (correct e1) l in
           let wp = wp_node m q e2 in
-          let gen f = let_ g lv x f NoRec l in
+          let gen f = let_ ~prelude:p g lv x f NoRec l in
           match r with
           | NoRec -> and_ f (gen wp) l
           | Rec _ -> gen (and_ f wp l)

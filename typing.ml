@@ -77,7 +77,7 @@ let rec formtyping' env loc = function
       post env eff t' q;
       to_logic_type (arrow t t' eff)
   | Gen (_,e)-> formtyping env e
-  | Let (g,e1,b,_) ->
+  | Let (_,g,e1,b,_) ->
       let x,e2 = sopen b in
       let t = formtyping env e1 in
       let env = add_var env x g t in
@@ -138,7 +138,8 @@ and typing' env loc = function
       pre env eff p;
       post env eff t' q;
       arrow t t' eff, NEffect.empty
-  | Let (g,e1,(_,x,e2),r) ->
+  | Let (_,g,e1,b,r) ->
+      let x, e2 = sopen b in
       if not ( G.is_empty g || Recon.is_value_node e1) then 
         error "generalization over non-value" loc;
       let env' =
@@ -151,12 +152,14 @@ and typing' env loc = function
       t, NEffect.union eff1 eff2
   | Param (t,e) -> t,e
   | TypeDef (_,_,_,e) -> typing env e
-  | PureFun (t,(_,x,e)) ->
+  | PureFun (t,b) ->
+      let x,e = sopen b in
       let env = add_svar env x t in
       let t', eff = typing env e in
       if NEffect.is_empty eff then parr t t', eff
       else error "effectful pure function" loc
-  | Quant (_,t,(_,x,e)) ->
+  | Quant (_,t,b) ->
+      let x, e = sopen b in
       let env = add_svar env x t in
       let t', eff = typing env e in
       if NEffect.is_empty eff && Ty.equal t' Ty.prop then Ty.prop, eff

@@ -6,8 +6,8 @@
   let void = const (Const.Void) Loc.dummy
   let rec merge = function
     | [] -> void
-    | { v = Let (l,t,x,{ v = Const Const.Void },r); loc = loc }::xs -> 
-        let_ l t x (merge xs) r loc
+    | { v = Let (p,l,t,x,{ v = Const Const.Void },r); loc = loc }::xs -> 
+        let_ ~prelude:p l t x (merge xs) r loc
     | { v = TypeDef (l,t,x,{ v = Const Const.Void }); loc = loc }::xs -> 
         typedef l t x (merge xs) loc
     | _ -> assert false
@@ -34,7 +34,8 @@
   let mk_quant k l e loc = 
     List.fold_right (fun (x,t) acc -> quant k x t acc loc) l e
 
-  let let_wconst l t x r p = let_ l t x void r p
+  let let_wconst l t x r p = 
+    let_ ~prelude:(!Options.prelude) l t x void r p
   let strip_info l = List.map (fun x -> x.c) l
 
   let forfunction dir i start end_ inv body pos =

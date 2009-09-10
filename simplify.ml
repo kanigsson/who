@@ -122,7 +122,7 @@ let quant_over_true l _ x =
    * substitutions *)
   | Quant (_,_,(_,_,{v = Const Ptrue})) -> s
   | Gen (_,{v = Const Ptrue}) -> s
-  | Let (_,_,(_,_,{v = Const Ptrue}), _) -> s
+  | Let (_,_,_,(_,_,{v = Const Ptrue}), _) -> s
   | TypeDef (_,_,_,{v = Const Ptrue}) -> s
   | _ -> Nochange
 
@@ -130,9 +130,9 @@ let beta_reduce _ _ = function
   | App ({v = PureFun (_, l)} ,f2,_,_) ->
       let x,body = vopen l in
       Change_rerun (subst x (fun _ -> f2.v) body)
-  | Let (_,{v = Axiom _ | Logic _ },_,_) ->
+  | Let (_,_,{v = Axiom _ | Logic _ },_,_) ->
       Nochange
-  | Let (g,v,l,_) -> 
+  | Let (_,g,v,l,_) -> 
       let x,e = vopen l in
       Change_rerun (polsubst g x v e)
   | _ -> Nochange
@@ -167,9 +167,9 @@ let rec simplify f =
     | (Const _  | Var _ | Logic _ | Axiom _ ) -> f.v
     | App (f1,f2,k,c) -> App (simplify f1, simplify f2, k, c)
     | Gen (g,t) -> Gen (g, simplify t)
-    | Let (g,e1,b,r) ->
-        let x,e2 = vopen b in
-        Let (g, simplify e1, close x (simplify e2),r)
+    | Let (p, g,e1,b,r) ->
+        let x,e2 = if p then sopen b else vopen b in
+        Let (p, g, simplify e1, close x (simplify e2),r)
     | PureFun (t,b) ->
         let x,e = vopen b in
         PureFun (t, close x (simplify e))

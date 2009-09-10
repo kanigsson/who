@@ -147,6 +147,6 @@ in
 let
 main =
       (λ(z3:unit) --> 
-      letregion rho in let x5 = ref [nat|rho|]{rho} 5 in ! [nat|rho|] x5
+      letregion rho in let x5 = ref [nat|rho|] 5 in ! [nat|rho|] x5
       {(λ(old5:map{|}) -> (λ(cur7:map{|}) -> (λ(r5:nat) -> r5 = 5)))})
 in ()

@@ -17,6 +17,10 @@ let < = logic nat -> nat -> prop in
 let <= = logic nat -> nat -> prop in
 let > = logic nat -> nat -> prop in
 let >= = logic nat -> nat -> prop in
+let << = logic nat -> nat -> bool in
+let <<= = logic nat -> nat -> bool in
+let >> = logic nat -> nat -> bool in
+let >>= = logic nat -> nat -> bool in
 let max = logic nat -> nat -> nat in
 let min = logic nat -> nat -> nat in
 let combine [||e1 e2]= logic map{|e1 } -> map{|e2 } -> map{|e1 e2 } in
@@ -31,16 +35,16 @@ update_length ['a13||]=
                        axiom forall (t:array['a13||]).
                              forall (i:nat).
                              forall (z:'a13).
-                             (length1 ['a13||] t) =
-                             (length1 ['a13||] (set1 ['a13||] i z t))
+                             (length ['a13||] t) =
+                             (length ['a13||] (set ['a13||] i z t))
 in
 let
 get_set_eq ['a14||]=
                     axiom forall (t1:array['a14||]).
                           forall (i1:nat).
                           forall (z1:'a14).
-                          (i1 <1 (length1 ['a14||] t1)) ->
-                          ((get1 ['a14||] i1 (set1 ['a14||] i1 z1 t1)) = z1)
+                          (i1 < (length ['a14||] t1)) ->
+                          ((get ['a14||] i1 (set ['a14||] i1 z1 t1)) = z1)
 in
 let
 get_set_neq ['a15||]=
@@ -48,23 +52,23 @@ get_set_neq ['a15||]=
                            forall (i2:nat).
                            forall (j:nat).
                            forall (z2:'a15).
-                           (i2 <1 (length1 ['a15||] t2)) ->
-                           ((j <1 (length1 ['a15||] t2)) ->
+                           (i2 < (length ['a15||] t2)) ->
+                           ((j < (length ['a15||] t2)) ->
                             ((i2 <> j) ->
-                             ((get1 ['a15||] i2 (set1 ['a15||] j z2 t2)) =
-                              (get1 ['a15||] i2 t2))))
+                             ((get ['a15||] i2 (set ['a15||] j z2 t2)) =
+                              (get ['a15||] i2 t2))))
 in
 let
 length_nonnegative ['a16||]=
                             axiom forall (t3:array['a16||]).
-                                  0 <=1 (length1 ['a16||] t3)
+                                  0 <= (length ['a16||] t3)
 in
 let
 length_create ['a17||]=
                        axiom forall (l:nat).
-                             (0 <=1 l) ->
-                             ((length1 ['a17||]
-                               (create1 ['a17||] l : array['a17||]))
+                             (0 <= l) ->
+                             ((length ['a17||]
+                               (create ['a17||] l : array['a17||]))
                               = l)
 in
 (forall [||e1]. forall (f:unit -> map{|e1 } -> prop * unit -> map{|e1 } ->
@@ -90,13 +94,11 @@ in
                     map{|e1 } -> unit -> prop||] f () anon1 anon2 ())
                    ->
                    ((fst [unit -> map{|e1 } -> prop,unit -> map{|e1 } ->
-                     map{|e1 } -> unit -> prop||] g ()
-                     (combine [||{|e1 },{|e1 }] anon1 anon2))
+                     map{|e1 } -> unit -> prop||] g () anon2)
                     /\
                     (forall (anon3:map{|e1 }).
                      (snd [unit -> map{|e1 } -> prop,unit -> map{|e1 } ->
-                      map{|e1 } -> unit -> prop||] g ()
-                      (combine [||{|e1 },{|e1 }] anon1 anon2) anon3 ())
+                      map{|e1 } -> unit -> prop||] g () anon2 anon3 ())
                      ->
                      (exists (i4:map{|e1 }).
                       (snd [unit -> map{|e1 } -> prop,unit -> map{|e1 } ->

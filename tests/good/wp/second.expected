@@ -191,16 +191,15 @@ in
    ((λ(anon23:map{|}) ->
     (λ(g:bool) ->
     (fst [nat -> map{|} -> prop,nat -> map{|} -> map{|} -> bool -> prop||]
-     f3 [nat||] 5 (combine [||{|},{|}] anon anon23))
+     f3 [nat||] 5 anon23)
     /\
     (forall (anon24:map{|}).
      forall (anon25:bool).
      (snd [nat -> map{|} -> prop,nat -> map{|} -> map{|} -> bool -> prop||]
-      f3 [nat||] 5 (combine [||{|},{|}] anon anon23) anon24 anon25)
+      f3 [nat||] 5 anon23 anon24 anon25)
      ->
      ((λ(anon26:map{|}) ->
       (λ(h:bool) ->
-      (λ(anon27:map{|}) -> (λ(anon28:unit) -> True))
-      (combine [||{|},{|}] (combine [||{|},{|}] anon anon23) anon26) ()))
-      anon24 anon25))))
+      (λ(anon27:map{|}) -> (λ(anon28:unit) -> True)) anon26 ())) anon24
+      anon25))))
     anon21 anon22))))
