@@ -69,7 +69,9 @@ open Myformat
 let rec print_node fmt x = 
   match Uf.desc x with
   | U -> fprintf fmt "%d" (Uf.tag x)
-  | T t -> Ty.print' print_node prvar preff is_c fmt t
+  | T t -> 
+      Ty.print' ~print_map:false (fun ?print_map fmt t -> ignore print_map ; print_node fmt t) 
+      prvar preff is_c fmt t
 and is_c x = 
   match Uf.desc x with
   | U -> false

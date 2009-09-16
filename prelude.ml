@@ -38,11 +38,13 @@ logic >>= : int -> int -> bool
 logic max : int -> int -> int
 logic min : int -> int -> int
 
+logic combine [||e1 e2] : <|e1> -> <|e2> -> <|e1 e2>
+logic restrict [||e1 e2] : <|e1> -> <|e2>
+logic empty : <|>
+
 let pre ['a 'b||]  (x : 'a * 'b) = fst x
 let post ['a 'b||] (x : 'a * 'b) = snd x
 
-logic combine [||e1 e2] : <|e1> -> <|e2> -> <|e1 e2>
-logic restrict [||e1 e2] : <|e1> -> <|e2>
 
 parameter forto [||e] (inv : int -> <|e> -> prop) (start end_ : int) 
   (f : int ->{|e} unit) : unit, {|e} =
@@ -68,7 +70,7 @@ type array ['a||]
 logic get ['a||] : int -> 'a array -> 'a
 logic set ['a||]: int -> 'a -> 'a array -> 'a array 
 logic length ['a||] :  'a array -> int
-logic create ['a||] :  int -> 'a array
+(* logic create ['a||] :  int -> 'a array *)
 
 axiom update_length ['a||] : 
   forall (t : 'a array) (i : int) (z : 'a).
@@ -85,8 +87,8 @@ axiom get_set_neq ['a||] :
 axiom length_nonnegative ['a||] : 
   forall (t : array ['a||]).  0 <= length t
 
-axiom length_create ['a||] : 
-  forall (l : int). 0 <= l -> length ((create l : 'a array)) = l
+(* axiom length_create ['a||] : 
+  forall (l : int). 0 <= l -> length ((create l : 'a array)) = l *)
 
 "
 

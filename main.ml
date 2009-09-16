@@ -51,7 +51,7 @@ let _ =
     maybe_abort Options.simplify_only Ast.Recon.print p;
     Typing.formtyping p;
     let s = Sectionize.section p in
-    maybe_abort Options.sectionize_only Sectionize.print s;
+    maybe_abort Options.sectionize_only Sectionize.print_all s;
     s
   with
   | Sys_error e -> Error.bad e

@@ -65,7 +65,6 @@ let alpha_upper = ['A'-'Z']
 let alpha = ['a' - 'z' 'A'-'Z']
 let digit = ['0'-'9']
 let identifier = alpha (alpha | digit | '\'' | '_')*
-let tyvar = '\'' alpha_lower (alpha | digit | '\'' | '_')*
 
 rule token = parse
   | [' ' '\t' ]
@@ -73,7 +72,7 @@ rule token = parse
   | digit+ as i
   { INT (Loc.mk (create_info lexbuf) (Big_int.big_int_of_string i)) }
   | identifier as i { id_or_keyword i lexbuf}
-  | tyvar as tv { TYVAR tv}
+  | '\'' (identifier as tv) { TYVAR tv}
   | "->" { ARROW (create_info lexbuf) }
   | "==" { BEQUAL (create_info lexbuf) }
   | '=' { EQUAL (create_info lexbuf) }

@@ -1,0 +1,61 @@
+Section sec. Variable anon: map{|}.Variable /\: prop -> prop -> prop.
+Variable ->: prop -> prop -> prop.Variable ~: prop -> prop.
+Variable =: 'a -> 'a -> prop.Variable <>: 'a1 -> 'a1 -> prop.
+Variable fst: ('a2 * 'b) -> 'a2.Variable snd: ('a3 * 'b1) -> 'b1.
+Variable ,: 'a4 -> 'b2 -> 'a4 * 'b2.Variable ==: 'a5 -> 'a5 -> bool.
+Variable !=: 'a6 -> 'a6 -> bool.Variable !!: ref(r,'a7) -> map{|e } -> 'a7.
+Variable +: nat -> nat -> nat.Variable -: nat -> nat -> nat.
+Variable *: nat -> nat -> nat.Variable <: nat -> nat -> prop.
+Variable <=: nat -> nat -> prop.Variable >: nat -> nat -> prop.
+Variable >=: nat -> nat -> prop.Variable <<: nat -> nat -> bool.
+Variable <<=: nat -> nat -> bool.Variable >>: nat -> nat -> bool.
+Variable >>=: nat -> nat -> bool.Variable max: nat -> nat -> nat.
+Variable min: nat -> nat -> nat.
+Variable combine: map{|e1 } -> map{|e2 } -> map{|e1 e2 }.
+Variable restrict: map{|e11 } -> map{|e21 }.Parameter array : Set.
+Variable get: nat -> (array['a8||]) -> 'a8.
+Variable set: nat -> 'a9 -> (array['a9||]) -> array['a9||].
+Variable length: (array['a10||]) -> nat.
+Variable create: nat -> array['a11||].
+Axiom update_length: forall (t:array['a12||]).
+                     forall (i:nat).
+                     forall (z:'a12).
+                     (length ['a12||] t) =
+                     (length ['a12||] (set ['a12||] i z t)). 
+Axiom get_set_eq: forall (t1:array['a13||]).
+                  forall (i1:nat).
+                  forall (z1:'a13).
+                  (i1 < (length ['a13||] t1)) ->
+                  ((get ['a13||] i1 (set ['a13||] i1 z1 t1)) = z1). 
+Axiom get_set_neq: forall (t2:array['a14||]).
+                   forall (i2:nat).
+                   forall (j:nat).
+                   forall (z2:'a14).
+                   (i2 < (length ['a14||] t2)) ->
+                   ((j < (length ['a14||] t2)) ->
+                    ((i2 <> j) ->
+                     ((get ['a14||] i2 (set ['a14||] j z2 t2)) =
+                      (get ['a14||] i2 t2)))). 
+Axiom length_nonnegative: forall (t3:array['a15||]).
+                          0 <= (length ['a15||] t3). 
+Axiom length_create: forall (l:nat).
+                     (0 <= l) ->
+                     ((length ['a16||] (create ['a16||] l : array['a16||])) =
+                      l). 
+[|r1|]Variable anon1: map{r1 |}.Variable x: ref(r1,nat).
+ Section sec1. Variable anon2: map{r1 |}.Variable i3: nat.
+ Hypothesis H: 1 <= i3.Hypothesis H1: i3 <= 5.
+ Hypothesis H2: (!! [nat|r1|{r1 |}] x anon2) < (i3 * 10).
+ Variable anon3: map{r1 |}.
+ Hypothesis H3: (!! [nat|r1|{r1 |}] x anon2) = (!! [nat|r1|{r1 |}] x anon3).
+ Variable anon4: map{r1 |}.
+ Hypothesis H4:
+ (!! [nat|r1|{r1 |}] x anon4) = ((!! [nat|r1|{r1 |}] x anon3) + i3).
+  Lemma goal: (!! [nat|r1|{r1 |}] x anon4) < ((i3 + 1) * 10).
+
+ End sec1.
+
+Lemma goal1: (!! [nat|r1|{r1 |}] x anon1) < (1 * 10).
+
+ End sec.
+

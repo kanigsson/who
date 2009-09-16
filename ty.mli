@@ -9,10 +9,14 @@ type ('a,'b,'c) t' =
   | Map of 'c
 type t = C of (t,Name.t,NEffect.t) t'
 
-val print : t Myformat.fmt
-val print_list : unit Myformat.fmt -> t list Myformat.fmt
-val print' : 'a Myformat.fmt -> 'b Myformat.fmt -> 'c Myformat.fmt -> 
-              ('a -> bool) -> (('a ,'b,'c) t') Myformat.fmt
+val print : ?print_map:bool -> t Myformat.fmt
+val print_list : 
+  ?print_map:bool -> unit Myformat.fmt -> t list Myformat.fmt
+val print' : ?print_map:bool -> (?print_map:bool -> 'a Myformat.fmt) -> 
+  'b Myformat.fmt -> 'c Myformat.fmt -> 
+    ('a -> bool) -> (('a ,'b,'c) t') Myformat.fmt
+
+val sprint: t Myformat.fmt
 
 val is_compound : ('a,'b,'c) t' -> bool
 val var : Name.t -> t
@@ -31,6 +35,7 @@ val int : t
 val arg : t -> t
 val result : t -> t
 val latent_effect : t -> NEffect.t
+val domain : t -> NEffect.t
 
 val to_logic_type : t -> t
 

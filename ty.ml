@@ -18,7 +18,10 @@ let is_compound = function
 let maycap pr fmt = function
   | [] -> ()
   | l -> print_list space pr fmt l
-let print' pt pr pe is_c fmt = function
+let print' ?(print_map=true) 
+  (pt : ?print_map:bool -> 'a fmt) pr pe is_c fmt x = 
+  let pt = pt ~print_map in
+  match x with 
   | Var x -> Name.print fmt x
   | Arrow (t1,t2,eff) -> 
       let p1 = if is_c t1 then paren pt else pt in
@@ -28,16 +31,24 @@ let print' pt pr pe is_c fmt = function
       fprintf fmt "%a ->@ %a" p1 t1 pt t2
   | Tuple (t1,t2) -> fprintf fmt "%a *@ %a" pt t1 pt t2
   | Const c -> Const.print_ty fmt c
-  | Ref (r,t) -> fprintf fmt "ref(%a,%a)" pr r pt t
-  | Map e -> fprintf fmt "map%a" pe e
-  | App (v,i) -> fprintf fmt "%a%a" Name.print v (Inst.print pt pr pe) i
+  | Ref (r,t) -> 
+      if print_map then fprintf fmt "ref(%a,%a)" pr r pt t
+      else fprintf fmt "ref@ %a@ %a" pt t pr r
+  | Map e -> 
+      if print_map then fprintf fmt "kmap%a" pe e else
+        pp_print_string fmt "kmap"
+  | App (v,i) -> 
+      fprintf fmt "%a%a" Name.print v (Inst.print ~whoapp:print_map pt pr pe) i
 
 
-let rec print fmt (C x) = 
-  print' print Name.print NEffect.print 
+let rec print ?print_map fmt (C x) = 
+  print' ?print_map print Name.print NEffect.print 
     (function C x -> is_compound x) fmt x
 
-let print_list sep fmt t = print_list sep print fmt t
+let print_list ?print_map sep fmt t = 
+  print_list sep (print ?print_map) fmt t
+
+let sprint fmt t = print fmt t
 
 let var v = C (Var v)
 let arrow t1 t2 eff = C (Arrow (t1,t2,eff))
@@ -66,6 +77,10 @@ let latent_effect = function
 let result = function
   | C (Arrow (_,t2,_)) -> t2
   | C (PureArr (_,t2)) -> t2
+  | _ -> assert false
+
+let domain = function
+  | C (Map e) -> e
   | _ -> assert false
 
 let to_logic_type t = 

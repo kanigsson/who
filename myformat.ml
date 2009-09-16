@@ -11,6 +11,7 @@ let comma fmt () = pp_print_string fmt ","
 let semi fmt () = pp_print_string fmt ";"
 let space fmt () = fprintf fmt "@ "
 let break fmt () = fprintf fmt "@,"
+let fullstop fmt () = fprintf fmt "@."
 let nothing _ () = ()
 let double_newline fmt () = fprintf fmt "@\n@\n"
 let newline fmt () = fprintf fmt "@\n"

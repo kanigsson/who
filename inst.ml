@@ -5,9 +5,16 @@ let is_empty x = x = empty
 
 open Myformat
 let prl pr = print_list comma pr
-let print pra prb prc fmt ((tl,rl,el) as g) =
+let prsl pr fmt l = 
+  if l = [] then () else 
+    fprintf fmt "@ %a" (print_list space pr) l
+
+let print ?(whoapp=true) pra prb prc fmt ((tl,rl,el) as g) =
   if is_empty g then () else
-    fprintf fmt "[%a|%a|%a]" (prl pra) tl (prl prb) rl (prl prc) el
+    if whoapp then
+      fprintf fmt "[%a|%a|%a]" (prl pra) tl (prl prb) rl (prl prc) el
+    else
+      fprintf fmt "%a%a%a" (prsl pra) tl (prsl prb) rl (prsl prc) el
 
 let map fa fb fc (tl,rl,el) =
   List.map fa tl, List.map fb rl, List.map fc el

@@ -33,6 +33,14 @@ and intro f =
         let x , f = vopen b in
         aux ( Variable (x,Ty.Generalize.empty,t) :: acc) f
     | Ast.Gen (g,f) -> aux ((Gen g)::acc) f
+    | Let (_,_,{v = Logic _}, ((_,{name = Some 
+    ("/\\" | "->" | "=" | "<>" | "fst" | "snd" 
+     | "," | "!=" | "!!" | "+" | "-" | "*" | "<" | "<=" | ">" | 
+     ">=" | "~" | "==" | "<<" | "<<=" | ">>" | ">>=" |
+     "empty" | "combine" | "restrict" )},_) as b)
+    ,_) -> 
+      let _,f = sopen b in
+      aux acc f
     | Let (_,g,{v = Logic t},b,_) ->
         let x, f = sopen b in
         aux (Variable (x,g,t)::acc) f
@@ -76,22 +84,57 @@ and prove ctx f =
 
 open Myformat
 
+let lname s fmt l = 
+  if l = [] then () else
+  fprintf fmt "(%a :@ %s)" (print_list space Name.print) l s
+
+let intro_name s fmt l = 
+  if l = [] then () else
+  fprintf fmt "Variables %a :@ %s.@\n" (print_list space Name.print) l s
+
+let pr_generalize fmt ((tl,rl,el) as g) = 
+  if Ty.Generalize.is_empty g then ()
+  else
+    fprintf fmt "forall@ %a@ %a@ %a,@ "
+    (lname "Set") tl (lname "key") rl (lname "kmap") el
+
 let pr_intro fmt = function
-  | Gen g -> Ty.Generalize.print fmt g
-  | Variable (x,_,t) -> 
-      fprintf fmt "@[Variable %a:@ %a.@]@." Name.print x Ty.print t
+  | Gen (tl,rl,el) -> 
+      fprintf fmt "%a%a%a"
+      (intro_name "Set") tl (intro_name "key") rl (intro_name "kmap") el
+  | Variable (x,g,t) -> 
+      fprintf fmt "@[Variable %a:@ %a%a.@]" 
+      Name.print x pr_generalize g (Ty.print ~print_map:false) t
   | Hypo (h,e) -> 
-      fprintf fmt "@[Hypothesis %a:@ %a.@]@." Name.print h Ast.Recon.print e
-  | Axiom (x,_,t) -> 
-      fprintf fmt "@[Axiom %a: %a. @]@." Name.print x Ast.Recon.print t
-  | Type (x,_) -> 
-      fprintf fmt "@[Parameter %a@ %s.@]@." Name.print x "Set"
+      fprintf fmt "@[Hypothesis %a:@ %a.@]" 
+        Name.print h (Ast.Recon.print ~tyapp:false) e
+  | Axiom (x,g,t) -> 
+      fprintf fmt "@[Axiom %a: %a %a. @]" Name.print x 
+        pr_generalize g (Ast.Recon.print ~tyapp:false) t
+  | Type (x,g) -> 
+      fprintf fmt "@[Parameter %a :@ %a%s.@]" Name.print x pr_generalize g "Set"
 
 let rec print fmt = function
   | Empty -> ()
-  | PO (x,e) -> fprintf fmt "@[Lemma %a:@ %a.@]@." Name.print x Ast.Recon.print e
+  | PO (x,e) -> 
+      fprintf fmt "@[Lemma %a:@ %a.@]@." Name.print x 
+        (Ast.Recon.print ~tyapp:false) e
   | Section (x,il,sl) -> 
-      fprintf fmt "@[Section %a.@, %a@, %a@]@, End %a.@."
-        Name.print x (print_list break pr_intro) il (print_list break print) sl
+      fprintf fmt "@.@[<hov 2>Section %a.@\n %a@\n %a@.End %a@].@\n"
+        Name.print x (print_list fullstop pr_intro) il (print_list break print) sl
         Name.print x
+
+let print_decls fmt () = 
+  fprintf fmt "Set Implicit Arguments.@.";
+  fprintf fmt "Require Import simple_map.@.";
+  fprintf fmt "Open Scope Z_scope.@.";
+  fprintf fmt "Require Omega.@.";
+  fprintf fmt "Variable ref : forall (a : Set) (k : key), Set.@.";
+  fprintf fmt "Definition ___get (A : Set) (k : key) (r : ref A k) (m : kmap) :=
+    __get A k m.@.";
+  fprintf fmt "Notation \"!!\" := (___get) (at level 50).@."
+
+let print_all fmt s = 
+  print_decls fmt ();
+  print fmt s
 

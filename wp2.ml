@@ -2,6 +2,8 @@ open Ast
 open Recon
 module G = Ty.Generalize
 
+let print = print ~tyapp:true
+
 exception Error of string * Loc.loc
 let error s loc = raise (Error (s,loc))
 

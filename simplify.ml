@@ -47,7 +47,15 @@ let logic_simpl l t x =
 
 let unit_void l t = function
   | Var _ when Ty.equal t Ty.unit -> Simple_change (void l)
+  | Var ({name = Some "empty"},_) -> Nochange
+  | Var _ ->
+      begin match t with
+      | Ty.C (Ty.Map e) when NEffect.is_empty e -> Simple_change (mempty l)
+      | _ -> Nochange
+      end
   | Quant (_, Ty.C (Ty.Const TUnit),b) -> 
+      let _,f = vopen b in Simple_change f
+  | Quant (_, Ty.C (Ty.Map e),b) when NEffect.is_empty e -> 
       let _,f = vopen b in Simple_change f
   | _ -> Nochange
 

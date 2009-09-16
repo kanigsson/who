@@ -76,11 +76,11 @@ let is_compound = function
   | Quant _ | Param _ | For _ | LetReg _ | Gen _ -> true
 let is_compound_node t = is_compound t.v
 
-let print pra prb prc open_ fmt t = 
+let print ?(tyapp=true) pra prb prc open_ fmt t = 
   let rec print' fmt = function
     | Const c -> Const.print fmt c
     | Var (v,i) -> 
-        if Inst.is_empty i then Name.print fmt v
+        if Inst.is_empty i || tyapp = false then Name.print fmt v
         else fprintf fmt "%a %a" Name.print v (Inst.print pra prb prc) i
     | App ({v = App ({ v = Var(v,_)},t1,_,_)},t2,`Infix,_) -> 
         fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 Name.print v with_paren t2
@@ -88,10 +88,11 @@ let print pra prb prc open_ fmt t =
           fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
     | Lam (x,t,p,e,q) -> 
         fprintf fmt "@[(λ(%a:%a)@ -->@ %a@ %a@ %a)@]" Name.print x 
-          Ty.print t pre p print e post q
+          (Ty.print ~print_map:tyapp) t pre p print e post q
     | PureFun (t,b) ->
         let x,e = open_ b in
-        fprintf fmt "@[(λ(%a:%a)@ ->@ %a)@]" Name.print x Ty.print t print e
+        fprintf fmt "@[(λ(%a:%a)@ ->@ %a)@]" 
+        Name.print x (Ty.print ~print_map:tyapp) t print e
     | Let (_,g,e1,b,r) -> 
         let x,e2 = open_ b in
         fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]" 
@@ -99,20 +100,25 @@ let print pra prb prc open_ fmt t =
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then@ %a else@ %a@]" print e1 print e2 print e3
     | Axiom e -> fprintf fmt "axiom %a" print e
-    | Logic t -> fprintf fmt "logic %a" Ty.print t
+    | Logic t -> fprintf fmt "logic %a" (Ty.print ~print_map:tyapp) t
     | TypeDef (g,t,x,e) -> 
         fprintf fmt "type %a%a =@ %a in@ %a" 
-          Name.print x G.print g (opt_print Ty.print) t print e
+          Name.print x G.print g (opt_print (Ty.print ~print_map:tyapp)) t 
+          print e
     | Quant (k,t,b) ->
         let x,e = open_ b in
-        fprintf fmt "@[%a (%a:%a).@ %a@]" C.quant k Name.print x Ty.print t print e
-    | Param (t,e) -> fprintf fmt "param(%a,%a)" Ty.print t NEffect.print e
+        fprintf fmt "@[%a (%a:%a),@ %a@]" C.quant k 
+        Name.print x (Ty.print ~print_map:tyapp) t print e
+    | Param (t,e) -> 
+        fprintf fmt "param(%a,%a)" 
+          (Ty.print ~print_map:tyapp) t NEffect.print e
     | For (dir,inv,_,st,en,t) ->
         fprintf fmt "%a (%a) %a %a (%a)" 
           Name.print dir pre inv Name.print st Name.print en print t
-    | Annot (e,t) -> fprintf fmt "(%a : %a)" print e Ty.print t
+    | Annot (e,t) -> 
+        fprintf fmt "(%a : %a)" print e (Ty.print ~print_map:tyapp) t
     | Gen (g,t) -> 
-        fprintf fmt "forall %a. %a" G.print g print t
+        fprintf fmt "forall %a, %a" G.print g print t
     | LetReg (v,t) -> 
         fprintf fmt "@[letregion %a in@ %a@]" 
           (print_list space Name.print) v print t
@@ -129,7 +135,8 @@ let print pra prb prc open_ fmt t =
     | PResult (r,f) -> fprintf fmt "{ %a : %a}" Name.print r print f
   and prrec fmt = function
     | NoRec -> ()
-    | Rec t -> fprintf fmt "rec(%a) " Ty.print t
+    | Rec t -> 
+        fprintf fmt "rec(%a) " (Ty.print ~print_map:tyapp) t
   and maycap fmt = function
     | [] -> ()
     | l -> fprintf fmt "{%a}" (print_list space Name.print) l
@@ -154,7 +161,9 @@ end
 
 module Recon = struct
   type t = (Ty.t, Name.t, NEffect.t) t'
-  let print fmt t = print Ty.print Name.print NEffect.print sopen fmt t
+  let print ?tyapp fmt t = 
+    print ?tyapp (Ty.print ?print_map:tyapp) Name.print 
+      NEffect.print sopen fmt t
 
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
   let mk_val v t loc = { v = v; t = t; e = NEffect.empty; loc = loc }
@@ -203,6 +212,7 @@ module Recon = struct
     | _, Const Pfalse -> t2
     | _ -> appi (spre_defvar "/\\" loc) t1 t2 loc
 
+  let mempty l = spre_defvar "empty" l 
 
   let impl t1 t2 loc = 
     match t1.v,t2.v with
