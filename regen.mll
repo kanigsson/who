@@ -23,13 +23,9 @@ module Make (O : Output) = struct
     | None -> List.iter (print_elt fmt) acc; []
     | Some id ->
         let rec aux = function
-          | [] -> 
-              printf "finished@.";
-              []
+          | [] -> []
           | x::xs ->
-              let id' = O.id x in
-              printf "comparing: %s and %s@." id id';
-              if id' = id then begin (print_elt fmt) x; xs end
+              if O.id x = id then begin (print_elt fmt) x; xs end
               else begin print_elt fmt x; aux xs end in
         aux acc
 
@@ -37,19 +33,18 @@ module Make (O : Output) = struct
 
 let alpha = ['a' - 'z' 'A'-'Z']
 let digit = ['0'-'9']
+let blanks = (['\t' ' ' '\n' ]) *
 let identifier = alpha (alpha | digit | '\'' | '_')*
 
 rule skip acc = parse
-  | "(*who*)" { () }
+  | "(*who*)" blanks { () }
   | _ { skip acc lexbuf }
   | eof { 
     ignore (print_until O.fmt acc) }
 
 and search_next acc = parse
-  | "(*who" (identifier as identifier) "*)"
+  | "(*who" (identifier as identifier) "*)" blanks
   { 
-    printf "found %s@." identifier;
-(*     fprintf O.fmt "%s@." s; *)
     let acc = print_until O.fmt ~identifier acc in
     skip acc lexbuf;
     search_next acc lexbuf

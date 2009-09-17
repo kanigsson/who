@@ -146,7 +146,7 @@ let print_all fmt s =
 module Flatten = struct
 
   type t = 
-    | FCoqDecl of string
+    | FCoqDecl of string * Name.t
     | FGen of Ty.Generalize.t
     | FVariable of Name.t * Ty.Generalize.t * Ty.t
     | FType of Name.t * Ty.Generalize.t
@@ -174,7 +174,8 @@ module Flatten = struct
             (List.fold_right section sl (FEndSec n :: acc))
 
   let coqdecls = 
-    List.map (fun s -> FCoqDecl s)
+    let f s = Name.from_string (String.sub s 0 (String.index s ' ')) in
+    List.map (fun s -> FCoqDecl (s, f s))
       [
        "Set Implicit Arguments";
        "Require Import WhoMap";
@@ -190,7 +191,7 @@ module Flatten = struct
     coqdecls @ section s []
 
   let print fmt = function
-    | FCoqDecl s -> fprintf fmt "%s." s
+    | FCoqDecl (s,_) -> fprintf fmt "%s." s
     | FGen (tl,rl,el) -> 
         fprintf fmt "%a%a%a"
         (intro_name "Set") tl (intro_name "key") rl (intro_name "kmap") el
@@ -219,9 +220,9 @@ module Flatten = struct
     let n = 
       match x with
       | FAxiom (n,_,_) | FPO (n,_) | FType (n,_) 
-      | FHypo (n,_) | FVariable (n,_,_) | FEndSec n | FBeginSec n -> n
-      | FGen g -> Ty.Generalize.get_first g
-      | FCoqDecl s -> Name.from_string (String.sub s 0 (String.index s ' ')) in
+      | FHypo (n,_) | FVariable (n,_,_) | FEndSec n | FBeginSec n
+      | FCoqDecl (_,n) -> n
+      | FGen g -> Ty.Generalize.get_first g in
     let s = sprintf "%a" Name.print n in
     match x with
     | FBeginSec _ -> "begin" ^ s
