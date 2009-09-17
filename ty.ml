@@ -29,7 +29,10 @@ let print' ?(print_map=true)
   | PureArr (t1,t2) -> 
       let p1 = if is_c t1 then paren pt else pt in
       fprintf fmt "%a ->@ %a" p1 t1 pt t2
-  | Tuple (t1,t2) -> fprintf fmt "%a *@ %a" pt t1 pt t2
+  | Tuple (t1,t2) -> 
+      let p1 = if is_c t1 then paren pt else pt in
+      let p2 = if is_c t2 then paren pt else pt in
+      fprintf fmt "%a *@ %a" p1 t1 p2 t2
   | Const c -> Const.print_ty fmt c
   | Ref (r,t) -> 
       if print_map then fprintf fmt "ref(%a,%a)" pr r pt t
@@ -187,6 +190,10 @@ module Generalize = struct
     let eq = Misc.list_equal Name.compare in
     fun (tl1,rl1,el1) (tl2,rl2,el2) ->
       eq tl1 tl2 && eq rl1 rl2 && eq el1 el2
+
+  let get_first = function
+    | [],[],x::_ | [],x::_,_ | x::_,_,_ -> x
+    | [],[],[] -> assert false
 
 end
 

@@ -72,6 +72,6 @@ struct
 
   open Myformat
   let print sep prval = 
-    let prelem fmt (k,v) = Format.fprintf fmt "%a = %a" O.print k prval v in
+    let prelem fmt (k,v) = fprintf fmt "%a = %a" O.print k prval v in
     print_list sep prelem 
 end

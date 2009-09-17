@@ -61,6 +61,8 @@ module Generalize : sig
   val close : t -> 'a -> 'a bind 
 
   val equal : t -> t -> bool
+
+  val get_first : t -> Name.t
 end
 
 val allsubst : 

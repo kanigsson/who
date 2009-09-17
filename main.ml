@@ -1,4 +1,4 @@
-open Sectionize
+open Regen
 
 let parse ?(prelude=false) buf close fn = 
   if prelude then Options.prelude := true else Options.prelude := false;
@@ -12,11 +12,11 @@ let parse ?(prelude=false) buf close fn =
       Error.print_pos_error fn buf "Parse error"; abort ()
   | Lexer.Error msg -> 
         Error.print_pos_error fn buf 
-          (Format.sprintf "Unexpected character: %s" msg);
+          (Myformat.sprintf "Unexpected character: %s" msg);
         abort ()
 
 let maybe_abort r print f = 
-  if !r then begin Format.printf "%a@." print f; exit 0; end
+  if !r then begin Myformat.printf "%a@." print f; exit 0; end
   
 let parse_file ?prelude fn = 
   let ch = open_in fn in
@@ -51,8 +51,8 @@ let _ =
     maybe_abort Options.simplify_only Ast.Recon.print p;
     Typing.formtyping p;
     let s = Sectionize.section p in
-    maybe_abort Options.sectionize_only Sectionize.print_all s;
-    s
+    maybe_abort Options.sectionize_only Sectionize.print s;
+    Regen.main (Sectionize.Flatten.main s)
   with
   | Sys_error e -> Error.bad e
   | Infer.Error (s,loc) 

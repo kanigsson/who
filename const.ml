@@ -20,10 +20,10 @@ let type_of_constant = function
   | Btrue | Bfalse -> TBool
   | Ptrue | Pfalse -> TProp
 
-open Format
+open Myformat
 let print fmt = function
   | Int b -> pp_print_string fmt (Big_int.string_of_big_int b)
-  | Void -> pp_print_string fmt "()"
+  | Void -> pp_print_string fmt "tt"
   | Btrue -> pp_print_string fmt "true"
   | Bfalse -> pp_print_string fmt "false"
   | Ptrue -> pp_print_string fmt "True"
@@ -31,9 +31,9 @@ let print fmt = function
 
 let print_ty fmt = function
   | TBool -> pp_print_string fmt "bool"
-  | TInt -> pp_print_string fmt "nat"
+  | TInt -> pp_print_string fmt "Z"
   | TUnit -> pp_print_string fmt "unit"
-  | TProp -> pp_print_string fmt "prop"
+  | TProp -> pp_print_string fmt "Prop"
 
 let quant fmt = function
   | `FA -> pp_print_string fmt "forall"

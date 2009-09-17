@@ -9,6 +9,7 @@ let wp_only = ref false
 let simplify_only = ref false
 let sectionize_only = ref false
 let prelude = ref false
+let outfile = ref ""
 
 let opt_spec = 
   Arg.align
@@ -20,10 +21,14 @@ let opt_spec =
     "-wp-only", Arg.Set wp_only, "construct wp formula and exit";
     "-simplify-only", Arg.Set simplify_only, "construct simplified wp formula and exit";
     "-sectionize-only", Arg.Set sectionize_only, "construct sectionized wp formula and exit";
+    "-o", Arg.Set_string outfile, " use <arg> instead of default filename for
+    output";
   ]
 
 let () = 
   Arg.parse opt_spec store_fn "Usage: who <options> <file>"
 
 let update () = 
-  if !filename = "" then (Format.eprintf "No filename given"; exit(1))
+  if !filename = "" then (Myformat.eprintf "No filename given"; exit(1));
+  let base = Filename.chop_extension !filename in
+  if !outfile = "" then outfile := Myformat.sprintf "%s_who.v" base

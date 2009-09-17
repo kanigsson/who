@@ -61,7 +61,7 @@ let rec correct v =
         sforall x lt (impl p (wp_node r q e) l) l) l
   | PureFun (t,(_,x,e)) -> sforall x (ty t) (correct e) l
   | _ -> 
-      Format.printf "correct: not a value: %a@." print v;
+      Myformat.printf "correct: not a value: %a@." print v;
       assert false
 and wp m q e = 
   let ft = ty e.t and l = e.loc in

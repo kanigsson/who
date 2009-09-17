@@ -87,12 +87,11 @@ let print ?(tyapp=true) pra prb prc open_ fmt t =
     | App (t1,t2,_,cap) ->
           fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
     | Lam (x,t,p,e,q) -> 
-        fprintf fmt "@[(λ(%a:%a)@ -->@ %a@ %a@ %a)@]" Name.print x 
-          (Ty.print ~print_map:tyapp) t pre p print e post q
+        fprintf fmt "@[(λ%a@ -->@ %a@ %a@ %a)@]" binder (x,t) pre p print e 
+          post q
     | PureFun (t,b) ->
         let x,e = open_ b in
-        fprintf fmt "@[(λ(%a:%a)@ ->@ %a)@]" 
-        Name.print x (Ty.print ~print_map:tyapp) t print e
+        fprintf fmt "@[(λ%a@ ->@ %a)@]" binder (x,t) print e
     | Let (_,g,e1,b,r) -> 
         let x,e2 = open_ b in
         fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]" 
@@ -107,8 +106,8 @@ let print ?(tyapp=true) pra prb prc open_ fmt t =
           print e
     | Quant (k,t,b) ->
         let x,e = open_ b in
-        fprintf fmt "@[%a (%a:%a),@ %a@]" C.quant k 
-        Name.print x (Ty.print ~print_map:tyapp) t print e
+        let bind = if k = `FA then binder else binder' false in
+        fprintf fmt "@[%a %a,@ %a@]" C.quant k bind (x,t) print e
     | Param (t,e) -> 
         fprintf fmt "param(%a,%a)" 
           (Ty.print ~print_map:tyapp) t NEffect.print e
@@ -124,6 +123,11 @@ let print ?(tyapp=true) pra prb prc open_ fmt t =
           (print_list space Name.print) v print t
       
   and print fmt t = print' fmt t.v
+  and binder' par = 
+    let p fmt (x,t) = fprintf fmt "%a:%a" 
+      Name.print x (Ty.print ~print_map:tyapp) t in
+    if par then paren p else p
+  and binder fmt b = binder' true fmt b
   and pre fmt (_,x) = 
     match x with
     | None -> ()
