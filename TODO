@@ -1,2 +1,4 @@
-void
-separation of effects
+change names of stores in Wp2
+change names of temporary variables in Wp2
+
+better inference without explicitely introduced variables 

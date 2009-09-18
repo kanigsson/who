@@ -18,9 +18,8 @@ let is_compound = function
 let maycap pr fmt = function
   | [] -> ()
   | l -> print_list space pr fmt l
-let print' ?(print_map=true) 
-  (pt : ?print_map:bool -> 'a fmt) pr pe is_c fmt x = 
-  let pt = pt ~print_map in
+
+let print' print_map pt pr pe is_c fmt x = 
   match x with 
   | Var x -> Name.print fmt x
   | Arrow (t1,t2,eff) -> 
@@ -36,7 +35,9 @@ let print' ?(print_map=true)
   | Const c -> Const.print_ty fmt c
   | Ref (r,t) -> 
       if print_map then fprintf fmt "ref(%a,%a)" pr r pt t
-      else fprintf fmt "ref@ %a@ %a" pt t pr r
+      else 
+        let p1 = if is_c t then paren pt else pt in
+        fprintf fmt "ref@ %a@ %a" p1 t pr r
   | Map e -> 
       if print_map then fprintf fmt "kmap%a" pe e else
         pp_print_string fmt "kmap"
@@ -44,12 +45,16 @@ let print' ?(print_map=true)
       fprintf fmt "%a%a" Name.print v (Inst.print ~whoapp:print_map pt pr pe) i
 
 
-let rec print ?print_map fmt (C x) = 
-  print' ?print_map print Name.print NEffect.print 
+let rec print fmt (C x) = 
+  print' true print Name.print NEffect.print 
     (function C x -> is_compound x) fmt x
 
-let print_list ?print_map sep fmt t = 
-  print_list sep (print ?print_map) fmt t
+let rec cprint fmt (C x) = 
+  print' false cprint Name.print NEffect.print 
+    (function C x -> is_compound x) fmt x
+
+let print_list sep fmt t = 
+  print_list sep print fmt t
 
 let sprint fmt t = print fmt t
 

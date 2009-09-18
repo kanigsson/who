@@ -76,7 +76,8 @@ let is_compound = function
   | Quant _ | Param _ | For _ | LetReg _ | Gen _ -> true
 let is_compound_node t = is_compound t.v
 
-let print ?(tyapp=true) pra prb prc open_ fmt t = 
+let print tyapp pra prb prc open_ fmt t = 
+  let typrint = if tyapp then Ty.print else Ty.cprint in
   let rec print' fmt = function
     | Const c -> Const.print fmt c
     | Var (v,i) -> 
@@ -99,10 +100,10 @@ let print ?(tyapp=true) pra prb prc open_ fmt t =
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then@ %a else@ %a@]" print e1 print e2 print e3
     | Axiom e -> fprintf fmt "axiom %a" print e
-    | Logic t -> fprintf fmt "logic %a" (Ty.print ~print_map:tyapp) t
+    | Logic t -> fprintf fmt "logic %a" typrint t
     | TypeDef (g,t,x,e) -> 
         fprintf fmt "type %a%a =@ %a in@ %a" 
-          Name.print x G.print g (opt_print (Ty.print ~print_map:tyapp)) t 
+          Name.print x G.print g (opt_print typrint) t 
           print e
     | Quant (k,t,b) ->
         let x,e = open_ b in
@@ -110,12 +111,12 @@ let print ?(tyapp=true) pra prb prc open_ fmt t =
         fprintf fmt "@[%a %a,@ %a@]" C.quant k bind (x,t) print e
     | Param (t,e) -> 
         fprintf fmt "param(%a,%a)" 
-          (Ty.print ~print_map:tyapp) t NEffect.print e
+          typrint t NEffect.print e
     | For (dir,inv,_,st,en,t) ->
         fprintf fmt "%a (%a) %a %a (%a)" 
           Name.print dir pre inv Name.print st Name.print en print t
     | Annot (e,t) -> 
-        fprintf fmt "(%a : %a)" print e (Ty.print ~print_map:tyapp) t
+        fprintf fmt "(%a : %a)" print e typrint t
     | Gen (g,t) -> 
         fprintf fmt "forall %a, %a" G.print g print t
     | LetReg (v,t) -> 
@@ -125,7 +126,7 @@ let print ?(tyapp=true) pra prb prc open_ fmt t =
   and print fmt t = print' fmt t.v
   and binder' par = 
     let p fmt (x,t) = fprintf fmt "%a:%a" 
-      Name.print x (Ty.print ~print_map:tyapp) t in
+      Name.print x typrint t in
     if par then paren p else p
   and binder fmt b = binder' true fmt b
   and pre fmt (_,x) = 
@@ -140,7 +141,7 @@ let print ?(tyapp=true) pra prb prc open_ fmt t =
   and prrec fmt = function
     | NoRec -> ()
     | Rec t -> 
-        fprintf fmt "rec(%a) " (Ty.print ~print_map:tyapp) t
+        fprintf fmt "rec(%a) " typrint t
   and maycap fmt = function
     | [] -> ()
     | l -> fprintf fmt "{%a}" (print_list space Name.print) l
@@ -159,15 +160,18 @@ module Infer = struct
 (*   let plam x t e = mk_val (PureFun (x,t,e)) (U.parr t e.t) *)
   let lam_anon t e p = lam (Name.new_anon ()) t e p
 
-  let print fmt t = print U.print_node U.prvar U.preff (fun (_,x,e) -> x,e) fmt t
+  let print fmt t = print true U.print_node U.prvar U.preff (fun (_,x,e) -> x,e) fmt t
 
 end
 
 module Recon = struct
   type t = (Ty.t, Name.t, NEffect.t) t'
-  let print ?tyapp fmt t = 
-    print ?tyapp (Ty.print ?print_map:tyapp) Name.print 
-      NEffect.print sopen fmt t
+
+  let cprint fmt t =
+    print false Ty.cprint Name.print NEffect.print sopen fmt t
+
+  let print fmt t = 
+    print true Ty.print Name.print NEffect.print sopen fmt t
 
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
   let mk_val v t loc = { v = v; t = t; e = NEffect.empty; loc = loc }
@@ -341,13 +345,20 @@ module Recon = struct
     if NEffect.sequal d eff then t else
       app (pre_defvar "restrict" ([],[],[domain t; eff]) l) t l
 
+  let get ref map l = 
+    let d = domain map in
+    match ref.t with 
+    | Ty.C (Ty.Ref (r,t)) ->
+        app2 (pre_defvar  "!!" ([t],[r],[d]) l) ref map l
+    | _ -> assert false
+
 
 end
 
 module ParseT = struct
   type t = (unit,unit,unit) t'
   let nothing _ () = ()
-  let print fmt t = print nothing nothing nothing (fun (_,x,e) -> x,e) fmt t
+  let print fmt t = print false nothing nothing nothing (fun (_,x,e) -> x,e) fmt t
   let mk v loc = { v = v; t = (); e = (); loc = loc }
   let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
   let annot e t = mk (Annot (e,t)) 
@@ -393,11 +404,6 @@ and bind_equal b1 b2 =
 
 and equal a b = equal' a.v b.v
 
-let destruct_infix' = function
-  | App ({ v = App ({ v = Var (v,_)},t1,_,_) },t2,`Infix,_) -> Some (v,t1,t2)
-  | _ -> None
-
-let destruct_infix x = destruct_infix' (x.v)
 
 let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
   let rec aux t = 
@@ -437,3 +443,45 @@ let subst x v e =
 let polsubst (tvl,rvl,evl) x v e =
   let builder (tl,rl,el)= (esubst evl el (rsubst rvl rl (tsubst tvl tl v))).v in
   subst x builder e
+
+open Name
+
+let destruct_app' = function
+  | App (f1,f2,_,_) -> Some (f1,f2)
+  | _ -> None
+
+let destruct_app2 = function
+  | App ({v = App (f1,f2,_,_)},f3,_,_) -> Some (f1,f2,f3)
+  | _ -> None
+
+let destruct_app2_var' x = 
+  match destruct_app2 x with
+  | Some ({v = Var (v,g)},f1,f2) -> Some (v,g,f1,f2)
+  | _ -> None
+
+let destruct_get' x = 
+  match destruct_app2_var' x with
+  | Some ({name = Some "!!"}, ([t],[_],[e]), r,map) -> 
+      Some (t,r,e,map)
+  | _ -> None
+
+let destruct_restrict' x = 
+  match destruct_app' x with
+  | Some ({v = Var ({name = Some "restrict"},([],[],[e1;e2]))}, map) ->
+      Some (map,e1,e2)
+  | _ -> None
+
+let destruct_combine' x = 
+  match destruct_app2_var' x with
+  | Some ({name = Some "combine"},([],[],[e1;e2]), m1,m2) ->
+      Some (m1,e1,m2,e2)
+  | _ -> None
+
+let destruct_app2_var x = destruct_app2_var' x.v
+let destruct_app x = destruct_app' x.v
+let destruct_get x = destruct_get' x.v
+let destruct_restrict x = destruct_restrict' x.v
+let destruct_combine x = destruct_combine' x.v
+
+
+

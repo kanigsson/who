@@ -18,6 +18,8 @@ let esingleton e = S.empty, S.add e S.empty, S.empty
 let radd rv (r,e,c) = S.add rv r, e, c
 let eadd ev (r,e,c) = r, S.add ev e, c
 
+let rmem r (rs,_,_) = S.mem r rs
+
 let cadd r (rs,e,c) = rs,e,S.add r c
 
 open Myformat

@@ -22,25 +22,27 @@ let logic_simpl l t x =
     | Ite ({v = Const Ptrue}, th, _) -> Simple_change th
     | Ite ({v = Const Pfalse}, _, el) -> Simple_change el
     | Ite (_, a, b) when equal a b -> Simple_change a
+    | Ite (test,th,el) -> 
+        Simple_change (and_ (impl test th l) (impl (neg test l) el l) l)
     | x ->
-        match destruct_infix' x with
-        | Some ({name = Some "/\\" }, t1, t2) ->
+        match destruct_app2_var' x with
+        | Some ({name = Some "/\\" },_, t1, t2) ->
             begin match t1.v, t2.v with
             | Const Ptrue, _ -> Simple_change t2
             | _, Const Ptrue -> Simple_change t1
             | Const Pfalse, _ | _, Const Pfalse -> Simple_change (pfalse_ l)
             | _, _ -> Nochange end
-        | Some ({name = Some "->" }, t1, t2) ->
+        | Some ({name = Some "->" },_, t1, t2) ->
             begin match t1.v, t2.v with
             | Const Ptrue, _ -> Simple_change t2
             | Const Pfalse, _ | _, Const Ptrue -> Simple_change (ptrue_ l)
             | t1,t2 when equal' t1 t2 -> Simple_change (ptrue_ l)
             | t1,_ ->
-                begin match destruct_infix' t1 with
-                | Some ({name = Some "/\\"},h1,h2) ->
+                begin match destruct_app2_var' t1 with
+                | Some ({name = Some "/\\"},_,h1,h2) ->
                     Simple_change (impl h1 (impl h2 t2 l) l)
                 | _ -> Nochange end end
-        | Some ({name = Some "=" }, t1, t2) when equal t1 t2 ->
+        | Some ({name = Some "=" },_, t1, t2) when equal t1 t2 ->
             Simple_change (ptrue_ l)
         | _ -> Nochange 
   else Nochange
@@ -60,10 +62,10 @@ let unit_void l t = function
   | _ -> Nochange
 
 let boolean_prop l _ x = 
-  try match destruct_infix' x with
-  | Some ({name = Some "="},t1,{v = (Const Btrue | Const Bfalse as n)}) ->
-      begin match destruct_infix t1 with
-       | Some (op, arg1, arg2) ->
+  try match destruct_app2_var' x with
+  | Some ({name = Some "="},_,t1,{v = (Const Btrue | Const Bfalse as n)}) ->
+      begin match destruct_app2_var t1 with
+       | Some (op, _,arg1, arg2) ->
            let op = 
              match op with 
              | {name = Some "<<=" } -> "<="
@@ -84,8 +86,8 @@ let boolean_prop l _ x =
 let tuple_reduce _ _ = function
   | App ({ v = Var ({name=Some ("fst" | "pre" | "snd" | "post" as n) },_)},t,_,_) 
   ->
-      begin match destruct_infix t with
-      | Some ({name = Some "," },a,b) ->
+      begin match destruct_app2_var t with
+      | Some ({name = Some "," },_,a,b) ->
           if n = "fst" || n = "pre" then Simple_change a else Simple_change b
       | _ -> Nochange
       end
@@ -94,12 +96,12 @@ let tuple_reduce _ _ = function
 let elim_eq_intro _ _ = function
   | Quant (`FA,_,b) ->
       let x,f = vopen b in
-      begin match destruct_infix f with
-      | Some ({name = Some "->"}, t1,f)  ->
-          begin match destruct_infix t1 with
-          | Some ({name= Some "="}, {v= Var(y,_)}, def) when Name.equal x y ->
+      begin match destruct_app2_var f with
+      | Some ({name = Some "->"}, _, t1,f)  ->
+          begin match destruct_app2_var t1 with
+          | Some ({name= Some "="}, _,{v= Var(y,_)}, def) when Name.equal x y ->
               Change_rerun (subst x (fun _ -> def.v) f)
-          | Some ({name= Some "=" }, def,{v = Var (y,_)}) when Name.equal x y ->
+          | Some ({name= Some "=" }, _,def,{v = Var (y,_)}) when Name.equal x y ->
               Change_rerun (subst x (fun _ -> def.v) f)
           | _ -> Nochange
           end
@@ -145,6 +147,23 @@ let beta_reduce _ _ = function
       Change_rerun (polsubst g x v e)
   | _ -> Nochange
 
+let get_map l _ x = 
+  match destruct_get' x with
+  | Some (_,r,_,map) -> 
+      begin match destruct_restrict map with
+      | Some (map,_,_) -> Simple_change (get r map l)
+      | None -> 
+          begin match destruct_combine map with
+          | Some (m1,_,m2,e2) -> 
+              let reg = match r.t with | Ty.C (Ty.Ref (reg,_)) -> reg 
+                                       | _ -> assert false in
+              let f = if NEffect.rmem reg e2 then get r m2 l else get r m1 l in
+              Simple_change f
+          | None -> Nochange
+          end
+      end
+  | _ -> Nochange
+
 let simplifiers =
   [
     beta_reduce;
@@ -154,6 +173,7 @@ let simplifiers =
     unit_void;
     quant_over_true;
     boolean_prop;
+    get_map;
   ]
 
 let exhaust f = 

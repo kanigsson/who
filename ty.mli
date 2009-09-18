@@ -9,12 +9,13 @@ type ('a,'b,'c) t' =
   | Map of 'c
 type t = C of (t,Name.t,NEffect.t) t'
 
-val print : ?print_map:bool -> t Myformat.fmt
+val print : t Myformat.fmt
 val print_list : 
-  ?print_map:bool -> unit Myformat.fmt -> t list Myformat.fmt
-val print' : ?print_map:bool -> (?print_map:bool -> 'a Myformat.fmt) -> 
-  'b Myformat.fmt -> 'c Myformat.fmt -> 
-    ('a -> bool) -> (('a ,'b,'c) t') Myformat.fmt
+  unit Myformat.fmt -> t list Myformat.fmt
+val print' : bool -> 'a Myformat.fmt -> 
+  'b Myformat.fmt -> 'c Myformat.fmt -> ('a -> bool) -> (('a ,'b,'c) t') Myformat.fmt
+
+val cprint : t Myformat.fmt
 
 val sprint: t Myformat.fmt
 

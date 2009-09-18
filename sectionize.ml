@@ -39,7 +39,7 @@ and intro f =
     ("/\\" | "->" | "=" | "<>" | "fst" | "snd" 
      | "," | "!=" | "!!" | "+" | "-" | "*" | "<" | "<=" | ">" | 
      ">=" | "~" | "==" | "<<" | "<<=" | ">>" | ">>=" |
-     "empty" | "combine" | "restrict" )},_) as b)
+     "empty" | "min" | "max" )},_) as b)
     ,_) -> 
       let _,f = sopen b in
       aux acc f
@@ -52,8 +52,8 @@ and intro f =
     | TypeDef (g,_,x,e) -> 
         aux (Type (x,g)::acc) e
     | f' -> 
-        match destruct_infix' f' with
-        | Some ({name = Some "->"},f1,f2) -> 
+        match destruct_app2_var' f' with
+        | Some ({name = Some "->"},_,f1,f2) -> 
             aux (Hypo (Name.from_string "H", f1)::acc) f2
         | _ -> List.rev acc, f in
     aux [] f
@@ -71,13 +71,13 @@ and prove ctx f =
         | s -> s::acc
         end
     | f' ->
-        match destruct_infix' f' with
-        | Some ({name = Some "->"},_,_) ->
+        match destruct_app2_var' f' with
+        | Some ({name = Some "->"},_,_,_) ->
             begin match section f with
             | Empty -> acc
             | s -> s::acc
             end
-        | Some ({name = Some "/\\"},f1,f2) -> aux (aux acc f2) f1
+        | Some ({name = Some "/\\"},_,f1,f2) -> aux (aux acc f2) f1
         | _ -> 
             if List.exists (intro_eq f) ctx then acc
             else PO (Name.from_string "goal", f) :: acc
@@ -92,7 +92,7 @@ let lname s fmt l =
 
 let intro_name s fmt l = 
   if l = [] then () else
-  fprintf fmt "Variables %a :@ %s." (print_list space Name.print) l s
+  fprintf fmt "Variables %a :@ %s.@ " (print_list space Name.print) l s
 
 let pr_generalize fmt ((tl,rl,el) as g) = 
   if Ty.Generalize.is_empty g then ()
@@ -100,19 +100,20 @@ let pr_generalize fmt ((tl,rl,el) as g) =
     fprintf fmt "forall@ %a@ %a@ %a,@ "
     (lname "Set") tl (lname "key") rl (lname "kmap") el
 
+(*
 let pr_intro fmt = function
   | Gen (tl,rl,el) -> 
       fprintf fmt "%a%a%a"
       (intro_name "Set") tl (intro_name "key") rl (intro_name "kmap") el
   | Variable (x,g,t) -> 
       fprintf fmt "@[<hov 2>Variable %a:@ %a%a. @]" 
-      Name.print x pr_generalize g (Ty.print ~print_map:false) t
+      Name.print x pr_generalize g Ty.cprint t
   | Hypo (h,e) -> 
       fprintf fmt "@[Hypothesis %a:@ %a. @]" 
-        Name.print h (Ast.Recon.print ~tyapp:false) e
+        Name.print h Ast.Recon.cprint e
   | Axiom (x,g,t) -> 
       fprintf fmt "@[Axiom %a: %a %a. @]" Name.print x 
-        pr_generalize g (Ast.Recon.print ~tyapp:false) t
+        pr_generalize g Ast.Recon.cprint t
   | Type (x,g) -> 
       fprintf fmt "@[Parameter %a :@ %a%s. @]" Name.print x pr_generalize g "Set"
 
@@ -120,7 +121,7 @@ let rec print fmt = function
   | Empty -> ()
   | PO (x,e) -> 
       fprintf fmt "@[Lemma %a:@ %a.@]@," Name.print x 
-        (Ast.Recon.print ~tyapp:false) e
+        Ast.Recon.cprint e
   | Section (x,il,sl) -> 
       fprintf fmt "@,@[<hov 2>Section %a.@\n%a@\n%a@]@\nEnd %a."
         Name.print x (print_list pp_force_newline pr_intro) il 
@@ -136,12 +137,15 @@ let print_decls fmt () =
   fprintf fmt "Variable ref : forall (a : Set) (k : key), Set.@\n";
   fprintf fmt "Definition ___get (A : Set) (k : key) (r : ref A k) (m : kmap) :=
     __get A k m.@\n";
-  fprintf fmt "Notation \"!!\" := (___get) (at level 50).@\n"
+  fprintf fmt "Notation \"!!\" := (___get) (at level 50).@\n";
+*)
 
+(*
 let print_all fmt s = 
   print_decls fmt ();
   print fmt s;
   pp_print_flush fmt ()
+*)
 
 module Flatten = struct
 
@@ -185,7 +189,9 @@ module Flatten = struct
        "Variable ref : forall (a : Set) (k : key), Set";
        "Definition ___get (A : Set) (k : key) (r : ref A k) (m : kmap) :=
         __get A k m";
-      "Notation \"!!\" := (___get) (at level 50)"
+       "Notation \"!!\" := (___get) (at level 50)";
+       "Definition min := Zmin";
+       "Notation max := Zmax"
       ]
   let main s = 
     coqdecls @ section s []
@@ -197,18 +203,18 @@ module Flatten = struct
         (intro_name "Set") tl (intro_name "key") rl (intro_name "kmap") el
     | FVariable (x,g,t) -> 
         fprintf fmt "@[<hov 2>Variable %a:@ %a%a. @]" 
-        Name.print x pr_generalize g (Ty.print ~print_map:false) t
+        Name.print x pr_generalize g Ty.cprint t
     | FHypo (h,e) -> 
         fprintf fmt "@[Hypothesis %a:@ %a. @]" 
-          Name.print h (Ast.Recon.print ~tyapp:false) e
+          Name.print h Ast.Recon.cprint e
     | FAxiom (x,g,t) -> 
         fprintf fmt "@[Axiom %a: %a %a. @]" Name.print x 
-          pr_generalize g (Ast.Recon.print ~tyapp:false) t
+          pr_generalize g Ast.Recon.cprint t
     | FType (x,g) -> 
         fprintf fmt "@[Parameter %a :@ %a%s. @]" Name.print x pr_generalize g "Set"
     | FPO (x,e) -> 
         fprintf fmt "@[Lemma %a:@ %a.@]" Name.print x 
-          (Ast.Recon.print ~tyapp:false) e
+          Ast.Recon.cprint e
     | FBeginSec n -> fprintf fmt "@[<hov 2>Section %a." Name.print n
     | FEndSec n -> fprintf fmt "@]End %a." Name.print n
 
