@@ -7,6 +7,10 @@ let error s loc = raise (Error (s,loc))
 
 let ty = Ty.to_logic_type
 
+let efflamho = efflamho ~s:"s"
+let plamho = plamho ~s:"r"
+let effFA = effFA ~s:"s"
+
 let rec lift_value v = 
 (*   Format.printf "lift: %a@." print v ; *)
   let l = v.loc in

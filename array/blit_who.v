@@ -44,18 +44,17 @@ Section sec. (*who*)
   (*whoar1*) Variable ar1: ref (array a8) r1.  (*who*) 
   (*whoar2*) Variable ar2: ref (array a8) r2.  (*who*) 
   (*whoofs1*) Variable ofs1: Z.  (*who*) 
-  (*whoofs2*) Variable ofs2: Z.  (*who*) 
-  (*whoanon*) Variable anon: kmap.  (*who*) 
+  (*whoofs2*) Variable ofs2: Z.  (*who*) (*whos*) Variable s: kmap.  (*who*) 
   (*wholen*) Variable len: Z.  (*who*) 
   (*whoH*) Hypothesis H: 0 <= len.  (*who*) 
   (*whoH1*) Hypothesis H1: 0 <= ofs1.  (*who*) 
   (*whoH2*) Hypothesis H2: 0 <= ofs2.  (*who*) 
-  (*whoH3*) Hypothesis H3: ofs1 <= ((length (!! ar1 anon)) - len).  (*who*) 
-  (*whoH4*) Hypothesis H4: ofs2 <= ((length (!! ar2 anon)) - len).  (*who*) 
-  (*whoanon1*) Variable anon1: kmap.  (*who*) 
-  (*whoH5*) Hypothesis H5: (!! ar1 anon) = (!! ar1 anon1).  (*who*) 
-  (*whoanon2*) Variable anon2: kmap.  (*who*) 
-  (*whoH6*) Hypothesis H6: (!! ar2 anon) = (!! ar2 anon2).  (*who*) 
+  (*whoH3*) Hypothesis H3: ofs1 <= ((length (!! ar1 s)) - len).  (*who*) 
+  (*whoH4*) Hypothesis H4: ofs2 <= ((length (!! ar2 s)) - len).  (*who*) 
+  (*whos1*) Variable s1: kmap.  (*who*) 
+  (*whoH5*) Hypothesis H5: (!! ar1 s) = (!! ar1 s1).  (*who*) 
+  (*whos2*) Variable s2: kmap.  (*who*) 
+  (*whoH6*) Hypothesis H6: (!! ar2 s) = (!! ar2 s2).  (*who*) 
   
   (*whobeginsec1*)
   Section sec1. (*who*)
@@ -63,36 +62,31 @@ Section sec. (*who*)
     
     (*whobeginsec2*)
     Section sec2. (*who*)
-      (*whoanon3*) Variable anon3: kmap.  (*who*) 
+      (*whos3*) Variable s3: kmap.  (*who*) 
       (*whoi3*) Variable i3: Z.  (*who*) 
       (*whoH8*) Hypothesis H8: (len - 1) <= i3.  (*who*) 
       (*whoH9*) Hypothesis H9: i3 <= 0.  (*who*) 
-      (*whoH10*) Hypothesis H10: (!! ar1 anon3) = (!! ar1 anon1).  (*who*) 
+      (*whoH10*) Hypothesis H10: (!! ar1 s3) = (!! ar1 s1).  (*who*) 
       (*whoH11*) Hypothesis H11:
-                 (length (!! ar2 anon3)) = (length (!! ar2 anon2)).  (*who*) 
+                 (length (!! ar2 s3)) = (length (!! ar2 s2)).  (*who*) 
       (*whoH12*) Hypothesis H12:
                  forall (k:Z),
                  (i3 < k) ->
                  ((k <= (len - 1)) ->
-                  ((get (ofs2 + k) (!! ar2 anon3)) =
-                   (get (ofs1 + k) (!! ar1 anon3)))).  (*who*) 
-      (*whoanon4*) Variable anon4: kmap.  (*who*) 
-      (*whoH13*) Hypothesis H13: (!! ar1 anon3) = (!! ar1 anon4).  (*who*) 
-      (*whoanon5*) Variable anon5: kmap.  (*who*) 
-      (*whoH14*) Hypothesis H14: (!! ar2 anon3) = (!! ar2 anon5).  (*who*) 
-      (*whoanon6*) Variable anon6: kmap.  (*who*) 
+                  ((get (ofs2 + k) (!! ar2 s3)) =
+                   (get (ofs1 + k) (!! ar1 s3)))).  (*who*) 
+      (*whos4*) Variable s4: kmap.  (*who*) 
+      (*whoH13*) Hypothesis H13: (!! ar1 s3) = (!! ar1 s4).  (*who*) 
+      (*whos5*) Variable s5: kmap.  (*who*) 
+      (*whoH14*) Hypothesis H14: (!! ar2 s3) = (!! ar2 s5).  (*who*) 
+      (*whos6*) Variable s6: kmap.  (*who*) 
       (*whoH15*) Hypothesis H15:
-                 (!! ar2 anon6) =
-                 (set (ofs2 + i3) (get (ofs1 + i3) (!! ar1 anon4))
-                  (!! ar2 anon5)).  (*who*) 
-      (*whogoal*) Lemma goal: (!! ar1 anon4) = (!! ar1 anon1). (*who*) 
-      Proof. transitivity (!! ar1 anon3); auto. Qed.
-        
-      (*whogoal1*) 
-      Lemma goal1: (length (!! ar2 anon6)) = (length (!! ar2 anon2)). (*who*) 
+                 (!! ar2 s6) =
+                 (set (ofs2 + i3) (get (ofs1 + i3) (!! ar1 s4)) (!! ar2 s5)).  (*who*) 
+      (*whogoal*) Lemma goal: (!! ar1 s4) = (!! ar1 s1). (*who*) 
+      Proof. transitivity (!! ar1 s3); auto. Qed.
+      (*whogoal1*) Lemma goal1: (length (!! ar2 s6)) = (length (!! ar2 s2)). (*who*) 
       Proof. rewrite H15, <- update_length, <- H14; auto. Qed.
-      
-      
       
       (*whobeginsec3*)
       Section sec3. (*who*)
@@ -100,15 +94,13 @@ Section sec. (*who*)
         (*whoH16*) Hypothesis H16: (i3 + 1) < k1.  (*who*) 
         (*whoH17*) Hypothesis H17: k1 <= (len - 1).  (*who*) 
         (*whogoal2*) Lemma goal2:
-                     (get (ofs2 + k1) (!! ar2 anon6)) =
-                     (get (ofs1 + k1) (!! ar1 anon4)). (*who*) 
+                     (get (ofs2 + k1) (!! ar2 s6)) =
+                     (get (ofs1 + k1) (!! ar1 s4)). (*who*) 
         Proof.
            assert (ofs2 + i3 <> ofs2 + k1) by omega.
            rewrite H15, get_set_neq, <- H14, <- H13; try omega; auto.
            apply H12; omega. Qed.
           
-        
-        
         (*whoendsec3*)
         End sec3. (*who*)
       
@@ -121,12 +113,9 @@ Section sec. (*who*)
       (*whoH18*) Hypothesis H18: (len - 1) < k2.  (*who*) 
       (*whoH19*) Hypothesis H19: k2 <= (len - 1).  (*who*) 
       (*whogoal3*) Lemma goal3:
-                   (get (ofs2 + k2) (!! ar2 anon2)) =
-                   (get (ofs1 + k2) (!! ar1 anon1)). (*who*) 
+                   (get (ofs2 + k2) (!! ar2 s2)) =
+                   (get (ofs1 + k2) (!! ar1 s1)). (*who*) 
       Proof. apply False_rec; omega. Qed.
-        
-      
-      
       (*whoendsec4*)
       End sec4. (*who*)
     
@@ -136,9 +125,8 @@ Section sec. (*who*)
       (*whoH20*) Hypothesis H20: (len - 1) <= i4.  (*who*) 
       (*whoH21*) Hypothesis H21: i4 <= 0.  (*who*) 
       (*whom*) Variable m: kmap.  (*who*) 
-      (*whoH22*) Hypothesis H22: (!! ar1 m) = (!! ar1 anon1).  (*who*) 
-      (*whoH23*) Hypothesis H23:
-                 (length (!! ar2 m)) = (length (!! ar2 anon2)).  (*who*) 
+      (*whoH22*) Hypothesis H22: (!! ar1 m) = (!! ar1 s1).  (*who*) 
+      (*whoH23*) Hypothesis H23: (length (!! ar2 m)) = (length (!! ar2 s2)).  (*who*) 
       (*whoH24*) Hypothesis H24:
                  forall (k3:Z),
                  (i4 < k3) ->
@@ -154,15 +142,16 @@ Section sec. (*who*)
         (*whogoal4*) Lemma goal4:
                      (get (ofs2 + k4) (!! ar2 m)) =
                      (get (ofs1 + k4) (!! ar1 m)). (*who*) 
+        Proof. apply H24; omega. Qed.
         (*whoendsec6*)
         End sec6. (*who*)
       
       (*whobeginsec7*)
       Section sec7. (*who*)
         (*whon*) Variable n: kmap.  (*who*) 
-        (*whoH27*) Hypothesis H27: (!! ar1 n) = (!! ar1 anon1).  (*who*) 
+        (*whoH27*) Hypothesis H27: (!! ar1 n) = (!! ar1 s1).  (*who*) 
         (*whoH28*) Hypothesis H28:
-                   (length (!! ar2 n)) = (length (!! ar2 anon2)).  (*who*) 
+                   (length (!! ar2 n)) = (length (!! ar2 s2)).  (*who*) 
         (*whoH29*) Hypothesis H29:
                    forall (k5:Z),
                    ((i4 + 1) < k5) ->
@@ -181,7 +170,6 @@ Section sec. (*who*)
           Proof. Admitted.
         
           
-          
           (*whoendsec8*)
           End sec8. (*who*)
         
@@ -193,30 +181,21 @@ Section sec. (*who*)
     
     (*whobeginsec9*)
     Section sec9. (*who*)
-      (*whoanon7*) Variable anon7: kmap.  (*who*) 
-      (*whoH32*) Hypothesis H32: (!! ar1 anon7) = (!! ar1 anon1).  (*who*) 
+      (*whos7*) Variable s7: kmap.  (*who*) 
+      (*whoH32*) Hypothesis H32: (!! ar1 s7) = (!! ar1 s1).  (*who*) 
       (*whoH33*) Hypothesis H33:
-                 (length (!! ar2 anon7)) = (length (!! ar2 anon2)).  (*who*) 
+                 (length (!! ar2 s7)) = (length (!! ar2 s2)).  (*who*) 
       (*whoH34*) Hypothesis H34:
                  forall (k7:Z),
                  ((min (len - 1) (0 - 1)) < k7) ->
                  ((k7 <= (len - 1)) ->
-                  ((get (ofs2 + k7) (!! ar2 anon7)) =
-                   (get (ofs1 + k7) (!! ar1 anon7)))).  (*who*) 
-      (*whogoal6*) Lemma goal6: (!! ar1 anon) = (!! ar1 anon7). (*who*) 
+                  ((get (ofs2 + k7) (!! ar2 s7)) =
+                   (get (ofs1 + k7) (!! ar1 s7)))).  (*who*) 
+      (*whogoal6*) Lemma goal6: (!! ar1 s) = (!! ar1 s7). (*who*) 
       Proof. rewrite H32; auto. Qed.
-        
-      (*whogoal7*) Lemma goal7:
-                                                                 (length
-                                                                  (!! ar2
-                                                                   anon7))
-                                                                 =
-                                                                 (length
-                                                                  (!! ar2
-                                                                   anon)). (*who*) 
+      (*whogoal7*) Lemma goal7: (length (!! ar2 s7)) = (length (!! ar2 s)). (*who*) 
+      
       Proof. rewrite H33, H6; auto. Qed.
-      
-      
       
       (*whobeginsec10*)
       Section sec10. (*who*)
@@ -224,13 +203,10 @@ Section sec. (*who*)
         (*whoH35*) Hypothesis H35: 0 <= k8.  (*who*) 
         (*whoH36*) Hypothesis H36: k8 < len.  (*who*) 
         (*whogoal8*) Lemma goal8:
-                     (get (ofs2 + k8) (!! ar2 anon7)) =
-                     (get (ofs1 + k8) (!! ar1 anon7)). (*who*) 
+                     (get (ofs2 + k8) (!! ar2 s7)) =
+                     (get (ofs1 + k8) (!! ar1 s7)). (*who*) 
         Proof.  apply H34; try omega. unfold min. Admitted.
           
-        
-        
-        
         (*whoendsec10*)
         End sec10. (*who*)
       
@@ -246,32 +222,32 @@ Section sec. (*who*)
     
     (*whobeginsec12*)
     Section sec12. (*who*)
-      (*whoanon8*) Variable anon8: kmap.  (*who*) 
+      (*whos8*) Variable s8: kmap.  (*who*) 
       (*whoi5*) Variable i5: Z.  (*who*) 
       (*whoH38*) Hypothesis H38: 0 <= i5.  (*who*) 
       (*whoH39*) Hypothesis H39: i5 <= (len - 1).  (*who*) 
-      (*whoH40*) Hypothesis H40: (!! ar1 anon8) = (!! ar1 anon1).  (*who*) 
+      (*whoH40*) Hypothesis H40: (!! ar1 s8) = (!! ar1 s1).  (*who*) 
       (*whoH41*) Hypothesis H41:
-                 (length (!! ar2 anon8)) = (length (!! ar2 anon2)).  (*who*) 
+                 (length (!! ar2 s8)) = (length (!! ar2 s2)).  (*who*) 
       (*whoH42*) Hypothesis H42:
                  forall (k9:Z),
                  (0 <= k9) ->
                  ((k9 < i5) ->
-                  ((get (ofs2 + k9) (!! ar2 anon8)) =
-                   (get (ofs1 + k9) (!! ar1 anon8)))).  (*who*) 
-      (*whoanon9*) Variable anon9: kmap.  (*who*) 
-      (*whoH43*) Hypothesis H43: (!! ar1 anon8) = (!! ar1 anon9).  (*who*) 
-      (*whoanon10*) Variable anon10: kmap.  (*who*) 
-      (*whoH44*) Hypothesis H44: (!! ar2 anon8) = (!! ar2 anon10).  (*who*) 
-      (*whoanon11*) Variable anon11: kmap.  (*who*) 
+                  ((get (ofs2 + k9) (!! ar2 s8)) =
+                   (get (ofs1 + k9) (!! ar1 s8)))).  (*who*) 
+      (*whos9*) Variable s9: kmap.  (*who*) 
+      (*whoH43*) Hypothesis H43: (!! ar1 s8) = (!! ar1 s9).  (*who*) 
+      (*whos10*) Variable s10: kmap.  (*who*) 
+      (*whoH44*) Hypothesis H44: (!! ar2 s8) = (!! ar2 s10).  (*who*) 
+      (*whos11*) Variable s11: kmap.  (*who*) 
       (*whoH45*) Hypothesis H45:
-                 (!! ar2 anon11) =
-                 (set (ofs2 + i5) (get (ofs1 + i5) (!! ar1 anon9))
-                  (!! ar2 anon10)).  (*who*) 
-      (*whogoal9*) Lemma goal9: (!! ar1 anon9) = (!! ar1 anon1). (*who*) 
-      Proof. transitivity (!! ar1 anon8); auto. Qed.
-      (*whogoal10*) 
-      Lemma goal10: (length (!! ar2 anon11)) = (length (!! ar2 anon2)). (*who*) 
+                 (!! ar2 s11) =
+                 (set (ofs2 + i5) (get (ofs1 + i5) (!! ar1 s9)) (!! ar2 s10)).  (*who*) 
+      (*whogoal9*) Lemma goal9: (!! ar1 s9) = (!! ar1 s1). (*who*) 
+            Proof. transitivity (!! ar1 s8); auto. Qed.
+      (*whogoal10*) Lemma goal10:
+
+                    (length (!! ar2 s11)) = (length (!! ar2 s2)). (*who*) 
       Proof. rewrite H45, <- H44, <- update_length; auto. Qed.
       
       
@@ -282,8 +258,8 @@ Section sec. (*who*)
         (*whoH46*) Hypothesis H46: 0 <= k10.  (*who*) 
         (*whoH47*) Hypothesis H47: k10 < (i5 + 1).  (*who*) 
         (*whogoal11*) Lemma goal11:
-                      (get (ofs2 + k10) (!! ar2 anon11)) =
-                      (get (ofs1 + k10) (!! ar1 anon9)). (*who*) 
+                      (get (ofs2 + k10) (!! ar2 s11)) =
+                      (get (ofs1 + k10) (!! ar1 s9)). (*who*) 
         Proof.
           rewrite H45.
           case_eq (Z_eq_dec k10 i5); intros A B. 
@@ -294,7 +270,6 @@ Section sec. (*who*)
           rewrite <- H44, H41, <- H6; omega.
           rewrite <- H44, H41, <- H6; omega.
        Qed.
-        
         
         
         (*whoendsec13*)
@@ -309,10 +284,9 @@ Section sec. (*who*)
       (*whoH48*) Hypothesis H48: 0 <= k11.  (*who*) 
       (*whoH49*) Hypothesis H49: k11 < 0.  (*who*) 
       (*whogoal12*) Lemma goal12:
-                    (get (ofs2 + k11) (!! ar2 anon2)) =
-                    (get (ofs1 + k11) (!! ar1 anon1)). (*who*) 
+                    (get (ofs2 + k11) (!! ar2 s2)) =
+                    (get (ofs1 + k11) (!! ar1 s1)). (*who*) 
       Proof. apply False_rec; omega. Qed.
-      
       
       
       (*whoendsec14*)
@@ -324,9 +298,9 @@ Section sec. (*who*)
       (*whoH50*) Hypothesis H50: 0 <= i6.  (*who*) 
       (*whoH51*) Hypothesis H51: i6 <= (len - 1).  (*who*) 
       (*whom1*) Variable m1: kmap.  (*who*) 
-      (*whoH52*) Hypothesis H52: (!! ar1 m1) = (!! ar1 anon1).  (*who*) 
+      (*whoH52*) Hypothesis H52: (!! ar1 m1) = (!! ar1 s1).  (*who*) 
       (*whoH53*) Hypothesis H53:
-                 (length (!! ar2 m1)) = (length (!! ar2 anon2)).  (*who*) 
+                 (length (!! ar2 m1)) = (length (!! ar2 s2)).  (*who*) 
       (*whoH54*) Hypothesis H54:
                  forall (k12:Z),
                  (0 <= k12) ->
@@ -343,8 +317,6 @@ Section sec. (*who*)
                       (get (ofs2 + k13) (!! ar2 m1)) =
                       (get (ofs1 + k13) (!! ar1 m1)). (*who*) 
         Proof. apply H54; omega. Qed.
-        
-        
         (*whoendsec16*)
         End sec16. (*who*)
       
@@ -353,24 +325,20 @@ Section sec. (*who*)
     
     (*whobeginsec17*)
     Section sec17. (*who*)
-      (*whoanon12*) Variable anon12: kmap.  (*who*) 
-      (*whoH57*) Hypothesis H57: (!! ar1 anon12) = (!! ar1 anon1).  (*who*) 
+      (*whos12*) Variable s12: kmap.  (*who*) 
+      (*whoH57*) Hypothesis H57: (!! ar1 s12) = (!! ar1 s1).  (*who*) 
       (*whoH58*) Hypothesis H58:
-                 (length (!! ar2 anon12)) = (length (!! ar2 anon2)).  (*who*) 
+                 (length (!! ar2 s12)) = (length (!! ar2 s2)).  (*who*) 
       (*whoH59*) Hypothesis H59:
                  forall (k14:Z),
                  (0 <= k14) ->
                  ((k14 < (max 0 ((len - 1) + 1))) ->
-                  ((get (ofs2 + k14) (!! ar2 anon12)) =
-                   (get (ofs1 + k14) (!! ar1 anon12)))).  (*who*) 
-      (*whogoal14*) Lemma goal14: (!! ar1 anon) = (!! ar1 anon12). (*who*) 
+                  ((get (ofs2 + k14) (!! ar2 s12)) =
+                   (get (ofs1 + k14) (!! ar1 s12)))).  (*who*) 
+      (*whogoal14*) Lemma goal14: (!! ar1 s) = (!! ar1 s12). (*who*) 
       Proof. rewrite H57, H5; auto. Qed.
       (*whogoal15*) Lemma goal15:
-                                                             (length
-                                                              (!! ar2 anon12))
-                                                             =
-                                                             (length
-                                                              (!! ar2 anon)). (*who*) 
+                    (length (!! ar2 s12)) = (length (!! ar2 s)). (*who*) 
       Proof.
           rewrite H58, H6; auto. Qed.
       
@@ -382,10 +350,9 @@ Section sec. (*who*)
         (*whoH60*) Hypothesis H60: 0 <= k15.  (*who*) 
         (*whoH61*) Hypothesis H61: k15 < len.  (*who*) 
         (*whogoal16*) Lemma goal16:
-                      (get (ofs2 + k15) (!! ar2 anon12)) =
-                      (get (ofs1 + k15) (!! ar1 anon12)). (*who*) 
+                      (get (ofs2 + k15) (!! ar2 s12)) =
+                      (get (ofs1 + k15) (!! ar1 s12)). (*who*) 
         Proof. apply H59; auto. Admitted.
-        
         
         
         (*whoendsec18*)

@@ -18,6 +18,8 @@ module Make (O : Output) = struct
     else
       fprintf fmt "(*who%s*) %a (*who*) @," (O.id x) O.print x
 
+  let mem id l = List.exists (fun x -> O.id x = id) l
+
   let print_until fmt ?identifier acc = 
     match identifier with
     | None -> List.iter (print_elt fmt) acc; []
@@ -27,7 +29,8 @@ module Make (O : Output) = struct
           | x::xs ->
               if O.id x = id then begin (print_elt fmt) x; xs end
               else begin print_elt fmt x; aux xs end in
-        aux acc
+        if mem id acc then aux acc else acc
+
 
 }
 
