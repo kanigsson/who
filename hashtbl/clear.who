@@ -1,0 +1,36 @@
+type 'a array
+
+logic get : forall 'a. int -> 'a array -> 'a
+logic set : forall 'a. int -> 'a -> 'a array -> 'a array
+logic length : forall 'a. 'a array -> int
+logic create : forall 'a. int -> 'a array
+
+axiom update_length : 
+  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
+    length [| 'a|] t = length [|'a|] (set [|'a|] i z t)
+
+axiom get_set_eq : 
+  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
+    i < length [|'a|] t -> get [|'a|] i (set [|'a|] i z t) = z
+
+axiom get_set_neq : 
+  forall 'a. forall (t : 'a array) (i : int) (j : int) (z : 'a).
+    i < length [|'a|] t -> j < length [|'a|] t -> i <> j -> 
+    get [|'a|] i (set [|'a|] j z t) = get [|'a|] i t
+
+axiom length_nonnegative : 
+  forall 'a. forall (t : 'a array).  0 <= length [|'a|] t
+
+axiom length_create : 
+  forall 'a. forall (l : int). 0 <= l -> length [|'a|] (create [|'a|] l) = l
+
+type 'a list
+
+logic nil : forall 'a. 'a list
+logic cons : forall 'a. 'a -> 'a list -> 'a list
+
+logic is_nil : forall 'a. 'a list -> bool
+logic head : forall 'a. 'a list -> 'a
+logic tail : forall 'a. 'a list -> 'a list
+
+
