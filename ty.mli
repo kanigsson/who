@@ -17,8 +17,6 @@ val print' : bool -> 'a Myformat.fmt ->
 
 val cprint : t Myformat.fmt
 
-val sprint: t Myformat.fmt
-
 val is_compound : ('a,'b,'c) t' -> bool
 val var : Name.t -> t
 val const : Const.ty -> t

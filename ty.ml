@@ -20,29 +20,23 @@ let maycap pr fmt = function
   | l -> print_list space pr fmt l
 
 let print' print_map pt pr pe is_c fmt x = 
+  let mayp fmt t = if is_c t then paren pt fmt t else pt fmt t in
   match x with 
   | Var x -> Name.print fmt x
   | Arrow (t1,t2,eff) -> 
-      let p1 = if is_c t1 then paren pt else pt in
-      fprintf fmt "%a ->%a %a" p1 t1 pe eff pt t2
+      fprintf fmt "%a ->%a %a" mayp t1 pe eff pt t2
   | PureArr (t1,t2) -> 
-      let p1 = if is_c t1 then paren pt else pt in
-      fprintf fmt "%a ->@ %a" p1 t1 pt t2
+      fprintf fmt "%a ->@ %a" mayp t1 pt t2
   | Tuple (t1,t2) -> 
-      let p1 = if is_c t1 then paren pt else pt in
-      let p2 = if is_c t2 then paren pt else pt in
-      fprintf fmt "%a *@ %a" p1 t1 p2 t2
+      fprintf fmt "%a *@ %a" mayp t1 mayp t2
   | Const c -> Const.print_ty fmt c
   | Ref (r,t) -> 
       if print_map then fprintf fmt "ref(%a,%a)" pr r pt t
-      else 
-        let p1 = if is_c t then paren pt else pt in
-        fprintf fmt "ref@ %a@ %a" p1 t pr r
+      else fprintf fmt "ref@ %a@ %a" mayp t pr r
   | Map e -> 
-      if print_map then fprintf fmt "kmap%a" pe e else
-        pp_print_string fmt "kmap"
+      if print_map then fprintf fmt "kmap%a" pe e else pp_print_string fmt "kmap"
   | App (v,i) -> 
-      fprintf fmt "%a%a" Name.print v (Inst.print ~whoapp:print_map pt pr pe) i
+      fprintf fmt "%a%a" Name.print v (Inst.print ~whoapp:print_map mayp pr pe) i
 
 
 let rec print fmt (C x) = 
@@ -55,8 +49,6 @@ let rec cprint fmt (C x) =
 
 let print_list sep fmt t = 
   print_list sep print fmt t
-
-let sprint fmt t = print fmt t
 
 let var v = C (Var v)
 let arrow t1 t2 eff = C (Arrow (t1,t2,eff))

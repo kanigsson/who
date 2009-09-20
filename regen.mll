@@ -16,7 +16,7 @@ module Make (O : Output) = struct
     if O.force_newline x then
       fprintf fmt "@\n(*who%s*)@\n%a (*who*)@\n" (O.id x) O.print x
     else
-      fprintf fmt "(*who%s*) %a (*who*) @," (O.id x) O.print x
+      fprintf fmt "@,(*who%s*) %a (*who*) @," (O.id x) O.print x
 
   let mem id l = List.exists (fun x -> O.id x = id) l
 
@@ -40,13 +40,13 @@ let blanks = (['\t' ' ' '\n' ]) *
 let identifier = alpha (alpha | digit | '\'' | '_')*
 
 rule skip acc = parse
-  | "(*who*)" blanks { () }
+  | blanks "(*who*)" blanks { () }
   | _ { skip acc lexbuf }
   | eof { 
     ignore (print_until O.fmt acc) }
 
 and search_next acc = parse
-  | "(*who" (identifier as identifier) "*)" blanks
+  | blanks "(*who" (identifier as identifier) "*)" blanks
   { 
     let acc = print_until O.fmt ~identifier acc in
     skip acc lexbuf;

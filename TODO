@@ -1,1 +1,4 @@
 better inference without explicitely introduced variables 
+mechanism of "sections" to match who types and Coq types
+type definitions
+error messages for unknown variables in internalize

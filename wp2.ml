@@ -39,6 +39,10 @@ let rec lift_value v =
                   plamho (ty e.t) (fun _ -> ptrue_ l) l) l) l) l
         | PPlain q -> plam x t q l in
       mk_tuple p q l
+  | Let (p,g,e1,b,NoRec) -> 
+      let x,f = sopen b in
+      let_ ~prelude:p g (lift_value e1) x (lift_value f) NoRec l
+
   | _ -> 
       error (Myformat.sprintf "not a value: %a" print v) l
 
@@ -62,6 +66,10 @@ let rec correct v =
                 | _,_,PPlain f -> app f r l in
         sforall x lt (impl p (wp_node r q e) l) l) l
   | PureFun (t,(_,x,e)) -> sforall x (ty t) (correct e) l
+  | Let (p,g,e1,b,NoRec) -> 
+      let x,e2 = sopen b in
+      and_ (gen g (correct e1) l)
+        (let_ ~prelude:p g (lift_value e1) x (correct e2) NoRec l) l
   | _ -> 
       Myformat.printf "correct: not a value: %a@." print v;
       assert false

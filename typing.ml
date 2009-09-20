@@ -94,7 +94,7 @@ and formtyping env (e : Ast.Recon.t) : Ty.t =
     else error (Myformat.sprintf "not empty: %a" NEffect.print e.e) e.loc
   else
     error (Myformat.sprintf "fannotation mismatch: %a and %a@." 
-             Ty.sprint e.t Ty.sprint t) e.loc
+             Ty.print e.t Ty.print t) e.loc
 and pre env eff (_,x) =
   match x with
   | None -> ()
@@ -188,13 +188,13 @@ and typing env (e : Ast.Recon.t) : Ty.t * NEffect.t =
   let ((t',_) as x) = typing' env e.loc e.v in
   if Ty.equal e.t t' then x else 
     error (Myformat.sprintf "annotation mismatch: %a and %a@." 
-             Ty.sprint e.t Ty.sprint t') e.loc
+             Ty.print e.t Ty.print t') e.loc
 and fis_oftype env t e =
   let t' = formtyping env e in
   if Ty.equal t t' then () 
   else 
     error 
-      (Myformat.sprintf "typing mismatch: %a and %a" Ty.sprint t Ty.sprint t') 
+      (Myformat.sprintf "typing mismatch: %a and %a" Ty.print t Ty.print t') 
       e.loc
 
 let typing t = ignore (typing { types = Name.M.empty} t)

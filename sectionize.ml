@@ -3,7 +3,7 @@ open Ast
 
 type intro = 
   | Gen of Ty.Generalize.t
-  | Variable of Name.t * Ty.Generalize.t * Ty.t
+  | Variable of Name.t * Ty.Generalize.t * Ty.t * [`Logic | `Quant]
   | Type of Name.t * Ty.Generalize.t
   | Hypo of Name.t * Ast.Recon.t
   | Axiom of Name.t * Ty.Generalize.t *  Ast.Recon.t
@@ -31,7 +31,7 @@ and intro f =
     match f.v with
     | Quant (`FA, t,b) ->
         let x , f = vopen b in
-        aux ( Variable (x,Ty.Generalize.empty,t) :: acc) f
+        aux ( Variable (x,Ty.Generalize.empty,t,`Quant) :: acc) f
     | Ast.Gen (g,f) -> 
         if Ty.Generalize.is_empty g then aux acc f
         else aux ((Gen g)::acc) f
@@ -39,13 +39,13 @@ and intro f =
     ("/\\" | "->" | "=" | "<>" | "fst" | "snd" 
      | "," | "!=" | "!!" | "+" | "-" | "*" | "<" | "<=" | ">" | 
      ">=" | "~" | "==" | "<<" | "<<=" | ">>" | ">>=" |
-     "empty" | "min" | "max" )},_) as b)
+     "empty" | "min" | "max" | "Zmod" )},_) as b)
     ,_) -> 
       let _,f = sopen b in
       aux acc f
     | Let (_,g,{v = Logic t},b,_) ->
         let x, f = sopen b in
-        aux (Variable (x,g,t)::acc) f
+        aux (Variable (x,g,t, `Logic)::acc) f
     | Let (_,g,{v = Ast.Axiom a},b,_) ->
         let x, f = sopen b in
         aux (Axiom (x,g,a)::acc) f
@@ -98,7 +98,7 @@ let pr_generalize fmt ((tl,rl,el) as g) =
   if Ty.Generalize.is_empty g then ()
   else
     fprintf fmt "forall@ %a@ %a@ %a,@ "
-    (lname "Set") tl (lname "key") rl (lname "kmap") el
+    (lname "Type") tl (lname "key") rl (lname "kmap") el
 
 (*
 let pr_intro fmt = function
@@ -134,8 +134,8 @@ let print_decls fmt () =
   fprintf fmt "Require Import ZArith.@\n";
   fprintf fmt "Open Scope Z_scope.@\n";
   fprintf fmt "Require Omega.@\n";
-  fprintf fmt "Variable ref : forall (a : Set) (k : key), Set.@\n";
-  fprintf fmt "Definition ___get (A : Set) (k : key) (r : ref A k) (m : kmap) :=
+  fprintf fmt "Variable ref : forall (a : Type) (k : key), Type.@\n";
+  fprintf fmt "Definition ___get (A : Type) (k : key) (r : ref A k) (m : kmap) :=
     __get A k m.@\n";
   fprintf fmt "Notation \"!!\" := (___get) (at level 50).@\n";
 *)
@@ -152,7 +152,7 @@ module Flatten = struct
   type t = 
     | FCoqDecl of string * Name.t
     | FGen of Ty.Generalize.t
-    | FVariable of Name.t * Ty.Generalize.t * Ty.t
+    | FVariable of Name.t * Ty.Generalize.t * Ty.t * [`Logic | `Quant]
     | FType of Name.t * Ty.Generalize.t
     | FHypo of Name.t * Ast.Recon.t
     | FAxiom of Name.t * Ty.Generalize.t *  Ast.Recon.t
@@ -162,7 +162,7 @@ module Flatten = struct
 
   let intro = function
     | Gen g -> FGen g
-    | Variable (n,g,t) -> FVariable (n,g,t)
+    | Variable (n,g,t,k) -> FVariable (n,g,t,k)
     | Type (n,t) -> FType (n,t)
     | Hypo (n,e) -> FHypo (n,e)
     | Axiom (n,g,e) -> FAxiom (n,g,e)
@@ -186,12 +186,12 @@ module Flatten = struct
        "Require Import ZArith";
        "Open Scope Z_scope";
        "Require Omega";
-       "Variable ref : forall (a : Set) (k : key), Set";
-       "Definition ___get (A : Set) (k : key) (r : ref A k) (m : kmap) :=
+       "Variable ref : forall (a : Type) (k : key), Type";
+       "Definition ___get (A : Type) (k : key) (r : ref A k) (m : kmap) :=
         __get A k m";
        "Notation \"!!\" := (___get) (at level 50)";
        "Definition min := Zmin";
-       "Notation max := Zmax"
+       "Notation max := Zmax";
       ]
   let main s = 
     coqdecls @ section s []
@@ -200,9 +200,12 @@ module Flatten = struct
     | FCoqDecl (s,_) -> fprintf fmt "%s." s
     | FGen (tl,rl,el) -> 
         fprintf fmt "%a%a%a"
-        (intro_name "Set") tl (intro_name "key") rl (intro_name "kmap") el
-    | FVariable (x,g,t) -> 
+        (intro_name "Type") tl (intro_name "key") rl (intro_name "kmap") el
+    | FVariable (x,g,t,`Quant) -> 
         fprintf fmt "@[<hov 2>Variable %a:@ %a%a. @]" 
+        Name.print x pr_generalize g Ty.cprint t
+    | FVariable (x,g,t,`Logic) -> 
+        fprintf fmt "@[<hov 2>Definition %a:@ %a%a. @]" 
         Name.print x pr_generalize g Ty.cprint t
     | FHypo (h,e) -> 
         fprintf fmt "@[Hypothesis %a:@ %a. @]" 
@@ -211,7 +214,8 @@ module Flatten = struct
         fprintf fmt "@[Axiom %a: %a %a. @]" Name.print x 
           pr_generalize g Ast.Recon.cprint t
     | FType (x,g) -> 
-        fprintf fmt "@[Parameter %a :@ %a%s. @]" Name.print x pr_generalize g "Set"
+        fprintf fmt "@[Definition %a :@ %a%s. @]" Name.print x pr_generalize g
+        "Type"
     | FPO (x,e) -> 
         fprintf fmt "@[Lemma %a:@ %a.@]" Name.print x 
           Ast.Recon.cprint e
@@ -226,7 +230,7 @@ module Flatten = struct
     let n = 
       match x with
       | FAxiom (n,_,_) | FPO (n,_) | FType (n,_) 
-      | FHypo (n,_) | FVariable (n,_,_) | FEndSec n | FBeginSec n
+      | FHypo (n,_) | FVariable (n,_,_,_) | FEndSec n | FBeginSec n
       | FCoqDecl (_,n) -> n
       | FGen g -> Ty.Generalize.get_first g in
     let s = sprintf "%a" Name.print n in

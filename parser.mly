@@ -99,6 +99,7 @@ stype:
   | v = TYVAR { TVar v }
   | LPAREN t = ty RPAREN { t }
   | v = IDENT i = inst { TApp (v.c,i)  }
+  | v = IDENT {TVar v.c }
   | t = stype v = IDENT {TApp (v.c,([t],[],[])) }
   | LPAREN t = ty COMMA l = separated_list(COMMA,ty) RPAREN v = IDENT
     { TApp(v.c,(t::l,[],[])) }

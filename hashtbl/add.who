@@ -1,41 +1,12 @@
-type 'a array
+type mlist ['a||]
 
-logic get : forall 'a. int -> 'a array -> 'a
-logic set : forall 'a. int -> 'a -> 'a array -> 'a array
-logic length : forall 'a. 'a array -> int
-logic create : forall 'a. int -> 'a array
+logic mnil ['a||] : 'a mlist
+logic mcons ['a||] : 'a -> 'a mlist -> 'a mlist
 
-axiom update_length : 
-  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
-    length [| 'a|] t = length [|'a|] (set [|'a|] i z t)
+logic mis_nil ['a||] : 'a mlist -> bool
+logic mmem ['a||] : 'a -> 'a mlist -> prop
 
-axiom get_set_eq : 
-  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
-    i < length [|'a|] t -> get [|'a|] i (set [|'a|] i z t) = z
-
-axiom get_set_neq : 
-  forall 'a. forall (t : 'a array) (i : int) (j : int) (z : 'a).
-    i < length [|'a|] t -> j < length [|'a|] t -> i <> j -> 
-    get [|'a|] i (set [|'a|] j z t) = get [|'a|] i t
-
-axiom length_nonnegative : 
-  forall 'a. forall (t : 'a array).  0 <= length [|'a|] t
-
-axiom length_create : 
-  forall 'a. forall (l : int). 0 <= l -> length [|'a|] (create [|'a|] l) = l
-
-type 'a list
-
-logic nil : forall 'a. 'a list
-logic cons : forall 'a. 'a -> 'a list -> 'a list
-
-logic is_nil : forall 'a. 'a list -> bool
-logic head : forall 'a. 'a list -> 'a
-logic tail : forall 'a. 'a list -> 'a list
-logic mem : forall 'a. 'a -> 'a list -> prop
-
-logic hash : forall 'a. 'a -> int
-logic mod : int -> int -> int
+logic Zmod : int -> int -> int
 
 (*
 let add h key info =
@@ -46,20 +17,23 @@ let add h key info =
   if h.size > Array.length h.data lsl 1 then resize hash h
 *)
 
-predicate is_hashtable ['a 'b] (h : ('a * 'b) list array) =
-  let l = length [|('a * 'b) list|] h in
+type hashkey
+logic hash : hashkey -> int
+
+logic repr ['b||] : 
+  (hashkey * 'b) mlist array -> (hashkey * 'b) mlist -> prop
+
+let is_hashtable ['a||] (h : (hashkey * 'a) mlist array) =
+  let l = length h in
   0 < l /\
   forall (i : int).
     0 <= i -> i < l ->
-    forall (k : 'a) (v : 'b).
-      mem [|'a * 'b|] (k,v) (get [|('a * 'b) list|] i h) -> 
-        mod (hash [|'a|] k) l = i
+    forall (k : hashkey) (v : 'a).
+      mmem (k,v) (get i h) -> Zmod (hash k) l = i
 
-let add [|'a 'b| (tab : ('a * 'b) list array) ] 
-  (h : ref(tab)) (key : 'a) (val : 'b) =
-  {is_hashtable [|'a, 'b|] h }
-  let l = length [|('a * 'b) list|] !h in
-  let i = mod (hash [|'a|] key) l in
-  h := set [|('a * 'b) list|] i 
-      (cons [|('a * 'b)|] (key,val) (get [|('a * 'b) list|] i h)) h
-  {is_hashtable [|'a 'b|] h}
+let add ['a |r| ] (l : (hashkey * 'a) mlist)
+  (h : ref(r,(hashkey * 'a) mlist array)) (key : hashkey) (val : 'a) =
+  {is_hashtable (!! h) /\ repr (!! h) l  }
+  let i = Zmod (hash key) (length (!h)) in
+  h := set i (mcons (key,val) (get i (!h))) (!h)
+  {is_hashtable (!! h) /\ repr (!! h) (mcons (key, val) l)}
