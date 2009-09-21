@@ -7,6 +7,7 @@ type intro =
   | Type of Name.t * Ty.Generalize.t
   | Hypo of Name.t * Ast.Recon.t
   | Axiom of Name.t * Ty.Generalize.t *  Ast.Recon.t
+  | WhoSection of string * string option
 type section = 
   | Empty
   | PO of Name.t * Ast.Recon.t
@@ -17,7 +18,16 @@ let intro_eq f = function
   | Gen _ | Variable _ | Type _  -> false
   | Hypo (_,x) -> equal x f
   | Axiom (_,g,x) when Ty.Generalize.is_empty g -> equal x f
-  | Axiom _ -> false
+  | Axiom _ | WhoSection _ -> false
+
+let rec skip_till_end x = 
+  match x.v with
+  | EndSec e -> e
+  | Let (_,_,_,b,_) -> 
+      let _,f = sopen b in
+      skip_till_end f
+  | TypeDef (_,_,_,e) -> skip_till_end e
+  | _ -> assert false
 
 let rec section f =
   let il, f' = intro f in
@@ -36,8 +46,7 @@ and intro f =
         if Ty.Generalize.is_empty g then aux acc f
         else aux ((Gen g)::acc) f
     | Let (_,_,{v = Logic _}, ((_,{name = Some 
-    ("/\\" | "->" | "=" | "<>" | "fst" | "snd" 
-     | "," | "!=" | "!!" | "+" | "-" | "*" | "<" | "<=" | ">" | 
+    ("!=" | "!!" | "+" | "-" | "*" | "<" | "<=" | ">" | 
      ">=" | "~" | "==" | "<<" | "<<=" | ">>" | ">>=" |
      "empty" | "min" | "max" | "Zmod" )},_) as b)
     ,_) -> 
@@ -51,13 +60,14 @@ and intro f =
         aux (Axiom (x,g,a)::acc) f
     | TypeDef (g,_,x,e) -> 
         aux (Type (x,g)::acc) e
+    | Ast.Section (n,f,e) ->
+        aux (WhoSection (n,f)::acc) (skip_till_end e)
     | f' -> 
         match destruct_app2_var' f' with
         | Some ({name = Some "->"},_,f1,f2) -> 
             aux (Hypo (Name.from_string "H", f1)::acc) f2
         | _ -> List.rev acc, f in
     aux [] f
-
 
 and prove ctx f =
   let rec aux acc f =
@@ -150,6 +160,7 @@ let print_all fmt s =
 module Flatten = struct
 
   type t = 
+    | FNop of Name.t
     | FCoqDecl of string * Name.t
     | FGen of Ty.Generalize.t
     | FVariable of Name.t * Ty.Generalize.t * Ty.t * [`Logic | `Quant]
@@ -160,12 +171,20 @@ module Flatten = struct
     | FBeginSec of Name.t
     | FEndSec of Name.t
 
+  let name_of_string s = 
+    let n = try String.index s ' ' with Not_found -> String.length s - 1 in
+    let n = min 10 n in
+    Name.from_string (String.sub s 0 n)
+
   let intro = function
     | Gen g -> FGen g
     | Variable (n,g,t,k) -> FVariable (n,g,t,k)
     | Type (n,t) -> FType (n,t)
     | Hypo (n,e) -> FHypo (n,e)
     | Axiom (n,g,e) -> FAxiom (n,g,e)
+    | WhoSection (n,Some s) -> 
+        FCoqDecl (sprintf "Require Import %s" s, name_of_string n)
+    | WhoSection (n,None) -> FNop (name_of_string n)
 
   let rec section x acc = 
     match x with
@@ -178,25 +197,20 @@ module Flatten = struct
             (List.fold_right section sl (FEndSec n :: acc))
 
   let coqdecls = 
-    let f s = Name.from_string (String.sub s 0 (String.index s ' ')) in
-    List.map (fun s -> FCoqDecl (s, f s))
+    List.map (fun s -> FCoqDecl (s, name_of_string s))
       [
        "Set Implicit Arguments";
        "Require Import WhoMap";
-       "Require Import ZArith";
-       "Open Scope Z_scope";
-       "Require Omega";
        "Variable ref : forall (a : Type) (k : key), Type";
        "Definition ___get (A : Type) (k : key) (r : ref A k) (m : kmap) :=
         __get A k m";
        "Notation \"!!\" := (___get) (at level 50)";
-       "Definition min := Zmin";
-       "Notation max := Zmax";
       ]
   let main s = 
     coqdecls @ section s []
 
   let print fmt = function
+    | FNop _ -> ()
     | FCoqDecl (s,_) -> fprintf fmt "%s." s
     | FGen (tl,rl,el) -> 
         fprintf fmt "%a%a%a"
@@ -232,7 +246,9 @@ module Flatten = struct
       | FAxiom (n,_,_) | FPO (n,_) | FType (n,_) 
       | FHypo (n,_) | FVariable (n,_,_,_) | FEndSec n | FBeginSec n
       | FCoqDecl (_,n) -> n
-      | FGen g -> Ty.Generalize.get_first g in
+      | FGen g -> Ty.Generalize.get_first g
+      | FNop n -> n
+  in
     let s = sprintf "%a" Name.print n in
     match x with
     | FBeginSec _ -> "begin" ^ s

@@ -20,6 +20,8 @@ type ('a,'b,'c) t'' =
   | Gen of G.t *  ('a,'b,'c) t'
   | For of Name.t * ('a,'b,'c) pre * Name.t * Name.t * Name.t * ('a,'b,'c) t'
   | LetReg of Name.t list * ('a,'b,'c) t'
+  | Section of string * string option * ('a,'b,'c) t'
+  | EndSec of ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
 and ('a,'b,'c) post' = 
   | PNone
@@ -46,6 +48,8 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
     | TypeDef (g,t,x,e) -> TypeDef (g,t,x,aux e)
     | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
     | Gen (g,e) -> Gen (g,aux e)
+    | Section (n,f,e) -> Section (n,f,aux e)
+    | EndSec e -> EndSec (aux e)
   and pre (x,o) = (x, Misc.opt_map aux o)
   and post (x,y,f) = 
     let f = match f with
@@ -73,7 +77,7 @@ open Myformat
 let is_compound = function
   | Const _ | Var _ | Lam _ | PureFun _ | Annot _-> false
   | App _ | Let _ | Ite _ | Axiom _ | Logic _ | TypeDef _
-  | Quant _ | Param _ | For _ | LetReg _ | Gen _ -> true
+  | Quant _ | Param _ | For _ | LetReg _ | Gen _ | Section _ | EndSec _ -> true
 let is_compound_node t = is_compound t.v
 
 let print tyapp pra prb prc open_ fmt t = 
@@ -81,7 +85,7 @@ let print tyapp pra prb prc open_ fmt t =
   let rec print' fmt = function
     | Const c -> Const.print fmt c
     | Var (v,i) -> 
-        if Inst.is_empty i || tyapp = false then Name.print fmt v
+        if Inst.is_empty i || not tyapp then Name.print fmt v
         else fprintf fmt "%a %a" Name.print v (Inst.print pra prb prc) i
     | App ({v = App ({ v = Var(v,_)},t1,_,_)},t2,`Infix,_) -> 
         fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 Name.print v with_paren t2
@@ -122,6 +126,14 @@ let print tyapp pra prb prc open_ fmt t =
     | LetReg (v,t) -> 
         fprintf fmt "@[letregion %a in@ %a@]" 
           (print_list space Name.print) v print t
+    | Section (n,f,e) -> 
+        if tyapp then 
+          fprintf fmt "@[section %s@, Coq %a@, %a " n 
+            (opt_print pp_print_string) f print e
+        else 
+          fprintf fmt "@[section %s@, Coq %a@, %a " n 
+            (opt_print pp_print_string) f print e
+    | EndSec e -> fprintf fmt "end@]@, %a" print e
       
   and print fmt t = print' fmt t.v
   and binder' par = 
@@ -282,7 +294,7 @@ module Recon = struct
   let rec is_value = function
     | Const _ | Var _ | Lam _ | PureFun _ | Axiom _ | Logic _ | Quant _ -> true
     | Let _ | Ite _ | For _ | LetReg _ | Param _ | TypeDef _ 
-    | Annot _ | Gen _ -> false
+    | Annot _ | Gen _ | Section _ | EndSec _ -> false
     | App (t1,_,_,_) -> 
         match t1.t with
         | T.C (T.PureArr _) -> true
@@ -300,6 +312,9 @@ module Recon = struct
     | _ -> mk (Gen (g, e)) e.t e.e l
 
   let rgen rl e = gen ([],rl,[]) e
+
+  let section n f e = mk (Section (n,f,e)) e.t e.e
+  let endsec e = mk (EndSec e) e.t e.e
 
 
   let sforall x = squant `FA x

@@ -133,6 +133,8 @@ let quant_over_true l _ x =
   | Quant (_,_,(_,_,{v = Const Ptrue})) -> s
   | Gen (_,{v = Const Ptrue}) -> s
   | Let (_,_,_,(_,_,{v = Const Ptrue}), _) -> s
+  | EndSec {v = Const Ptrue} -> s
+  | Section (_,_,{ v = Const Ptrue }) -> s
   | TypeDef (_,_,_,{v = Const Ptrue}) -> s
   | _ -> Nochange
 
@@ -206,6 +208,8 @@ let rec simplify f =
         Quant (k,t, close x (simplify e))
     | Ite (e1,e2,e3) -> Ite (simplify e1, simplify e2, simplify e3)
     | TypeDef (g,t,x,e) -> TypeDef (g,t,x,simplify e) 
+    | Section (n,f,e) -> Section (n,f,simplify e)
+    | EndSec e -> EndSec (simplify e)
     | Lam _ | Annot _ | Param _ | For _ | LetReg _ -> assert false } in
   match exhaust f with
   | Nochange -> f

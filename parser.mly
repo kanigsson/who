@@ -4,12 +4,26 @@
   open Parsetree
 
   let void = const (Const.Void) Loc.dummy
+
+  let rec put_at_end tail x =
+    let l = x.loc in
+    match x.v with
+    | Const Const.Void -> tail
+    | Let (p,g,t,x,e,r) -> let_ ~prelude:p g t x (put_at_end tail e) r l
+    | TypeDef (g,t,x,e) -> typedef g t x (put_at_end tail e) l
+    | Section (n,f,e) -> mk (Section (n,f,put_at_end tail e)) l
+    | EndSec t  -> mk (EndSec (put_at_end tail t)) l
+    | _ -> assert false
+
   let rec merge = function
     | [] -> void
     | { v = Let (p,l,t,x,{ v = Const Const.Void },r); loc = loc }::xs -> 
         let_ ~prelude:p l t x (merge xs) r loc
     | { v = TypeDef (l,t,x,{ v = Const Const.Void }); loc = loc }::xs -> 
         typedef l t x (merge xs) loc
+    | {v = Section (n,f,e) ; loc = loc } :: xs ->
+        let tail = merge xs in
+        mk (Section (n,f, put_at_end (mk (EndSec tail) loc) e)) loc
     | _ -> assert false
 
   let embrace inf1 inf2 = 
@@ -52,11 +66,11 @@
 %}
 
 %token <Big_int.big_int Loc.t> INT
-%token <Loc.loc> LPAREN RPAREN LCURL
-%token LBRACKET RBRACKET RCURL DLCURL DRCURL
+%token <Loc.loc> LPAREN RPAREN LCURL SECTION END
+%token LBRACKET RBRACKET RCURL DLCURL DRCURL PREDEFINED
 %token <string Loc.t> IDENT
-%token <string> TYVAR
-%token IN SEMICOLON
+%token <string> TYVAR STRING
+%token IN SEMICOLON COQ
 %token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND
 %token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION TILDE
 %token <Loc.loc> BLE BLT BGT BGE
@@ -256,6 +270,9 @@ optgen:
     list(IDENT) RBRACKET 
     { tl, strip_info rl, strip_info el }
 
+opt_filename:
+  | fn = STRING { Some fn}
+  | PREDEFINED { None }
 decl:
   | f = alllet {(f : t -> t) void }
   | p = PARAMETER x = defprogvar_no_pos l = optgen args = arglist 
@@ -271,5 +288,7 @@ decl:
     { typedef l None x.c (const (Const.Void) p) p }
   | p = TYPE x = IDENT l = optgen EQUAL t = ty
     { typedef l (Some t) x.c (const (Const.Void) p) p }
+  | p1 = SECTION x = IDENT COQ fn = opt_filename l = nonempty_list(decl) p2 = END
+    { mk (Section (x.c, fn, merge l)) (embrace p1 p2) }
 
 main: l = nonempty_list(decl) EOF { merge l }

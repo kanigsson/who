@@ -1,0 +1,108 @@
+let /\ = logic Prop -> Prop -> Prop in
+let -> = logic Prop -> Prop -> Prop in
+let ~ = logic Prop -> Prop in
+let = [a||]= logic a -> a -> Prop in
+let <> [a1||]= logic a1 -> a1 -> Prop in
+let fst [a2 b||]= logic (a2 * b) -> a2 in
+let snd [a3 b1||]= logic (a3 * b1) -> b1 in
+let , [a4 b2||]= logic a4 -> b2 -> a4 * b2 in
+let == [a5||]= logic a5 -> a5 -> bool in
+let != [a6||]= logic a6 -> a6 -> bool in
+let !! [a7|r|e]= logic ref a7 r -> kmap -> a7 in
+let
+! [a8|r1|]=
+           (λ(x:ref a8 r1) -->  param(a8,{r1 |})
+           { r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))})
+in
+let
+:= [a9|r3|]=
+            (λ(x1:ref a9 r3) ->
+            (λ(v:a9) -->  param(unit,{r3 |}) {(!! x1 cur1) = v}))
+in
+let
+ref [a10|r4|]=
+              (λ(v1:a10) -->  param(ref a10 r4,{r4 ||r4 })
+              { x2 : (!! x2 cur2) = v1})
+in
+let + = logic Z -> Z -> Z in
+let - = logic Z -> Z -> Z in
+let * = logic Z -> Z -> Z in
+let < = logic Z -> Z -> Prop in
+let <= = logic Z -> Z -> Prop in
+let > = logic Z -> Z -> Prop in
+let >= = logic Z -> Z -> Prop in
+let << = logic Z -> Z -> bool in
+let <<= = logic Z -> Z -> bool in
+let >> = logic Z -> Z -> bool in
+let >>= = logic Z -> Z -> bool in
+let max = logic Z -> Z -> Z in
+let min = logic Z -> Z -> Z in
+let combine [||e1 e2]= logic kmap -> kmap -> kmap in
+let restrict [||e11 e21]= logic kmap -> kmap in
+let empty = logic kmap in
+let pre [a11 b3||]= (λ(x3:a11 * b3) -> fst x3) in
+let post [a12 b4||]= (λ(x4:a12 * b4) -> snd x4) in
+let
+forto [||e1]=
+             (λ(inv:Z -> kmap -> Prop) ->
+             (λ(start:Z) ->
+             (λ(end_:Z) ->
+             (λ(f:Z ->{|e1 } unit) -->
+             {(inv start cur3) /\
+              (forall (i:Z),
+               ((start <= i) /\ (i <= end_)) ->
+               (forall (m:kmap),
+                (inv i m) ->
+                ((pre f i m) /\
+                 (forall (n:kmap), (post f i m n tt) -> (inv (i + 1) n)))))}
+             param(unit,{|e1 }) {inv (max start (end_ + 1)) cur4}))))
+in
+let
+fordownto [||e2]=
+                 (λ(inv1:Z -> kmap -> Prop) ->
+                 (λ(start1:Z) ->
+                 (λ(end_1:Z) ->
+                 (λ(f1:Z ->{|e2 } unit) -->
+                 {(inv1 start1 cur5) /\
+                  (forall (i1:Z),
+                   ((start1 <= i1) /\ (i1 <= end_1)) ->
+                   (forall (m1:kmap),
+                    (inv1 i1 m1) ->
+                    ((pre f1 i1 m1) /\
+                     (forall (n1:kmap),
+                      (post f1 i1 m1 n1 tt) -> (inv1 (i1 - 1) n1)))))}
+                 param(unit,{|e2 }) {inv1 (min start1 (end_1 - 1)) cur6}))))
+in type array[a13||] =  in
+let get [a14||]= logic Z -> (array a14) -> a14 in
+let set [a15||]= logic Z -> a15 -> (array a15) -> array a15 in
+let length [a16||]= logic (array a16) -> Z in
+let
+update_length [a17||]=
+                      axiom forall (t:array a17),
+                            forall (i2:Z),
+                            forall (z:a17),
+                            (length t) = (length (set i2 z t))
+in
+let
+get_set_eq [a18||]=
+                   axiom forall (t1:array a18),
+                         forall (i3:Z),
+                         forall (z1:a18),
+                         (i3 < (length t1)) -> ((get i3 (set i3 z1 t1)) = z1)
+in
+let
+get_set_neq [a19||]=
+                    axiom forall (t2:array a19),
+                          forall (i4:Z),
+                          forall (j:Z),
+                          forall (z2:a19),
+                          (i4 < (length t2)) ->
+                          ((j < (length t2)) ->
+                           ((i4 <> j) ->
+                            ((get i4 (set j z2 t2)) = (get i4 t2))))
+in
+let length_nonnegative [a20||]= axiom forall (t3:array a20), 0 <= (length t3)
+in
+section A Coq toto.v type t4 =  in
+let create = logic Z -> t4 in let add = logic t4 -> t4 -> t4 in end
+ let f2 = logic Z -> Z -> t4 in tt 

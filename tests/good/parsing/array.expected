@@ -1,122 +1,113 @@
-let /\ = logic prop -> prop -> prop in
-let -> = logic prop -> prop -> prop in
-let ~ = logic prop -> prop in
-let = ['a||]= logic 'a -> 'a -> prop in
-let <> ['a1||]= logic 'a1 -> 'a1 -> prop in
-let fst ['a2 'b||]= logic ('a2 * 'b) -> 'a2 in
-let snd ['a3 'b1||]= logic ('a3 * 'b1) -> 'b1 in
-let , ['a4 'b2||]= logic 'a4 -> 'b2 -> 'a4 * 'b2 in
-let == ['a5||]= logic 'a5 -> 'a5 -> bool in
-let != ['a6||]= logic 'a6 -> 'a6 -> bool in
-let !! ['a7|r|e]= logic ref(r,'a7) -> map{|e } -> 'a7 in
+let /\ = logic Prop -> Prop -> Prop in
+let -> = logic Prop -> Prop -> Prop in
+let ~ = logic Prop -> Prop in
+let = [a||]= logic a -> a -> Prop in
+let <> [a1||]= logic a1 -> a1 -> Prop in
+let fst [a2 b||]= logic (a2 * b) -> a2 in
+let snd [a3 b1||]= logic (a3 * b1) -> b1 in
+let , [a4 b2||]= logic a4 -> b2 -> a4 * b2 in
+let == [a5||]= logic a5 -> a5 -> bool in
+let != [a6||]= logic a6 -> a6 -> bool in
+let !! [a7|r|e]= logic ref a7 r -> kmap -> a7 in
 let
-! ['a8|r1|]=
-            (λ(x:ref(r1,'a8)) -->  param('a8,{r1 |})
-            { r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))})
+! [a8|r1|]=
+           (λ(x:ref a8 r1) -->  param(a8,{r1 |})
+           { r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))})
 in
 let
-:= ['a9|r3|]=
-             (λ(x1:ref(r3,'a9)) ->
-             (λ(v:'a9) -->  param(unit,{r3 |}) {(!! x1 cur1) = v}))
+:= [a9|r3|]=
+            (λ(x1:ref a9 r3) ->
+            (λ(v:a9) -->  param(unit,{r3 |}) {(!! x1 cur1) = v}))
 in
 let
-ref ['a10|r4|]=
-               (λ(v1:'a10) -->  param(ref(r4,'a10),{r4 ||r4 })
-               { x2 : (!! x2 cur2) = v1})
+ref [a10|r4|]=
+              (λ(v1:a10) -->  param(ref a10 r4,{r4 ||r4 })
+              { x2 : (!! x2 cur2) = v1})
 in
-let + = logic nat -> nat -> nat in
-let - = logic nat -> nat -> nat in
-let * = logic nat -> nat -> nat in
-let < = logic nat -> nat -> prop in
-let <= = logic nat -> nat -> prop in
-let > = logic nat -> nat -> prop in
-let >= = logic nat -> nat -> prop in
-let << = logic nat -> nat -> bool in
-let <<= = logic nat -> nat -> bool in
-let >> = logic nat -> nat -> bool in
-let >>= = logic nat -> nat -> bool in
-let max = logic nat -> nat -> nat in
-let min = logic nat -> nat -> nat in
-let pre ['a11 'b3||]= (λ(x3:'a11 * 'b3) -> fst x3) in
-let post ['a12 'b4||]= (λ(x4:'a12 * 'b4) -> snd x4) in
-let combine [||e1 e2]= logic map{|e1 } -> map{|e2 } -> map{|e1 e2 } in
-let restrict [||e11 e21]= logic map{|e11 } -> map{|e21 } in
+let + = logic Z -> Z -> Z in
+let - = logic Z -> Z -> Z in
+let * = logic Z -> Z -> Z in
+let < = logic Z -> Z -> Prop in
+let <= = logic Z -> Z -> Prop in
+let > = logic Z -> Z -> Prop in
+let >= = logic Z -> Z -> Prop in
+let << = logic Z -> Z -> bool in
+let <<= = logic Z -> Z -> bool in
+let >> = logic Z -> Z -> bool in
+let >>= = logic Z -> Z -> bool in
+let max = logic Z -> Z -> Z in
+let min = logic Z -> Z -> Z in
+let combine [||e1 e2]= logic kmap -> kmap -> kmap in
+let restrict [||e11 e21]= logic kmap -> kmap in
+let empty = logic kmap in
+let pre [a11 b3||]= (λ(x3:a11 * b3) -> fst x3) in
+let post [a12 b4||]= (λ(x4:a12 * b4) -> snd x4) in
 let
 forto [||e1]=
-             (λ(inv:nat -> map{|e1 } -> prop) ->
-             (λ(start:nat) ->
-             (λ(end_:nat) ->
-             (λ(f:nat ->{|e1 } unit) -->
+             (λ(inv:Z -> kmap -> Prop) ->
+             (λ(start:Z) ->
+             (λ(end_:Z) ->
+             (λ(f:Z ->{|e1 } unit) -->
              {(inv start cur3) /\
-              (forall (i:nat).
+              (forall (i:Z),
                ((start <= i) /\ (i <= end_)) ->
-               (forall (m:map{|e1 }).
+               (forall (m:kmap),
                 (inv i m) ->
                 ((pre f i m) /\
-                 (forall (n:map{|e1 }). (post f i m n ()) -> (inv (i + 1) n)))))}
+                 (forall (n:kmap), (post f i m n tt) -> (inv (i + 1) n)))))}
              param(unit,{|e1 }) {inv (max start (end_ + 1)) cur4}))))
 in
 let
 fordownto [||e2]=
-                 (λ(inv1:nat -> map{|e2 } -> prop) ->
-                 (λ(start1:nat) ->
-                 (λ(end_1:nat) ->
-                 (λ(f1:nat ->{|e2 } unit) -->
+                 (λ(inv1:Z -> kmap -> Prop) ->
+                 (λ(start1:Z) ->
+                 (λ(end_1:Z) ->
+                 (λ(f1:Z ->{|e2 } unit) -->
                  {(inv1 start1 cur5) /\
-                  (forall (i1:nat).
+                  (forall (i1:Z),
                    ((start1 <= i1) /\ (i1 <= end_1)) ->
-                   (forall (m1:map{|e2 }).
+                   (forall (m1:kmap),
                     (inv1 i1 m1) ->
                     ((pre f1 i1 m1) /\
-                     (forall (n1:map{|e2 }).
-                      (post f1 i1 m1 n1 ()) -> (inv1 (i1 - 1) n1)))))}
+                     (forall (n1:kmap),
+                      (post f1 i1 m1 n1 tt) -> (inv1 (i1 - 1) n1)))))}
                  param(unit,{|e2 }) {inv1 (min start1 (end_1 - 1)) cur6}))))
-in type array['a13||] =  in
-let get ['a14||]= logic nat -> (array['a14||]) -> 'a14 in
-let set ['a15||]= logic nat -> 'a15 -> (array['a15||]) -> array['a15||] in
-let length ['a16||]= logic (array['a16||]) -> nat in
-let create ['a17||]= logic nat -> array['a17||] in
+in type array[a13||] =  in
+let get [a14||]= logic Z -> (array a14) -> a14 in
+let set [a15||]= logic Z -> a15 -> (array a15) -> array a15 in
+let length [a16||]= logic (array a16) -> Z in
 let
-update_length ['a18||]=
-                       axiom forall (t:array['a18||]).
-                             forall (i2:nat).
-                             forall (z:'a18).
-                             (length t) = (length (set i2 z t))
+update_length [a17||]=
+                      axiom forall (t:array a17),
+                            forall (i2:Z),
+                            forall (z:a17),
+                            (length t) = (length (set i2 z t))
 in
 let
-get_set_eq ['a19||]=
-                    axiom forall (t1:array['a19||]).
-                          forall (i3:nat).
-                          forall (z1:'a19).
-                          (i3 < (length t1)) ->
-                          ((get i3 (set i3 z1 t1)) = z1)
+get_set_eq [a18||]=
+                   axiom forall (t1:array a18),
+                         forall (i3:Z),
+                         forall (z1:a18),
+                         (i3 < (length t1)) -> ((get i3 (set i3 z1 t1)) = z1)
 in
 let
-get_set_neq ['a20||]=
-                     axiom forall (t2:array['a20||]).
-                           forall (i4:nat).
-                           forall (j:nat).
-                           forall (z2:'a20).
-                           (i4 < (length t2)) ->
-                           ((j < (length t2)) ->
-                            ((i4 <> j) ->
-                             ((get i4 (set j z2 t2)) = (get i4 t2))))
+get_set_neq [a19||]=
+                    axiom forall (t2:array a19),
+                          forall (i4:Z),
+                          forall (j:Z),
+                          forall (z2:a19),
+                          (i4 < (length t2)) ->
+                          ((j < (length t2)) ->
+                           ((i4 <> j) ->
+                            ((get i4 (set j z2 t2)) = (get i4 t2))))
 in
+let length_nonnegative [a20||]= axiom forall (t3:array a20), 0 <= (length t3)
+in type array1[a21||] =  in
+let get1 [a22||]= logic Z -> (array1 a22) -> a22 in
+let set1 [a23||]= logic Z -> a23 -> (array1 a23) -> array1 a23 in
 let
-length_nonnegative ['a21||]=
-                            axiom forall (t3:array['a21||]). 0 <= (length t3)
-in
-let
-length_create ['a22||]=
-                       axiom forall (l:nat).
-                             (0 <= l) ->
-                             ((length (create l : array['a22||])) = l)
-in type array1['a23||] =  in
-let get1 ['a24||]= logic nat -> (array1['a24||]) -> 'a24 in
-let set1 ['a25||]= logic nat -> 'a25 -> (array1['a25||]) -> array1['a25||] in
-let
-get_set_eq1 ['a26||]=
-                     axiom forall (t4:array1['a26||]).
-                           forall (i5:nat).
-                           forall (z3:'a26). (get1 i5 (set1 i5 z3 t4)) = z3
-in ()
+get_set_eq1 [a24||]=
+                    axiom forall (t4:array1 a24),
+                          forall (i5:Z),
+                          forall (z3:a24), (get1 i5 (set1 i5 z3 t4)) = z3
+in tt

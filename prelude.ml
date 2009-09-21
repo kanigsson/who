@@ -1,12 +1,33 @@
 let prelude = "
-logic /\\ : prop -> prop -> prop
-logic -> : prop -> prop -> prop
-logic ~ : prop -> prop
-logic = ['a||] : 'a -> 'a -> prop
-logic <> ['a||] : 'a -> 'a -> prop
-logic fst ['a 'b||] : 'a * 'b -> 'a
-logic snd ['a 'b||] : 'a * 'b -> 'b
-logic , ['a 'b||] : 'a -> 'b -> 'a * 'b
+section basiclogic
+  coq predefined
+  logic /\\ : prop -> prop -> prop
+  logic -> : prop -> prop -> prop
+  logic ~ : prop -> prop
+  logic = ['a||] : 'a -> 'a -> prop
+  logic <> ['a||] : 'a -> 'a -> prop
+  logic fst ['a 'b||] : 'a * 'b -> 'a
+  logic snd ['a 'b||] : 'a * 'b -> 'b
+  logic , ['a 'b||] : 'a -> 'b -> 'a * 'b
+end
+
+section arith
+  coq \"WhoArith\"
+  logic + : int -> int -> int
+  logic - : int -> int -> int
+  logic * : int -> int -> int
+  logic < : int -> int -> prop
+  logic <= : int -> int -> prop
+  logic > : int -> int -> prop
+  logic >= : int -> int -> prop
+  logic << : int -> int -> bool
+  logic <<= : int -> int -> bool
+  logic >> : int -> int -> bool
+  logic >>= : int -> int -> bool
+  logic max : int -> int -> int
+  logic min : int -> int -> int
+end
+
 
 logic == ['a||] : 'a -> 'a -> bool
 logic != ['a||] : 'a -> 'a -> bool
@@ -23,20 +44,6 @@ parameter := ['a|r|] (x : ref(r,'a)) (v : 'a) : unit, {r|} =
 parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r||r} =
   {}
   { x : !!x = v }
-
-logic + : int -> int -> int
-logic - : int -> int -> int
-logic * : int -> int -> int
-logic < : int -> int -> prop
-logic <= : int -> int -> prop
-logic > : int -> int -> prop
-logic >= : int -> int -> prop
-logic << : int -> int -> bool
-logic <<= : int -> int -> bool
-logic >> : int -> int -> bool
-logic >>= : int -> int -> bool
-logic max : int -> int -> int
-logic min : int -> int -> int
 
 logic combine [||e1 e2] : <|e1> -> <|e2> -> <|e1 e2>
 logic restrict [||e1 e2] : <|e1> -> <|e2>
@@ -65,30 +72,32 @@ parameter fordownto [||e] (inv :  int -> <|e> -> prop) (start end_ : int)
     }
     { inv (min start (end_ - 1)) cur }
 
-type array ['a||]
+section Array
+  coq \"WhoArray\"
+  type array ['a||]
 
-logic get ['a||] : int -> 'a array -> 'a
-logic set ['a||]: int -> 'a -> 'a array -> 'a array 
-logic length ['a||] :  'a array -> int
-(* logic create ['a||] :  int -> 'a array *)
+  logic get ['a||] : int -> 'a array -> 'a
+  logic set ['a||]: int -> 'a -> 'a array -> 'a array 
+  logic length ['a||] :  'a array -> int
+  (* logic create ['a||] :  int -> 'a array *)
 
-axiom update_length ['a||] : 
-  forall (t : 'a array) (i : int) (z : 'a).
-    length t = length (set i z t)
+  axiom update_length ['a||] : 
+    forall (t : 'a array) (i : int) (z : 'a).
+      length t = length (set i z t)
 
-axiom get_set_eq ['a||] : 
-  forall (t : 'a array) (i : int) (z : 'a).
-    i < length t -> get i (set i z t) = z
+  axiom get_set_eq ['a||] : 
+    forall (t : 'a array) (i : int) (z : 'a).
+      i < length t -> get i (set i z t) = z
 
-axiom get_set_neq ['a||] : 
-  forall (t : 'a array ) (i : int) (j : int) (z : 'a).
-    i < length t -> j < length t -> i <> j -> get i (set j z t) = get i t
+  axiom get_set_neq ['a||] : 
+    forall (t : 'a array ) (i : int) (j : int) (z : 'a).
+      i < length t -> j < length t -> i <> j -> get i (set j z t) = get i t
 
-axiom length_nonnegative ['a||] : 
-  forall (t : array ['a||]).  0 <= length t
+  axiom length_nonnegative ['a||] : 
+    forall (t : array ['a||]).  0 <= length t
 
-(* axiom length_create ['a||] : 
-  forall (l : int). 0 <= l -> length ((create l : 'a array)) = l *)
-
+  (* axiom length_create ['a||] : 
+    forall (l : int). 0 <= l -> length ((create l : 'a array)) = l *)
+end
 "
 

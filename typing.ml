@@ -82,9 +82,10 @@ let rec formtyping' env loc = function
       let env = add_var env x g t in
       let t = formtyping env e2 in
       t
+  | Annot (e,t) -> fis_oftype env t e; t
+  | Section (_,_,e) | EndSec e -> formtyping env e
   | Param _ -> error "effectful parameter in logic" loc
   | For _ -> assert false
-  | Annot (e,t) -> fis_oftype env t e; t
   | LetReg _ -> assert false
 and formtyping env (e : Ast.Recon.t) : Ty.t =
 (*   Myformat.printf "formtyping %a@." Ast.Recon.print e; *)
@@ -168,6 +169,7 @@ and typing' env loc = function
   | Annot (e,t) -> 
       let t', eff = typing env e in
       if Ty.equal t t' then t, eff else error "wrong type annotation" loc
+  | Section (_,_,e) | EndSec e -> typing env e
   | Ite (e1,e2,e3) ->
       let t1, eff1 = typing env e1 in
       if Ty.equal t1 Ty.bool then

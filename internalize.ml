@@ -138,6 +138,9 @@ let rec ast' env = function
   | I.Seq (e1,e2) -> 
       Let (false,G.empty, ParseT.annot (ast env e1) Ty.unit e1.I.loc, 
            Name.close_bind (Name.new_anon ()) (ast env e2), NoRec)
+  | I.Section (n,f,e) -> 
+      Section (n,f,ast env e)
+  | I.EndSec e -> EndSec (ast env e)
 and post env x = 
   let env, old = add_var env "old" in
   let env, cur = add_var env "cur" in

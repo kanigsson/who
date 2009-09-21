@@ -6,3 +6,5 @@ main.native
 tests/*counter
 tests/good/*/*bak
 *.bak
+coq_files/*.vo
+coq_files/*.glob

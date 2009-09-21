@@ -145,6 +145,12 @@ let rec infer' env t loc = function
       let env = add_ty env x g t' in
       let e = infer env t e in
       TypeDef (g,t',x,e), U.new_e ()
+  | Section (n,f,e) ->
+      let e = infer env t e in
+      Section (n,f,e), e.e
+  | EndSec e -> 
+      let e = infer env t e in
+      EndSec e, e.e
   | Let (p,g,e1,(_,x,e2),r) ->
       let nt = U.new_ty () in
       let env' = 
@@ -245,6 +251,8 @@ let rec recon' = function
       (app2 (app2 (var dir ([],[],[e]) Ty.forty l) inv' sv l) ev bodyfun l).v
   | LetReg (vl,e) -> LetReg (vl,recon e)
   | Annot (e,t) -> Annot (recon e, t)
+  | Section (n,f,e) -> Section (n,f,recon e)
+  | EndSec e -> EndSec (recon e)
   | Gen _ -> assert false
 and pre (cur,x) = cur, Misc.opt_map recon x
 and recon (t : Ast.Infer.t) : Ast.Recon.t = 

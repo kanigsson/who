@@ -1,0 +1,8 @@
+section A
+  coq "toto.v"
+  type t
+  logic create : int -> t
+  logic add : t -> t -> t
+end
+
+logic f : int -> int -> t

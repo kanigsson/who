@@ -13,6 +13,8 @@ and normalize e k =
   | PureFun (t,(_,x,e))-> k (plam x t (normalize_term e) loc)
   | Let (p,g,e1,(_,x,e2),r) -> 
       normalize e1 (fun v -> let_ ~prelude:p g v x (normalize e2 k) r loc)
+  | Section (n,f,e) -> k (section n f (normalize_term e) loc)
+  | EndSec e -> k (endsec (normalize_term e) loc)
   | LetReg (l,e) -> k (letreg l e loc)
   | TypeDef (g,t,v,e) -> k (typedef g t v (normalize_term e) loc)
   | Ite (e1,e2,e3) ->

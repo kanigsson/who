@@ -1,4 +1,9 @@
 OCAMLBUILD := ocamlbuild -classic-display
+COQVO := WhoMap.vo WhoArith.vo WhoArray.vo
+COQV := $(COQVO:.vo=.v)
+COQTARGETS := $(addprefix coq_files/, $(COQVO))
+COQFILES := $(addprefix coq_files/, $(COQV))
+
 
 ALLML := $(wildcard *.ml *.mly *mll *.mli)
 
@@ -15,13 +20,12 @@ check:
 clean:
 	$(OCAMLBUILD) -clean
 
-coq_maps/WhoMap.vo:
+$(COQFILES):
 	make -C coq_maps
 
-install: main.native coq_maps/WhoMap.vo
+install: main.native $(COQFILES)
 	cp -f _build/main.native /usr/local/bin/pwho
-	cp -f coq_maps/WhoMap.vo /usr/local/lib/coq/user-contrib/WhoMap.vo
-	cp -f coq_maps/WhoMap.v /usr/local/lib/coq/user-contrib/WhoMap.v
+	cp -f $(COQTARGETS) $(COQFILES) /usr/local/lib/coq/user-contrib/
 
 uninstall:
 	rm -f /usr/local/bin/pwho

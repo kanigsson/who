@@ -45,6 +45,10 @@ let id_or_keyword =
         ("then", fun _ -> THEN );
         ("else", fun _ -> ELSE );
         ("rec", fun _ -> REC );
+        ("section", fun i -> SECTION (create_info i) );
+        ("coq", fun _ -> COQ );
+        ("predefined", fun _ -> PREDEFINED );
+        ("end", fun i -> END (create_info i) );
         ("fun", fun i -> FUN (create_info i) );
       ];
     fun s -> try Hashtbl.find h s with Not_found -> 
@@ -72,6 +76,8 @@ rule token = parse
   | digit+ as i
   { INT (Loc.mk (create_info lexbuf) (Big_int.big_int_of_string i)) }
   | identifier as i { id_or_keyword i lexbuf}
+  | '"' ( [ ^ '"' ] * as str ) '"'
+    { STRING str }
   | '\'' (identifier as tv) { TYVAR tv}
   | "->" { ARROW (create_info lexbuf) }
   | "==" { BEQUAL (create_info lexbuf) }

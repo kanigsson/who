@@ -70,6 +70,9 @@ let rec correct v =
       let x,e2 = sopen b in
       and_ (gen g (correct e1) l)
         (let_ ~prelude:p g (lift_value e1) x (correct e2) NoRec l) l
+  | Section (n,f,e) -> 
+      section n f (correct e) l
+  | EndSec e -> endsec (correct e) l
   | _ -> 
       Myformat.printf "correct: not a value: %a@." print v;
       assert false
@@ -130,6 +133,11 @@ and wp m q e =
 *)
     | Param _ -> ptrue_ l
     | TypeDef (g,k,x,e) -> typedef g k x (wp_node m q e) l
+    | Section (n,f,e) -> 
+        (* let's assume for now that sections only contain
+         * logics and typedefs *)
+        section n f (wp_node m q e) l
+    | EndSec e -> endsec (wp_node m q e) l
     | _ -> assert false
 and wp_node m q e = 
   if NEffect.sequal (domain m) e.e then wp m q e

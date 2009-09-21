@@ -35,6 +35,8 @@ type t' =
   | Param of ty * effect
   | For of var * t option * var * var * var * t
   | LetReg of rvar list * t
+  | Section of var * string option * t
+  | EndSec of t
 and t = { v : t' ; loc : Loc.loc }
 and post = 
   | PNone
@@ -61,6 +63,8 @@ let concat t1 t2 =
     | Const Const.Void -> t2.v
     | Let (p,g,t1,x,t2,r) -> Let (p,g,t1,x,aux t2,r)
     | TypeDef (g,t,x,t2) -> TypeDef (g,t,x,aux t2)
+    | Section (n,f,t) -> Section (n,f,aux t)
+    | EndSec t -> EndSec (aux t)
     | _ -> assert false 
   and aux t = { t with v = aux' t.v } in
   aux t1
