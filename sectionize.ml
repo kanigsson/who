@@ -46,10 +46,8 @@ and intro f =
         if Ty.Generalize.is_empty g then aux acc f
         else aux ((Gen g)::acc) f
     | Let (_,_,{v = Logic _}, ((_,{name = Some 
-    ("!=" | "!!" | "+" | "-" | "*" | "<" | "<=" | ">" | 
-     ">=" | "~" | "==" | "<<" | "<<=" | ">>" | ">>=" |
-     "empty" | "min" | "max" | "Zmod" )},_) as b)
-    ,_) -> 
+    ("!=" | "!!" | "==" | "<<" | "<<=" | ">>" | ">>=" | "empty" )},_) as b) ,_)
+      -> 
       let _,f = sopen b in
       aux acc f
     | Let (_,g,{v = Logic t},b,_) ->

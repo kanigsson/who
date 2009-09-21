@@ -26,6 +26,7 @@ section arith
   logic >>= : int -> int -> bool
   logic max : int -> int -> int
   logic min : int -> int -> int
+  logic mod : int -> int -> int
 end
 
 
@@ -78,26 +79,38 @@ section Array
 
   logic get ['a||] : int -> 'a array -> 'a
   logic set ['a||]: int -> 'a -> 'a array -> 'a array 
-  logic length ['a||] :  'a array -> int
+  logic len ['a||] :  'a array -> int
   (* logic create ['a||] :  int -> 'a array *)
 
   axiom update_length ['a||] : 
     forall (t : 'a array) (i : int) (z : 'a).
-      length t = length (set i z t)
+      len t = len (set i z t)
 
   axiom get_set_eq ['a||] : 
     forall (t : 'a array) (i : int) (z : 'a).
-      i < length t -> get i (set i z t) = z
+      i < len t -> get i (set i z t) = z
 
   axiom get_set_neq ['a||] : 
     forall (t : 'a array ) (i : int) (j : int) (z : 'a).
-      i < length t -> j < length t -> i <> j -> get i (set j z t) = get i t
+      i < len t -> j < len t -> i <> j -> get i (set j z t) = get i t
 
   axiom length_nonnegative ['a||] : 
-    forall (t : array ['a||]).  0 <= length t
+    forall (t : array ['a||]).  0 <= len t
 
   (* axiom length_create ['a||] : 
     forall (l : int). 0 <= l -> length ((create l : 'a array)) = l *)
 end
+
+section List
+  coq \"WhoList\"
+  type list ['a||]
+
+  logic nil ['a||] : 'a list
+  logic cons ['a||] : 'a -> 'a list -> 'a list
+
+  logic is_nil ['a||] : 'a list -> bool
+  logic l_in ['a||] : 'a -> 'a list -> prop
+end
+
 "
 

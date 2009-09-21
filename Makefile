@@ -1,5 +1,5 @@
 OCAMLBUILD := ocamlbuild -classic-display
-COQVO := WhoMap.vo WhoArith.vo WhoArray.vo
+COQVO := WhoMap.vo WhoArith.vo WhoArray.vo WhoList.vo
 COQV := $(COQVO:.vo=.v)
 COQTARGETS := $(addprefix coq_files/, $(COQVO))
 COQFILES := $(addprefix coq_files/, $(COQV))
@@ -21,7 +21,7 @@ clean:
 	$(OCAMLBUILD) -clean
 
 $(COQFILES):
-	make -C coq_maps
+	make -C coq_files
 
 install: main.native $(COQFILES)
 	cp -f _build/main.native /usr/local/bin/pwho

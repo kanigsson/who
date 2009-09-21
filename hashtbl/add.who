@@ -1,13 +1,3 @@
-type mlist ['a||]
-
-logic mnil ['a||] : 'a mlist
-logic mcons ['a||] : 'a -> 'a mlist -> 'a mlist
-
-logic mis_nil ['a||] : 'a mlist -> bool
-logic mmem ['a||] : 'a -> 'a mlist -> prop
-
-logic Zmod : int -> int -> int
-
 (*
 let add h key info =
   let i = (hash key) mod (Array.length h.data) in
@@ -17,23 +7,27 @@ let add h key info =
   if h.size > Array.length h.data lsl 1 then resize hash h
 *)
 
-type hashkey
-logic hash : hashkey -> int
+section Hashtbl
+  coq "WhoHashtbl"
+  type hashkey
+  logic hash : hashkey -> int
 
-logic repr ['b||] : 
-  (hashkey * 'b) mlist array -> (hashkey * 'b) mlist -> prop
+  logic repr ['b||] : 
+    (hashkey * 'b) list array -> (hashkey * 'b) list -> prop
 
-let is_hashtable ['a||] (h : (hashkey * 'a) mlist array) =
-  let l = length h in
-  0 < l /\
-  forall (i : int).
-    0 <= i -> i < l ->
-    forall (k : hashkey) (v : 'a).
-      mmem (k,v) (get i h) -> Zmod (hash k) l = i
+  let is_hashtable ['a||] (h : (hashkey * 'a) list array) =
+    let l = len h in
+    0 < l /\
+    forall (i : int).
+      0 <= i -> i < l ->
+      forall (k : hashkey) (v : 'a).
+        l_in (k,v) (get i h) -> mod (hash k) l = i
 
-let add ['a |r| ] (l : (hashkey * 'a) mlist)
-  (h : ref(r,(hashkey * 'a) mlist array)) (key : hashkey) (val : 'a) =
+end
+
+let add ['a |r| ] (l : (hashkey * 'a) list)
+  (h : ref(r,(hashkey * 'a) list array)) (key : hashkey) (val : 'a) =
   {is_hashtable (!! h) /\ repr (!! h) l  }
-  let i = Zmod (hash key) (length (!h)) in
-  h := set i (mcons (key,val) (get i (!h))) (!h)
-  {is_hashtable (!! h) /\ repr (!! h) (mcons (key, val) l)}
+  let i = mod (hash key) (len (!h)) in
+  h := set i (cons (key,val) (get i (!h))) (!h)
+  {is_hashtable (!! h) /\ repr (!! h) (cons (key, val) l)}

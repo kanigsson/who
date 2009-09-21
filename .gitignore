@@ -8,3 +8,4 @@ tests/good/*/*bak
 *.bak
 coq_files/*.vo
 coq_files/*.glob
+coq_files/*.v.vd

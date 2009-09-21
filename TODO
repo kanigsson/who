@@ -1,4 +1,8 @@
+IMPORTANT FEATURES
+
 better inference without explicitely introduced variables 
-mechanism of "sections" to match who types and Coq types
 type definitions
+diff3 for proof preservation
+
+MINOR ISSUES
 error messages for unknown variables in internalize

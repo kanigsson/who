@@ -1,4 +1,4 @@
-OBJ:= who_map.vo tactics.vo simple_map.vo WhoMap.vo WhoArith.vo WhoArray.vo
+OBJ:= who_map.vo tactics.vo simple_map.vo WhoMap.vo WhoArray.vo WhoArith.vo WhoList.vo
 
 all: $(OBJ)
 
@@ -7,9 +7,13 @@ all: $(OBJ)
 
 WhoArray.v: WhoArith.vo
 
+%.v.vd: %.v
+	coqdep -I . $< > $@
+
+include $(OBJ:.vo=.v.vd)
+
+.PHONY:clean
+
 clean:
-	rm -f *.vo *.glob
-#.depend:
-#	coqdep $(OBJ:.vo=.v) > .depend
-#
-#include .depend
+	rm -f *.vo *.glob *.v.vd
+
