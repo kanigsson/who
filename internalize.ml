@@ -3,6 +3,7 @@ open Ast
 
 module SM = Misc.StringMap
 module G = Ty.Generalize
+module NM = Name.M
 
 type env = 
   { 
@@ -10,6 +11,7 @@ type env =
     t : Name.t SM.t ;
     r : Name.t SM.t ;
     e : Name.t SM.t ;
+    tyrepl : (Ty.Generalize.t * Ty.t) NM.t
   }
 
 exception UnknownVar of string
@@ -30,9 +32,14 @@ let add_var env x =
 let add_ex_var env x y = 
   { env with v = SM.add x y env.v }
 
-let add_tvar env x = 
+let add_tvar env x g t = 
   let y = Name.from_string x in
-  { env with t = SM.add x y env.t }, y
+  { env with t = SM.add x y env.t;
+    tyrepl = 
+       match t with
+       | None -> env.tyrepl
+       | Some t -> NM.add y (g,t) env.tyrepl
+  }, y
 
 let add_rvars env l = 
   let r, nl = 
@@ -44,7 +51,7 @@ let add_rvars env l =
 
 let add_tvars env l = 
   List.fold_left (fun (acc,l) x -> 
-    let env, nv = add_tvar acc x in
+    let env, nv = add_tvar acc x Ty.Generalize.empty None in
     env, nv::l) (env,[]) l
 
 let add_evars env l = 
@@ -79,7 +86,13 @@ let ty env t =
     | I.Tuple (t1,t2) -> Ty.tuple (aux t1) (aux t2)
     | I.Arrow (t1,t2,e) -> Ty.arrow (aux t1) (aux t2) (effect env e)
     | I.PureArr (t1,t2) -> Ty.parr (aux t1) (aux t2)
-    | I.TApp (v,i) -> Ty.app (tyvar env v) (inst i)
+    | I.TApp (v,i) -> 
+        let v = tyvar env v in
+        let i = inst i in
+        begin try 
+          let g,t = NM.find v env.tyrepl in
+          Ty.allsubst g i t
+        with Not_found -> Ty.app v i end
     | I.Ref (r,t) -> Ty.ref_ (rvar env r) (aux t)
     | I.Map e -> Ty.map (effect env e)
   and inst i = Inst.map aux (rvar env) (effect env) i in
@@ -125,7 +138,7 @@ let rec ast' env = function
   | I.TypeDef (g,t,x,e) ->
       let env', g = add_gen env g in
       let t = Misc.opt_map (ty env') t in
-      let env,x = add_tvar env x in
+      let env,x = add_tvar env x g t in
       TypeDef (g, t, x, ast env e)
   | I.Param (t,e) -> Param (ty env t, effect env e)
   | I.For (dir,p,i,st,en,e) ->
@@ -166,5 +179,6 @@ and ast env {I.v = v; loc = loc} =
 let empty = 
   { v = SM.empty; t = SM.empty; 
     r = SM.empty; e = SM.empty;
+    tyrepl = NM.empty;
   }
 let main t = ast empty t

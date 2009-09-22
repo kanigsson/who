@@ -1,0 +1,3 @@
+type t = int
+
+let f (x : t) = x + 1

@@ -11,11 +11,12 @@ section Hashtbl
   coq "WhoHashtbl"
   type hashkey
   logic hash : hashkey -> int
+  type hl ['a||] = (hashkey * 'a) list
 
-  logic repr ['b||] : 
-    (hashkey * 'b) list array -> (hashkey * 'b) list -> prop
+  logic repr ['a||] : 
+    'a hl array -> 'a hl -> prop
 
-  let is_hashtable ['a||] (h : (hashkey * 'a) list array) =
+  let is_hashtable ['a||] (h : 'a hl array) =
     let l = len h in
     0 < l /\
     forall (i : int).
@@ -25,8 +26,8 @@ section Hashtbl
 
 end
 
-let add ['a |r| ] (l : (hashkey * 'a) list)
-  (h : ref(r,(hashkey * 'a) list array)) (key : hashkey) (val : 'a) =
+let add ['a |r| ] (l : 'a hl)
+  (h : ref(r,'a hl array)) (key : hashkey) (val : 'a) =
   {is_hashtable (!! h) /\ repr (!! h) l  }
   let i = mod (hash key) (len (!h)) in
   h := set i (cons (key,val) (get i (!h))) (!h)
