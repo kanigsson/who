@@ -46,19 +46,59 @@ Proof.
   intros a l1 l2 k k' v EQ; simpl; rewrite EQ; auto.
 Qed.
 
-Lemma add_elem : 
-  forall a (h : ht a) i k v,
-    is_hashtbl h -> i = mod (hash k) (len h) ->
-      is_hashtbl (set i (cons (k,v) (get i h)) h).
+Definition upd a i v (ar : array a) := set i (v (get i ar)) ar.
+
+Lemma upd_len :
+  forall a (ar : array a) i v, len (upd i v ar) = len ar.
 Proof.
-  unfold is_hashtbl, repr in *; 
+  intros; unfold upd; rewrite <- update_len; auto.
+Qed.
+
+Inductive HCompare (a: Type) (h1 h2 : hashkey) (ar : array a) : Type :=
+  | EQ : h1 = h2 -> HCompare h1 h2 ar
+  | HEQ : h1 <> h2 -> mod (hash h1) (len ar) = mod (hash h2) (len ar) 
+           -> HCompare h1 h2 ar
+  | NEQ : hash h1 <> hash h2 -> HCompare h1 h2 ar.
+
+Lemma HCompare_dec :
+  forall a h1 h2 (ar : array a), HCompare h1 h2 ar.
+Proof.
+  refine (fun a h1 h2 ar =>
+    match h_eq_dec h1 h2 with
+      | left e => _
+      | right n =>
+        match Z_eq_dec (mod (hash h1) (len ar)) 
+                       (mod (hash h2) (len ar)) with
+          | left e => _
+          | right n => _
+        end
+    end).
+  apply EQ; auto.
+  apply HEQ; auto.
+  apply NEQ; congruence.
+Qed.
+
+Lemma add_elem : 
+  forall a (h : ht a) k v,
+    is_hashtbl h -> is_hashtbl (upd (mod (hash k) (len h)) (cons (k,v)) h).
+Proof.
+  intros a h k v I.
+  unfold is_hashtbl in *. intros k1 v1 i.
+  assert (0 < len h) by (apply (I k v i)).
+  rewrite upd_len in *; split; auto.
+  intros ENCL LIN.
+  case_eq (HCompare_dec k k1 h); intros.
+  rewrite e in *; clear e H0.
+  generalize (in_inv LIN); intros [K | K]. injection K as K2; rewrite K2 in *; clear K2 K. auto. 
+  case_eq (Z_eq_dec i (mod (hash k1) (len h))); intros; auto.
+  rewrite e in *; unfold upd in *; rewrite get_set_eq in LIN.
+  apply (I k1 v1 i); auto.
+  
     intros a h i k v IH IM k0 v0 i0. 
-  assert (0 < len h) by (apply (IH k v i)).
   rewrite <- update_len in *; split; auto.
   intros ENCL LIN.
   case_eq (Z_eq_dec i i0); intros E D.
   rewrite E in *; clear E D. rewrite get_set_eq in LIN.
-  generalize (in_inv LIN); intros [K | K]. injection K as K1 K2; rewrite K1, K2 in *; clear K1 K2 K. auto. 
   apply (IH k0 v0 i0) ; auto. intuition. 
   rewrite get_set_neq in LIN; auto. apply (IH k0 v0 i0); auto. 
   intuition. rewrite IM; apply mod_lt; auto. 
