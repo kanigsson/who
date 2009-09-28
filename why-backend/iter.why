@@ -7,25 +7,21 @@ logic inv : z, a farray , int -> prop
 logic p : a,z -> prop
 logic q : a,z,z -> prop
 
-axiom a1:
-    forall i : int.  
+let iter (f : (x : a -> {p(x, e)} unit writes e {q(x, e@, e)})) 
+  (ar : a array ) =
+  { inv (e,ar,0) and array_length(ar) > 0 and
+    (forall i : int.  
     forall ma : a farray. forall mz : z.
-    0 <= i -> i < array_length(ma) -> inv(mz,ma,i) -> p(ma[i],mz)
-
-axiom a2:
-    forall i : int.  
+    0 <= i -> i < array_length(ma) -> inv(mz,ma,i) -> p(ma[i],mz)) and
+    (forall i : int.  
     forall ma : a farray. forall mz : z.
     forall na : a farray. forall nz : z.
     0 <= i -> i < array_length(ma) ->
-      q(ma[i],mz,nz) -> inv(nz,na,i+1)
-
-let iter (f : (x : a -> {p(x, e)} unit writes e {q(x, e@, e)})) 
-  (ar : a array ) =
-  { inv (e,ar,0) and array_length(ar) > 0 }
-  let l = array_length_ ar in
+      q(ma[i],mz,nz) -> inv(nz,na,i+1))
+  }
   let i = ref 0 in
-  while !i < l do
-    { invariant inv (e,ar,i) and 0 <= i <= l }
+  while !i < array_length(!ar) do
+    { invariant inv (e,ar,i) and 0 <= i <= array_length(ar) }
     f ar[!i];
     i := !i + 1
   done

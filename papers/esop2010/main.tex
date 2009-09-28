@@ -1,0 +1,178 @@
+\documentclass[a4paper]{llncs}
+
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc} 
+\input{utf8symbols}
+\usepackage{stmaryrd}
+\usepackage{amsmath,amssymb}
+\usepackage{mathpartir}
+
+\newcommand{\wpre}{ {\bf wp}}
+\newcommand{\sep}{ ~|~ }
+\newcommand{\letml}{{\bf let}}
+\newcommand{\inml}{{\bf in}}
+\newcommand{\ifml}{{\bf if}}
+\newcommand{\thenml}{{\bf then}}
+\newcommand{\elseml}{{\bf else}}
+\newcommand{\refml}{{\bf ref}}
+\newcommand{\propml}{{\bf prop}}
+\newcommand{\boolml}{{\bf bool}}
+\newcommand{\recml}{{\bf rec}}
+\newcommand{\efft}[1]{ \langle #1 \rangle }
+\newcommand{\alist}[1]{ \overline{#1} }
+
+\begin{document}
+\title{\mbox{Specifying Imperative Higher Order Programs}}
+
+\author{Johannes Kanig \and Jean-Christophe Fill\^atre}
+\institute{
+Laboratoire de Recherche en Informatique, Univ Paris-Sud, CNRS, Orsay F-91405\\
+INRIA Futurs, ProVal, Parc Orsay Universit\'e, F-91893
+}
+%TODO affiliation
+
+\maketitle
+
+\begin{abstract}
+  %TODO
+\end{abstract}
+
+
+\section{Introduction.}
+%TODO Hoare logic = sharing between logic and prog language + alias free
+
+\section{A programming language for specification.}
+
+\subsection{Syntax}
+\begin{figure}[htpb]
+\begin{eqnarray*}
+  x & & \text{Program Variables}\\
+  α & & \text{Type Variables}\\
+  e & & \text{Effect Variables}\\
+  ρ & & \text{Region Variables}\\
+  χ &::=& α \sep e \sep ρ \\
+  t,p,q &::=& x~[\alist{κ}] \sep λx:τ.t \sep \recml~f~(x:τ).\{p\}t\{q\} \sep t~t\sep \\ 
+  & & \letml~ x~[\alist{χ}] = t~\inml~t \sep \ifml~t~\thenml~t~\elseml~t\\
+  τ &::=& α \sep τ -> τ \sep τ ->^ε τ \sep τ \times τ \sep τ~\refml_ρ \sep
+  \efft{ε} \\
+  ε &::=& (ρ \sep e)*\\
+  κ &::=& τ \sep ε \sep ρ
+\end{eqnarray*}
+  \caption{Syntax}
+  \label{fig:syntax}
+\end{figure}
+
+Our language is basically λ-calculus with \letml-bindings. For technical
+reasons, the presentation is different from its usual form.
+Fig.\ref{fig:syntax} describes the whole language.
+
+Let us first look at the {\em types}. Type variables are of course types, as
+well as tuples ($τ\times τ$) and pure functions ($τ -> τ$). There is a second
+function type $τ->^ε τ$ for impure functions, annotated with an {\em effect}
+$ε$. Effects are simply lists of {\em regions} $ρ$ and {\em effect variables}
+$e$. The type expression $τ~\refml_ρ$ describes the type of references in
+region $ρ$ containing objects of type $τ$. The type $\efft{ε}$ describes the
+portion of the store represented by the effect expression $ε$.
+
+The syntax of terms contains some differences to standard λ-calculus. The
+construct $λx:τ.t$ serves to construct a pure function, while the construct
+$\recml~f~(x:τ).\{p\}t\{q\}$ can be used to build impure, possibly recursive
+functions. The terms $p$ and $q$ are the {\em precondition} and the {\em
+postcondition} of the so defined anonymous function. This is of course
+reminiscent of the syntax of Hoare Logic. 
+
+Type, region and effect variables must be explicitly generalized and
+instantiated. For this purpose, we have defined the metavariable $χ$,
+representing variables, and $κ$, representing the corresponding instantiation
+objects types, regions and effects\footnote{We do not distinguish between
+region variables and region constants; a region constant is simply a region
+variable whose scope is the entire program.}. Now, it can be seen that
+generalization takes place at \letml-bindings and instantiation at variable
+occurrences.
+%TODO describe the overline
+
+%TODO : get rid of instantiations ??
+\subsection{Typing}
+
+\begin{figure}[htpb]
+\begin{mathpar}
+  { \inferrule*[Left=Var] {Γ(x) = ∀\alist{χ}.τ} {Γ|-_v x~\alist{κ} :
+  τ[\alist{χ}|->\alist{κ}]} } \and
+  { \inferrule*[Left=PureFun] {Γ,x : τ' |-_v t : τ} {Γ|-_v λx : τ'.t : τ' ->
+  τ} } \and
+  { \inferrule*[Left=Rec] 
+  { Γ' = Γ,~f : τ' ->^ε τ,~ x : τ' \\ Γ' |- t : τ,ε \\ Γ', cur : \efft{ε} |- p : \propml \\ 
+  Γ', old, cur : \efft{ε} |- q : τ -> \propml } 
+      {Γ|-_v \recml~f~(x : τ').\{p\}t\{q\} : τ' ->^ε τ} 
+  } \and
+  { \inferrule*[Left=PureApp]
+    {Γ |-_v : t1 : τ' -> τ \\ Γ|-_v : t2 : τ'}
+    {Γ |-_v : t1 ~ t2 : τ}
+  } \and
+  { \inferrule*[Left=App]
+    {Γ |-_v : t1 : τ' ->^ε τ \\ Γ|-_v : t2 : τ'}
+    {Γ |- : t1 ~ t2 : τ, ε}
+  } \and
+  { \inferrule*[Left=ite]
+    { Γ |- _v : t1 : \boolml \\ Γ |- t2 : τ, ε1 \\ Γ |-t3 : τ, ε2 }
+    { Γ |- \ifml~ t1 ~\thenml~ t2 ~\elseml ~ t3 : τ, ε1  ε2 }
+  } \and
+  { \inferrule*[Left=Letv]
+    { Γ, \alist{χ} |-_v : t1 : τ' \\ Γ, x : ∀\alist{χ}.τ' |- t2 : τ,ε }
+    { Γ |- \letml~ x~[\alist{χ}] = t1 ~ \inml~ t2 : τ, ε}
+  } \and
+  { \inferrule*[Left=Let]
+    { Γ |- : t1 : τ', ε1 \\ Γ, x : τ' |- t2 : τ, ε2 }
+    { Γ |- \letml~ x = t1 ~ \inml~ t2 : τ, ε1  ε2 }
+  }
+\end{mathpar}
+  \caption{The Typing relation}
+  \label{fig:typing}
+\end{figure}
+
+Again in order to simplify future definitions, the definition typing relation
+differs somewhat from the standard way (see Fig.\ref{fig:typing}). First of
+all, we present the language in {\em A-normal form} (ANF), where all values
+obtained by intermediate computations are named. However, our definition of
+values is not syntactical: our ``semantic'' values are objects which are
+either syntactic values (abstractions and variables) or are obtained by {\em
+pure application}, the application which involves the pure arrow $->$.
+Furthermore, the system is a type and effect system. There are in fact two
+typing relations, the first one is of the form $Γ|-_v : t : τ$. In this case,
+$t$ is a semantic value of type $τ$ and cannot have any effect. In the other
+case, we have $Γ|- : t : τ, ε$, where $t$ is an expression of type $τ$ and
+effect $ε$. 
+
+Effects can be produced only by function application.
+
+
+predefined : \propml \boolml
+
+
+unusual : 
+* ANF 
+* values defined by types
+* two different types of arrows
+* distinction bool and prop
+* notion of substitution - correspondence χ κ
+* TODO logic typing
+
+missing : 
+* value injection
+* subeffecting
+
+\section{A Simple Weakest Preconditions Calculus.}
+
+\section{Extensions.}
+
+subtyping: effects
+
+\section{Implementation.}
+
+\section{Examples.}
+
+\section{Related Work.}
+
+\section{Conclusion.}
+
+\end{document}

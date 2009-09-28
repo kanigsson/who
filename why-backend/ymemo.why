@@ -1,0 +1,16 @@
+type ('a,'b) map
+
+logic mem : 'a ,('a,'b) map -> bool
+logic get : 'a , ('a,'b) map -> 'b
+logic set : 'a , 'b, ('a,'b) map -> ('a,'b) map
+
+parameter table : (int,int) map
+
+logic f0 : int -> int
+
+logic p : int, (int,int) map -> prop
+logic q : int, (int,int) map, (int,int) map, int -> prop
+
+logic stores_f0 : (int,int) map -> prop
+logic realizes_f0_p_q : prop
+
