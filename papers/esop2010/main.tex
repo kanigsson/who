@@ -136,14 +136,15 @@ all, we present the language in {\em A-normal form} (ANF), where all values
 obtained by intermediate computations are named. However, our definition of
 values is not syntactical: our ``semantic'' values are objects which are
 either syntactic values (abstractions and variables) or are obtained by {\em
-pure application}, the application which involves the pure arrow $->$.
+pure application}, the application which involves the pure arrow $τ->τ$.
 Furthermore, the system is a type and effect system. There are in fact two
 typing relations, the first one is of the form $Γ|-_v : t : τ$. In this case,
 $t$ is a semantic value of type $τ$ and cannot have any effect. In the other
 case, we have $Γ|- : t : τ, ε$, where $t$ is an expression of type $τ$ and
 effect $ε$. 
 
-Effects can be produced only by function application.
+Effects can be produced only by function application, where the impure arrow
+$τ->^ετ$ is involved.
 
 
 predefined : \propml \boolml
