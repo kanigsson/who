@@ -5,6 +5,7 @@ dvi: main-pp.dvi
 %.dvi : %.tex
 	latex $^
 	latex $^
+	latex $^
 
 %-pp.tex : %.tex uproc
 	./uproc < $< > $@

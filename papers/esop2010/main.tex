@@ -25,6 +25,7 @@
 \newcommand{\Falseml}{{\bf False}}
 \newcommand{\trueml}{{\bf true}}
 \newcommand{\falseml}{{\bf false}}
+\newcommand{\unitml}{{\bf unit}}
 \newcommand{\coq}{Coq}
 
 \newcommand{\ceil}[1]{\lceil #1 \rceil}
@@ -49,7 +50,28 @@ INRIA Futurs, ProVal, Parc Orsay Universit\'e, F-91893
 \section{Introduction.}
 %TODO Hoare logic = sharing between logic and prog language + alias free
 
+also one or two examples in the described language
+
+characteristics : 
+\begin{itemize}
+  \item Hoare logic
+  \item logic and program share values  
+  \item Type and effect system
+  \item Region typing to track references
+  \item the wp needs absence of aliasing to produce good POs
+\end{itemize}
+
 \section{A programming language for specification.}
+
+technical presentation:
+\begin{itemize}
+  \item ANF
+  \item values defined by typing 
+  \item  two different types of arrows
+  \item  distinction bool and prop
+  \item  notion of substitution - correspondence χ κ
+  \item semantics is standard (goes to appendix )
+\end{itemize}
 
 \subsection{Syntax}
 \begin{figure}[htpb]
@@ -149,7 +171,7 @@ occurrences.
 \begin{figure}[htpb]
   \begin{eqnarray*}
     \ceil{α} &=& α\\
-    \ceil{τ\ref_ρ} &=& \ceil{τ}\ref_ρ\\
+    \ceil{τ~\refml_ρ} &=& \ceil{τ}\refml_ρ\\
     \ceil{τ -> τ'} &=& \ceil{τ} -> \ceil{τ'}\\
     \ceil{τ \times τ'} &=& \ceil{τ} \times-> \ceil{τ'}\\
     \ceil{\efft{ε}} &=& \efft{ε}\\
@@ -161,7 +183,7 @@ occurrences.
 \end{figure}
 
 Again in order to simplify future definitions, the definition typing relation
-differs somewhat from the standard way (see Fig.\ref{fig:typing}). First of
+differs somewhat from the standard way (see Fig.~\ref{fig:typing}). First of
 all, we present the language in {\em A-normal form} (ANF), where all values
 obtained by intermediate computations are named. However, our definition of
 values is not syntactical: our ``semantic'' values are objects which are
@@ -191,12 +213,6 @@ expect the predicate of the \ifml-statement to be of type \boolml.
 
 
 unusual : 
-* ANF 
-* values defined by types
-* two different types of arrows
-* distinction bool and prop
-* notion of substitution - correspondence χ κ
-
 missing : 
 * value injection
 * subeffecting
@@ -204,7 +220,42 @@ missing :
 
 %TODO is the LOGIC rule correct ??
 
+\subsection{Sharing between logic and programs}
+
+To obtain sharing between
+\subsection{References}
+
+We haven't mentioned references yet, but all we need to support them is to add
+the three usual functions $ref, :=, !$ for reference creation, assignment and
+lookup, respectively, to the environment. In our system, these functions have
+the following types:
+\begin{eqnarray*}
+  ref &:& ∀αρ.α ->^ρ α~\refml_ρ\\
+  := &:& ∀αρ.α~\refml_ρ ->^\emptyset α ->^ρ \unitml\\
+  ! &:& ∀αρ. α~\refml_ρ ->^ρ α
+\end{eqnarray*}
+
+\subsection{Alias restriction}
+
+\begin{figure}[htpb]
+  \begin{mathpar}
+    {\inferrule*[Left=Var]
+      {Γ(x) = ∀\alist{χ}.τ \\ σ = [\alist{χ}|->\alist{κ}] \\ σ \sim τ }
+      {Γ |- x : τσ }
+    } \\
+    { \inferrule*[Left=LetRef, Right={ρ \textup{fresh}, $ρ\notin τ$}]
+      {Γ |-_v t1 : τ' \\ Γ, x : τ'~\refml_ρ |- t2 : τ }
+      {Γ |- \letml~x = ref~ t1 ~\inml~ t2 : τ}
+    }
+  \end{mathpar}
+  \caption{A modified and a new rule for aliasing}
+  \label{fig:aliasing}
+\end{figure}
+
 \section{A Simple Weakest Preconditions Calculus.}
+
+In the following, we use the metasymbol $v$ to denote well-typed semantic
+values, i.e. terms with a typing derivation $Γ|-_v v : τ$. 
 
 \section{Extensions.}
 
