@@ -19,7 +19,15 @@
 \newcommand{\boolml}{{\bf bool}}
 \newcommand{\recml}{{\bf rec}}
 \newcommand{\efft}[1]{ \langle #1 \rangle }
+\newcommand{\lift}[1]{ \langle #1 \rangle }
 \newcommand{\alist}[1]{ \overline{#1} }
+\newcommand{\Trueml}{{\bf True}}
+\newcommand{\Falseml}{{\bf False}}
+\newcommand{\trueml}{{\bf true}}
+\newcommand{\falseml}{{\bf false}}
+\newcommand{\coq}{Coq}
+
+\newcommand{\ceil}[1]{\lceil #1 \rceil}
 
 \begin{document}
 \title{\mbox{Specifying Imperative Higher Order Programs}}
@@ -101,33 +109,55 @@ occurrences.
   { \inferrule*[Left=PureFun] {Γ,x : τ' |-_v t : τ} {Γ|-_v λx : τ'.t : τ' ->
   τ} } \and
   { \inferrule*[Left=Rec] 
-  { Γ' = Γ,~f : τ' ->^ε τ,~ x : τ' \\ Γ' |- t : τ,ε \\ Γ', cur : \efft{ε} |- p : \propml \\ 
-  Γ', old, cur : \efft{ε} |- q : τ -> \propml } 
+  { Γ' = Γ,~f : τ' ->^ε τ,~ x : τ' \\ Γ' |- t : τ,ε \\ Γ', cur : \efft{ε} |-_l p : \propml \\ 
+  Γ', old, cur : \efft{ε} |-_l q : τ -> \propml } 
       {Γ|-_v \recml~f~(x : τ').\{p\}t\{q\} : τ' ->^ε τ} 
   } \and
   { \inferrule*[Left=PureApp]
-    {Γ |-_v : t1 : τ' -> τ \\ Γ|-_v : t2 : τ'}
-    {Γ |-_v : t1 ~ t2 : τ}
+    {Γ |-_v t1 : τ' -> τ \\ Γ|-_v t2 : τ'}
+    {Γ |-_v  t1 ~ t2 : τ}
   } \and
   { \inferrule*[Left=App]
-    {Γ |-_v : t1 : τ' ->^ε τ \\ Γ|-_v : t2 : τ'}
-    {Γ |- : t1 ~ t2 : τ, ε}
+    {Γ |-_v t1 : τ' ->^ε τ \\ Γ|-_v t2 : τ'}
+    {Γ |- t1 ~ t2 : τ, ε}
   } \and
   { \inferrule*[Left=ite]
-    { Γ |- _v : t1 : \boolml \\ Γ |- t2 : τ, ε1 \\ Γ |-t3 : τ, ε2 }
+    { Γ |- _v t1 : \boolml \\ Γ |- t2 : τ, ε1 \\ Γ |- t3 : τ, ε2 }
     { Γ |- \ifml~ t1 ~\thenml~ t2 ~\elseml ~ t3 : τ, ε1  ε2 }
   } \and
   { \inferrule*[Left=Letv]
-    { Γ, \alist{χ} |-_v : t1 : τ' \\ Γ, x : ∀\alist{χ}.τ' |- t2 : τ,ε }
+    { Γ, \alist{χ} |-_v t1 : τ' \\ Γ, x : ∀\alist{χ}.τ' |- t2 : τ,ε }
     { Γ |- \letml~ x~[\alist{χ}] = t1 ~ \inml~ t2 : τ, ε}
   } \and
   { \inferrule*[Left=Let]
-    { Γ |- : t1 : τ', ε1 \\ Γ, x : τ' |- t2 : τ, ε2 }
+    { Γ |- t1 : τ', ε1 \\ Γ, x : τ' |- t2 : τ, ε2 }
     { Γ |- \letml~ x = t1 ~ \inml~ t2 : τ, ε1  ε2 }
+  } \and
+  { \inferrule*[Left=Value]
+  { Γ |-_v t : τ  }
+  { Γ |- t : τ,\emptyset  }
+  } \and
+  { \inferrule*[Left=Logic]
+    { Γ |-_v t : τ  }
+    { Γ |-_l t : \ceil{τ} }
   }
 \end{mathpar}
   \caption{The Typing relation}
   \label{fig:typing}
+\end{figure}
+
+\begin{figure}[htpb]
+  \begin{eqnarray*}
+    \ceil{α} &=& α\\
+    \ceil{τ\ref_ρ} &=& \ceil{τ}\ref_ρ\\
+    \ceil{τ -> τ'} &=& \ceil{τ} -> \ceil{τ'}\\
+    \ceil{τ \times τ'} &=& \ceil{τ} \times-> \ceil{τ'}\\
+    \ceil{\efft{ε}} &=& \efft{ε}\\
+    \ceil{τ ->^ε τ'} &=& (\ceil{τ} -> \efft{ε} -> \propml)\times (\ceil{τ} ->
+    \efft{ε} -> \efft{ε} -> \ceil{τ'} -> \propml)()
+  \end{eqnarray*}
+  \caption{Lifting types}
+  \label{fig:typelift}
 \end{figure}
 
 Again in order to simplify future definitions, the definition typing relation
@@ -138,16 +168,26 @@ values is not syntactical: our ``semantic'' values are objects which are
 either syntactic values (abstractions and variables) or are obtained by {\em
 pure application}, the application which involves the pure arrow $τ->τ$.
 Furthermore, the system is a type and effect system. There are in fact two
-typing relations, the first one is of the form $Γ|-_v : t : τ$. In this case,
-$t$ is a semantic value of type $τ$ and cannot have any effect. In the other
-case, we have $Γ|- : t : τ, ε$, where $t$ is an expression of type $τ$ and
-effect $ε$. 
+typing relations, the first one is of the form $Γ|-_v  t : τ$. In this case,
+$t$ is a semantic value of type $τ$ and cannot have any effect. It can be seen
+that the set of terms described by $|-_v$ is the precisely the one obtained by
+combining syntactic values and pure application in a well-typed way.
 
-Effects can be produced only by function application, where the impure arrow
-$τ->^ετ$ is involved.
+In the other case, we have $Γ|- t : τ, ε$, where $t$ is an expression of
+type $τ$ and effect $ε$. Impure applications, \letml-expressions and
+\ifml-expressions can only be typed in this way. Effects can be produced only
+by function application, where the impure arrow $τ'->^ετ$ is involved. In this
+case, the effect of the application is precisely the effect $ε$ of the arrow,
+because the two subterms are semantic values and don't have any effect.
 
-
-predefined : \propml \boolml
+The typing relies on two predefined types, \propml\ and \boolml. \propml\ is
+the logical truth and contains the values \Trueml\ and \Falseml, while
+\boolml\ describes boolean (decidable) properties and contains \trueml\ and
+\falseml. The distinction between \propml\ and \boolml\ is the same one as in
+\coq, for example. Properties expressed in \propml\ are potentially
+undecidable and one cannot take decisions by testing their truth value. On the
+other hand, \boolml\ talks about decidable properties and so it makes sense to
+expect the predicate of the \ifml-statement to be of type \boolml.
 
 
 unusual : 
@@ -156,11 +196,13 @@ unusual :
 * two different types of arrows
 * distinction bool and prop
 * notion of substitution - correspondence χ κ
-* TODO logic typing
 
 missing : 
 * value injection
 * subeffecting
+* logic typing
+
+%TODO is the LOGIC rule correct ??
 
 \section{A Simple Weakest Preconditions Calculus.}
 
