@@ -49,8 +49,42 @@ INRIA Futurs, ProVal, Parc Orsay Universit\'e, F-91893
 
 \maketitle
 
-\begin{abstract}
-  %TODO
+% ICFP
+%  We present a weakest precondition calculus for an imperative,
+%  higher-order programming language, restricted to non-aliasing global
+%  references. The main feature of the calculus is {\em effect
+%    polymorphism}, {\em i.e.}, higher-order functions can be specified by
+%  generalizing over the effects and specifications of their functional
+%  arguments. This allows truly modular reasoning about effectful
+%  higher-order functions. We achieve this by defining an extension of
+%  a standard higher-order logic, more suitable to reason about
+%  modifications of the store. The obtained proof obligations, however,
+%  are expressible in the standard logic and can be proved using
+%  standard theorem provers. We show that the necessary annotations
+%  and the obtained proof obligations are quite natural.
+%
+
+% Workshop ML
+%  We present \who, a tool for verifying effectful higher-order
+%  functions. It features {\em Effect polymorphism}, higher-order logic
+%  and the possibility to reason about state in the logic, which enable
+%  highly modular specifications of generic code. Several small
+%  examples and a larger case study demonstrate its usefulness. The
+%  \who~tool is intended to be used as an intermediate language for
+%  verification tools targeting ML-like programming languages.
+%
+
+\begin{abstract} We present a specification language suited for reasoning
+  about effectful higher-order programs. The language's main features are
+  higher-order logic and effect polymorphism, both of which enable a truly
+  modular treatment of higher-order functions. To our knowledge, this is the
+  first time that effect polymorphism is put to use in program verification.
+  We also define a weakest precondition calculus for this language which
+  generates proof obligations in higher-order logic. A simple mechanism based
+  on regions permits to restrict the analysis to alias-free programs, thus
+  obtaining much simpler proof obligations. Several examples demonstrate the
+  practicality of the system. A prototype implementation exists and has been
+  used to prove the correctness of these and more examples.  
 \end{abstract}
 
 
@@ -132,15 +166,25 @@ denote lists.
 
 \subsection{Typing}
 
+We have already seen that programs and specification share in fact the same
+syntax. Though they are differently typed, their typing relations still share
+a lot. For this reason, and to underline the fact that in Hoare logic, values
+are shared between programs and the logic, we present three different typing
+relations. One for programs, one for specifications, and the common part is
+factored out in a third typing relation for values. All typing relations
+contain an environment $Γ$, which is simply a map from variable names to {\em
+type schemes} of the form $∀\alist{χ}.τ$ .
+
 \begin{figure}[htbp]
   \begin{mathpar}
-  { \inferrule*[Left=Var] {Γ(x) = ∀\alist{χ}.τ} {Γ|-_v x~\alist{κ} :
+  { \inferrule*[Left=Var] {Γ(x) = ∀\alist{χ}.τ} {Γ|-_v x~[\alist{κ}] :
   τ[\alist{χ}|->\alist{κ}]} } \and
   { \inferrule*[Left=PureFun] {Γ,x : τ' |-_v t : τ} {Γ|-_v λx : τ'.t : τ' ->
   τ} } \and
   { \inferrule*[Left=Rec] 
-  { Γ' = Γ, x : τ' \\ Γ'' = Γ',~f : τ' ->^ε τ \\ Γ'' |- t : τ,ε \\ Γ', cur : \efft{ε} |-_l p : \propml \\ 
-  Γ', old, cur : \efft{ε} |-_l q : τ -> \propml } 
+  { Γ' = Γ, x : τ' \\ Γ'' = Γ',~f : τ' ->^ε τ \\ Γ'' |- t : τ,ε \\ Γ' |-_l
+  p : \efft{ε} -> \propml \\ Γ' |-_l q : \efft{ε} ->
+  \efft{ε} -> τ -> \propml } 
       {Γ|-_v \recml~f~(x : τ').\{p\}t\{q\} : τ' ->^ε τ} 
   } \and
   { \inferrule*[Left=PureApp]
@@ -151,6 +195,18 @@ denote lists.
   \caption{Value typing}
   \label{fig:valuetyping}
 \end{figure}
+
+\paragraph{Value typing.}
+Let us first look at the common part concerning values. We define a relation
+$Γ|-_v t : τ$, which means ``$t$ is well-typed wrt. the environment $Γ$, and
+is of type $τ$''. Values cannot have any effect.  Variables and pure
+abstractions are typed in the usual way; type instantiations at variable
+occurences are substituted in the type. The rule {\sc REC} simply states that
+the body of the function can use the argument $x$ as well as the function $f$.
+The specifications $p$ and $q$, however, cannot use $f$ and must be well-typed
+wrt. the typing relation $|-_l$ described later on. Finally, pure applications
+between values are considered as values as well, as they don't have any
+effect.
 
 \begin{figure}[htpb]
 \begin{mathpar}
@@ -171,13 +227,64 @@ denote lists.
     { Γ |- \letml~ x~[\alist{χ}] = t1 ~ \inml~ t2 : τ, ε}
   } \and
   { \inferrule*[Left=Let]
-    { Γ |- t1 : τ', ε1 \\ Γ, x : τ' |- t2 : τ, ε2 }
-    { Γ |- \letml~ x = t1 ~ \inml~ t2 : τ, ε1  ε2 }
+    { Γ |- t1 : τ', ε \\ Γ, x : τ' |- t2 : τ, ε }
+    { Γ |- \letml~ x = t1 ~ \inml~ t2 : τ, ε }
+  } \and
+  { \inferrule*[Left=Sub]
+    { Γ |- t : τ', ε \\ ε \subseteq ε' }
+    { Γ |- t : τ, ε' }
   }
 \end{mathpar}
   \caption{Program typing}
   \label{fig:progtyping}
 \end{figure}
+
+\paragraph{Program typing.}
+The typing of programs, written $Γ|- t : τ,ε$, assigns a type $τ$ and an
+effect $ε$ to an expression $t$, given an environment. This typing is
+presented in {\em A-normal form}, a normal form where all intermediate values
+are \letml-introduced. All values are also programs with no effect (rule {\sc
+Value}). An application must consist of two values and the effect of the
+overall expression is precisely the effect of the called function (rule {\sc
+App}). There are two rules for \letml, due to the value restriction. One only
+can generalize type, effect and region variables when the bound expression is
+a value. In this case (rule {\sc LetV}), only the second term may produe
+effects. In the other case (rule {\sc Let}), no generalization takes place,
+but both terms can have effects. The {\sc Let} rule actually obliges both
+terms to have the same effect, but together with the {\sc Sub} rule, which can
+increase the effect of an expression, this can always be achieved.
+Finally, \ifml-expressions are typed in the usual way, both branches have to
+have the same effect.
+
+\paragraph{Logic typing.}
+
+The typing of annotations is basically an extension of the typing for values;
+logic terms never have any effect. To ensure this, we need to forbid calling
+effectful functions in the logic. One way is to simply omit the typing rule
+for effectful function calls. There is, however, another way which also
+enables us to inspect the pre/ and postcondition of a function. To this end,
+let us introduce the operation of {\em lifting} a type to the logic level (see
+Fig.~\ref{fig:typelift}).
+\begin{figure}[htpb]
+  \begin{eqnarray*}
+    \ceil{α} &=& α\\
+    \ceil{τ~\refml_ρ} &=& \ceil{τ}~\refml_ρ\\
+    \ceil{τ -> τ'} &=& \ceil{τ} -> \ceil{τ'}\\
+    \ceil{τ \times τ'} &=& \ceil{τ} \times \ceil{τ'}\\
+    \ceil{\efft{ε}} &=& \efft{ε}\\
+    \ceil{τ ->^ε τ'} &=& (\ceil{τ} -> \efft{ε} -> \propml)\times (\ceil{τ} ->
+    \efft{ε} -> \efft{ε} -> \ceil{τ'} -> \propml)
+  \end{eqnarray*}
+  \caption{Lifting types}
+  \label{fig:typelift}
+\end{figure}
+This translation traverses the type and replaces all effectful types by a
+tuple type which describes a tuple of a pre- and a postcondition. The
+precondition takes as an argument the argument of the function as well as the
+part of the store, at the moment of the function call, which corresponds to
+the effect of the function. The postcondition's two first arguments are the
+same, but in addition it expects the store {\em at the exit of the function},
+as well as the function's return value.
 
 \begin{figure}[htbp]
   \begin{mathpar}
@@ -186,93 +293,59 @@ denote lists.
     { Γ |-_l t : \ceil{τ} }
   } \and
   { \inferrule*[Left=LetLogic]
-    { Γ, \alist{χ} |-_l : t' : τ' \\ Γ, x: ∀\alist{χ}.τ' |- t : τ  }
+    { Γ, \alist{χ} |-_l : t' : τ' \\ Γ, x: ∀\alist{χ}.τ' |-_l t : τ  }
     { Γ |-_l \letml~x~[\alist{χ}] = t'~\inml~t : τ }
+  }\and
+  { \inferrule*[Left=IteLogic]
+    { Γ |- _l t1 : \boolml \\ Γ |-_l t2 : τ \\ Γ |-_l t3 : τ }
+    { Γ |- \ifml~ t1 ~\thenml~ t2 ~\elseml ~ t3 : τ }
   }
   \end{mathpar}
   \caption{Logic typing}
   \label{fig:logictyping}
 \end{figure}
 
-\begin{figure}[htpb]
-  \begin{eqnarray*}
-    \ceil{α} &=& α\\
-    \ceil{τ~\refml_ρ} &=& \ceil{τ}\refml_ρ\\
-    \ceil{τ -> τ'} &=& \ceil{τ} -> \ceil{τ'}\\
-    \ceil{τ \times τ'} &=& \ceil{τ} \times-> \ceil{τ'}\\
-    \ceil{\efft{ε}} &=& \efft{ε}\\
-    \ceil{τ ->^ε τ'} &=& (\ceil{τ} -> \efft{ε} -> \propml)\times (\ceil{τ} ->
-    \efft{ε} -> \efft{ε} -> \ceil{τ'} -> \propml)()
-  \end{eqnarray*}
-  \caption{Lifting types}
-  \label{fig:typelift}
-\end{figure}
+Now we can come back to logic typing. Every value is also a logic term,
+but now it is assigned its {\em lifted} type. The two other rules are just 
+pure variants of their impure counterparts in the program typing.
 
-\begin{figure}[htbp]
-  \begin{eqnarray*}
-    \ceil{x~[\alist{κ}]} &=& x~[\alist{κ}]\\
-    \ceil{λx:τ.t} &=& λx:τ.\ceil{t}\\
-    \ceil{\recml~f~(x:τ).\{p\} (t : ε ) \{q\}} &=& 
-    (λx:\ceil{τ}.λcur:\efft{ε}.p,λx:\ceil{τ}.λold,cur:\efft{ε}.q)\\
-    \ceil{t_{τ' -> τ}~t'} &=& \ceil{t}~\ceil{t'}
-  \end{eqnarray*}
-  \caption{Lifting values}
-  \label{fig:valuelift}
-\end{figure}
+\paragraph{Predefined constants.}
 
-We have already seen that programs and specification share in fact the same
-syntax. Though they are differently typed, their typing relations still share
-a lot. For this reason, and to underline the fact that in Hoare logic, values
-are shared between programs and the logic, we present three different typing
-relations. One for programs, one for specifications, and the common part is
-factored out in a third typing relation for values.
+To actually be able to write programs in this language, we need many
+predefined constants and types. The typing relations already mention two,
+\propml\ and \boolml. \propml\ is the logical truth and contains the values
+\Trueml\ and \Falseml, while \boolml\ describes boolean (decidable) properties
+and contains \trueml\ and \falseml. The distinction between \propml\ and
+\boolml\ is the same one as in \coq, for example. Properties expressed in
+\propml\ are potentially undecidable and one cannot take decisions by testing
+their truth value. On the other hand, \boolml\ talks about decidable
+properties and so it makes sense to expect the predicate of the
+\ifml-statement to be of type \boolml.
 
-Again in order to simplify future definitions, the definition typing relation
-differs somewhat from the standard way (see Fig.~\ref{fig:progtyping}). First of
-all, we present the language in {\em A-normal form} (ANF), where all values
-obtained by intermediate computations are named. However, our definition of
-values is not syntactical: our ``semantic'' values are objects which are
-either syntactic values (abstractions and variables) or are obtained by {\em
-pure application}, the application which involves the pure arrow $τ->τ$.
-Furthermore, the system is a type and effect system. There are in fact two
-typing relations, the first one is of the form $Γ|-_v  t : τ$. In this case,
-$t$ is a semantic value of type $τ$ and cannot have any effect. It can be seen
-that the set of terms described by $|-_v$ is precisely the one obtained by
-combining syntactic values and pure application in a well-typed way.
+The reader may have wondered why the specification language does not contain
+any logical connectives. These can of course be declared independently, for
+example the conjuction is just a function: \begin{equation*} /\ :  \propml ->
+  \propml -> \propml \end{equation*} Actually, when equality is given, all
+  logical operations (even quantification) can be defined in the logic.
+%TODO citation needed
+In the remainder of the paper, we suppose predefined the usual logical
+connectives conjunction, disjunction, implication and equivalence, as well as
+universal and existential quantification. We also assume all the arithmetic
+operations as well as the constructor $(t,t)$  and the accessors $fst$ and
+$snd$ for pairs. 
 
-In the other case, we have $Γ|- t : τ, ε$, where $t$ is an expression of
-type $τ$ and effect $ε$. Impure applications, \letml-expressions and
-\ifml-expressions can only be typed in this way. Effects can be produced only
-by function application, where the impure arrow $τ'->^ετ$ is involved. In this
-case, the effect of the application is precisely the effect $ε$ of the arrow,
-because the two subterms are semantic values and don't have any effect.
-
-The typing relies on two predefined types, \propml\ and \boolml. \propml\ is
-the logical truth and contains the values \Trueml\ and \Falseml, while
-\boolml\ describes boolean (decidable) properties and contains \trueml\ and
-\falseml. The distinction between \propml\ and \boolml\ is the same one as in
-\coq, for example. Properties expressed in \propml\ are potentially
-undecidable and one cannot take decisions by testing their truth value. On the
-other hand, \boolml\ talks about decidable properties and so it makes sense to
-expect the predicate of the \ifml-statement to be of type \boolml.
-
-missing : 
-* subeffecting
-
-%TODO is the LOGIC rule correct ??
-
-\subsection{predefined constants}
-
-arithmetic operations, operations on pairs, logic operations on prop, pre/post
-
-reference operations
-!!
-
-operations on maps : restrict, combine
-\subsection{Sharing between logic and programs}
-
-use logic application in programs : no problem;
-use lambdas with effects in logic : specification
+% TODO TODO
+%Finally, we introduce two symbols
+%\begin{eqnarray*}
+%  \oplus &:&∀ e1 e2 . \efft{ e1 } -> \efft{ e2 } -> \efft { e1  e2 }\\
+%  |_{ε} &:& ∀ e. \efft{ e ε } -> \efft{ ε }.
+%  !! & : & ∀αρ e. α~\refml_ρ -> \efft{ ρ e } -> α
+%\end{eqnarray*}
+%The first one denotes a combining operation for stores; the resulting store
+%contains all the mappings of the second store, as well as all the mappings of
+%the first one, as long as they are not present in the second one.
+%union of the two arguments, in the sense that its domain is the union of its
+%arguments.
 
 \subsection{References}
 
@@ -287,6 +360,14 @@ the following types:
 \end{eqnarray*}
 
 \subsection{Alias restriction}
+
+The presented programming language, along with the specifications, can, in
+fact be used to prove programs. The weakest precondition calculus presented in
+the next section can be used to obtain proof obligations which, when proved,
+guarantee the correctness of the program with respect to its specification. On
+the other hand, in its presented form, and because of the presence of
+aliasing, one would constantly need equalities and inequalities between
+reference variables to be able to reason about a program.
 
 \begin{figure}[htpb]
   \begin{mathpar}
@@ -303,28 +384,94 @@ the following types:
   \label{fig:aliasing}
 \end{figure}
 
+A way out is to restrict programs to alias free programs. Fortunately, it is
+easy to modify the presented typing rules to render all programs with aliasing
+ill-typed (see Fig~\ref{fig:aliasing}). In the following, we will use regions
+to identify memory locations entirely; each region shall describe precisely
+one memory location. Starting from this assumption, a program can actually
+exhibit {\em two} forms of aliasing. In the first one, it may use several
+names (region variables) for the same memory location. This can happen when a
+function is generalized over, say, two region variables, assuming they are
+different, and is then instantiated with the same region variable twice. The
+classical example is the following program
+%TODO
+
+which is only correct if $ ρ1 $ and $ ρ2 $ are indeed different. To enforce
+this, we add a side condition to the instantiation: the substitution $σ$ must
+be {\em compatible} with the type $τ$. To understand what compatibility means,
+consider an {\em atomic} substitution $[ρ|->ρ']$. It is compatible with any
+type which does not contain $ρ'$. Similarly, the substitution $[e|-> ρ1  ρ2
+e'$] is compatible with any type which does not contain $ ρ1 , ρ2 $ nor $e'$.
+Expressed more generally, an atomic substitution is compatible with a type if
+the type does not contain any region or effect variables which are in the
+range of the substitution. Finally, a composite substitution is compatible
+%TODO atomic and composite
+with a type if each atomic substitution is compatible with the result of the
+application of the previous substitution. In this way, it becomes impossible
+to have different names for a single reference cell.
+
+The second form of aliasing is when we use the same name for {\em different}
+memory locations. This can happen when we allow the user to call $ref$ several
+times with the same region instantiation. A simple possibility is to attach
+the suppress the $ref$ function entirely and to replace it by a \letml\refml\ 
+construct which combines name creation and memory allocation. In this way,
+there can of course be only one reference per name. On the other hand, because
+of the side condition $ρ\notin τ$, the reference cannot escape the scope of
+its \letml\refml\ construct, and so, a function cannot return a reference
+which has been created in its body. This restriction could be leveraged a bit if
+one seperates name creation and allocation, while still maintaining that one
+can only allocate a single reference in each region. This is how it is done in
+the correctness proof of this restriction. The presented \letml\refml\
+construct is of course a special case.
+%TODO now, all operations on maps can be statically resolved.
+
 \subsection{Some properties}
 
+%TODO
 $Γ|-_v v : τ$ implies $Γ |-_l \ceil{v} : \ceil{τ}$
+
+Subject reduction of our type system is a consequence of subject reduction of
+the region calculus of Tofte/Talpin~\cite{tofte97ic}.
 
 \section{A Simple Weakest Preconditions Calculus}
 
-In the following, we use the metasymbol $v$ to denote well-typed semantic
-values, i.e. terms with a typing derivation $Γ|-_v v : τ$. 
+We now proceed to explain how proof obligations are obtained from the
+annotated program.
+
+In the following, we use the metasymbol $v$ to denote well-typed values, i.e.
+terms with a typing derivation $Γ|-_v v : τ$. 
 
 \begin{figure}[htbp]
   \begin{eqnarray*}
+    \ceil{x~[\alist{κ}]} &=& x~[\alist{κ}]\\
+    \ceil{λx:τ.t} &=& λx:τ.\ceil{t}\\
+    \ceil{\recml~f~(x:τ).\{p\} t \{q\}} &=& 
+    (λx:\ceil{τ}.p,λx:\ceil{τ}.q)\\
+    \ceil{t_{τ' -> τ}~t'} &=& \ceil{t}~\ceil{t'}
+  \end{eqnarray*}
+  \caption{Lifting values}
+  \label{fig:valuelift}
+\end{figure}
+
+\begin{figure}[htbp]
+  \begin{eqnarray*}
+    c(x~[\alist{κ}]) &=& \Trueml \\
+    c(λx:τ.t) &=& ∀x:\ceil{τ}.c(t) \\
+    c(t~t') &=& c(t) /\ c(t') \\
+    c(\recml~f~(x:τ).\{p\}(t : τ',ε)\{q\}) &=&
+    ∀x:\ceil{τ}.∀f:\ceil{τ->^ετ'}.  f = \ceil{v} => \\& &
+    ∀s:\efft{ε}.p~s => \wpre_s(t,q \\
     \wpre_s(v, q) &=& q~s~\ceil{v}\\
     \wpre_s( t_{τ'->^ε τ} t' ,q) &=& \correct{t} /\ \correct(t') /\
     fst~\ceil{t}~\ceil{t'}~s /\ \\ 
-    & & ∀s':\efft{ε}, x:τ.~  snd~\ceil{t}~\ceil{t'}~s~s'~x => q~s'~x\\
+    & & ∀s':\efft{ε}∀ x:\ceil{τ}.~  snd~\ceil{t}~\ceil{t'}~s~s'~x => q~s'~x\\
     \wpre_s(\letml~x~[\alist{χ}] = v~\inml~t, q) &=&
       c(v) /\ \letml~x~[\alist{χ}]=\ceil{v}~\inml~ \wpre(t,q)\\
-    \wpre_s(\letml~x = ( t1 : ε1 ) ~\inml~ ( t2 : ε2 ) , q) &=&
-    \wpre_s( t1 ,λs':\efft{ ε1  ε2 }.\wpre_{s'}(t2, q ))\\
+    \wpre_s(\letml~x = ( t1 : τ, ε1 ) ~\inml~ ( t2 : ε2 ) , q) &=&
+    \wpre_s( t1 ,λs':\efft{ ε1  ε2 }.λx:\ceil{τ}.\wpre_{s'}(t2, q ))\\
     \wpre_s(\ifml~ t1 ~\thenml~ t2 ~\elseml~ t3 , q) &=&
-    (\ceil{ t1 } = \trueml => \wpre_s( t2 , q)) /\ \\
-    & &(\ceil{ t1 } = \falseml => \wpre_s( t3 , q)) 
+      \ifml~ \ceil{ t1 }~\thenml~ \wpre_s( t2 , q))~\elseml~\wpre_s( t3 , q)) \\
+      \wpre_s( (t : ε <: ε'), q) &=& \wpre_{s|_ε}(t, λs':\efft{ε}.q~(s\oplus s'))
   \end{eqnarray*}
   \caption{The weakest precondition calculus}
   \label{fig:wp}
@@ -338,7 +485,8 @@ subtyping: effects
 
 %what has been implemented
 
-A prototype implementation by the name ``\who'' exists and is freely available. It implements the
+A prototype implementation by the name ``\who''
+exists~\cite{KanigFilliatre09wml} and is freely available. It implements the
 described language with type, region and effect polymorphism, higher-order
 logics and store types in the logic. It takes as an input a fully annotated
 program and outputs proof obligations which have to be proved to guarantee the
