@@ -7,7 +7,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{mathpartir}
 
-\newcommand{\wpre}{ {\bf wp}}
+\newcommand{\wpre}{{\bf wp}}
 \newcommand{\sep}{ ~|~ }
 \newcommand{\letml}{{\bf let}}
 \newcommand{\inml}{{\bf in}}
@@ -18,9 +18,9 @@
 \newcommand{\propml}{{\bf prop}}
 \newcommand{\boolml}{{\bf bool}}
 \newcommand{\recml}{{\bf rec}}
-\newcommand{\efft}[1]{ \langle #1 \rangle }
-\newcommand{\lift}[1]{ \langle #1 \rangle }
-\newcommand{\alist}[1]{ \overline{#1} }
+\newcommand{\efft}[1]{\langle #1 \rangle}
+\newcommand{\lift}[1]{\langle #1 \rangle}
+\newcommand{\alist}[1]{\overline{#1} }
 \newcommand{\Trueml}{{\bf True}}
 \newcommand{\Falseml}{{\bf False}}
 \newcommand{\trueml}{{\bf true}}
@@ -28,7 +28,7 @@
 \newcommand{\unitml}{{\bf unit}}
 \newcommand{\coq}{Coq}
 \newcommand{\who}{Who}
-\newcommand{\correct}[1]{ c(#1) }
+\newcommand{\correct}[1]{c(#1)}
 
 \newcommand{\ceil}[1]{\lceil #1 \rceil}
 
@@ -435,11 +435,19 @@ the region calculus of Tofte/Talpin~\cite{tofte97ic}.
 
 \section{A Simple Weakest Preconditions Calculus}
 
-We now proceed to explain how proof obligations are obtained from the
-annotated program.
+The aim of the weakest precondition calculus is to obtain proof obligations
+from the annotated program. To do this, the calculus starts from a formula
+which holds, or is supposed to hold, at the end of the program, and walks
+backwards in the program source to obtain the weakest formula which has to
+hold at the beginning of the program (hence the name {\em weakest
+precondition}. 
 
 In the following, we use the metasymbol $v$ to denote well-typed values, i.e.
-terms with a typing derivation $Γ|-_v v : τ$. 
+terms with a typing derivation $Γ|-_v v : τ$. In the definition of the weakest
+precondition calculus, we will use the notation $(t : τ, ε)$ to denote that
+$t$ has type $τ$ and effect $ε$. We assume that applications of the
+subeffecting rule {\sc Sub} rule are explicitely inserted in the term; they
+are written $(t:ε<:ε')$.
 
 \begin{figure}[htbp]
   \begin{eqnarray*}
@@ -453,6 +461,13 @@ terms with a typing derivation $Γ|-_v v : τ$.
   \label{fig:valuelift}
 \end{figure}
 
+First of all, analogous to the lifting of types to the logic level, we define
+a lifting of values to the logic level. Similarly, this translation traverses
+the value until it encounters an impure function. From the logic point of
+view, an impure function is represented by its specification, so the
+translation keeps only the pair of pre- and postcondition, both abstracted
+over the function argument. The function body is thrown away.
+
 \begin{figure}[htbp]
   \begin{eqnarray*}
     c(x~[\alist{κ}]) &=& \Trueml \\
@@ -460,15 +475,15 @@ terms with a typing derivation $Γ|-_v v : τ$.
     c(t~t') &=& c(t) /\ c(t') \\
     c(\recml~f~(x:τ).\{p\}(t : τ',ε)\{q\}) &=&
     ∀x:\ceil{τ}.∀f:\ceil{τ->^ετ'}.  f = \ceil{v} => \\& &
-    ∀s:\efft{ε}.p~s => \wpre_s(t,q \\
-    \wpre_s(v, q) &=& q~s~\ceil{v}\\
-    \wpre_s( t_{τ'->^ε τ} t' ,q) &=& \correct{t} /\ \correct(t') /\
+    ∀s:\efft{ε}.p~s => \wpre_s(t,q~s) \\
+    \wpre_s(v, q) &=& c(v) /\ q~s~\ceil{v}\\
+    \wpre_s( t_{τ'->^ε τ} t' ,q) &=& \correct{t} /\ \correct{t'} /\
     fst~\ceil{t}~\ceil{t'}~s /\ \\ 
     & & ∀s':\efft{ε}∀ x:\ceil{τ}.~  snd~\ceil{t}~\ceil{t'}~s~s'~x => q~s'~x\\
     \wpre_s(\letml~x~[\alist{χ}] = v~\inml~t, q) &=&
-      c(v) /\ \letml~x~[\alist{χ}]=\ceil{v}~\inml~ \wpre(t,q)\\
-    \wpre_s(\letml~x = ( t1 : τ, ε1 ) ~\inml~ ( t2 : ε2 ) , q) &=&
-    \wpre_s( t1 ,λs':\efft{ ε1  ε2 }.λx:\ceil{τ}.\wpre_{s'}(t2, q ))\\
+      ∀\alist{χ}.c(v) /\ \letml~x~[\alist{χ}]=\ceil{v}~\inml~ \wpre(t,q)\\
+    \wpre_s(\letml~x = ( t1 : τ,ε) ~\inml~ t2 , q) &=&
+    \wpre_s( t1 ,λs':\efft{ ε }.λx:\ceil{τ}.\wpre_{s'}( t2 , q ))\\
     \wpre_s(\ifml~ t1 ~\thenml~ t2 ~\elseml~ t3 , q) &=&
       \ifml~ \ceil{ t1 }~\thenml~ \wpre_s( t2 , q))~\elseml~\wpre_s( t3 , q)) \\
       \wpre_s( (t : ε <: ε'), q) &=& \wpre_{s|_ε}(t, λs':\efft{ε}.q~(s\oplus s'))
@@ -476,6 +491,33 @@ terms with a typing derivation $Γ|-_v v : τ$.
   \caption{The weakest precondition calculus}
   \label{fig:wp}
 \end{figure}
+
+The weakest precondition calculus itself comes in two parts, one for values
+and one for effectful terms. Both are reasonably straightforward. The {\em
+correctness} of values, written $c(v)$, ensures that any effectful function
+appearing in a value adheres to its specification. To this end, the value is
+traversed, quantifying over bound variables and using conjunction for pure
+applications. When an effectful function is encountered, one has to prove that
+the precondition of the function implies the postcondition, given the function
+body.
+
+The part concerning effectful functions, denoted $\wpre_s(t,q)$ takes as
+argument a term $t$ of type $τ$ and effect $ε$, a postcondition $q$ of type
+$\efft{ε} -> τ -> \propml$ and a current state $s$ of type $\efft{ε}$. If the
+term is in fact a value, the value has to be correct and the postcondition
+must be true for the lifted value and the current state. In the case of an
+application, both values must be correct, the precondition of the function
+must hold in the current state, and for any state and return value of the
+function, the function's postcondition must imply the condition $q$ to be
+proved.
+
+As for the typing relation, we have two rules for the \letml-binding. If the
+bound term is a value, we can translate the \letml-binding in the program by a
+\letml-binding in the language. In the other case, the \wpre\ of $ t2 $ becomes
+the argument of the \wpre of $ t1 $ (we denote $ε$ the effect of $ t1 $ and $
+t2 $). The rule for \ifml-expressions is straightforward. The rule for
+subeffecting adapts the domain of the current store and the expected domain of
+the postcondition so that the types work out.
 
 \section{Extensions}
 
