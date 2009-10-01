@@ -46,9 +46,6 @@ val list_open_with : (subst -> 'a -> 'a) -> t list -> 'a listbind -> 'a
 
 module M : Map.S with type key = t
 module S : Set.S with type elt = t
-module BMap : MyMap.S with type key = t
-module BSet : MySet.S with type elt = t
-
 val print_set : S.t Myformat.fmt
 val reset : unit -> unit
 

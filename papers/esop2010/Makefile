@@ -4,6 +4,7 @@ dvi: main-pp.dvi
 
 %.dvi : %.tex
 	latex $^
+	bibtex $*
 	latex $^
 	latex $^
 

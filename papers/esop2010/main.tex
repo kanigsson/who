@@ -27,6 +27,8 @@
 \newcommand{\falseml}{{\bf false}}
 \newcommand{\unitml}{{\bf unit}}
 \newcommand{\coq}{Coq}
+\newcommand{\who}{Who}
+\newcommand{\correct}[1]{ c(#1) }
 
 \newcommand{\ceil}[1]{\lceil #1 \rceil}
 
@@ -39,6 +41,11 @@ Laboratoire de Recherche en Informatique, Univ Paris-Sud, CNRS, Orsay F-91405\\
 INRIA Futurs, ProVal, Parc Orsay Universit\'e, F-91893
 }
 %TODO affiliation
+%TODO find notions for:
+%  * ``semantic values'' v
+%  * ``store types'' <ε>
+% 
+
 
 \maketitle
 
@@ -47,7 +54,7 @@ INRIA Futurs, ProVal, Parc Orsay Universit\'e, F-91893
 \end{abstract}
 
 
-\section{Introduction.}
+\section{Introduction}
 %TODO Hoare logic = sharing between logic and prog language + alias free
 
 also one or two examples in the described language
@@ -61,7 +68,7 @@ characteristics :
   \item the wp needs absence of aliasing to produce good POs
 \end{itemize}
 
-\section{A programming language for specification.}
+\section{A programming language for specification}
 
 technical presentation:
 \begin{itemize}
@@ -92,24 +99,26 @@ technical presentation:
   \label{fig:syntax}
 \end{figure}
 
-Our language is basically λ-calculus with \letml-bindings. For technical
-reasons, the presentation is different from its usual form.
-Fig.\ref{fig:syntax} describes the whole language.
+Our programming language (Fig.~\ref{fig:syntax}) is basically the λ-calculus
+with \letml-bindings, where there are two different λ-bindings. The first one
+($λx:τ.t$) describes a pure, non-recursive binding, and the second one
+($\recml~f~(x:τ).\{p\}t\{q\}$) describes recursive, potentially impure
+functions; $p$ and $q$ in this term are {\em specifications}, which are
+of the same syntax as programs, but are differently typed (typing will be
+discussed in the next section). The term $p$ corresponds to the {\em
+precondition}, $q$ to the {\em postcondition} of the function. The analogy to
+Hoare triples is of course obvious. As usual, there are also variables,
+\letml-bindings and an \ifml-\thenml-\elseml-construct. Variables on the type
+level can be generalized at \letml-boundaries and have to be instantiated when
+the corresponding program variable is used.
 
-Let us first look at the {\em types}. Type variables are of course types, as
-well as tuples ($τ\times τ$) and pure functions ($τ -> τ$). There is a second
-function type $τ->^ε τ$ for impure functions, annotated with an {\em effect}
-$ε$. Effects are simply lists of {\em regions} $ρ$ and {\em effect variables}
-$e$. The type expression $τ~\refml_ρ$ describes the type of references in
-region $ρ$ containing objects of type $τ$. The type $\efft{ε}$ describes the
-portion of the store represented by the effect expression $ε$.
-
-The syntax of terms contains some differences to standard λ-calculus. The
-construct $λx:τ.t$ serves to construct a pure function, while the construct
-$\recml~f~(x:τ).\{p\}t\{q\}$ can be used to build impure, possibly recursive
-functions. The terms $p$ and $q$ are the {\em precondition} and the {\em
-postcondition} of the so defined anonymous function. This is of course
-reminiscent of the syntax of Hoare Logic. 
+Before we describe the syntax of types, let us first explain {\em regions} and
+{\em effects}. Regions are simply type level names for memory locations. An
+effect is a set of memory locations and {\em effect variables}. An effect
+variable stands for an unknown effect. Effects are used to specify
+of memory locations an expression can write. They are also used in function
+types to describe the memory locations which may be written if the function is
+called.
 
 Type, region and effect variables must be explicitly generalized and
 instantiated. For this purpose, we have defined the metavariable $χ$,
@@ -118,26 +127,36 @@ objects types, regions and effects\footnote{We do not distinguish between
 region variables and region constants; a region constant is simply a region
 variable whose scope is the entire program.}. Now, it can be seen that
 generalization takes place at \letml-bindings and instantiation at variable
-occurrences.
-%TODO describe the overline
+occurrences. We use a horizontal bar over terms (like in ${\overline{χ}}$) to
+denote lists.
 
-%TODO : get rid of instantiations ??
 \subsection{Typing}
 
-\begin{figure}[htpb]
-\begin{mathpar}
+\begin{figure}[htbp]
+  \begin{mathpar}
   { \inferrule*[Left=Var] {Γ(x) = ∀\alist{χ}.τ} {Γ|-_v x~\alist{κ} :
   τ[\alist{χ}|->\alist{κ}]} } \and
   { \inferrule*[Left=PureFun] {Γ,x : τ' |-_v t : τ} {Γ|-_v λx : τ'.t : τ' ->
   τ} } \and
   { \inferrule*[Left=Rec] 
-  { Γ' = Γ,~f : τ' ->^ε τ,~ x : τ' \\ Γ' |- t : τ,ε \\ Γ', cur : \efft{ε} |-_l p : \propml \\ 
+  { Γ' = Γ, x : τ' \\ Γ'' = Γ',~f : τ' ->^ε τ \\ Γ'' |- t : τ,ε \\ Γ', cur : \efft{ε} |-_l p : \propml \\ 
   Γ', old, cur : \efft{ε} |-_l q : τ -> \propml } 
       {Γ|-_v \recml~f~(x : τ').\{p\}t\{q\} : τ' ->^ε τ} 
   } \and
   { \inferrule*[Left=PureApp]
     {Γ |-_v t1 : τ' -> τ \\ Γ|-_v t2 : τ'}
     {Γ |-_v  t1 ~ t2 : τ}
+  }
+  \end{mathpar}
+  \caption{Value typing}
+  \label{fig:valuetyping}
+\end{figure}
+
+\begin{figure}[htpb]
+\begin{mathpar}
+  { \inferrule*[Left=Value]
+  { Γ |-_v t : τ  }
+  { Γ |- t : τ,\emptyset  }
   } \and
   { \inferrule*[Left=App]
     {Γ |-_v t1 : τ' ->^ε τ \\ Γ|-_v t2 : τ'}
@@ -154,18 +173,25 @@ occurrences.
   { \inferrule*[Left=Let]
     { Γ |- t1 : τ', ε1 \\ Γ, x : τ' |- t2 : τ, ε2 }
     { Γ |- \letml~ x = t1 ~ \inml~ t2 : τ, ε1  ε2 }
-  } \and
-  { \inferrule*[Left=Value]
-  { Γ |-_v t : τ  }
-  { Γ |- t : τ,\emptyset  }
-  } \and
+  }
+\end{mathpar}
+  \caption{Program typing}
+  \label{fig:progtyping}
+\end{figure}
+
+\begin{figure}[htbp]
+  \begin{mathpar}
   { \inferrule*[Left=Logic]
     { Γ |-_v t : τ  }
     { Γ |-_l t : \ceil{τ} }
+  } \and
+  { \inferrule*[Left=LetLogic]
+    { Γ, \alist{χ} |-_l : t' : τ' \\ Γ, x: ∀\alist{χ}.τ' |- t : τ  }
+    { Γ |-_l \letml~x~[\alist{χ}] = t'~\inml~t : τ }
   }
-\end{mathpar}
-  \caption{The Typing relation}
-  \label{fig:typing}
+  \end{mathpar}
+  \caption{Logic typing}
+  \label{fig:logictyping}
 \end{figure}
 
 \begin{figure}[htpb]
@@ -182,8 +208,27 @@ occurrences.
   \label{fig:typelift}
 \end{figure}
 
+\begin{figure}[htbp]
+  \begin{eqnarray*}
+    \ceil{x~[\alist{κ}]} &=& x~[\alist{κ}]\\
+    \ceil{λx:τ.t} &=& λx:τ.\ceil{t}\\
+    \ceil{\recml~f~(x:τ).\{p\} (t : ε ) \{q\}} &=& 
+    (λx:\ceil{τ}.λcur:\efft{ε}.p,λx:\ceil{τ}.λold,cur:\efft{ε}.q)\\
+    \ceil{t_{τ' -> τ}~t'} &=& \ceil{t}~\ceil{t'}
+  \end{eqnarray*}
+  \caption{Lifting values}
+  \label{fig:valuelift}
+\end{figure}
+
+We have already seen that programs and specification share in fact the same
+syntax. Though they are differently typed, their typing relations still share
+a lot. For this reason, and to underline the fact that in Hoare logic, values
+are shared between programs and the logic, we present three different typing
+relations. One for programs, one for specifications, and the common part is
+factored out in a third typing relation for values.
+
 Again in order to simplify future definitions, the definition typing relation
-differs somewhat from the standard way (see Fig.~\ref{fig:typing}). First of
+differs somewhat from the standard way (see Fig.~\ref{fig:progtyping}). First of
 all, we present the language in {\em A-normal form} (ANF), where all values
 obtained by intermediate computations are named. However, our definition of
 values is not syntactical: our ``semantic'' values are objects which are
@@ -192,7 +237,7 @@ pure application}, the application which involves the pure arrow $τ->τ$.
 Furthermore, the system is a type and effect system. There are in fact two
 typing relations, the first one is of the form $Γ|-_v  t : τ$. In this case,
 $t$ is a semantic value of type $τ$ and cannot have any effect. It can be seen
-that the set of terms described by $|-_v$ is the precisely the one obtained by
+that the set of terms described by $|-_v$ is precisely the one obtained by
 combining syntactic values and pure application in a well-typed way.
 
 In the other case, we have $Γ|- t : τ, ε$, where $t$ is an expression of
@@ -211,18 +256,24 @@ undecidable and one cannot take decisions by testing their truth value. On the
 other hand, \boolml\ talks about decidable properties and so it makes sense to
 expect the predicate of the \ifml-statement to be of type \boolml.
 
-
-unusual : 
 missing : 
-* value injection
 * subeffecting
-* logic typing
 
 %TODO is the LOGIC rule correct ??
 
+\subsection{predefined constants}
+
+arithmetic operations, operations on pairs, logic operations on prop, pre/post
+
+reference operations
+!!
+
+operations on maps : restrict, combine
 \subsection{Sharing between logic and programs}
 
-To obtain sharing between
+use logic application in programs : no problem;
+use lambdas with effects in logic : specification
+
 \subsection{References}
 
 We haven't mentioned references yet, but all we need to support them is to add
@@ -244,29 +295,101 @@ the following types:
       {Γ |- x : τσ }
     } \\
     { \inferrule*[Left=LetRef, Right={ρ \textup{fresh}, $ρ\notin τ$}]
-      {Γ |-_v t1 : τ' \\ Γ, x : τ'~\refml_ρ |- t2 : τ }
-      {Γ |- \letml~x = ref~ t1 ~\inml~ t2 : τ}
+      {Γ |-_v t1 : τ' \\ Γ, x : τ'~\refml_ρ |- t2 : τ, ε }
+      {Γ |- \letml~x = ref~ t1 ~\inml~ t2 : τ, ε \setminus ρ}
     }
   \end{mathpar}
   \caption{A modified and a new rule for aliasing}
   \label{fig:aliasing}
 \end{figure}
 
-\section{A Simple Weakest Preconditions Calculus.}
+\subsection{Some properties}
+
+$Γ|-_v v : τ$ implies $Γ |-_l \ceil{v} : \ceil{τ}$
+
+\section{A Simple Weakest Preconditions Calculus}
 
 In the following, we use the metasymbol $v$ to denote well-typed semantic
 values, i.e. terms with a typing derivation $Γ|-_v v : τ$. 
 
-\section{Extensions.}
+\begin{figure}[htbp]
+  \begin{eqnarray*}
+    \wpre_s(v, q) &=& q~s~\ceil{v}\\
+    \wpre_s( t_{τ'->^ε τ} t' ,q) &=& \correct{t} /\ \correct(t') /\
+    fst~\ceil{t}~\ceil{t'}~s /\ \\ 
+    & & ∀s':\efft{ε}, x:τ.~  snd~\ceil{t}~\ceil{t'}~s~s'~x => q~s'~x\\
+    \wpre_s(\letml~x~[\alist{χ}] = v~\inml~t, q) &=&
+      c(v) /\ \letml~x~[\alist{χ}]=\ceil{v}~\inml~ \wpre(t,q)\\
+    \wpre_s(\letml~x = ( t1 : ε1 ) ~\inml~ ( t2 : ε2 ) , q) &=&
+    \wpre_s( t1 ,λs':\efft{ ε1  ε2 }.\wpre_{s'}(t2, q ))\\
+    \wpre_s(\ifml~ t1 ~\thenml~ t2 ~\elseml~ t3 , q) &=&
+    (\ceil{ t1 } = \trueml => \wpre_s( t2 , q)) /\ \\
+    & &(\ceil{ t1 } = \falseml => \wpre_s( t3 , q)) 
+  \end{eqnarray*}
+  \caption{The weakest precondition calculus}
+  \label{fig:wp}
+\end{figure}
+
+\section{Extensions}
 
 subtyping: effects
 
-\section{Implementation.}
+\section{Implementation}
 
-\section{Examples.}
+%what has been implemented
 
-\section{Related Work.}
+A prototype implementation by the name ``\who'' exists and is freely available. It implements the
+described language with type, region and effect polymorphism, higher-order
+logics and store types in the logic. It takes as an input a fully annotated
+program and outputs proof obligations which have to be proved to guarantee the
+correctness of the program with respect to its specification. Currently, only
+output to the interactive proof assistant Coq has been implemented. Our logic
+is a subset of Coq's, so the translation is particularly simple.
 
-\section{Conclusion.}
+%details
+% lines of code : less than 3000 lines of ocaml
+% limited form of type and effect inference
+% 
+
+\section{Examples}
+
+\begin{center}
+    \begin{tabular}{ | r | r | r | r |}
+    \hline
+    Program & Code & Spec & Proofs \\ \hline
+    Array &  &  &  \\
+    Hashtbl & & &  \\ \hline
+    Memo/Ymemo & & &  \\ \hline
+    Koda-Ruskey~\cite{KanigFilliatre09wml} & & &  \\ \hline
+    \end{tabular}
+\end{center}
+
+\subsection{memo}
+\subsection{ymemo}
+
+\section{Related Work}
+
+\section{Conclusion}
+
+\paragraph{Future Work.}
+
+We are currently investigating the possibility to obtain first-order proof
+obligations, to be able to use SMT solvers~\cite{RanTin-SMTLIB}, which would
+avoid manual proofs in many cases. An obvious solution would be to reuse
+existing encodings of higher-order logic in first-order logic, such as the one
+by Pottier and Gauthier~\cite{pottier-gauthier-hosc}. This technique has been
+successfully employed by the Pangolin system~\cite{regis-gianas-pottier-08}.
+Another option comes from our observation that in many cases, the proof
+obligations for higher-order functions can actually be expressed in
+first-order logic, when one replaces top-level {\em quantifications} of
+functional arguments and invariants by top-level {\em declarations}. Doing
+this translation manually, we have obtained first-order proof
+obligations for the {\tt Array.iter} function which are all discharged by
+SMT solvers. We don't know if such a transformation can always be carried out.
+
+what about correspondence between $τ ->^\emptyset τ$ and $τ -> τ$?
+
+\bibliographystyle{plain}
+\bibliography{biblio}{}
 
 \end{document}

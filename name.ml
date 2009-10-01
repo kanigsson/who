@@ -95,9 +95,6 @@ module CMP = struct
 end
 module M = Map.Make(CMP)
 module S = Set.Make(CMP)
-module BMap = ListMap.Make(CMP)
-module BSet = ListSet.Make(CMP)
-
 let print_set fmt s = 
   S.iter (fun x -> print fmt x ; space fmt ()) s
 
