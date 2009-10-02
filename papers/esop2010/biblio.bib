@@ -94,3 +94,177 @@
  toread = {yes}
  }
 
+@INPROCEEDINGS{Honda05anobservationally,
+    author = {Kohei Honda and Nobuko Yoshida and Martin Berger},
+    title = {An observationally complete program logic for imperative higher-order functions},
+    booktitle = {In Proc. LICS’05},
+    year = {2005},
+    pages = {270--279}
+}
+
+@inproceedings{BergerHondaYoshida05aliasing,
+ author = {Berger,, Martin and Honda,, Kohei and Yoshida,, Nobuko},
+ title = {A logical analysis of aliasing in imperative higher-order functions},
+ booktitle = {ICFP '05: Proceedings of the tenth ACM SIGPLAN international conference on Functional programming},
+ year = {2005},
+ pages = {280--293},
+ location = {Tallinn, Estonia},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ }
+
+@Manual{CoqManualV81,
+  author = {{The {Coq} Development Team}},
+  title  = {{The Coq Proof Assistant Reference Manual -- Version V8.1}},
+  year   = 2006,
+  month  = jul,
+  note   = {\url{http://coq.inria.fr}},
+  topics = "team,lri",
+  type_publi = "manuel",
+  x-equipes = {demons PROVAL EXT},
+  x-type = {manuel},
+  x-support = {diffusion}
+}
+
+@inproceedings{sozeau07icfp,
+  author = {Matthieu Sozeau},
+  title = {{P}rogram-ing Finger Trees in {C}oq},
+  pages = {13--24},
+  x-pdf={http://www.lri.fr/~sozeau/research/publications/Program-ing_Finger_Trees_in_Coq.pdf},
+  x-slides = {http://www.lri.fr/~sozeau/research/publications/Program-ing_Finger_Trees_in_Coq-icfp07-011007.pdf},
+  copyright = {ACM, 2007. This is the author's version of the work. It is posted here by permission of ACM for your personal use. Not for redistribution. The definitive version was published in
+   ICFP'07, http://doi.acm.org/10.1145/1291151.1291156},
+  abstract = {Finger Trees (Hinze & Paterson, JFP 2006) are a general purpose persistent
+data structure with good performance. Their genericity permits developing
+a wealth of structures like ordered sequences or interval trees
+on top of a single implementation. However, the type systems
+used by current functional languages do not guarantee the coherent
+parameterization and specialization of Finger Trees, let alone the
+correctness of their implementation.
+We present a certified implementation of Finger Trees solving
+these problems using the {P}rogram extension of {C}oq. 
+We not only implement the structure but also prove its
+invariants along the way, which permit building certified
+structures on top of Finger Trees in an elegant way.},
+  crossref = {icfp07},
+  type_digiteo = {conf_isbn}, 
+  type_publi = {icolcomlec},
+  topics = {team},
+  x-equipes = {demons PROVAL},
+  x-type = {article},
+  x-support = {actes},
+  x-cle-support = {ICFP}
+}
+@proceedings{icfp07,
+  editor    = {Ralf Hinze and Norman Ramsey},
+  title     = {Proceedings of the 12th ACM SIGPLAN International Conference
+               on Functional Programming, ICFP 2007},
+  booktitle = {12th ACM SIGPLAN International Conference
+               on Functional Programming, ICFP 2007},
+  address = {Freiburg, Germany},
+  publisher = ACM,
+  year      = {2007},
+}
+
+@inproceedings{Nanevski08Awkward,
+  author = {Aleksandar Nanevski and Greg Morrisett and Avraham Shinnar and Paul Govereau and Lars Birkedal},
+  title = {Ynot: Reasoning with the Awkward Squad},
+  booktitle = {ICFP '08: Proceedings of the 13th ACM SIGPLAN International Conference on Functional Programming},
+  month = {September},
+  year = {2008},
+}
+
+@ARTICLE{ohearn-reynolds-00,
+  author = {Peter W. O'Hearn and John C. Reynolds},
+  title = {From {Algol} to polymorphic linear lambda-calculus},
+  journal = {Journal of the {ACM}},
+  volume = {47},
+  number = {1},
+  year = {2000},
+  pages = {167--223},
+}
+
+@INPROCEEDINGS{chargueraud-pottier-08,
+  author = {Arthur Charguéraud and François Pottier},
+  title = {Functional Translation of a Calculus of Capabilities},
+  booktitle = {ACM International Conference on Functional Programming
+                 (ICFP)},
+  month = SEP,
+  year = {2008},
+  pages = {213--224},
+}
+
+@article{Filliatre00a,
+  author = {Jean-Christophe Filli\^atre},
+  title = {{Verification of Non-Functional Programs 
+                   using Interpretations in Type Theory}},
+  journal = {Journal of Functional Programming},
+  volume = 13,
+  number = 4,
+  pages = {709--745},
+  month = {July},
+  year = 2003,
+  abstract = {We study the problem of certifying programs combining imperative and
+  functional features within the general framework of type theory.
+  
+  Type theory constitutes a powerful specification language, which is
+  naturally suited for the proof of purely functional programs. To
+  deal with imperative programs, we propose a logical interpretation
+  of an annotated program as a partial proof of its specification. The
+  construction of the corresponding partial proof term is based on a
+  static analysis of the effects of the program, and on the use of
+  monads. The usual notion of monads is refined in order to account
+  for the notion of effect. The missing subterms in the partial proof
+  term are seen as proof obligations, whose actual proofs are left to
+  the user. We show that the validity of those proof obligations
+  implies the total correctness of the program.
+  We also establish a result of partial completeness.
+  
+  This work has been implemented in the Coq proof assistant.
+  It appears as a tactic taking an annotated program as argument and
+  generating a set of proof obligations. Several nontrivial
+  algorithms have been certified using this tactic.}
+}
+
+@InProceedings{BarnettLS04,
+  author = 	 {Mike Barnett and K. Rustan M. Leino   and Wolfram Schulte},
+  title = 	 {{The Spec\# Programming System: An Overview}},
+  booktitle = {Construction and Analysis of Safe, Secure, and Interoperable Smart Devices (CASSIS'04)},
+  pages = 	 {49--69},
+  year = 	 {2004},
+  volume = 	 {3362},
+  publisher =	 sv,
+  series =	 lncs
+}
+
+@Article{FilliatrePottier02,
+  author = 	 {J.-C. Filli{\^a}tre and F. Pottier},
+  title = 	 {{Producing All Ideals of a Forest, Functionally}},
+  journal = 	 {Journal of Functional Programming},
+  volume =       13,
+  number =       5,
+  pages =        {945--956},
+  month =	 {September},
+  year =	 2003
+}
+
+@Article{KodaRuskey93,
+  author = 	 {Yasunori Koda and Frank Ruskey},
+  title = 	 {A {Gray} Code for the Ideals of a Forest Poset},
+  journal = 	 {Journal of Algorithms},
+  month =        sep,
+  year = 	 1993,
+  volume =	 15,
+  number =       2,
+  pages =	 {324--340},
+  note =         "\url{http://csr.csc.uvic.ca/home/fruskey/Publications/ForestIdeals.ps}",
+}
+
+@Book{andrews86,
+  author	= "Peter B. Andrews",
+  title		= "An Introduction to Mathematical Logic and Type Theory: to
+    Truth through Proof",
+  publisher	= "Academic Press",
+  year		= 1986
+}
+

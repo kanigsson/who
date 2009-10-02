@@ -28,12 +28,13 @@
 \newcommand{\unitml}{{\bf unit}}
 \newcommand{\coq}{Coq}
 \newcommand{\who}{Who}
+\newcommand{\ocaml}{Ocaml}
 \newcommand{\correct}[1]{c(#1)}
 
 \newcommand{\ceil}[1]{\lceil #1 \rceil}
 
 \begin{document}
-\title{\mbox{Specifying Imperative Higher Order Programs}}
+\title{\mbox{Specifying Imperative Higher-Order Programs}}
 
 \author{Johannes Kanig \and Jean-Christophe Fill\^atre}
 \institute{
@@ -41,56 +42,76 @@ Laboratoire de Recherche en Informatique, Univ Paris-Sud, CNRS, Orsay F-91405\\
 INRIA Futurs, ProVal, Parc Orsay Universit\'e, F-91893
 }
 %TODO affiliation
-%TODO find notions for:
-%  * ``semantic values'' v
-%  * ``store types'' <ε>
+%TODO explain somewhere the correspondence store type <-> map, effect variable
+%<-> domain, region <-> key
+%TODO the constants dealing with maps
+
+%external TODO : proofs for Hashtbl
+%external TODO : proofs of system
 % 
 
 
 \maketitle
 
-% ICFP
-%  We present a weakest precondition calculus for an imperative,
-%  higher-order programming language, restricted to non-aliasing global
-%  references. The main feature of the calculus is {\em effect
-%    polymorphism}, {\em i.e.}, higher-order functions can be specified by
-%  generalizing over the effects and specifications of their functional
-%  arguments. This allows truly modular reasoning about effectful
-%  higher-order functions. We achieve this by defining an extension of
-%  a standard higher-order logic, more suitable to reason about
-%  modifications of the store. The obtained proof obligations, however,
-%  are expressible in the standard logic and can be proved using
-%  standard theorem provers. We show that the necessary annotations
-%  and the obtained proof obligations are quite natural.
-%
-
-% Workshop ML
-%  We present \who, a tool for verifying effectful higher-order
-%  functions. It features {\em Effect polymorphism}, higher-order logic
-%  and the possibility to reason about state in the logic, which enable
-%  highly modular specifications of generic code. Several small
-%  examples and a larger case study demonstrate its usefulness. The
-%  \who~tool is intended to be used as an intermediate language for
-%  verification tools targeting ML-like programming languages.
-%
-
 \begin{abstract} We present a specification language suited for reasoning
   about effectful higher-order programs. The language's main features are
   higher-order logic and effect polymorphism, both of which enable a truly
-  modular treatment of higher-order functions. To our knowledge, this is the
-  first time that effect polymorphism is put to use in program verification.
-  We also define a weakest precondition calculus for this language which
-  generates proof obligations in higher-order logic. A simple mechanism based
-  on regions permits to restrict the analysis to alias-free programs, thus
-  obtaining much simpler proof obligations. Several examples demonstrate the
-  practicality of the system. A prototype implementation exists and has been
-  used to prove the correctness of these and more examples.  
+  modular treatment of higher-order functions.  We also define a weakest
+  precondition calculus for this language which generates proof obligations in
+  higher-order logic.  To our knowledge, this is the first time that effect
+  polymorphism is put to use in program verification.  A simple mechanism
+  based on regions permits to restrict the analysis to alias-free programs,
+  thus obtaining much simpler proof obligations. Several examples demonstrate
+  the practicality of the system. A prototype implementation exists and has
+  been used to prove the correctness of these and more examples.
 \end{abstract}
 
-
 \section{Introduction}
-%TODO Hoare logic = sharing between logic and prog language + alias free
 
+The purpose of the present paper is to introduce a simple weakest precondition
+calculus for imperative higher-order programs. Higher-order functions are a
+key feature, not only of purely functional languages like Haskell and the pure
+fragment of ML, but also in combination with imperative features, like
+references. However, reasoning about higher-order functions is difficult, and
+especially so in the presence of effectful computations. Any function's
+specification depends on its arguments. In a higher-order setting, arguments
+may be functions that have their own specification. In consequence, to be
+modular, the specification of a higher-order function can only be formulated
+{\em depending on the specifications of its functional arguments}. In a
+setting where side effects are possible, one also needs to formulate the
+specification {\em depending on the side effects of the functional arguments}.
+We claim that to be truly modular, the specification of a higher-order
+function must be generic with respect to the specification {\em and} the
+effect of its arguments.
+
+In this paper, we first present a specification language combining features of
+a programming language and logic. It uses an effect system and a region
+calculus to track references. The effect system contains {\em effect
+polymorphism}, thus dealing well with higher-order functions. The
+specifications can be expressed in higher-order logic, to be able to state
+properties of functional arguments. We show how two very simple modifications
+to the system let us obtain alias-free programs, with the aim of obtaining
+much simpler proof obligations.
+
+We then proceed to define a weakest precondition calculus based on this
+language, transforming an annotated program into a logic formula, which has to
+be valid for the program to be correct. This calculus is very straight-forward
+and syntax-directed.
+
+Finally, we show the usefulness of the system by giving several examples of
+annotated programs. All the programs have been proved correct using our
+prototype implementation called \who.
+
+\paragraph{Outline.}
+Section~\ref{sec:genpic} gives an introduction to the described language as
+well as an example. Sections~\ref{sec:syntax} and \ref{sec:wp} give the
+details about the programming language and the weakest precondition calculus.
+In section~\ref{sec:implem} we speak about the implementation and show some
+examples. Finally, section~\ref{sec:related} discusses related work.
+
+\section{The general picture and a motivating example}
+\label{sec:genpic}
+%TODO Hoare logic = sharing between logic and prog language + alias free
 also one or two examples in the described language
 
 characteristics : 
@@ -103,13 +124,10 @@ characteristics :
 \end{itemize}
 
 \section{A programming language for specification}
+\label{sec:syntax}
 
 technical presentation:
 \begin{itemize}
-  \item ANF
-  \item values defined by typing 
-  \item  two different types of arrows
-  \item  distinction bool and prop
   \item  notion of substitution - correspondence χ κ
   \item semantics is standard (goes to appendix )
 \end{itemize}
@@ -243,7 +261,10 @@ effect.
 The typing of programs, written $Γ|- t : τ,ε$, assigns a type $τ$ and an
 effect $ε$ to an expression $t$, given an environment. This typing is
 presented in {\em A-normal form}, a normal form where all intermediate values
-are \letml-introduced. All values are also programs with no effect (rule {\sc
+are \letml-introduced. This is not a restriction, as any program can be
+transformed an A-normal form.
+
+All values are also programs with no effect (rule {\sc
 Value}). An application must consist of two values and the effect of the
 overall expression is precisely the effect of the called function (rule {\sc
 App}). There are two rules for \letml, due to the value restriction. One only
@@ -325,15 +346,15 @@ properties and so it makes sense to expect the predicate of the
 The reader may have wondered why the specification language does not contain
 any logical connectives. These can of course be declared independently, for
 example the conjuction is just a function: \begin{equation*} /\ :  \propml ->
-  \propml -> \propml \end{equation*} Actually, when equality is given, all
-  logical operations (even quantification) can be defined in the logic.
-%TODO citation needed
-In the remainder of the paper, we suppose predefined the usual logical
-connectives conjunction, disjunction, implication and equivalence, as well as
-universal and existential quantification. We also assume all the arithmetic
-operations as well as the constructor $(t,t)$  and the accessors $fst$ and
-$snd$ for pairs. 
+\propml -> \propml \end{equation*} Actually, when equality is given, all
+logical operations (even quantification) can be defined in the
+logic~\cite{andrews86}.  In the remainder of the paper, we suppose
+predefined the usual logical connectives conjunction, disjunction,
+implication and equivalence, as well as universal and existential
+quantification. We also assume all the arithmetic operations as well as the
+constructor $(t,t)$  and the accessors $fst$ and $snd$ for pairs. 
 
+%TODO pre and post
 % TODO TODO
 %Finally, we introduce two symbols
 %\begin{eqnarray*}
@@ -395,8 +416,15 @@ function is generalized over, say, two region variables, assuming they are
 different, and is then instantiated with the same region variable twice. The
 classical example is the following program
 %TODO
+\begin{who}
+  let f [ρ ρ'] (x : int ref(ρ)) (y : int ref(ρ')) =
+  { }
+  x := !x + 1;
+  !y
+  { r : r = !!y old }
+\end{who}
 
-which is only correct if $ ρ1 $ and $ ρ2 $ are indeed different. To enforce
+which is only correct if $ ρ $ and $ ρ' $ are indeed different. To enforce
 this, we add a side condition to the instantiation: the substitution $σ$ must
 be {\em compatible} with the type $τ$. To understand what compatibility means,
 consider an {\em atomic} substitution $[ρ|->ρ']$. It is compatible with any
@@ -434,6 +462,7 @@ Subject reduction of our type system is a consequence of subject reduction of
 the region calculus of Tofte/Talpin~\cite{tofte97ic}.
 
 \section{A Simple Weakest Preconditions Calculus}
+\label{sec:wp}
 
 The aim of the weakest precondition calculus is to obtain proof obligations
 from the annotated program. To do this, the calculus starts from a formula
@@ -519,13 +548,9 @@ t2 $). The rule for \ifml-expressions is straightforward. The rule for
 subeffecting adapts the domain of the current store and the expected domain of
 the postcondition so that the types work out.
 
-\section{Extensions}
-
-subtyping: effects
-
+%TODO lemmas about correctness
 \section{Implementation}
-
-%what has been implemented
+\label{sec:implem}
 
 A prototype implementation by the name ``\who''
 exists~\cite{KanigFilliatre09wml} and is freely available. It implements the
@@ -536,30 +561,226 @@ correctness of the program with respect to its specification. Currently, only
 output to the interactive proof assistant Coq has been implemented. Our logic
 is a subset of Coq's, so the translation is particularly simple.
 
-%details
-% lines of code : less than 3000 lines of ocaml
-% limited form of type and effect inference
-% 
+The implementation consists of less than 3000 lines of \ocaml\ code, including
+a limited form of type and effect inference.
 
 \section{Examples}
 
+In this section, we will show two simple examples which use higher-order
+features.
+\subsection{A simple memoization function}
+
+\begin{figure}[tpb]
+\begin{who}
+type ('a,'b) map
+logic mem : forall ('a, 'b) . 'a -> ('a,'b) map -> bool
+logic get : forall ('a, 'b) . 'a -> ('a,'b) map -> 'b
+logic set : forall ('a, 'b) . 'a -> 'b -> ('a,'b) map -> ('a,'b) map
+
+let stores f0 m =
+  forall x : Z, mem x m = true -> get x m = f0 x
+
+parameter table : (int,int) map ref(ρ)
+
+let memo [e] (f0 : int -> int) (f : int ->{} int) (x : int) = 
+  {pre f x /\ stores f0 !!table}
+  if mem x !table then get x !table
+  else
+    let z = f x in
+    table := set x z !table;
+    z
+  {r : post f x r}
+\end{who}
+  \caption{The code along with the specification of the {\tt memo} function}
+  \label{fig:memo}
+\end{figure}
+
+Our first example is a simple memoization function {\tt memo} for (pure)
+functions.  It takes as an argument a function (from {\tt int} to {\tt int}
+here) and an integer and returns the same result as the functional argument
+would; however, before executing the argument, it will look up the integer in
+a table to see if the function hasn't been called yet on this integer. If so,
+the table's value is returned, otherwise we call the function, store the
+result in the table, and return it. Fig~\ref{fig:memo} shows the code along
+with the specification. The specification is very simple; it states that {\tt
+memo} will return a value that verifies the postcondition of {\tt f}, as long
+is initially we have the precondition of f and as long as the table stores
+only valid key/value pairs. As we are not interested in the exact way of the
+implemenation of the map, we simply model it here by a reference to a
+functional map with get/set functions.
+
+\subsection{ymemo}
+
+\begin{figure}[tpb]
+\begin{who}
+  let realizes 
+  let ymemo (f0 : int -> int) 
+            (ff : (int ->{table} int) ->{} int ->{table} int) = 
+  { forall (k : [[int ->{table} int ]]),
+      { realizes f0 k} ff k { r : realizes f0 r} }
+  let rec f (x : int) : int ->{table} int =
+    { stores f0 !!table }
+    if mem x !table then get x !table
+    else
+      let z = ff f x in
+      table := set x z !table; z
+    {r : r = f0 x /\ stores f0 !!table}
+  in f
+  { rf : realizes f0 rf }
+\end{who}
+\caption{The {\tt ymemo function} and its specifacation}
+  \label{fig:<+label+>}
+\end{figure}<++>
+
+\subsection{All examples - an overview}
+\begin{figure}[tbp]
 \begin{center}
     \begin{tabular}{ | r | r | r | r |}
     \hline
-    Program & Code & Spec & Proofs \\ \hline
-    Array &  &  &  \\
-    Hashtbl & & &  \\ \hline
-    Memo/Ymemo & & &  \\ \hline
-    Koda-Ruskey~\cite{KanigFilliatre09wml} & & &  \\ \hline
+    Program & Ocaml Code & Code + Spec in \who & Proofs \\ \hline
+    Memo/ymemo & 15 loc & 26 loc & 90 lop  \\ \hline
+    {\tt Array} & 69 loc & 170 loc  & 320 lop  \\ \hline
+    {\tt Hashtbl} (incomplete) & & &  \\ \hline
+    Koda-Ruskey~\cite{KanigFilliatre09wml} & 10 loc & 30 loc & $\sim$700 lop  \\ \hline
     \end{tabular}
 \end{center}
+  \caption{A summary of all programs proved so far using the \who\ tool}
+  \label{fig:whoproofs}
+\end{figure}
 
-\subsection{memo}
-\subsection{ymemo}
+Fig.~\ref{fig:whoproofs} shows an overview over the programs we have been able
+to prove using the \who\ tool. The first line summarizes the numbers of the
+memo/ymemo example of the previous subsections. 
+
+The next two lines concern the two modules {\tt Array} and {\tt Hashtbl} of
+the \ocaml\ standard library. For the {\tt Array} module, all functions
+present in the \ocaml\ module have been proved, with the exception of the {\tt
+Array.map} family, whose specification is very similar to {\tt iter}, and the
+{\tt Array.sort} function, which is quite complicated to prove, but not very
+interesting concerning higher-order functions or side effects. In this proof
+development, arrays are modeled as references to functional arrays with the
+usual axioms on access and update.
+
+The proof development concerning the {\tt Hashtbl} module is ongoing work. The
+difficult part of this development is the model of the \ocaml\ hash table; In
+\ocaml, when one overwrites a previously existing entry in the table, the old
+value still exists, and is only {\em shadowed} by the new key/value pair. If
+one calls {\tt Hashtbl.remove} using this key, the old value reappears. Also,
+if several bindings for a key exist, the key may be encountered several times,
+during a call of {\tt Hashtbl.iter}, for example. A possible way of modeling
+this is an association list instead of a simple mapping, where keys in front
+of the list can shadow the same key further down in the list. 
+% TODO Currently, only
+%two functions of this module have been proved correct.
+
+Finally, the last line shows the numbers for the proof development of the
+Koda-Ruskey algorithm~\cite{KodaRuskey93}. A small, efficient
+implementation~\cite{FilliatrePottier02} is shown to be correct. More details
+about this development can be found in~\cite{KanigFilliatre09wml}.
 
 \section{Related Work}
+\label{sec:related}
 
+%TODO rewrite
+%TODO new citation for Ynot
+Honda, Yoshida and Berger~\cite{Honda05anobservationally} present a
+logic for imperative higher-order programs, using a slightly more
+expressive language than ours. They present their calculus using rules
+in Hoare logic style, while we presented a \wpre-calculus. Their
+system does not provide the same modularity than ours, as one can not
+reason modularly about side effects of functional arguments. It also
+has the drawback of being difficult to implement, due to the presence
+of a large number of non-structural rules. Our system, starting from a
+correctly annotated program, is syntax-directed and thus entirely
+automated. Their logic of proof obligations is non-standard, while we
+obtain obligations in higher-order logic. However, their calculus can
+deal easily with functions in references, even if the stored function
+reads or modifies the reference it is stored in. While, with the
+appropriate extensions, one can reason about functions in references
+in our system, this particular kind of programs cannot be reasoned
+about. Honda, Yoshida and Berger prove a completeness result for their
+system. We have proved no such result. Their extended
+system~\cite{BergerHondaYoshida05aliasing} has the same advantages and
+drawbacks compared to ours, but additionally deals with aliasing
+situations.
+
+The Coq proof assistant~\cite{CoqManualV81}, in particular in
+combination with the Program extension~\cite{sozeau07icfp}, can be
+used to implement and prove arbitrary properties of purely functional
+programs, using dependent types. The appeal of that approach is that
+the only limit of expressiveness is the one of Coq. One can also do
+meta-reasoning about programs inside Coq and, at the end of the
+development, extract a certified implementation in \ocaml\ or
+Haskell. The confidence in programs proved in this way is very high,
+because in the end one obtains a Coq proof term that corresponds to
+the correctness of the program. This term has been checked by Coq's
+kernel. However, without extensions such as Ynot (see next paragraph),
+it is impossible to implement (and reason about) effectful
+computations. Another drawback of this approach is lack of automation.
+
+The Ynot System~\cite{Nanevski08Awkward} is an extension to the Coq
+proof assistant, capable of reasoning about imperative higher-order
+programs, including effectful functions as arguments, using a monad in
+which effectful computations can take place. It uses higher-order
+separation logic as the device to speak about modifications of the
+state. Ynot uses an (arguably less intuitive) monadic representation
+of effectful computations. Ynot is more expressive than our system and
+features modular reasoning (abstracting over the specification and
+effect of a function as argument) while being able to reason about
+aliasing situations thanks to separation logic.  On the other hand,
+Ynot shares the Coq's main weakness: lack of automation. While we
+haven't yet presented a platform to automatically discharge generated
+proof obligations, this seems easily feasible, along the same vein as
+Régis-Gianas and Pottier~\cite{regis-gianas-pottier-08}, who argue
+that first-order SMT solvers~\cite{RanTin-SMTLIB} are suitable even
+for higher-order proof obligations. They also present an encoding
+scheme to support their claim. Their practical results are
+promising. The Ynot system can not use this kind of automation because
+it uses separation logic. Automated provers for separation logic
+exist, but we are not aware of any attempts to use these tools in a
+higher-order setting.
+
+%TODO also say that an approach like Ynot ou Coq doesn't give any help
+%for the mechanical part of the proof.
+
+The Pangolin system, the implementation of the theoretical system
+of~\cite{regis-gianas-pottier-08}, can also be used to reason about
+purely functional programs. It is also one of the starting points of
+our work, and our purely functional fragment is basically the Pangolin
+system, although we removed algebraic data types for clarity of
+presentation. For this reason, we share the potential advantages (good
+automation, relatively simple system) and drawbacks (no
+meta-reasoning or observational equality, no machine-checked proof
+term). Pangolin cannot deal with side effects.
+
+Another line of work consists in giving a translation from an
+imperative to a functional language, with the aim of applying one of
+the techniques for purely functional programs to the
+translation. O'Hearn and Reynolds~\cite{ohearn-reynolds-00} present a
+translation from Algol with first class references and dynamic
+allocation to a linear $\lambda$-calculus. They impose an
+alias-avoiding restriction which is similar to ours. Charguéraud and
+Pottier~\cite{chargueraud-pottier-08} give a translation from Core ML
+with first-class references, dynamic allocation and aliasing to a
+functional language, using a very expressive type system with linear
+capabilities. Both systems handle much more expressive languages than
+ours. However, they do not describe a mechanism to obtain proof
+obligations, for example a \wpre-calculus. Although we use a simpler
+programming language, we present a complete cycle from imperative
+programs to proof obligations. We also claim that extending our
+language and our \wpre-calculus is simple, as long as aliasing remains
+excluded.  We leave these extensions for future work.
+
+Systems for verification of first-order programs like
+Why~\cite{Filliatre00a} or Spec\#~\cite{BarnettLS04} are the other
+starting points of this work. These systems generally deal very well
+with usual features of first-order programs, for example arrays, use
+SMT solvers to discharge proof obligations and strive for the best
+possible automation. We try to improve on this work by adding
+higher-order features, trying to maintain the degree of automation and
+ease of use.
 \section{Conclusion}
+\label{sec:conclusion}
 
 \paragraph{Future Work.}
 
@@ -575,9 +796,32 @@ first-order logic, when one replaces top-level {\em quantifications} of
 functional arguments and invariants by top-level {\em declarations}. Doing
 this translation manually, we have obtained first-order proof
 obligations for the {\tt Array.iter} function which are all discharged by
-SMT solvers. We don't know if such a transformation can always be carried out.
+SMT solvers. It is future work to find out if such a transformation can always
+be carried out.
 
-what about correspondence between $τ ->^\emptyset τ$ and $τ -> τ$?
+Currently, our effect system is quite limited. One possible extension is the
+addition of subtyping: an effectful function $f$ of type $τ ->^ετ'$ can be seen
+as a function of type $τ ->^{ε'}τ'$, if $ε\subseteq ε'$. In particular, such a
+subtyping operation should come at no cost for program verification; it should
+still come for free that $f$ does not modify the variables in $ε'\setminus ε$. It
+would also be interesting to see if an ``impure'' function of type $τ
+->^\emptyset τ'$ can be seen as pure function $τ -> τ'$ (and be used in the
+logic).
+
+Another possibility would be to modify the effect system itself to allow for
+aliasing. In the setting with the aliasing restriction, our regions actually
+become {\em singleton regions}, regions containing exactly one memory
+location. Other, more powerful effect systems allow for {\em group regions},
+with the possibility to temporarily {\em focus } on a particular memory cell
+in that region. We see no fundamental difficulty in adopting such an effect
+system, but haven't worked out the details.
+
+Finally, from a programmer's point of view, it would be nice to have more
+features in the programming language, such as recursive types and algebraic
+datatypes. As long as so defined types verify a {\em positivity condition},
+%TODO citation needed
+these extensions would be completely orthogonal to the weakest precondition
+calculus and the type and effect system used.
 
 \bibliographystyle{plain}
 \bibliography{biblio}{}
