@@ -138,8 +138,9 @@ let rec ast' env = function
   | I.TypeDef (g,t,x,e) ->
       let env', g = add_gen env g in
       let t = Misc.opt_map (ty env') t in
-      let env,x = add_tvar env x g t in
-      TypeDef (g, t, x, ast env e)
+      let env,nv = add_tvar env x g t in
+      Ty.add_tyvar x (nv,g);
+      TypeDef (g, t, nv, ast env e)
   | I.Param (t,e) -> Param (ty env t, effect env e)
   | I.For (dir,p,i,st,en,e) ->
       let d = var env dir in

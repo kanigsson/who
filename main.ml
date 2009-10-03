@@ -1,4 +1,4 @@
-open Regen
+open Translate
 
 let parse ?(prelude=false) buf close fn = 
   if prelude then Options.prelude := true else Options.prelude := false;
@@ -47,7 +47,7 @@ let _ =
     let p = Wp2.main p in
     maybe_abort Options.wp_only Ast.Recon.print p;
     Typing.formtyping p;
-    let p = Simplify.simplify p in
+    let p = Simplify.allsimplify p in
     maybe_abort Options.simplify_only Ast.Recon.print p;
     Typing.formtyping p;
     let s = Sectionize.section p in

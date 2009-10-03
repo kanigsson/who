@@ -19,6 +19,7 @@ let radd rv (r,e,c) = S.add rv r, e, c
 let eadd ev (r,e,c) = r, S.add ev e, c
 
 let rmem r (rs,_,_) = S.mem r rs
+let emem e (_,es,_) = S.mem e es
 
 let cadd r (rs,e,c) = rs,e,S.add r c
 
@@ -35,6 +36,9 @@ let rsmap f x =
   S.fold (fun x acc -> S.add (f x) acc) x S.empty
 
 let rmap f (r,e,c) = rsmap f r, e, rsmap f c
+
+let rfold f acc (r,_,_) = S.fold f r acc
+let efold f acc (_,e,_) = S.fold f e acc
 
 let from_cap_list l = S.empty,S.empty, 
   List.fold_left (fun acc x -> S.add x acc) S.empty l

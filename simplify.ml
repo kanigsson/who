@@ -3,14 +3,82 @@ open Const
 open Ast
 open Recon
 
+module NPair = struct
+  type t = Name.t * Name.t
+  let compare = Misc.pair_compare Name.compare Name.compare
+end
+
+module NPM = Map.Make(NPair)
+
 exception No_Match
+
+type env = 
+  { rtypes : Ty.t Name.M.t ; 
+    renames : Name.t NPM.t;
+    et : Ty.t;
+    l : Loc.loc
+  }
+let empty = 
+  { rtypes = Name.M.empty ; renames = NPM.empty; et = Ty.unit; l = Loc.dummy }
+
+
+let rtype_add n t env = 
+  { env with rtypes = Name.M.add n t env.rtypes }
+let rtype n env = 
+  try Name.M.find n env.rtypes
+  with Not_found -> 
+    failwith 
+    (Myformat.sprintf "type not found for region: %a@." 
+      Name.print n)
+
+let rec find_type rname x =
+(*   Myformat.printf "find_type: %a in %a@." Name.print rname print x; *)
+  match Ty.find_type_of_r rname x.t with
+  | Some x -> x
+  | None -> 
+      match x.v with
+      | Quant (_,t,b) ->
+          begin match Ty.find_type_of_r rname t with
+          | Some x -> x
+          | None -> 
+              let _,e = sopen b in
+              find_type rname e
+          end
+      | _ -> assert false
+
+
+let name_add n1 n2 n3 env =
+  Myformat.printf "adding (%a,%a) -> %a@." Name.print n1 Name.print n2 Name.print
+  n3;
+  { env with renames = NPM.add (n1,n2) n3 env.renames;
+(*
+    rtypes = 
+      try Name.M.add n3 (rtype n1 env) env.rtypes 
+      with Not_found -> env.rtypes  
+*)
+  }
+
+let getname n1 n2 env = 
+  try NPM.find (n1,n2) env.renames 
+  with Not_found -> 
+    failwith 
+    (Myformat.sprintf "name not found in state: %a, %a@." 
+      Name.print n1 Name.print n2)
+
+let build_var r v env = 
+  let nv = getname r v env in
+(*
+  Myformat.printf "from (%a, %a), building: %a@." 
+    Name.print r Name.print v Name.print nv;
+*)
+  svar nv (rtype r env) env.l
 
 type simpl = 
   | Nochange
   | Simple_change of Recon.t
   | Change_rerun of Recon.t
 
-let logic_simpl l t x =
+let logic_simpl _ l t x =
   if t = Ty.prop then
     match x with
     | App ({v = Var ({name = Some "~"},_)},t,_,_) ->
@@ -47,7 +115,7 @@ let logic_simpl l t x =
         | _ -> Nochange 
   else Nochange
 
-let unit_void l t = function
+let unit_void _ l t = function
   | Var _ when Ty.equal t Ty.unit -> Simple_change (void l)
   | Var ({name = Some "empty"},_) -> Nochange
   | Var _ ->
@@ -61,7 +129,7 @@ let unit_void l t = function
       let _,f = vopen b in Simple_change f
   | _ -> Nochange
 
-let boolean_prop l _ x = 
+let boolean_prop _ l _ x = 
   try match destruct_app2_var' x with
   | Some ({name = Some "="},_,t1,{v = (Const Btrue | Const Bfalse as n)}) ->
       begin match destruct_app2_var t1 with
@@ -83,7 +151,7 @@ let boolean_prop l _ x =
   | _ -> Nochange
   with No_Match -> Nochange
 
-let tuple_reduce _ _ = function
+let tuple_reduce _ _ _ = function
   | App ({ v = Var ({name=Some ("fst" | "pre" | "snd" | "post" as n) },_)},t,_,_) 
   ->
       begin match destruct_app2_var t with
@@ -93,7 +161,7 @@ let tuple_reduce _ _ = function
       end
   | _ -> Nochange
 
-let elim_eq_intro _ _ = function
+let elim_eq_intro _ _ _ = function
   | Quant (`FA,_,b) ->
       let x,f = vopen b in
       begin match destruct_app2_var f with
@@ -125,7 +193,7 @@ let elim_eq_intro _ _ = function
       end
   | _ -> Nochange
 
-let quant_over_true l _ x =
+let quant_over_true _ l _ x =
   let s = Simple_change (ptrue_ l) in
   match x with
   (* we can directly access the value here, because constants are not subject to
@@ -138,7 +206,7 @@ let quant_over_true l _ x =
   | TypeDef (_,_,_,{v = Const Ptrue}) -> s
   | _ -> Nochange
 
-let beta_reduce _ _ = function
+let beta_reduce _ _ _ = function
   | App ({v = PureFun (_, l)} ,f2,_,_) ->
       let x,body = vopen l in
       Change_rerun (subst x (fun _ -> f2.v) body)
@@ -146,10 +214,12 @@ let beta_reduce _ _ = function
       Nochange
   | Let (_,g,v,l,_) -> 
       let x,e = vopen l in
+(*       Myformat.printf "substing ∀[%a].%a in %a@." Ty.Generalize.print g
+ *       Name.print x print e; *)
       Change_rerun (polsubst g x v e)
   | _ -> Nochange
 
-let get_map l _ x = 
+let get_restrict_combine _ l _ x = 
   match destruct_get' x with
   | Some (_,r,_,map) -> 
       begin match destruct_restrict map with
@@ -157,14 +227,71 @@ let get_map l _ x =
       | None -> 
           begin match destruct_combine map with
           | Some (m1,_,m2,e2) -> 
-              let reg = match r.t with | Ty.C (Ty.Ref (reg,_)) -> reg 
-                                       | _ -> assert false in
-              let f = if NEffect.rmem reg e2 then get r m2 l else get r m1 l in
+              let f = 
+                if NEffect.rmem (Ty.get_reg r.t) e2 then get r m2 l 
+                else get r m1 l in
               Simple_change f
           | None -> Nochange
           end
       end
   | _ -> Nochange
+
+let get_map env _ _ x = 
+  match destruct_get' x with
+  | Some (_,r,_,{v = Var (v,_)}) -> 
+      let nf = build_var (Ty.get_reg r.t) v env in
+(*
+      Myformat.printf "found get(%a,%a), building %a@." print r Name.print v
+      print nf;
+*)
+      Simple_change nf
+  | _ -> Nochange
+
+type effrec = Name.t Name.M.t * Name.t Name.M.t
+
+let e_combine (r1,e1) (r2,e2) = 
+  Name.M.fold Name.M.add r2 r1,
+  Name.M.fold Name.M.add e2 e1
+
+let e_restrict d (r,e) = 
+  Name.M.fold (fun k v acc -> 
+    if NEffect.rmem k d then Name.M.add k v acc else acc) r Name.M.empty,
+  Name.M.fold (fun k v acc -> 
+    if NEffect.emem k d then Name.M.add k v acc else acc) e Name.M.empty
+
+let rec form2effrec t x = 
+  match destruct_combine' x with
+  | Some (m1,_,m2,_) -> e_combine (form2effrec m1.t m1.v) (form2effrec m2.t m2.v)
+  | None -> 
+      match destruct_restrict' x with
+      | Some (m,_,e2) -> e_restrict e2 (form2effrec m.t m.v)
+      | None ->
+          match x with
+          | Var (s,_) -> 
+              let d = Ty.domain t in
+              NEffect.rfold (fun k acc -> Name.M.add k s acc) Name.M.empty d,
+              NEffect.efold (fun k acc -> Name.M.add k s acc) Name.M.empty d 
+          | _ -> 
+              Myformat.printf "strange term: %a@." print' x;
+              assert false
+
+let effref2form env (r,_) =
+  (* TODO effect vars *)
+  Name.M.fold (fun r s acc ->
+    app 
+      (app2 (pre_defvar "kset" ([rtype r env],[],[]) env.l)
+      (svar r (Ty.spredef_var "key") env.l) 
+      (build_var r s env) env.l) 
+      acc env.l) r (spre_defvar "kempty" env.l )
+
+
+
+let replace_map env _ t x =
+  if Ty.is_map t then
+    let m = form2effrec t x in
+    let f = effref2form env m in
+    Simple_change f
+  else Nochange
 
 let simplifiers =
   [
@@ -175,44 +302,92 @@ let simplifiers =
     unit_void;
     quant_over_true;
     boolean_prop;
-    get_map;
+    get_restrict_combine
   ]
 
-let exhaust f = 
+let simplify_maps = 
+  [ 
+    get_map; 
+    replace_map;
+  ]
+
+let exhaust simplifiers env f = 
   let rec aux b f = function
     | [] when b -> Simple_change f
     | [] -> Nochange
     | simpl :: xs ->
-        match simpl f.loc f.t f.v with
+        match simpl env f.loc f.t f.v with
         | Change_rerun f -> Change_rerun f
         | Simple_change f -> aux true f simplifiers
         | Nochange -> aux b f xs in
   aux false f simplifiers
 
-let rec simplify f = 
-(*   Format.printf "simplify: %a@." print f; *)
-  let f = 
-    { f with v = 
-    match f.v with
-    | (Const _  | Var _ | Logic _ | Axiom _ ) -> f.v
-    | App (f1,f2,k,c) -> App (simplify f1, simplify f2, k, c)
-    | Gen (g,t) -> Gen (g, simplify t)
-    | Let (p, g,e1,b,r) ->
-        let x,e2 = if p then sopen b else vopen b in
-        Let (p, g, simplify e1, close x (simplify e2),r)
-    | PureFun (t,b) ->
-        let x,e = vopen b in
-        PureFun (t, close x (simplify e))
-    | Quant (k,t,b) -> 
-        let x,e = vopen b in
-        Quant (k,t, close x (simplify e))
-    | Ite (e1,e2,e3) -> Ite (simplify e1, simplify e2, simplify e3)
-    | TypeDef (g,t,x,e) -> TypeDef (g,t,x,simplify e) 
-    | Section (n,f,e) -> Section (n,f,simplify e)
-    | EndSec e -> EndSec (simplify e)
-    | Lam _ | Annot _ | Param _ | For _ | LetReg _ -> assert false } in
-  match exhaust f with
-  | Nochange -> f
-  | Simple_change f -> f
-  | Change_rerun f -> simplify f
+let add_effect env x d = 
+  let env,rl = 
+    NEffect.rfold (fun r (env,rl) -> 
+      let n = Name.new_name r in
+      name_add r x n env, (n,rtype r env)::rl) (env,[]) d in
+  let env, el = 
+    NEffect.efold (fun e (env,el) -> 
+      let n = Name.new_name e in
+      name_add e x n env, n::el) (env,[]) d in
+  env, rl,el
 
+let simplify ~genbind ~(varbind : 'a -> [`FA | `LAM | `EX] -> 'b) simplifiers f = 
+(*   Format.printf "simplify: %a@." print f; *)
+  let rec simplify env f = 
+    let l = f.loc in
+    let env = { env with l = f.loc; et = f.t } in
+    let f = 
+      match f.v with
+      | (Const _  | Var _ | Logic _ | Axiom _ ) -> f
+      | App (f1,f2,k,c) -> 
+          app ~kind:k ~cap:c (simplify env f1) (simplify env f2) l
+      | Gen (g,t) -> 
+          let env = genbind g env t in
+          gen g (simplify env t) l
+      | Let (p, g ,e1,b,r) ->
+          let x,e2 = if p then sopen b else vopen b in
+          let env' = genbind g env e1 in
+          let_ ~prelude:p g (simplify env' e1) x (simplify env e2) r l
+      | PureFun (t,b) ->
+          let x,e = vopen b in
+          varbind env `LAM x t (fun env -> simplify env e) l
+      | Quant (k,t,b) -> 
+          let x,e = vopen b in
+          varbind env (k :> [`EX | `FA | `LAM ]) x t (fun env -> simplify env e) l
+      | Ite (e1,e2,e3) -> 
+          ite (simplify env e1) (simplify env e2) (simplify env e3) l
+      | TypeDef (g,t,x,e) -> 
+          typedef g t x (simplify env e) l
+      | Section (n,f,e) -> 
+          section n f (simplify env e) l
+      | EndSec e -> endsec (simplify env e) l 
+      | Lam _ | Annot _ | Param _ | For _ | LetReg _ -> assert false in
+    match exhaust simplifiers env f with
+    | Nochange -> f
+    | Simple_change f -> f
+    | Change_rerun f -> simplify env f
+  in
+  simplify empty f
+
+let allsimplify f =
+  let f = simplify (fun _ env _ -> env) 
+                   (fun env k x t e l -> aquant k x t (e env) l) simplifiers f in
+  Myformat.printf "=============@.%a@.=================@." print f;
+  let f = 
+    simplify 
+      (fun (_,rl,_) env t -> 
+        List.fold_left (fun env r -> rtype_add r (find_type r t) env) env rl)
+      (fun env k x t e l ->
+        if Ty.is_map t then
+          let env, rl,el = add_effect env x (Ty.domain t) in
+          let e = e env in
+          let f = List.fold_left (fun acc (x,t) -> aquant k x t acc l) e rl in
+          List.fold_left (fun acc e -> 
+            aquant k e (Ty.spredef_var "kmap") acc l) f el
+        else aquant k x t (e env) l)
+        simplify_maps f 
+  in
+  Myformat.printf "<<<<<<<<<<<<<@.%a@.<<<<<<<<<<<<<<<<<@." print f;
+  f

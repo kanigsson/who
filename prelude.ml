@@ -50,6 +50,12 @@ logic combine [||e1 e2] : <|e1> -> <|e2> -> <|e1 e2>
 logic restrict [||e1 e2] : <|e1> -> <|e2>
 logic empty : <|>
 
+type kmap
+type key
+logic kcombine : kmap -> kmap -> kmap
+logic kset ['a||] : key -> 'a -> kmap -> kmap
+logic kempty : kmap
+
 let pre ['a 'b||]  (x : 'a * 'b) = fst x
 let post ['a 'b||] (x : 'a * 'b) = snd x
 

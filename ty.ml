@@ -83,6 +83,10 @@ let domain = function
   | C (Map e) -> e
   | _ -> assert false
 
+let is_map = function
+  | C (Map _) -> true
+  | _ -> false
+
 let to_logic_type t = 
   let rec aux' = function
     | (Var _ | Const _ | Map _) as t -> C t
@@ -99,7 +103,12 @@ let to_logic_type t =
   aux t 
 
 let build_tvar_map el effl =
+  try
   List.fold_left2 (fun acc k v -> Name.M.add k v acc) Name.M.empty el effl
+  with Invalid_argument _ ->
+    failwith (Myformat.sprintf 
+      "not the right number of type arguments: expecting %a but %a is
+      given.@." Name.print_list el (print_list Myformat.comma) effl)
 
 let tlsubst xl tl target = 
   let map = build_tvar_map xl tl in
@@ -117,9 +126,18 @@ let tlsubst xl tl target =
   aux target
 
 let build_rvar_map el effl =
-  List.fold_left2 (fun acc k v -> Name.M.add k v acc) Name.M.empty el effl
+  try
+    List.fold_left2 (fun acc k v -> Name.M.add k v acc) Name.M.empty el effl
+  with Invalid_argument _ ->
+    failwith (Myformat.sprintf 
+      "not the right number of region arguments: expecting %a but %a is
+      given.@." Name.print_list el Name.print_list effl)
 
 let rlsubst rvl rl target = 
+(*
+  Myformat.printf "building type %a[%a |-> %a]@."
+  print target Name.print_list rvl Name.print_list rl;
+*)
   let map = build_rvar_map rvl rl in
   let rec aux' = function
     | (Var _ | Const _) as x -> x
@@ -235,6 +253,13 @@ let get_predef_var s =
   try Hashtbl.find h s
   with Not_found -> failwith ("predef_var: " ^ s)
 
+let ht = Hashtbl.create 17
+
+let add_tyvar s x = Hashtbl.add ht s x
+let get_predef_tyvar s = 
+  try Hashtbl.find ht s
+  with Not_found -> failwith ("predef_tyvar: " ^ s)
+
 let iter_vars f = Hashtbl.iter f h
 
 (*
@@ -246,3 +271,34 @@ let map ~tyvarfun ~effectfun ~rvarfun t =
   | `Var v -> tyvarfun v
   | `App (v,tl) -> `App (v, List.map r tl)
 *)
+
+exception Found of t option
+
+let find_type_of_r name x = 
+(*   Myformat.printf "finding %a in %a@." Name.print name print x; *)
+  let rec aux' = function
+    | Var _ | Const _ | Map _ -> None
+    | Ref (n,t) -> if Name.equal n name then Some t else aux t
+    | Tuple (t1,t2) | Arrow (t1,t2,_) | PureArr (t1,t2) -> 
+        begin match aux t1 with
+        | (Some _) as r -> r
+        | None -> aux t2
+        end
+    | App (_,(tl,_,_)) ->
+        try List.iter
+          (fun t -> 
+            match aux t with
+            | (Some _) as r -> raise (Found r)
+            | None -> ()
+          ) tl; None
+        with Found t -> t
+  and aux (C t) = aux' t in
+  aux x
+
+let spredef_var s = 
+  let n,_ = get_predef_tyvar s in
+  C (App (n, ([],[],[])))
+
+let get_reg = function
+  | C (Ref (reg,_)) -> reg 
+  | _ -> assert false

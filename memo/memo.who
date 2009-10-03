@@ -1,18 +1,18 @@
-type map ['a 'b||]
-logic mem ['a 'b||]: 'a -> ('a,'b) map -> bool
-logic get ['a 'b||]: 'a -> ('a,'b) map -> 'b
-logic set ['a 'b||]: 'a -> 'b -> ('a,'b) map -> ('a,'b) map
+type hmap ['a 'b||]
+logic hmem ['a 'b||]: 'a -> ('a,'b) hmap -> bool
+logic hget ['a 'b||]: 'a -> ('a,'b) hmap -> 'b
+logic hset ['a 'b||]: 'a -> 'b -> ('a,'b) hmap -> ('a,'b) hmap
 
-let stores (f0 : int -> int) (m : (int,int) map) =
-  forall (x : int). mem x m = true -> get x m = f0 x
+let stores (f0 : int -> int) (m : (int,int) hmap) =
+  forall (x : int). hmem x m = true -> hget x m = f0 x
 
-let memo [|t|] (table : ref(t,(int,int) map)) (f0 : int -> int) 
+let memo [|t|] (table : ref(t,(int,int) hmap)) (f0 : int -> int) 
       (f : int ->{|} int) (x : int) = 
   {pre f x empty /\ stores f0 (!!table)}
-  if mem x (!table) then get x (!table)
+  if hmem x (!table) then hget x (!table)
   else
     let z = f x in
-    (table := set x z (!table));
+    (table := hset x z (!table));
     z
   {r : r = f0 x}
 

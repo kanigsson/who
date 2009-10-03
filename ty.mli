@@ -35,6 +35,7 @@ val arg : t -> t
 val result : t -> t
 val latent_effect : t -> NEffect.t
 val domain : t -> NEffect.t
+val is_map : t -> bool
 
 val to_logic_type : t -> t
 
@@ -72,4 +73,10 @@ val forty : Generalize.t * t
 
 val add_var : string -> (Name.t * Generalize.t * t) -> unit
 val get_predef_var : string -> Name.t * Generalize.t * t
-val iter_vars : (string -> (Name.t * Generalize.t * t) -> unit) -> unit
+val add_tyvar : string -> (Name.t * Generalize.t) -> unit
+val get_predef_tyvar : string -> Name.t * Generalize.t
+
+val find_type_of_r : Name.t -> t -> t option
+
+val spredef_var : string -> t
+val get_reg : t -> Name.t

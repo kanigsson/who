@@ -34,19 +34,32 @@ and isrec = Rec of Ty.t | NoRec
 let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f = 
   let rec aux' = function
     | (Const _ | Param _ ) as t -> t
-    | Logic t -> Logic (tyfun t)
-    | Var (v,i) -> varfun v (Inst.map tyfun rvarfun effectfun i)
+    | Logic t -> 
+(*         Myformat.printf "var@."; *)
+        Logic (tyfun t)
+    | Var (v,i) -> 
+(*
+        Myformat.printf "var %a %a@." Name.print v (Inst.print Ty.print
+        Name.print NEffect.print) i;
+*)
+        varfun v (Inst.map tyfun rvarfun effectfun i)
     | App (t1,t2,p,_) -> App (aux t1, aux t2, p, [])
     | Annot (e,t) -> Annot (aux e, tyfun t)
-    | Lam (x,t,p,e,q) -> Lam (x,tyfun t, pre p, aux e, post q)
+    | Lam (x,t,p,e,q) -> 
+(*         Myformat.printf "lam@."; *)
+        Lam (x,tyfun t, pre p, aux e, post q)
     | LetReg (l,e) -> LetReg (l,aux e)
     | For _ -> assert false
     | Let (p,g,e1,b,r) -> Let (p,g,aux e1,varbindfun b, r)
-    | PureFun (t,b) -> PureFun (tyfun t, varbindfun b)
+    | PureFun (t,b) -> 
+(*         Myformat.printf "purefun@."; *)
+        PureFun (tyfun t, varbindfun b)
     | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
     | Axiom e -> Axiom (aux e)
     | TypeDef (g,t,x,e) -> TypeDef (g,t,x,aux e)
-    | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
+    | Quant (k,t,b) -> 
+(*         Myformat.printf "quant@."; *)
+        Quant (k,tyfun t,varbindfun b)
     | Gen (g,e) -> Gen (g,aux e)
     | Section (n,f,e) -> Section (n,f,aux e)
     | EndSec e -> EndSec (aux e)
@@ -185,6 +198,9 @@ module Recon = struct
   let print fmt t = 
     print true Ty.print Name.print NEffect.print sopen fmt t
 
+  let print' fmt t = 
+    print fmt {v = t; t = Ty.unit; e = NEffect.empty; loc = Loc.dummy }
+
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
   let mk_val v t loc = { v = v; t = t; e = NEffect.empty; loc = loc }
 
@@ -306,6 +322,11 @@ module Recon = struct
     | Const Ptrue -> f
     | _ -> mk (Quant (k,t,Name.close_bind x f)) f.t f.e loc
 
+  let aquant k x t f loc = 
+    match k with
+    | `LAM -> plam x t f loc
+    | (`FA | `EX) as k -> squant k x t f loc
+
   let gen g e l = 
     match e.v with
     | Const Ptrue -> e
@@ -354,6 +375,10 @@ module Recon = struct
     let d1 = domain t1 and d2 = domain t2 in
     if NEffect.equal d1 d2 then t2 
     else app2 (pre_defvar "combine" ([],[],[d1;d2]) l) t1 t2 l
+
+  let set r v m l = 
+    let d = domain m in
+    app2 (pre_defvar "set" ([v.t],[r],[d]) l) v m l
 
   let restrict eff t l =
     let d = domain t in
@@ -436,6 +461,10 @@ let tsubst tvl tl e =
                  e
 
 let rsubst rvl rl e = 
+(*
+  Myformat.printf "rsubsting: [%a|->%a]@." Name.print_list rvl Name.print_list
+  rl;
+*)
   open_close_map ~varfun:(fun v i -> Var (v,i)) 
                  ~tyfun:(Ty.rlsubst rvl rl) 
                  ~rvarfun:(Ty.rsubst rvl rl)
