@@ -268,3 +268,87 @@ structures on top of Finger Trees in an elegant way.},
   year		= 1986
 }
 
+@INPROCEEDINGS{chlipalaicfp09,
+AUTHOR  = {Adam Chlipala and Gregory Malecha and Greg Morrisett and Avraham
+  Shinnar and Ryan Wisnesky},
+TITLE   = {Effective Interactive Proofs for Higher-Order Imperative Programs} ,
+EDITOR  = {Andrew Tolmach},
+BOOKTITLE = {14th International Conference on Functional Programming,
+             Edinburgh, Scotland, Proceedings},
+MONTH   = SEP,
+YEAR    = 2009,
+PUBLISHER = {ACM Press},
+}
+
+@inproceedings{paulintlca93,
+  author = {Christine Paulin-Mohring},
+  booktitle = {Proceedings of the conference Typed Lambda Calculi and Applications},
+  editor = {M. Bezem and J.-F. Groote},
+  number = 664,
+  series = {Lecture Notes in Computer Science},
+  title = {{Inductive Definitions in the System {Coq} - Rules and Properties}},
+  year = 1993,
+  topics = {team}
+}
+
+@inproceedings{Krishnaswami06,
+ author = {Krishnaswami,, Neelakantan R.},
+ title = {Reasoning about iterators with separation logic},
+ booktitle = {SAVCBS '06: Proceedings of the 2006 conference on Specification and verification of component-based systems},
+ year = {2006},
+ pages = {83--86},
+ location = {Portland, Oregon},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ }
+
+@inproceedings{reynolds78popl,
+author = "Reynolds, John C.",
+title = "Syntactic Control of Interference",
+booktitle = "Conference Record of the Fifth Annual ACM Symposium on Principles of Programming Languages",
+publisher = "ACM",
+address = "New York",
+place = "Tucson, Arizona",
+dates = "January 23--25",
+year = "1978",
+pages = "39--46",
+reprint = "Reprinted in \authorcite{O'Hearn and Tennent} \crosscite[vol.~1, pages~273--286]{OHEARN97}",
+filename = "syncontrol",
+abstract = "In programming languages which permit both assignment and procedures,
+distinct identifiers can represent data structures which share storage or
+procedures with interfering side effects. In addition to being a direct
+source of programming errors, this phenomenon, which we call interference,
+can impact type structure and parallelism. We show how to eliminate these
+difficulties by imposing syntactic restrictions, without prohibiting the
+kind of constructive interference which occurs with higher-order procedures
+or Simula classes. The basic idea is to prohibit interference between
+identifiers, but to permit interference among components of collections
+named by single identifiers.",
+checked = "17 June 1988",
+updated = "10 May 1997"}
+
+@article{talpin94taed,
+ author = {Jean-Pierre Talpin and Pierre Jouvelot},
+ title = {The type and effect discipline},
+ journal = {Inf. Comput.},
+ volume = {111},
+ number = {2},
+ year = {1994},
+ pages = {245--296},
+ publisher = {Academic Press, Inc.},
+ address = {Duluth, MN, USA},
+ mycomments = {
+    Effect analysis of ML programs with references.
+    Instead of variable names, they keep track of variables using regions:
+    τ ref -> τ ref_ρ
+    Regions represent may-alias information
+    Effects additionally may be effect variables, to permit higher order
+    To be able to type any ML program, they introduce region and effect
+    polymorphism (just like type polymorphism)
+    Originally invented to determine possible parallelism and to
+    conservatively type references in ML (other than the imperative and
+        applicative type variables of Tofte)
+    an inference algorithm that uses standard robinson unification is also
+    given.
+ }
+}

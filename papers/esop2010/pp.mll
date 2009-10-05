@@ -66,6 +66,7 @@ let newline = '\n'
 let latex_symbol = 
   '\\' | '#' | '$' | ':' | '_' | '%' | '~' | ';' | '&' | '^' 
 let ident = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '_' '0'-'9' '-' '\'']* 
+let anychar = ([ ^ 't'] | [ 't'])
 
 rule pp = parse
   | "\\begin{ocaml}" space* '\n'?
@@ -209,6 +210,8 @@ and who = parse
   | "*"  { printf "\\ensuremath{\\times}"; who lexbuf }
   | "[[" {printf "\\ensuremath{\\lceil}"; who lexbuf}
   | "]]" {printf "\\ensuremath{\\rceil}"; who lexbuf}
+  | "{{{" (( [^ '}'] | anychar [^ '}'] | anychar anychar [^ '}'])* as t) "}}}"
+    { printf "%s" t; who lexbuf }
   | "(*" 
       { 
 	printf "{";
