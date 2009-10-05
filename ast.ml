@@ -50,16 +50,16 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
         Lam (x,tyfun t, pre p, aux e, post q)
     | LetReg (l,e) -> LetReg (l,aux e)
     | For _ -> assert false
-    | Let (p,g,e1,b,r) -> Let (p,g,aux e1,varbindfun b, r)
+    | Let (p,g,e1,b,r) -> Let (p,g,aux e1,varbindfun p b, r)
     | PureFun (t,b) -> 
 (*         Myformat.printf "purefun@."; *)
-        PureFun (tyfun t, varbindfun b)
+        PureFun (tyfun t, varbindfun false b)
     | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
     | Axiom e -> Axiom (aux e)
     | TypeDef (g,t,x,e) -> TypeDef (g,t,x,aux e)
     | Quant (k,t,b) -> 
 (*         Myformat.printf "quant@."; *)
-        Quant (k,tyfun t,varbindfun b)
+        Quant (k,tyfun t,varbindfun false b)
     | Gen (g,e) -> Gen (g,aux e)
     | Section (n,f,e) -> Section (n,f,aux e)
     | EndSec e -> EndSec (aux e)
@@ -75,7 +75,7 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
 
 let refresh s t =
   map ~varfun:(fun x i -> Var (Name.refresh s x, i))
-    ~varbindfun:(Name.refresh_bind s) 
+    ~varbindfun:(fun _ -> Name.refresh_bind s) 
     ~tyfun:Misc.id 
     ~rvarfun:Misc.id
     ~effectfun:Misc.id t
@@ -207,7 +207,11 @@ module Recon = struct
   let app ?(kind=`Prefix) ?(cap=[]) t1 t2 loc = 
 (*     Format.printf "termapp: %a and %a@." print t1 print t2; *)
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
-    assert (Ty.sequal (Ty.arg t1.t) t2.t);
+    if not (Ty.sequal (Ty.arg t1.t) t2.t) then begin
+      Myformat.printf "type mismatch on application: function %a has type %a,
+      and argument %a has type %a@." print t1 Ty.print t1.t 
+      print t2 Ty.print t2.t ; exit 1 end
+    else
     mk (App (t1,t2,kind,cap)) t (NEffect.union t1.e (NEffect.union t2.e e)) loc
 
 
@@ -220,6 +224,9 @@ module Recon = struct
     t (Inst.print Ty.print Name.print NEffect.print) inst;
 *)
     mk_val (Var (s,inst)) (Ty.allsubst g inst t) 
+
+  let var_i s inst t =
+    mk_val (Var (s,inst)) t
 
   module T = Ty
   let v = T.var
@@ -448,7 +455,8 @@ and equal a b = equal' a.v b.v
 let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
   let rec aux t = 
     map ~varfun 
-      ~varbindfun:(fun b -> let x,f = vopen b in close x (aux f))
+      ~varbindfun:(fun p b -> 
+        let x,f = if p then sopen b else vopen b in close x (aux f))
       ~tyfun ~rvarfun ~effectfun t
   in
   aux t
@@ -509,9 +517,21 @@ let destruct_get' x =
       Some (t,r,e,map)
   | _ -> None
 
+let destruct_kget' x = 
+  match destruct_app2_var' x with
+  | Some ({name = Some "kget"}, ([t],[_],[e]), r,map) -> 
+      Some (t,r,e,map)
+  | _ -> None
+
 let destruct_restrict' x = 
   match destruct_app' x with
   | Some ({v = Var ({name = Some "restrict"},([],[],[e1;e2]))}, map) ->
+      Some (map,e1,e2)
+  | _ -> None
+
+let destruct_krestrict' x = 
+  match destruct_app' x with
+  | Some ({v = Var ({name = Some "krestrict"},([],[],[e1;e2]))}, map) ->
       Some (map,e1,e2)
   | _ -> None
 
@@ -521,11 +541,20 @@ let destruct_combine' x =
       Some (m1,e1,m2,e2)
   | _ -> None
 
+let destruct_kcombine' x = 
+  match destruct_app2_var' x with
+  | Some ({name = Some "kcombine"},([],[],[e1;e2]), m1,m2) ->
+      Some (m1,e1,m2,e2)
+  | _ -> None
+
 let destruct_app2_var x = destruct_app2_var' x.v
 let destruct_app x = destruct_app' x.v
 let destruct_get x = destruct_get' x.v
+let destruct_kget x = destruct_kget' x.v
 let destruct_restrict x = destruct_restrict' x.v
 let destruct_combine x = destruct_combine' x.v
+let destruct_krestrict x = destruct_krestrict' x.v
+let destruct_kcombine x = destruct_kcombine' x.v
 
 
 

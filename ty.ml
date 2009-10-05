@@ -302,3 +302,43 @@ let spredef_var s =
 let get_reg = function
   | C (Ref (reg,_)) -> reg 
   | _ -> assert false
+
+type 'a ch = | UnChanged of 'a | Changed of 'a
+
+let ch_combine f o1 o2 =
+  match o1,o2 with
+  | UnChanged x, UnChanged y -> UnChanged (f x y)
+  | UnChanged x, Changed y | Changed x, UnChanged y| Changed x, Changed y -> 
+      Changed (f x y)
+
+let ch_map f o = 
+  match o with
+  | UnChanged x -> UnChanged (f x)
+  | Changed x -> Changed (f x)
+
+let elim_map t =
+  let rec aux = function
+    | (C (Var _ | Const _ )) as t -> UnChanged t
+    | C (Map _) -> Changed (spredef_var "kmap")
+    | C (Tuple (t1,t2)) -> ch_combine tuple (aux t1) (aux t2)
+    | C (PureArr (t1,t2)) -> ch_combine parr (aux t1) (aux t2)
+    | C (Arrow (t1,t2,e)) -> 
+        ch_combine (fun t1 t2 -> arrow t1 t2 e) (aux t1) (aux t2)
+    | C (Ref (r,t)) -> ch_map (fun t -> ref_ r t) (aux t)
+    | _ -> assert false
+  in
+  aux t
+(*     | C (App (x,i)) ->  *)
+
+
+let selim_map t = 
+  let rec aux' = function
+    | (Var _ | Const _) as t -> C t
+    | Map _ -> spredef_var "kmap"
+    | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
+    | PureArr (t1,t2) -> parr (aux t1) (aux t2)    
+    | Arrow (t1,t2,e) -> arrow (aux t1) (aux t2) e
+    | Ref (r,t) -> ref_ r (aux t)
+    | App (v,i) -> app v (Inst.map aux Misc.id Misc.id i)
+  and aux (C t) = aux' t in
+  aux t

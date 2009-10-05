@@ -237,7 +237,7 @@ let get_restrict_combine _ l _ x =
   | _ -> Nochange
 
 let get_map env _ _ x = 
-  match destruct_get' x with
+  match destruct_kget' x with
   | Some (_,r,_,{v = Var (v,_)}) -> 
       let nf = build_var (Ty.get_reg r.t) v env in
 (*
@@ -260,10 +260,10 @@ let e_restrict d (r,e) =
     if NEffect.emem k d then Name.M.add k v acc else acc) e Name.M.empty
 
 let rec form2effrec t x = 
-  match destruct_combine' x with
+  match destruct_kcombine' x with
   | Some (m1,_,m2,_) -> e_combine (form2effrec m1.t m1.v) (form2effrec m2.t m2.v)
   | None -> 
-      match destruct_restrict' x with
+      match destruct_krestrict' x with
       | Some (m,_,e2) -> e_restrict e2 (form2effrec m.t m.v)
       | None ->
           match x with
@@ -275,7 +275,7 @@ let rec form2effrec t x =
               Myformat.printf "strange term: %a@." print' x;
               assert false
 
-let effref2form env (r,_) =
+let effrec2form env (r,_) =
   (* TODO effect vars *)
   Name.M.fold (fun r s acc ->
     app 
@@ -289,9 +289,19 @@ let effref2form env (r,_) =
 let replace_map env _ t x =
   if Ty.is_map t then
     let m = form2effrec t x in
-    let f = effref2form env m in
+    let f = effrec2form env m in
     Simple_change f
   else Nochange
+
+let replace_bang _ l _ x = 
+  match x with
+  | Var ({ name = Some "!!"},(t,r,_)) -> 
+      Simple_change (pre_defvar "kget" (t,r,[]) l)
+  | Var ({ name = Some "restrict"},(_,_,e)) -> 
+      Simple_change (pre_defvar "krestrict" ([],[],e) l)
+  | Var ({ name = Some "combine"},(_,_,e)) -> 
+      Simple_change (pre_defvar "kcombine" ([],[],e) l)
+  | _ -> Nochange
 
 let simplifiers =
   [
@@ -307,8 +317,9 @@ let simplifiers =
 
 let simplify_maps = 
   [ 
-    get_map; 
     replace_map;
+    replace_bang;
+    get_map; 
   ]
 
 let exhaust simplifiers env f = 
@@ -333,14 +344,19 @@ let add_effect env x d =
       name_add e x n env, n::el) (env,[]) d in
   env, rl,el
 
-let simplify ~genbind ~(varbind : 'a -> [`FA | `LAM | `EX] -> 'b) simplifiers f = 
+let simplify ~genbind 
+             ~(varbind : 'a -> [`FA | `LAM | `EX] -> 'b) 
+             ~tyfun simplifiers f = 
 (*   Format.printf "simplify: %a@." print f; *)
   let rec simplify env f = 
     let l = f.loc in
     let env = { env with l = f.loc; et = f.t } in
     let f = 
       match f.v with
-      | (Const _  | Var _ | Logic _ | Axiom _ ) -> f
+      | (Const _  | Axiom _ ) -> f
+      | Logic t -> logic (tyfun t) l
+      | Var (v,i) -> 
+          var_i v (Inst.map tyfun Misc.id Misc.id i) f.t l
       | App (f1,f2,k,c) -> 
           app ~kind:k ~cap:c (simplify env f1) (simplify env f2) l
       | Gen (g,t) -> 
@@ -348,6 +364,7 @@ let simplify ~genbind ~(varbind : 'a -> [`FA | `LAM | `EX] -> 'b) simplifiers f 
           gen g (simplify env t) l
       | Let (p, g ,e1,b,r) ->
           let x,e2 = if p then sopen b else vopen b in
+          Myformat.printf "let %b: %a@." p Name.print x;
           let env' = genbind g env e1 in
           let_ ~prelude:p g (simplify env' e1) x (simplify env e2) r l
       | PureFun (t,b) ->
@@ -364,29 +381,34 @@ let simplify ~genbind ~(varbind : 'a -> [`FA | `LAM | `EX] -> 'b) simplifiers f 
           section n f (simplify env e) l
       | EndSec e -> endsec (simplify env e) l 
       | Lam _ | Annot _ | Param _ | For _ | LetReg _ -> assert false in
-    match exhaust simplifiers env f with
-    | Nochange -> f
-    | Simple_change f -> f
-    | Change_rerun f -> simplify env f
+    let f =
+      match exhaust simplifiers env f with
+      | Nochange -> f
+      | Simple_change f -> f
+      | Change_rerun f -> simplify env f in
+    let f = {f with t = tyfun f.t} in
+    f
   in
   simplify empty f
 
 let allsimplify f =
-  let f = simplify (fun _ env _ -> env) 
-                   (fun env k x t e l -> aquant k x t (e env) l) simplifiers f in
+  let f = simplify ~genbind:(fun _ env _ -> env) 
+                   ~varbind:(fun env k x t e l -> aquant k x t (e env) l) 
+                   ~tyfun:Misc.id simplifiers f in
   Myformat.printf "=============@.%a@.=================@." print f;
   let f = 
     simplify 
-      (fun (_,rl,_) env t -> 
+      ~genbind:(fun (_,rl,_) env t -> 
         List.fold_left (fun env r -> rtype_add r (find_type r t) env) env rl)
-      (fun env k x t e l ->
+      ~varbind:(fun env k x t e l ->
         if Ty.is_map t then
           let env, rl,el = add_effect env x (Ty.domain t) in
           let e = e env in
           let f = List.fold_left (fun acc (x,t) -> aquant k x t acc l) e rl in
           List.fold_left (fun acc e -> 
             aquant k e (Ty.spredef_var "kmap") acc l) f el
-        else aquant k x t (e env) l)
+        else aquant k x (Ty.selim_map t) (e env) l)
+      ~tyfun:Ty.selim_map
         simplify_maps f 
   in
   Myformat.printf "<<<<<<<<<<<<<@.%a@.<<<<<<<<<<<<<<<<<@." print f;
