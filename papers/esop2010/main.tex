@@ -37,7 +37,7 @@
 \newcommand{\ceil}[1]{\lceil #1 \rceil}
 
 \begin{document}
-\title{\mbox{Specifying Imperative Higher-Order Programs}}
+\title{\mbox{Verifying Imperative Higher-Order Programs}}
 
 \author{Johannes Kanig\inst{1,}\inst{2} \and Jean-Christophe
 Fill\^atre\inst{2,}\inst{1}}
@@ -232,11 +232,6 @@ the {\tt iter} function. It is given~Fig.~\ref{fig:iter}, in the input syntax
 of our prototype \who. There are a few syntactic differences with \ocaml, in
 particular for arrays.
 
-%Here, assuming we model the array in the programming language by a reference
-%to a functional array, with functions {\tt length} and {\tt get} with the
-%obvious meaning. Also, in the logic we use a derefence operator {\tt !!}
-%instead of the usual {\tt !}. 
-
 \begin{figure}[tbp]
 \begin{who}[lines]
 let iter [e] (a : 'a farray ref) (inv : <e> -> int ->  prop)
@@ -278,29 +273,28 @@ sugar, this could be expressed much more concisely using a Hoare triple:
   { inv cur i } f (get i !!a) { inv cur (i+1) } 
 \end{who}
 
-% TODO rewrite
-%The {\tt iter} function and its specification raise a question: is the
-%specification correct if {\tt f} modifies the array {\tt a}, which is required
-%for the good behavior of {\tt iter}? The answer is clearly no; if {\tt f}
-%messes up the contents of {\tt a}, {\tt iter} may not actually maintain the
-%invariant.  This is an instance of the {\em aliasing problem} (see, for
-%example, \cite{reynolds78popl}) and it is well known that standard Hoare logic
-%does not support aliasing. In this paper we make the same choice and disallow
-%aliasing in the programming language we introduce. Under this assumption, the
-%specification we gave is correct. 
-%
-%Entirely excluding aliasing renders our system inappropriate for
-%reasoning about shared mutable structures. However, it is interesting
-%to see that our alias exclusion restriction, in many cases,
-%corresponds to a natural condition imposed on higher-order functions
-%that operate on some data structure. It is a common
-%requirement~\cite{Nanevski08Awkward,Krishnaswami06} for iteration
-%functions, for example, that the functional argument must not modify
-%the structure to be iterated on. In our system, this fact follows from
-%the restriction on effect instantiations, as will be seen in
-%section~\ref{sec:syntax}. In the example, the array {\tt a}
-%of the iterating function {\tt iter} must not be modified by its
-%argument.
+The specification of {\tt iter} is correct, but it will be difficult to prove
+in general, because it is not clear wether {\tt f} modifies the array or not,
+or more precisely, if the effect variable {\tt e} does contain {\tt a} or not.
+This is an instance of the {\em aliasing problem} (see, for
+example, \cite{reynolds78popl}) and it is well known that standard Hoare logic
+is not well-suited for programs with aliasing. Without special techniques (for
+example {\em separation logic}), a large number of equalities and disequalities
+are needed to reason about potentially aliased references. 
+
+To avoid this situation, we additionally introduce a simple means to exclude
+programs with aliasing. The instantiation of effect variables is restricted to
+the ones which do not create aliasing situations. Our system, with aliasing
+exclusion enabled, is inappropriate for reasoning about shared mutable
+structures. However, it is interesting to see that this alias exclusion
+restriction, in many cases, corresponds to a natural condition imposed on
+higher-order functions that operate on some data structure. It is a common
+requirement~\cite{Nanevski08Awkward,Krishnaswami06} for iteration functions,
+for example, that the functional argument must not modify the structure to be
+iterated on. In our system, this fact follows from the restriction on effect
+instantiations, as will be seen in section~\ref{sec:syntax}. In the example,
+the array {\tt a} of the iterating function {\tt iter} must not be modified by
+its argument.
 
 \section{A programming language for specification}
 \label{sec:syntax}
@@ -692,7 +686,7 @@ over the function argument. The function body is thrown away.
     \wpre_s(\letml~x = ( t1 : τ,ε) ~\inml~ t2 , q) &=&
     \wpre_s( t1 ,λs':\efft{ ε }.λx:\ceil{τ}.\wpre_{s'}( t2 , q ))\\
     \wpre_s(\ifml~ t1 ~\thenml~ t2 ~\elseml~ t3 , q) &=&
-      \ifml~ \ceil{ t1 }~\thenml~ \wpre_s( t2 , q))~\elseml~\wpre_s( t3 , q)) \\
+      \ifml~ \ceil{ t1 }~\thenml~ \wpre_s( t2 , q)~\elseml~\wpre_s( t3 , q) \\
       \wpre_s( (t : ε <: ε'), q) &=& \wpre_{s|_ε}(t, λs':\efft{ε}.q~(s\oplus s'))
   \end{eqnarray*}
   \caption{The weakest precondition calculus}
@@ -720,7 +714,7 @@ proved.
 
 As for the typing relation, we have two rules for the \letml-binding. If the
 bound term is a value, we can translate the \letml-binding in the program by a
-\letml-binding in the language. In the other case, the \wpre\ of $ t2 $ becomes
+\letml-binding in the logic. In the other case, the \wpre\ of $ t2 $ becomes
 the argument of the \wpre\ of $ t1 $ (we denote $ε$ the effect of $ t1 $ and $
 t2 $). The rule for \ifml-expressions is straightforward. The rule for
 subeffecting adapts the domain of the current store and the expected domain of
@@ -747,51 +741,54 @@ let stores f0 m =
 
 parameter table : (int,int) map ref(ρ)
 
-let memo [e] (f0 : int -> int) (f : int ->{} int) (x : int) = 
-  {pre f x /\ stores f0 !!table}
+let memo [e] (f0 : int -> int) (x : int) = 
+  {stores f0 !!table}
   if mem x !table then get x !table
   else
-    let z = f x in
+    let z = f0 x in
     table := set x z !table;
     z
-  {r : post f x r}
+  {r : r = f0 x /\ stores f0 !!table}
 \end{who}
   \caption{The code along with the specification of the {\tt memo} function}
   \label{fig:memo}
 \end{figure}
 
 Our first example is a simple memoization function {\tt memo} for (pure)
-functions.  It takes as an argument a function (from {\tt int} to {\tt int}
-here) and an integer and returns the same result as the functional argument
-would; however, before executing the argument, it will look up the integer in
-a table to see if the function hasn't been called yet on this integer. If so,
-the table's value is returned, otherwise we call the function, store the
-result in the table, and return it. Fig~\ref{fig:memo} shows the code along
-with the specification. The specification is very simple; it states that {\tt
-memo} will return a value that verifies the postcondition of {\tt f}, as long
-is initially we have the precondition of f and as long as the table stores
-only valid key/value pairs. As we are not interested in the exact way of the
-implementation of the map, we simply model it here by a reference to a
-functional map with get/set functions.
+functions.  It takes as an argument a function {\tt f} (from {\tt int} to {\tt
+int} here) and an integer and returns the same result as {\tt f} would;
+however, before executing the argument, it looks up the integer in a table to
+see if the function hasn't been called yet on this integer. If so, the table's
+value is returned, otherwise we call the function, store the result in the
+table, and return it. Fig~\ref{fig:memo} shows the code along with the
+specification. Since we are not interested in the implementation of the table,
+we simply model it by a reference to a functional map with mem/get/set functions.
+
+The specification of {\tt memo} is very simple. The only precondition is that
+the table should only contain bindings $y |-> {\mathtt f}~y$, which is
+expressend by the {\tt stores} predicate. The postcondition states that the
+result is equal to {\tt f0~x} and that the table still verifies the {\tt
+stores} predicate.
+
 
 \subsection{ymemo}
 
 TODO %TODO
 \begin{figure}[tpb]
 \begin{who}
-  let realizes 
+  let realizes = .. .
   let ymemo (f0 : int -> int) 
             (ff : (int ->{table} int) ->{} int ->{table} int) = 
-  { forall (k : [[int ->{table} int ]]),
-      { realizes f0 k} ff k { r : realizes f0 r} }
-  let rec f (x : int) : int ->{table} int =
-    { stores f0 !!table }
-    if mem x !table then get x !table
-    else
-      let z = ff f x in
-      table := set x z !table; z
-    {r : r = f0 x /\ stores f0 !!table}
-  in f
+    { forall (k : [[int ->{table} int ]]),
+        { realizes f0 k} ff k { r : realizes f0 r} }
+    let rec f (x : int) =
+      { stores f0 !!table }
+      if mem x !table then get x !table
+      else
+        let z = ff f x in
+        table := set x z !table; z
+      {r : r = f0 x /\ stores f0 !!table}
+    in f
   { rf : realizes f0 rf }
 \end{who}
 \caption{The {\tt ymemo function} and its specification}
@@ -800,8 +797,9 @@ TODO %TODO
 
 \subsection{All examples - an overview}
 
-A prototype implementation of the presented system by the name ``\who''
-exists~\cite{KanigFilliatre09wml} and is freely available. It implements the
+A prototype implementation of the presented system, called ``\who'',
+ is freely available~\cite{KanigFilliatre09wml}%TODO \footnote
+. It implements the
 described language with type, region and effect polymorphism, higher-order
 logic and store types in the logic. It takes as an input a fully annotated
 program and outputs proof obligations which have to be proved to guarantee the
@@ -868,9 +866,13 @@ modularly about side effects of functional arguments. It also has the drawback
 of being difficult to implement, due to the presence of a large number of
 non-structural rules. Our system, starting from a correctly annotated program,
 is syntax-directed and thus entirely automated. Their logic of proof
-obligations is non-standard, while we obtain obligations in higher-order
-logic. They deal with aliasing using equalities and disequalities between
-pointers, which we chose not to do. They can reason about the classic {\em
+obligations is non-standard, while we obtain obligations in standard higher-order
+logic. 
+
+They deal with aliasing using equalities and disequalities between
+pointers, which we chose not to do. 
+
+They can reason about the classic {\em
 Landin's knot}, which consists in obtaining recursion by storing a function in
 a reference which calls this same reference. Our typing restriction prohibits
 this particular kind of programs.  Honda, Yoshida and Berger prove a
@@ -915,21 +917,6 @@ formulas~\cite{chlipalaicfp09}. We claim that we can obtain much better
 automation for alias-free programs, and even higher-order functions. We
 explain in the next section how we plan to achieve this.
 
-%On the other hand, Ynot shares the
-%Coq's main weakness: lack of automation. While we haven't yet presented a
-%platform to automatically discharge generated proof obligations, this seems
-%easily feasible, along the same vein as Régis-Gianas and
-%Pottier~\cite{regis-gianas-pottier-08}, who argue that first-order SMT
-%solvers~\cite{RanTin-SMTLIB} are suitable even for higher-order proof
-%obligations. They also present an encoding scheme to support their claim.
-%Their practical results are promising. The Ynot system can not use this kind
-%of automation because it uses separation logic.  Automated provers for
-%separation logic exist, but we are not aware of any attempts to use these
-%tools in a higher-order setting.
-
-%TODO also say that an approach like Ynot ou Coq doesn't give any help
-%for the mechanical part of the proof.
-
 The Pangolin system, the implementation of the theoretical system
 of~\cite{regis-gianas-pottier-08}, can also be used to reason about
 purely functional programs. It is also one of the starting points of
@@ -957,13 +944,12 @@ that extending our language and our \wpre-calculus is simple, as long as
 aliasing is tracked precisely.  We leave these extensions for future work.
 
 Systems for verification of first-order programs like
-Why~\cite{Filliatre00a} or Spec\#~\cite{BarnettLS04} are the other
-starting points of this work. These systems generally deal very well
-with usual features of first-order programs, for example arrays, use
-SMT solvers to discharge proof obligations and strive for the best
-possible automation. We try to improve on this work by adding
-higher-order features, trying to maintain the degree of automation and
-ease of use.
+Why~\cite{Filliatre00a,filliatre07cav} or Spec\#~\cite{BarnettLS04} are the
+other starting points of this work. These systems generally deal very well
+with usual features of first-order programs, for example arrays, use SMT
+solvers to discharge proof obligations and strive for the best possible
+automation. We improve on this work by adding higher-order features,
+while trying to maintain the degree of automation and ease of use.
 
 \section{Conclusion}
 \label{sec:conclusion}
@@ -1018,25 +1004,25 @@ would also be interesting to see if an ``impure'' function of type $τ
 ->^\emptyset τ'$ can be seen as pure function $τ -> τ'$ (and be used in the
 logic).
 
-We see two possibilities to add the possibility to reason about aliasing
-programs. The first one is to modify the effect system itself to allow for
-aliasing. In the setting with the aliasing restriction, our regions actually
-become {\em singleton regions}, regions containing exactly one memory
-location. Other, more powerful effect systems allow for {\em group regions},
-with the possibility to temporarily {\em focus } on a particular memory cell
-in that region. We see no fundamental difficulty in adopting such an effect
-system, but haven't worked out the details. A second possibility is to deal
-with aliasing via equalities and disequalities over pointers, using regions to
-obtain some separation automatically. On itself, we believe that this
-technique does not scale, due to the explosion of needed disequalities.
-However, in combination with other separation techniques, for example the
-Burstall-Bornat memory model which separates automatically objects of
-different structural types, this approach has worked well applied to
-first-order programs.
+We see two possibilities to deal with aliasing beyond plain usage of pointer
+disequalities. The first one is to modify the effect system itself to allow
+more precise tracking of aliasing. In the setting with the aliasing
+restriction, our regions actually become {\em singleton regions}, regions
+containing exactly one memory location. Other, more powerful effect systems
+allow for {\em group regions}, with the possibility to temporarily {\em focus
+} on a particular memory cell in that region. We see no fundamental difficulty
+in adopting such an effect system, but haven't worked out the details. A
+second possibility is to deal with aliasing via equalities and disequalities
+over pointers, using regions to obtain some separation automatically. On
+itself, we believe that this technique does not scale, due to the explosion of
+needed disequalities.  However, in combination with other separation
+techniques, for example the Burstall-Bornat memory model~\cite{bornat00mpc}
+which separates automatically objects of different structural types, this
+approach has worked well applied to first-order programs.
 
 Finally, from a programmer's point of view, it would be nice to have more
 features in the programming language, such as recursive types and algebraic
-data types. As long as so defined types verify a {\em positivity
+data types. As long as defined types verify a {\em positivity
 condition}~\cite{paulintlca93}, these extensions would be completely
 orthogonal to the weakest precondition calculus and the type and effect system
 used.
