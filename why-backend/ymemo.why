@@ -14,3 +14,7 @@ logic q : int, (int,int) map, (int,int) map, int -> prop
 logic stores_f0 : (int,int) map -> prop
 logic realizes_f0_p_q : prop
 
+let ymemo (ff :rg : ( x : int -> int writes table) -> {} ( y : int -> int writes table) {})
+ =
+ { realizes_f0_p_q -> ( }
+
