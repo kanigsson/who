@@ -1,0 +1,1950 @@
+%; whizzy document
+\documentclass[a4paper]{article}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{stmaryrd} % for semantic brackets
+\usepackage{mathpartir} % for inference rules
+\input{utf8symbols.tex}
+\input{thmdefs.tex}
+\input{generaldefs.tex}
+
+
+\author{Johannes Kanig}
+\title{Technical Appendix}
+\date{\today}
+%TODO describe label substitutions clearly
+%TODO describe all kinds of substitutions clearly
+%TODO introduce new syntax for records : <>, only labels accessible
+%... is it reasonable ?
+% traduire vers des n-uplets plutôt que des ->
+% utiliser la syntaxe concrète de l'outil
+%TODO invent new notation!
+
+\input{macros.tex}
+\newcommand{\bmark}[1]{\textbf{(#1)}}
+\newcommand{\pre}{{\bf pre}}
+\newcommand{\post}{{\bf post}}
+\newcommand{\wpre}{{\bf wp}}
+\newcommand{\proptype}{{\bf prop}}
+\newcommand{\rec}{{\bf rec}}
+\newcommand{\void}{{\tt ()}}
+\newcommand{\unit}{{\tt unit}}
+\newcommand{\inttype}{{\tt int}} 
+\newcommand{\letst}{{\bf let }}
+\newcommand{\inst}{{\bf in }}
+\newcommand{\true}{{\tt true}}
+\newcommand{\false}{{\tt false}}
+\newcommand{\bool}{{\tt bool}} 
+\newcommand{\ifst}{{\bf if }}
+\newcommand{\thenst}{{\bf then }}
+\newcommand{\elsest}{{\bf else }}
+\newcommand{\evlist}{\alist{\ev}}
+\newcommand{\False}{\bot}
+\newcommand{\True}{\top}
+\newcommand{\reftype}{{\bf ref}}
+
+\begin{document}
+\maketitle
+
+\section{The Aliasing Restriction}
+
+In this section, we deliver the correctness proof for restriction to singleton
+regions. We show here that each region can in fact only contain a single
+reference. Instead of the {\bf letref}-construct as in the paper, we develop a
+more general approach using a {\bf letreg}-construct. The principal idea is
+that to call the function $\mathit{ref}$ to create a reference in a certain
+region $ρ$ , one needs a capacity, a special token, denoted $\{ ρ\}$, which is
+consumed by the function call. These capacities are treated linearly, i.e.
+they cannot be duplicated. The {\bf letreg} construct delimits not only the
+scope of a region variable, but also gives a single creation capacity. So the
+whole following development basically ensures that no region capacity can be
+duplicated, and then we obtain for free that no region contains more than one
+memory location. A region can be empty, though.
+
+The {\bf letref}-construct can be trivially recovered of course:
+\begin{equation*}
+  \letst~x = \mathit{ref}~v~\inst~e \quad \equiv\quad 
+   \letreg{ρ}{\mllet{x}{\mathit{ref}~\{ρ\}~v}{e}}
+\end{equation*}
+
+\paragraph{A guide to the proof.} After the usual definitions of syntax and
+semantics, we define a splitting operation over typing environments which
+takes care of the linear nature of creation capacities
+(Sec.~\ref{sec:environments}). In Section~\ref{sec:typing} we prove many
+auxiliary lemmas for the main theorem, which is stated in
+Section~\ref{sec:subjectreduction}. Definition \ref{def:invariants} contains
+the important property to be maintained: If a term is well-typed wrt. an
+environment, then all regions are singleton regions, and if a creation
+capacity on a region is still available, this region is empty. The desired
+property follows.
+
+\subsection{Syntax}
+
+\begin{equation*}
+  \begin{array}[]{llll}
+  \mbox{Program Variables}& x & & \\
+  \mbox{Region Variables} & \rho & &\\
+  \mbox{Type Variables} & \alpha & &\\
+  \mbox{Effect Variables} & \epsilon & &\\
+  \mbox{Program Constants} & c & &\\
+  \mbox{Values}& v & ::= & c \sep \tyapp{x}{\bar{\tau} \bar{\rho}\bar{\varepsilon}} \sep \lambda x:\tau.e \sep
+  \regpr{\rho}{e} \sep y_\rho \\
+  \mbox{Expressions} & e & ::= & v\sep  \napp{e}{e} \sep \rapp{e}{\rho} \sep \letreg{\rho}{e} \sep \\
+  & & & (e : \varepsilon ) \sep \region{\rho}{e} \sep \mllet{\bar{\alpha} \bar{\rho} \bar{\epsilon}\ x}{v}{e}\\
+  \mbox{Types} & \tau & ::= & \alpha \sep \iota \sep \tau \effarr{\varepsilon} \tau \sep  \refreg{\tau}{\rho}
+  \sep \regty{\rho,\varepsilon}{\tau} \\ 
+  \mbox{Type Schemes} & ο & ::= & \tau\sep  \forall\alpha.\sigma \sep \forall\rho.\sigma \sep \forall\epsilon.\sigma \\
+  \mbox{Effects} & \varepsilon & ::= & \epsilon \sep \rho \sep \emptyset \sep \varepsilon \cup \varepsilon
+  \end{array}
+\end{equation*}
+
+\subsection{Semantics}
+\label{sec:semantics}
+
+Before executing a term, effect annotations are erased.
+
+In this overview, when we write $d\in s$ we mean $d\in dom(s)$ and
+similar for $l\in s(d)$.
+\begin{equation*}
+   \begin{array}[t]{rrclr}
+    \beta & s, (\lambda x:\tau.e)\ v & \basered & s, \esub{e}{x\mapsto v} & \\
+    let & s, \mllet{\bar{\alpha} \bar{\rho} \bar{\epsilon}\ x}{v}{e} & \basered & s,
+    \esub{e}{x\mapsto \Lambda\bar{\alpha}\bar{\rho}\bar{\epsilon}.v} \\
+    \capreg{\rho} & s, \rapp{(\regpr{\rho}{e})}{\rho} & \basered & s,e & \\
+    letreg & s, \letreg{\rho}{e} & \basered & \statesub{s}{\rho_1\mapsto \left\{
+    \right\}}, \region{\rho_1}{\regsub{e}{\rho\mapsto \rho_1}} & \rho_1\notin s \\
+    region & s, \region{\rho}{v} & \basered & s, v \\
+    ref & s, \reft \left[ \xi_1 \dots \xi_n \right] \capreg{\rho_1}\  v &
+    \basered & s\left[ \rho_1 \mapsto s(\rho_1)\left[ y\mapsto v \right]\right],
+    y_{\rho_1} & \rho_1\in s, y\notin s(\rho_1)\\
+    := & s, := \left[ \xi_1 \dots \xi_n \right] y_{\rho_1} v & \basered & s\left[ \rho_1 \mapsto s(\rho_1)\left[
+    y \mapsto v \right] \right], \void & \rho_1\in s, y\in s(\rho_1)\\
+    ! & s, ! \left[ \xi_1 \dots \xi_n \right] y_{\rho_1} & \basered & s, s(\rho_1)(y) & \rho_1\in s, y\in
+    s(\rho_1) \\
+    \rec & s, (\rec\ f\ v_1)\ v_2 & \basered & s, v_1\left[ f \mapsto (\rec\
+    v_1)  \right] v_2
+  \end{array}
+\end{equation*}
+
+The relation $\basered$ describes a single reduction step at the top of a
+term. To lift this relation to arbitrary expressions, we define call-by-value
+contexts:
+\begin{equation*}
+  E ::= \left[  \right] \sep E\ e \sep v\ E\sep E \left[ \xi \right] \sep
+  \rapp{E}{p} \sep \region{\rho}{E} \sep \mllet{x}{E}{e}
+\end{equation*}
+
+Now we define the one step reduction relation $\onestep$ as follows:
+\begin{mathpar}
+  \inferrule* 
+    { s, e \basered s', e' }
+    { s, E\left[ e \right] \onestep s', E\left[ e' \right] }
+\end{mathpar}
+
+The general reduction relation $\reduction$ is defined as the reflexive and
+transitive closure of $\onestep$.
+
+\subsection{Environments}
+\label{sec:environments}
+\begin{eqnarray*}
+  \Gamma & ::= & \emptyset \sep \Gamma, x : \tau \sep \Gamma, \chi \sep \Gamma, \capreg{\rho}\\
+\end{eqnarray*}
+
+\subsubsection*{Wellformedness}
+We write $\chi\notin fv(\Gamma)$ to express that $\chi$ never occurs free in $\Gamma$. We write
+$\chi\notin \Gamma$ to express that $\chi$ is not an {\em element} of the environment
+$\Gamma$.
+
+\begin{mathpar}
+  (1)\ \cwf{\emptyset} \and
+  {\inferrule* [left=(2)] {\cwf{\Gamma}\quad \chi\notin \Gamma} {\cwf{\Gamma,\chi}}}\and
+  {\inferrule* [left=(3)] {\cwf{\Gamma}\quad \ctwf{\Gamma}{\rho} } 
+                          {\cwf{\Gamma,\capreg{\rho}}}}
+  \and
+  {\inferrule* [left=(4)] {\cwf{\Gamma}\quad \ctwf{\Gamma}{\tau}} {\cwf{\Gamma,x:\tau}}}
+  \and
+  {\inferrule* [left=(5)] {\chi\in \Gamma}{\ctwf{\Gamma}{\chi}}}\and
+  (6)\  \ctwf{\Gamma}{\iota}\and
+  {\inferrule* [left=(7)] {\ctwf{\Gamma}{\tau_1}\quad\ctwf{\Gamma}{\tau_2}\quad\ctwf{\Gamma}{\varepsilon}}
+  {\ctwf{\Gamma}{\tau_1\effarr{\varepsilon} \tau_2}}}\and
+  {\inferrule* [left=(8)] {\ctwf{\Gamma,\bar{\chi}}{\tau}}{\ctwf{\Gamma}{\forall\bar{\chi}.\tau}}}\and
+  {\inferrule* [left=(9)] {\ctwf{\Gamma}{\tau} \\ \ctwf{\Gamma}{\rho}}
+      {\ctwf{\Gamma}{\refreg{\tau}{\rho}}}} \and
+  {\inferrule* [left=(10)] {\ctwf{\Gamma}{\tau} \\ \ctwf{\Gamma}{\rho}}
+      {\ctwf{\Gamma}{\regty{\rho}{\tau}}}} \and
+  {\inferrule* [left=(11)] {\ctwf{\Gamma}{\varepsilon_1} \\ \ctwf{\Gamma}{\varepsilon_2}}
+      {\ctwf{\Gamma}{\varepsilon_1\cup \varepsilon_2}}}
+\end{mathpar}
+
+The rules (1) to (4) concern wellformed environment construction, The rules (5) to (10)
+concern wellformedness of types. Rule (11) concerns wellformedness of effects
+and recycles rule (5) for effect and region variables.
+
+\begin{prop}
+  $\chi'\notin \Gamma$ and $\ctwf{\Gamma}{\xi}$ implies $\chi'\notin fv(\xi)$.
+  \label{prop:cwffvty}
+\end{prop}
+\begin{proof}
+  Proof by induction on the derivation of $\ctwf{\Gamma}{\xi}$.
+  \begin{description}
+
+    \item[Case (5)] If $\chi = \chi'$, then we have a contradiction between the
+      premise of the rule and the hypothesis of our claim. In the other case
+      we have $\chi'\notin fv(\chi)$.
+
+    \item[Case (6)] There are no free variables in base types. 
+
+    \item[Cases (7), (9), (10), (11)] By induction hypotheses.
+
+    \item[Case (8)] We can assume any $\chi$ of the rule to be different to the
+      $\chi'$ in the claim. Now suppose $\chi'\notin \Gamma,\bar{\chi}$ and $\chi'\notin fv(\tau)$. We have
+      $\chi'\notin \Gamma$, and $\chi'\notin fv(\tau)$ iff $\chi'\notin fv(\forall\bar{\chi}.\tau)$.
+  \end{description}
+\end{proof}
+
+\begin{prop}
+  \cwf{\Gamma,\chi',\Delta} and \ctwf{\Gamma}{\xi} imply $\chi'\notin fv(\Gamma)$ and
+  \cwf{\Gamma,\tsub{\Delta}{\chi'\mapsto \xi}}.
+  \label{prop:cwftysub}
+\end{prop}
+\begin{proof}
+  We proceed by induction on the wellformedness derivation of \cwf{\Gamma,\chi',\Delta}. 
+  \begin{description}
+
+    \item[Case (1)] The rule states \cwf{\emptyset}, but this cannot be the
+      last rule applied to establish \cwf{\Gamma,\chi',\Delta}.
+
+    \item[Case (2)] If $\chi \neq \chi'$ then we can simply conclude by induction
+      hypothesis. If $\chi = \chi'$, then either $\Delta=\emptyset$ and the side
+      condition $\chi\notin\Gamma$ together with proposition \ref{prop:cwffvty} gives
+      exactly the property we want to prove for the first claim, and the
+      second claim is trivial since $\tsub{\emptyset}{\chi\mapsto \xi} =
+      \emptyset$. Or $\Delta$ is not empty and that side condition cannot be true.
+
+    \item[Case (3)] Either $\chi' = \rho$, in which case $\xi = \rho'$ and we conclude by
+      the obvious fact $\ctwf{\Gamma,\tsub{\Delta}{\rho\mapsto \rho'}}{\capreg{\rho'}}$. In the case
+      where $\chi' \neq \rho$, we conclude simply by induction hypothesis.
+
+    \item[Case(4)] For the first claim, there is nothing to prove. For the
+      second claim, we need to prove that $\ctwf{\Gamma,\chi',\Delta}{\tau}$ implies
+      $\ctwf{\Gamma,\tsub{\Delta}{\chi'\mapsto \xi}}{\tsub{\tau}{\chi'\mapsto \xi}}$.
+
+      \begin{description}
+
+        \item[Case (5)] If $\chi = \chi'$, this amounts to proving
+          \ctwf{\Gamma,\tsub{\Delta}{\chi\mapsto \chi}}{\xi}, which is obvious because of
+          \ctwf{\Gamma}{\xi} by hypothesis.
+
+        \item[Case (6)] This rule is independent of the environment.
+
+        \item[Case (7),(9),(10),(11)] Simply by applying the induction
+          hypotheses.
+
+        \item[Case (8)] We can assume $\chi'\notin \bar{\chi}$, and thus conclude by
+          induction hypothesis.
+
+      \end{description}
+  \end{description}
+\end{proof}
+
+\begin{prop}
+  \cwf{\Gamma} and $\Delta$ is a prefix of $\Gamma$ implies \cwf{\Delta}.
+  \label{prop:cwfprefix}
+\end{prop}
+\begin{proof}
+  We prove the claim by induction over the wellformedness derivation for $\Gamma$. 
+\begin{description}
+  \item[Case (1)] This implies $\Gamma$ is empty and thus $\Delta$ is empty, so \cwf{\Delta}
+    by (1).
+  \item[Case (2)] 
+    The conclusion of the rule is \cwf{\Gamma,\chi}(a); it's premises are
+    $\cwf{\Gamma}$ (b) and $\chi\notin fv(\Gamma)$ (c). If $\Delta = \Gamma,\chi$, then conclude by (a).
+    If this is not the case $\Delta$ is also a prefix of $\Gamma$, and by induction
+    hypothesis and (b), we can conclude.
+  \item[Cases (3) and (4)] completely analogous.
+\end{description}
+\end{proof}
+
+\begin{prop}
+  \label{prop:cwfomit}
+  \cwf{\Gamma,x : \tau, \Delta} implies \cwf{\Gamma,\Delta}.
+\end{prop}
+\begin{proof}
+  By induction over the wellformedness derivation for $\Gamma$.
+  \begin{description}
+    \item[Case (1)] impossible.
+    \item[Cases (2), (3), (4) and (5)] By induction hypothesis.  
+    \item[Case (6)] By proving that \ctwf{\Gamma,x : \tau, \Delta}{y : \tau'} implies
+      \ctwf{\Gamma,\Delta}{y : \tau'}. This is obvious, as one can see that wellformedness
+      of types depends only on the presence of type and region variables, and
+      not on variable bindings in the environment.
+  \end{description}
+  
+\end{proof}
+
+
+\subsubsection*{Splitting}
+
+We define a non-deterministic splitting operation on the environment. The
+operation is entirely symmetric, so only the ``left''
+case of $\oplus_4$ are given.
+
+\begin{equation*}
+  \begin{array}[]{lrcl}
+  \oplus_1 & \emptyset \oplus \emptyset & = & \emptyset \\
+  \oplus_2 & (\Gamma_1, \chi) \oplus (\Gamma_2, \chi) & = & (\Gamma_1 \oplus \Gamma_2),\chi \\
+  \oplus_3 & (\Gamma_1, x : \tau) \oplus (\Gamma_2, x : \tau) & = & (\Gamma_1 \oplus \Gamma_2),x:\tau \\
+  \oplus_4 & (\Gamma_1,\capreg{\rho}) \oplus \Gamma_2 & = & (\Gamma_1 \oplus
+              \Gamma_2),\capreg{\rho}\qquad \capreg{\rho}\notin \Gamma_2 \\
+  \end{array}
+\end{equation*}
+
+\begin{prop}
+  \cwf{\Gamma_1} and \cwf{\Gamma_2} imply \cwf{\Gamma_1\oplus \Gamma_2}, if $\Gamma_1\oplus \Gamma_2$ is
+  defined.
+  \label{prop:cwfoplus}
+\end{prop}
+\begin{proof}
+  By induction on the construction of $\Gamma_1\oplus \Gamma_2$.
+  \begin{description}
+    \item[Case $\oplus_1$] Obvious.
+
+    \item[Case $\oplus_2$] The corresponding rule states $(\Gamma_1, \chi) \oplus
+      (\Gamma_2, \chi) = (\Gamma_1 \oplus \Gamma_2),\chi$. By the premises and proposition
+      \ref{prop:cwfprefix}, we have \cwf{\Gamma_1} and \cwf{\Gamma_2}, and by induction
+      hypothesis we have \cwf{\Gamma_1\oplus \Gamma_2}. By the premises of the
+      wellformedness derivations for \cwf{\Gamma_1,\chi} and \cwf{\Gamma_2,\chi} we obtain
+      $\chi\notin fv(\Gamma_1)$ and $\chi\notin fv(\Gamma_2)$. As can be simply checked, this
+      implies $\chi\notin fv(\Gamma_1 \oplus \Gamma_2)$, and by the rule (2) we conclude
+      \cwf{(\Gamma_1\oplus \Gamma_2),\chi}.
+
+   \item[Case $\oplus_3$] analogously, we can conclude $\cwf{\Gamma_1}$ and
+     \cwf{\Gamma_2} and thus, by induction hypothesis, \cwf{\Gamma_1 \oplus \Gamma_2}. We are
+     left to prove that if \ctwf{\Gamma_1}{\tau} then \ctwf{\Gamma_1 \oplus \Gamma_2}{\tau}, which
+     is very easily proved by induction. We can conclude \cwf{(\Gamma_1 \oplus
+     \Gamma_2), x:\tau} by (4).
+
+   \item[Case $\oplus_4$ ] As before, we can derive $\cwf{\Gamma_1}$ and \cwf{\Gamma_2}
+     and thus, by induction hypothesis, \cwf{\Gamma_1 \oplus \Gamma_2}. As in the case
+     $\oplus_3$, we are left to prove \ctwf{\Gamma_1 \oplus \Gamma_2}{\rho}. This can
+     easily be derived by induction. 
+ \end{description}
+\end{proof}
+
+\begin{prop}
+  \label{prop:oplusabsorb}
+  If $\capreg{\_}\notin \Gamma_2$, and $\Gamma_1 \oplus \Gamma_2$ is defined, then $\Gamma_1
+  \oplus \Gamma_2 = \Gamma_1$.
+\begin{proof}
+  By induction of the construction of $\Gamma_1 \oplus \Gamma_2$.
+  \begin{description}
+    \item[Case $\oplus_1$] There is nothing to prove.
+
+    \item[Case $\oplus_2$] We have $\capreg{\_}\notin \Gamma_2, \chi$, which gives us
+      $\capreg{\_}\notin \Gamma_2$ and thus $\Gamma_1\oplus \Gamma_2 = \Gamma_1$ by induction
+      hypothesis, and finally $(\Gamma_1,\chi) \oplus (\Gamma_2,\chi) = (\Gamma_1 \oplus \Gamma_2), \chi =
+      \Gamma_1, \chi$.
+
+    \item[Cases $\oplus_3$ and $\oplus_4$] Similar.
+    
+    \item[Case $\oplus_5$ ] Similar as well. Because of symmetry, we also
+      should consider the case where $\Gamma_1$ and $\Gamma_2$ are inversed, but this
+      leads to the contradiction $\capreg{\_}\notin \Gamma_2,\capreg{p}$. 
+  \end{description}
+\end{proof}
+\end{prop}
+
+\begin{prop}
+  \label{prop:defplusplus}
+  If $\Gamma_1 = \Gamma_a \oplus \Gamma_b$ and $\Gamma = \Gamma_1 \oplus \Gamma_2$ are defined, then 
+  $\Gamma_a \oplus \Gamma_2$ is defined as well.
+\end{prop}
+%\begin{proof}
+%  %TODO
+%\end{proof}
+
+\subsection{Typing}
+\label{sec:typing}
+
+We assume given a function $TypeOf : c \mapsto \sigma$ with the property that
+$TypeOf(c) = \sigma$ implies $fv(\sigma) = \emptyset$. We have at least $TypeOf(\void) =
+\unit$ and the following typings for functions manipulating references:
+
+\begin{eqnarray*}
+  TypeOf(\reft) & = & \forall\alpha\rho\epsilon.\regty{\rho}{\alpha\effarr{\epsilon\cup \rho} \refreg{\alpha}{\rho}} \\
+  TypeOf( := ) & = & \forall\alpha\rho\epsilon\epsilon'. \refreg{\alpha}{\rho} \effarr{\epsilon} \alpha
+  \effarr{\epsilon'\cup \rho} \unit \\
+  TypeOf( !) & = & \forall\alpha\rho\epsilon. \refreg{\alpha}{\rho} \effarr{\epsilon\cup \rho} \alpha \\
+\end{eqnarray*}
+
+The typing rules are summarised in figure \ref{fig:bastyprules}.
+
+\begin{figure}[htpb]
+  \begin{center}
+\begin{mathpar}
+  {\inferrule* [left=\varrule] 
+  {\Gamma(x) = \forall\bar{\chi}.\tau \quad \ctwf{\Gamma}{\bar{\xi}}\quad \capreg{\_}\notin \Gamma}
+  {\typerel{\Gamma}{\tyapp{x}{\bar{\xi}}}{\tsub{\tau}{\bar{\chi}\mapsto\bar{\xi}}}{\emptyset}} }\and
+  {\inferrule* [left=\conrule] 
+    {TypeOf(c) = \tau \\ \cwf{\Gamma}\\ \capreg{\_}\notin \Gamma}
+    {\typerel{\Gamma}{c}{\tau}{\emptyset}}}\and
+  {\inferrule* [left=\absrule] 
+    {\typerel{\Gamma,x:\tau'}{e}{\tau}{\varepsilon}\\ \capreg{\_}\notin\Gamma} 
+    {\typerel{\Gamma}{\lambda x:\tau'.e}{\tau'\effarr{\varepsilon} \tau}{\emptyset}}}\and
+  {\inferrule* [left=\apprule] 
+    {\typerel{\Gamma_1}{e_1}{\tau'\effarr{\varepsilon} \tau}{\varepsilon_1}\\ \typerel{\Gamma_2}{e_2}{\tau'}{\varepsilon_2}} 
+    {\typerel{\Gamma_1\oplus \Gamma_2}{e_1\ e_2}{\tau}{\varepsilon\cup \varepsilon_1 \cup \varepsilon_2}}}\and
+  {\inferrule* [left=\letregrule] 
+    {\typerel{\Gamma,\rho,\capreg{\rho}}{e}{\tau}{\varepsilon}} 
+    {\typerel{\Gamma}{\letreg{\rho}{e}}{\tau}{\varepsilon \setminus \rho}}}\and
+  {\inferrule* [left=\absregrule] 
+    {\typerel{\Gamma,\capreg{\rho}}{e}{\tau}{\varepsilon}\\ \capreg{\_}\notin\Gamma} 
+    {\typerel{\Gamma}{\regpr{\rho}{e}}{\regty{\rho,\varepsilon}{\tau}}{\emptyset}}}\and
+  {\inferrule* [left=\appregrule] 
+    {\typerel{\Gamma,\rho}{e}{\regty{\rho,\varepsilon'}{\tau}}{\varepsilon}}
+    {\typerel{\Gamma,\rho,\capreg{\rho}}{\rapp{e}{\rho}}{\tau}{\varepsilon\cup \varepsilon'}}} \and
+  {\inferrule* [left=\letrule]
+    {\typerel{\Gamma_1,\bar{\alpha}\bar{\rho}\bar{\epsilon}}{v}{\tau'}{\emptyset} \\
+     \typerel{\Gamma_2,x : \forall\bar{\alpha}\bar{\rho}\bar{\epsilon}.\tau'}{e}{\tau}{\varepsilon}}
+    {\typerel{\Gamma_1 \oplus \Gamma_2}{\mllet{\bar{\alpha}\bar{\rho}\bar{\epsilon}\ x}{v}{e}}{\tau}{\varepsilon}}
+  }
+\end{mathpar}
+  \end{center}
+  \caption{The Core Typing Rules}
+  \label{fig:bastyprules}
+\end{figure}
+
+\begin{figure}[htpb]
+  \begin{center}
+    \begin{mathpar}
+      {\inferrule* [left=\regionrule] 
+        {\typerel{\Gamma}{e}{\tau}{\varepsilon}} 
+        {\typerel{\Gamma}{\region{\rho}{e}}{\tau}{\varepsilon \setminus \rho}}}\and
+      {\inferrule* [left=\locrule] 
+        {\Gamma(y) = \refreg{\tau}{\rho}\and \cwf{\Gamma} \and \capreg{\_}\notin\Gamma}
+        { \typerel{\Gamma}{y_\rho}{\refreg{\tau}{\rho}}{\emptyset}}} \and
+      {\inferrule* [left=\subeffrule] 
+        {\typerel{\Gamma}{e}{\tau}{\varepsilon}\\ \varepsilon \subeff \varepsilon' \and \ctwf{\Gamma}{\varepsilon'}} 
+        {\typerel{\Gamma}{(e : \varepsilon')}{\tau}{\varepsilon'}}}
+    \end{mathpar}
+  \end{center}
+  \caption{Bookkeeping typing rules}
+  \label{fig:advtyprules}
+\end{figure}
+
+
+\begin{prop}
+  \label{prop:capvalues}
+  $\typerel{\Gamma}{v}{\tau}{\varepsilon}$ for any value $v$ implies {\normalfont
+  $\capreg{\_}\notin\Gamma$} and $\typerel{\Gamma}{v}{\tau}{\emptyset}$.
+\end{prop}
+\begin{proof}
+  By looking at the premises for the rules for values: \varrule, \conrule,
+  \absrule{} and \absregrule.
+\end{proof}
+
+\begin{prop}
+  \typerel{\Gamma}{e}{\tau}{\varepsilon} implies \cwf{\Gamma} and \ctwf{\Gamma}{\tau,\varepsilon}.
+\end{prop}
+\begin{proof}
+  We proceed by induction on the typing derivation. 
+  \begin{description}
+
+    \item[Cases \varrule, \conrule{} and \locrule] $\cwf{\Gamma}$ is a premise of
+      these rules. This implies the other claims as well.
+
+    \item[Cases \absrule{} and \absregrule] By applying the induction
+      hypothesis to the pre\-mise of any of the rules, we have \cwf{\Gamma, \nu},
+      where $\nu$ is the object (program variable or region capability)
+      introduced by the corresponding rule. By proposition
+      \ref{prop:cwfprefix}, we can conclude.
+
+    \item[Case \apprule] By applying proposition \ref{prop:cwfoplus} and the
+      induction hypothesis.
+
+    \item[Case \subeffrule] By induction hypothesis.
+
+    \item[Cases \letregrule{} and \regionrule] By proposition
+      \ref{prop:cwfprefix} and the induction hypothesis.
+
+    \item[Case \appregrule] by applying the rule (3). The needed hypotheses
+      are obtained by induction hypothesis (\cwf{\Gamma,p} implies \cwf{\Gamma} and
+      \ctwf{\Gamma}{p}).
+
+    \item[Case \letrule] By combining the rules (2),(8) and proposition
+      \ref{prop:cwfoplus}.
+
+  \end{description}
+\end{proof}
+
+\begin{lem}[Variable substitution lemma]
+  \newcommand{\thesub}[1]{\tsub{#1}{\chi' \mapsto \xi}} 
+  \label{lem:typesubst}
+  \typerel{\Gamma,\chi',\Delta}{e}{\tau}{\varepsilon} and \ctwf{\Gamma}{\xi} imply 
+  \typerel{\Gamma,\thesub{\Delta}}{\thesub{e}}{\thesub{\tau}}{\thesub{\varepsilon}}.
+\end{lem}
+\begin{proof}
+  Let $\theta$ be the substitution $\left[ \chi'\mapsto \xi \right]$.
+  \newcommand{\thesub}[1]{\ensuremath{#1 \theta}}
+  We proceed by induction over the typing derivation of
+  \typerel{\Gamma,\chi',\Delta}{e}{\tau}{\varepsilon}.  We use the facts $\chi'\notin fv(\Gamma)$ (by
+  proposition \ref{prop:cwftysub}) and $\chi'\notin\xi$ (by proposition
+  \ref{prop:cwffvty}).
+  \begin{description}
+
+    \item[Case \varrule] The conclusion of the rule is
+      \typerel{\Gamma,\chi',\Delta}{x}{\tau}{\emptyset}. Its premises are $(\Gamma,\chi',\Delta)(x) = \tau$
+      (1) and \cwf{\Gamma,\chi',\Delta}. By proposition \ref{prop:cwftysub}, we obtain
+      $\cwf{\Gamma,\thesub{\Delta}}$. If $x\in \Gamma$, then $(\Gamma,\chi',\Delta)(x) = \Gamma(x) =
+      (\Gamma,\thesub{\Delta})(x) = \tau = \thesub{\tau}$, as $\chi'\notin \Gamma$ and by proposition
+      \ref{prop:cwffvty}. If $x\in \Delta$, then $\Delta(x) = \tau$ and $(\thesub{\Delta})(x) =
+      \thesub{\tau}$ and we can conclude.
+
+    \item[Case \conrule] obvious, as $\tau$ does not contain free variables. 
+
+    \item[Case \absrule] The conclusion of the rule is \typerel{\Gamma,\chi',\Delta}{\lambda
+      x:\tau'.e}{\tau'\effarr{\varepsilon} \tau}{\emptyset}. Its premises are
+      \typerel{\Gamma,\chi,\Delta,x:\tau'}{e}{\tau}{\varepsilon} (1) and $\capreg{\_} \notin \Gamma,\chi',\Delta$.  We
+      can immediately conclude $\capreg{\_} \notin \Gamma,\thesub{\Delta}$, and by
+      induction hypothesis, we have
+      \typerel{\Gamma,\thesub{\Delta},x:\thesub{\tau'}}{\thesub{e}}{\thesub{\tau}}{\varepsilon}.  We
+      get, by application of \absrule{}, \typerel{\Gamma,\thesub{\Delta}}{\thesub{(\lambda
+      x:\tau'.e)}}{\thesub{(\tau'\effarr{\varepsilon} \tau)}}{\emptyset}, which is the statement
+      we wanted.
+
+    \item[Case \recrule] similar. 
+      
+      
+    \item[Cases \absregrule] Similar. 
+
+
+    \item[Case \subeffrule] by induction hypothesis. 
+
+    \item[Cases \appregrule, \letregrule, \regionrule{} and \locrule] By
+      reconstructing the subs\-ti\-tu\-ted de\-ri\-vation tree, as in the case
+      for \absrule{}.  
+  
+    \item[Case \letrule] By induction hypothesis. One can assume $\chi'$ and
+      $fv(\xi)$ different from the $\bar{\alpha},\bar{\rho},\bar{\epsilon}$ of the rule.
+
+  \end{description} 
+\end{proof}
+
+\begin{prop}[Irrelevant hypotheses]
+  \label{prop:irrelhyp}
+  If \typerel{\Gamma,x : \tau',\Delta}{e}{\tau}{\varepsilon} and $x\notin fv(e)$, then
+  \typerel{\Gamma,\Delta}{e}{\tau}{\varepsilon}.
+\end{prop}
+\begin{proof}
+  By induction on the typing derivation. This proof poses no difficulties.
+\end{proof}
+
+\begin{prop}[Weak Weakening]
+  \label{prop:weakweak}
+  If $\Gamma_1 \oplus \Gamma_2$ is defined, then \typerel{\Gamma_1}{e}{\tau}{\varepsilon} implies
+  \typerel{\Gamma_1 \oplus \Gamma_2}{e}{\tau}{\varepsilon}.
+\end{prop}
+
+\begin{prop}[Strong Weakening]
+  \label{prop:strongweak}
+  If $\typerel{\Gamma}{e}{\tau}{\varepsilon}$ and $\ctwf{\Gamma}{\Delta}$ and $\capreg{\_}\notin \Delta$, we
+  have $\capreg{\rho}\notin \Delta$, then \typerel{\Gamma,\Delta}{e}{\tau}{\varepsilon}.
+\end{prop}
+
+\begin{prop}[General Exchange]
+  \label{prop:genexchange}
+  The following statements are true:
+  \begin{itemize}
+    \item $\typerel{\Gamma, x : \tau, y : \tau', \Delta}{e}{\tau''}{\varepsilon}\Leftrightarrow \typerel{\Gamma, y :
+      \tau', x : \tau, \Delta}{e}{\tau''}{\varepsilon}$.
+   \item  $\typerel{\Gamma, x : \tau, \chi , \Delta}{e}{\tau''}{\varepsilon}\Leftrightarrow\typerel{\Gamma,\chi, x
+     : \tau, \Delta}{e}{\tau''}{\varepsilon}$, if $\chi\notin fv(\tau)$.
+   \item  $\typerel{\Gamma, x : \tau, \capreg{\rho} ,
+     \Delta}{e}{\tau''}{\varepsilon}\Leftrightarrow\typerel{\Gamma,\capreg{\rho}, x : \tau, \Delta}{e}{\tau''}{\varepsilon}$
+ \end{itemize}
+\end{prop}
+\begin{proof}
+  straightforward induction over the typing derivation, observing that the
+  respective environments are always well-formed.
+\end{proof}
+
+\begin{lem}[Substitution Lemma]
+  \label{lem:substlem}
+  If $\Gamma = \Gamma_1 \oplus \Gamma_2$ is defined and
+  $\capreg{\_}\notin \Gamma_2$, then \typerel{\Gamma_1,x:\tau'}{e}{\tau}{\varepsilon} and
+  \typerel{\Gamma_2}{v}{\tau'}{\varepsilon'} imply \typerel{\Gamma_1}{\esub{e}{x\mapsto
+  v}}{\tau}{\varepsilon}.
+\end{lem}
+\begin{proof}
+  Let us call $\sigma$ the substitution $\left[ x \mapsto v \right]$.  We proceed
+  by induction on the derivation tree for \typerel{\Gamma_1,x:\tau'}{e}{\tau}{\varepsilon}.
+  \begin{description}
+
+    \item[Case \varrule] This means that $e$ is of the form $y$. If $x = y$,
+      then we have $\tau' = \Gamma_1(x) = \Gamma_1(y) = \tau$. Using $x\sigma = v$, we obtain
+      \typerel{\Gamma_1}{e\sigma}{\tau}{\emptyset} by the second premise and proposition
+      \ref{prop:capvalues}. If $x \neq y$, we
+      know that $e\sigma = y\sigma = y$, and we can conclude by proposition
+      \ref{prop:irrelhyp}. 
+
+    \item[Case \conrule] As in the case of \varrule, with $x \neq y$.
+
+    \item[Case \absrule] The conclusion of the rule is \typerel{\Gamma_1,x:\tau'}{\lambda
+      y:\tau''.e}{\tau''\effarr{\varepsilon} \tau}{\emptyset}. We can assume that $y \neq x$. The
+      premises of the rule are \typerel{\Gamma_1,x:\tau',y:\tau''}{e}{\tau}{\varepsilon} and
+      $\capreg{\_}\notin \Gamma_1,x:\tau'$ (a).  By proposition
+      \ref{prop:genexchange}, we obtain \typerel{\Gamma_1,y:\tau'',x:\tau'}{e}{\tau}{\varepsilon}. As
+      $\Gamma_1 \oplus \Gamma_2$ is defined, $\Gamma_1, y : \tau'') \oplus (\Gamma_2, y : \tau'')$ is
+      defined as well and is equal to $(\Gamma_1 \oplus \Gamma_2), y : \tau''$. We also
+      have $\typerel{\Gamma_2, y : \tau}{v}{\tau'}{\varepsilon'}$ by proposition
+      \ref{prop:strongweak}, and by induction hypothesis we have
+      \typerel{\Gamma,y:\tau''}{e\sigma}{\tau}{\varepsilon'}. Now we know that $\capreg{\_}\notin \Gamma$
+      (by (a) and proposition \ref{prop:capvalues}) and we can conclude with
+      the rule \absrule, and by $\lambda y:\tau''.e\sigma = (\lambda y:\tau''.e)\sigma$.
+
+    \item[Case \apprule] The conclusion of the rule is $\typerel{\Gamma_1, x :
+      \tau'}{e_1\ e_2}{\tau}{\varepsilon \cup \varepsilon_1 \cup \varepsilon_2}$. But we also have $\Gamma_1, x : \tau' =
+      \Gamma_a \oplus \Gamma_b$.  It can be seen that we have $\Gamma_a = \Gamma_a', x:\tau'$ and
+      $\Gamma_b = \Gamma_b', x : \tau'$. The premises of the rule are $\typerel{\Gamma_a', x :
+      \tau'}{e_1}{\tau'' \effarr{\varepsilon} \tau}{\varepsilon_1}$ and $\typerel{\Gamma_b',
+      x:\tau'}{e_2}{\tau''}{\varepsilon_2}$. By induction hypothesis and proposition
+      \ref{prop:defplusplus}, we obtain $\typerel{\Gamma_a'\oplus \Gamma_2}{e_1
+      \sigma}{\tau''\effarr{\varepsilon} \tau}{\varepsilon_1}$ and $\typerel{\Gamma_b'}{e_2 \sigma}{\tau''}{\varepsilon_2}$, and
+      by the rule \apprule{} we have $\typerel{(\Gamma_a'\oplus \Gamma_2) \oplus (\Gamma_b'
+      \oplus \Gamma_2')}{(e_1\ e_2) \sigma}{\tau}{\varepsilon\cup\varepsilon_1\cup\varepsilon_2}$. Observing that
+      $(\Gamma_a'\oplus \Gamma_2) \oplus (\Gamma_b' \oplus \Gamma_2) = \Gamma_1 \oplus \Gamma_2 = \Gamma$, we can
+      conclude.
+
+    \item[Cases \letregrule, \regionrule{} and \locrule{}] By induction
+      hypothesis and proposition \ref{prop:genexchange}. 
+
+    \item[Case \absregrule] The conclusion of the rule is \typerel{\Gamma, x :
+      \tau'}{\regpr{p}{e}}{\regty{p,\varepsilon}{\tau}}{\emptyset}. Its premises are
+      \typerel{\Gamma, x : \tau', \capreg{p}}{e}{\tau}{\varepsilon} and $\capreg{\_}\notin \Gamma$. By
+      general exchange, we can derive \typerel{\Gamma, \capreg{p}, x : \tau'}{e}{\tau}{\varepsilon}
+      and thus, by induction hypothesis, \typerel{\Gamma, \capreg{p}}{e\sigma}{\tau}{\varepsilon}. By
+      \absregrule{}, we obtain
+      \typerel{\Gamma}{\regpr{p}{e}}{\regty{p,\varepsilon}{\tau}}{\emptyset}, as desired.  
+    
+    \item[Case \appregrule] Impossible 
+  
+    \item[Case \letrule] Simply by induction hypothesis. One can assume
+      that $\tau'$ does not contain any of the bound variables $\chi$.
+  \end{description}
+\end{proof}
+
+\subsection{Subject Reduction}
+\label{sec:subjectreduction}
+
+\begin{definition}
+  For an environment $\Gamma$, define 
+  \begin{eqnarray*}
+    dom_\rho(\Gamma) &=& \left\{ \rho \mid \rho\in \Gamma \right\}, \\
+    \Gamma(\rho) &=& \left\{ y \mapsto \tau \mid y : \refreg{\tau}{\rho} \in \Gamma\right\}.
+  \end{eqnarray*}
+  Now define $\storetype{\Gamma}{s}$ iff
+  \begin{itemize}
+    \item $dom_\rho(\Gamma) = dom(s)$
+    \item $\forall \rho\in dom(s), dom(\Gamma(\rho)) = dom(s(\rho))$
+    \item $\forall \rho\in dom(s), \forall y\in dom(s(\rho)),
+      \typerel{\Gamma}{s(\rho)(y)}{\Gamma(\rho)(y)}{\emptyset}$.
+  \end{itemize}
+\end{definition}
+
+
+\begin{definition}
+  \label{def:invariants}
+  For an environment $\Gamma$, a store $s$, an expression $e$, a type $\tau$ and an
+  effect $\varepsilon$, we define the following four properties:
+  \begin{description}
+    \item[(a)] $\typerel{\Gamma}{e}{\tau}{\varepsilon}$
+    \item[(b)] $\storetype{\Gamma}{s}$
+    \item[(c)] $\capreg{\rho} \in \Gamma$ implies $s(\rho) = \emptyset$
+    \item[(d)] $singleton(s)$, that is $\forall\rho\in dom(s)$, either $s(\rho) =
+      \emptyset$ or $s(\rho) = \{ y \mapsto v\}$ for some $y,v$.
+  \end{description}
+\end{definition}
+
+\begin{thm}[Subject Reduction]
+  \label{thm:subred}
+  Suppose the properties of \ref{def:invariants} are true for $\Gamma,s,e,\tau,\varepsilon$ and
+  suppose $s,erase(e) \basered s',erase(e')$ for some $s',e'$. Then there is
+  an environment $\Gamma'$ such that these properties are true as well for
+  $\Gamma',s',e',\tau,\varepsilon$. $\Gamma'$ relates to $\Gamma$ in one of the following ways:
+  \begin{itemize}
+    \item $\Gamma' = \Gamma, \rho,\capreg{\rho}$ with $\rho\notin \Gamma$
+    \item $\Gamma' = (\Gamma - \capreg{\rho}), y : \refreg{\tau}{\rho}$
+    \item $\Gamma' = \Gamma$ 
+  \end{itemize}
+\end{thm}
+\begin{proof}
+  By induction on the reduction $s, e \basered s', e'$. In these subcases we
+  usually disregard the possibility that the last rule applied to establish
+  the typing of $e$ has been the $\subeffrule$ rule. This does not alter the
+  proofs.   \begin{description}
+    \item[Case $\beta$] In this case, $e = (\lambda x : \tau'. e_1)\ v$ and we have the
+      reduction $s,(\lambda x : \tau'. e_1)\ v \basered s, \esub{e}{x\mapsto v}$.
+      Every derivation tree for $\typerel{\Gamma}{(\lambda x : \tau'. e_1)\ v}{\tau}{\varepsilon}$ has
+      the following shape:
+      \begin{equation*}
+      \inferrule* [left=\apprule]
+        {\inferrule* [left=\subeffrule] 
+          {\inferrule* [left = \absrule]
+            {\typerel{\Gamma_1, x : \tau'}{e_1}{\tau}{\varepsilon} \\ \capreg{\_}\notin \Gamma_1}
+            {\typerel{\Gamma_1}{\lambda x : \tau'.e_1}{\tau'\effarr{\varepsilon} \tau}{\emptyset}
+            } }
+        {\typerel{\Gamma_1}{\lambda x : \tau'.e_1}{\tau'\effarr{\varepsilon} \tau}{\varepsilon_1}} \\
+        {\typerel{\Gamma_2}{v}{\tau'}{\varepsilon_2} }}
+        {\typerel{\Gamma_1}{(\lambda x : \tau'. e_1)\ v}{\tau}{\varepsilon \cup \varepsilon_1 \cup \varepsilon_2}}
+      \end{equation*}
+
+      As a remark, we are allowed to write $\Gamma_1$ instead of $\Gamma_1\oplus \Gamma_2$ in
+      the last line thanks to propositions \ref{prop:capvalues} and
+      \ref{prop:oplusabsorb}. We still can use the fact that $\Gamma_1 \oplus \Gamma_2$
+      is defined. This will also be used in many of the other cases.
+
+      Now the substitution lemma \ref{lem:substlem} uses the established facts
+      to exactly prove (a) : \typerel{\Gamma}{\esub{e}{v \mapsto v}}{\tau}{\varepsilon}. Using
+      the \subeffrule{} rule, we can increase the effect as desired to $\varepsilon \cup
+      \varepsilon_1 \cup \varepsilon_2$. We now can take $s' = s$ and the properties (b), (c) and
+      (d) are true by hypothesis. Also note that if the last rule applied was
+      an additional \subeffrule{} rule, we could have increased the effect
+      accordingly in the resulting typing derivation, by the bias of the last
+      typing rule.
+
+    \item[Case $\chi$] In this case, $e = \tyapp{(\lambda\chi.e)}{\xi}$, and we have the
+      following reduction: $s, \tyapp{(\lambda\chi.e)}{\xi} \basered s,
+      \tsub{e}{\chi\mapsto \xi}$.  Every derivation tree for
+      $\typerel{\Gamma}{\tyapp{(\lambda\chi.e)}{\xi}}{\tau}{\varepsilon}$ has the following shape:
+      \begin{equation*}
+        \inferrule* [left=\apptyrule]
+          {\inferrule* [left=\abstyrule]
+            {\typerel{\Gamma,\chi}{v}{\tau}{\emptyset} \\ \capreg{\_}\notin \Gamma}
+            {\typerel{\Gamma}{\lambda\chi.v}{\forall\chi.\tau}{\emptyset} \\ \ctwf{\Gamma}{\xi} } }
+            {\typerel{\Gamma}{\tyapp{(\lambda\chi.e)}{\xi}}{\tsub{\tau}{\chi\mapsto \xi}}{\emptyset}}
+      \end{equation*}
+      Now the type substitution lemma \ref{lem:typesubst} gives us
+      $\typerel{\tsub{e}{\chi \mapsto \xi}}{\tsub{\tau}{\chi\mapsto \xi}}{\emptyset}$, as
+      desired. Again we can take $s' = s$ $\Sigma' = \Sigma$ and the properties (b), (c)
+      and (d) are true by hypothesis.
+
+\item[Case $p$] In this case, $e = \rapp{\regpr{p}{e}}{p}$, and we have the
+  following reduction: $s, \rapp{\regpr{p}{e}}{p} \basered s,e$. The
+  derivation tree for $\typerel{\Gamma}{\rapp{\regpr{p}{e}}{p}}{\tau}{\varepsilon}$ has the
+  following shape:
+  \begin{equation*}
+    \inferrule* [left=\appregrule]
+      { \inferrule* [left=\absregrule]
+        {\typerel{\Gamma,p,\capreg{p}}{e}{\tau}{\varepsilon} \\ \capreg{\_}\notin \Gamma,\Sigma}
+        {\typerel{\Gamma,p}{\regpr{p}{e}}{\regty{p,\varepsilon}{\tau}}{\emptyset} \\ \capreg{p}\notin \Gamma}}
+        { \typerel{\Gamma,p,\capreg{p}}{\rapp{(\regpr{p}{e})}{p}}{\tau}{\varepsilon}}
+  \end{equation*}
+    The conclusion is now obvious.
+    \item[Case $letreg$]
+      In this case, $e = \letreg{\rho}{e'}$ and we have the following reduction:
+      $s,\letreg{\rho}{e'} \basered \statesub{s}{\rho_1\mapsto \left\{ \right\}},
+      \region{\rho_1}{\regsub{e'}{\rho\mapsto \rho_1}}$, where $\rho_1\notin s$. The
+      derivation tree looks as follows:
+    \begin{equation*}
+      \inferrule* [left=\letregrule]
+        {\typerel{\Gamma,\rho,\capreg{\rho}}{e'}{\tau}{\varepsilon} \and \capreg{\rho}\notin \Gamma}
+        {\typerel{\Gamma}{\letreg{\rho}{e'}}{\tau}{\varepsilon\setminus \rho }}
+    \end{equation*}
+
+    Using the \regionrule{} rule, and defining $\Gamma' = \Gamma, \rho_1, \capreg{\rho_1}$, we
+    obtain (a).  Property (d) is still true for $s'$, as we only added an
+    empty region.  Property (c) is correct for $\Gamma'$ and $s'$, as we added one
+    capacity to $\Gamma$, whose region is empty. Finally, $(b)$ is correct, because
+    we added the same to the store as to the environment.
+
+  \item[Case $region$] In this case, $e = \region{\rho_1}{v}$ and we have the
+    following reduction: $s, \region{\rho_1}{v} \basered s,v$. The derivation
+    tree for $\typerel{\Gamma}{\region{\rho_1,\rho}}{\tau}{\varepsilon}$ looks as follows:
+    \begin{equation*}
+      { \inferrule* [right=\regionrule]
+        { \typerel{\Gamma}{v}{\tau}{\varepsilon} }
+        { \typerel{\Gamma}{\region{\rho_1}{v}}{\tau}{\varepsilon\setminus \rho_1} }
+        }
+    \end{equation*}
+    Taking $\Gamma' = \Gamma$, (a) is trivial as the type $\tau$ is preserved and $v$ is a
+    value. As $s' = s$, the other conditions are true by hypothesis.
+  \item[Case $ref$] In this case, $e = \reft \left[ \xi_1 \dots \xi_n \right]
+    \capreg{\rho_1}\ v$, and we have the following reduction starting from $s,e$:
+    $s, (\reft \left[ \xi_1 \dots \xi_n \right] \ \capreg{\rho_1})\ v \basered
+    s\left[ \rho_1 \mapsto s(\rho_1)\left[ y\mapsto v \right]\right], y_{\rho_1}$ where
+    $\rho_1\in s, y\notin s(\rho_1)$. We have the following derivation tree:
+    \begin{equation*}
+    { \inferrule* [right=\apprule]
+      { \inferrule* [right=\appregrule]
+        {\typerel{\Gamma_1}
+                   {\reft \left[ \xi_1 \dots \xi_n \right] }
+                   {\regty{\rho,\varepsilon'}{(\tau\effarr{\varepsilon}\refreg{\tau}{\rho})}}
+                   {\varepsilon_1} }
+        {\typerel{\Gamma_1, \capreg{\rho_1}}
+                 {(\reft \left[ \xi_1 \dots \xi_n \right] )@\rho_1}
+                 {\tau\effarr{\varepsilon}\refreg{\tau}{\rho}}{\varepsilon'\cup \varepsilon_1}} \\
+                 \typerel{\Gamma_2}{v}{\tau}{\varepsilon_2} 
+      }
+      {\typerel{\Gamma_1, \capreg{\rho_1}}{\reft \left[ \xi_1 \dots \xi_n \right] \rho_1\ v}{\refreg{\tau}{\rho}}{\varepsilon\cup \varepsilon_1 \cup \varepsilon_2 \cup \varepsilon'}}
+    }
+    \end{equation*}
+      with $\rho_1\in \Gamma_1$. Now, define $\Gamma' = (\Gamma - \capreg{\rho_1}), y :
+      \refreg{\tau}{\rho_1}$. By construction, we have (a) (by application of the
+      \locrule{} rule). We also easily have (c): The store typing only changed
+      for $\rho_1$, but we removed the capacity $\capreg{\rho_1}$ from $\Gamma$. We also
+      have (d): As $\capreg{\rho_1}\in \Gamma$, we have by hypothesis that $s(\rho_1) =
+      \emptyset$. Now, $s'$ differs from $s$ only in a reference allocated in
+      $\rho_1$, so $singleton(s')$ is still true. For (b), we know that $\rho_1\in
+      dom(s)$, so $dom(s) = dom(s')$, and thus $dom_\rho(\Gamma') = dom(s')$.  We now
+      have $y\in dom(\Gamma'(\rho_1))$, but we also have $y\in dom(s'(\rho_1))$. As
+      $\typerel{\Gamma_2}{v}{\tau}{\varepsilon_2}$, by proposition \ref{prop:weakweak}, we
+      have $\typerel{\Gamma'}{v}{\tau}{\varepsilon_2}$. By construction, we have $\Gamma'(\rho_1)(y) =
+      \tau$.  This proves $\typerel{\Gamma'}{s'(\rho_1)(y)}{\Gamma'(\rho_1)(y)}{\emptyset}$.
+
+    \item[Case $:=$] In this case, $e = (:= \left[ \xi_1 \dots \xi_n \right]
+      y_{\rho_1}\  v)$ and we have the following reduction $s, := \left[ \xi_1
+      \dots \xi_n \right] \ y_{\rho_1}\ v \basered s\left[ \rho_1 \mapsto
+      s(\rho_1)\left[ y \mapsto v \right] \right], \void$, with $\rho_1\in s, y\in
+      s(\rho_1)$. The derivation tree for $\typerel{\Gamma}{e}{\tau}{\varepsilon}$ looks as
+      follows:
+      \begin{equation*}
+        { \inferrule* [right=\apprule]
+          { 
+            \inferrule* [right=\apprule]
+              {\typerel{\Gamma_1}
+                       { := \left[ \xi_1 \dots \xi_n \right] }
+                       { \refreg{\tau}{\rho} \effarr{\varepsilon} \tau \effarr{\varepsilon'} \unit }
+                       {\varepsilon_1}
+                \\
+              \typerel{\Gamma_1}{y_{\rho_1}}{\refreg{\tau}{\rho}}{\varepsilon_2}\  (1) }
+              {\typerel{\Gamma_1}
+                    {:= \left[ \xi_1 \dots \xi_n \right] y_{\rho_1}}
+                    { \tau \tyarr \unit}
+                    {\varepsilon\cup \varepsilon_1 \cup \varepsilon_2}
+               } \\ 
+             \typerel{\Gamma_2}{v}{\tau}{\varepsilon_3} \   (2)
+          }
+          { \typerel{\Gamma}
+                    {:= \left[ \xi_1 \dots \xi_n \right] y_{\rho_1}\ v)}{\unit}
+                    {\varepsilon \cup \varepsilon_1 \cup \varepsilon_2 \cup \varepsilon_3 \cup \varepsilon'}
+          }
+        }
+      \end{equation*}
+      Set $\Gamma' = \Gamma$. As $e'$ is \void, (a) is trivial to prove by the
+      \conrule{} and \subeffrule{} rules. For (b), it suffices to show that
+      $\typerel{\Gamma}{s'(\rho_1)(y)}{\Gamma(\rho_1)(y)}{\emptyset}$. Using (1) and (2), this
+      is obvious. (c) and (d) are true by hypothesis.
+
+    \item[Case $!$]
+      In this case, $e = ! \left[\xi_1 \dots \xi_n\right] y_{\rho_1}$, and we have
+      the reduction $s, ! \left[\xi_1 \dots\xi_n\right] y_{\rho_1} \basered s,
+      s(\rho_1)(y)$, where $\rho_1\in s, y\in s(\rho_1)$. The derivation tree for
+      $\typerel{\Gamma}{e}{\tau}{\varepsilon}$ looks as follows:
+      \begin{equation*}
+        { \inferrule* [right=\apprule]
+          { \typerel{\Gamma}{!\left[\xi_1 \dots\xi_n\right]}
+            {\refreg{\tau}{\rho} \effarr{\varepsilon} \tau}{\varepsilon_1} \\
+            \typerel{\Gamma} { y_{\rho_1}} {\refreg{\tau}{\rho} }{\varepsilon_2}\ (1)}
+          { \typerel{\Gamma} {! \left[\xi_1 \dots\xi_n\right] y_{\rho_1}}{\tau}{\varepsilon\cup
+          \varepsilon_1\cup \varepsilon_2} }
+        }
+      \end{equation*}
+      Again, we set $\Gamma' = \Gamma$. As $s' = s$, we have the properties (b), (c),
+      and (d) for free by hypothesis. Using (1), we easily prove (a).
+  \end{description}
+\end{proof}
+
+\begin{thm}[One-Step Subject Reduction]
+  If the properties of definition \ref{def:invariants} are true for $\Gamma,e,\tau,s$
+  and $\varepsilon$, then for any $s',e'$ such that $s,e\onestep s',e'$ there is a $\Gamma'$  
+  such that these properties are true for $\Gamma',e',\tau,s'$ and $\varepsilon$. $\Gamma'$ relates
+  to $\Gamma$ as in theorem \ref{thm:subred}
+  \label{thm:onestep-subred}
+\end{thm}
+\begin{proof}
+  By induction on the form of the reduction context.
+  \begin{description}
+    \item[Case \bracket{~} ] This corresponds to the theorem
+      \ref{thm:subred}.
+
+    \item[Case $E\ \bracket{\xi}$ ] There is nothing to prove: The rule
+      \appgenrule{} applies as well after the reduction.
+
+    \item[Case $E\ e$] We know that $e = e_1\ e_2$ and $s,e_1 \onestep
+      s',e_1'$. The typing derivation looks as follows :
+      \begin{equation*}
+        { \inferrule* [left=\apprule]
+          { \typerel{\Gamma_1}{e_1}{\tau' \effarr{\varepsilon} \tau}{\varepsilon_1} \and
+          \typerel{\Gamma_2}{e_2}{\tau'}{\varepsilon_2}}
+          { \typerel{\Gamma_1 \oplus \Gamma_2}{e_1 \oplus e_2}{\tau}{\varepsilon\cup\varepsilon_1\cup\varepsilon_2 } }
+        }
+      \end{equation*}
+      We can apply the induction hypothesis to obtain $\typerel{\Gamma_1'}{e_1'}{\tau,
+      \tyarr \tau}{\varepsilon_1}$.  To reconstruct a typing for $e_1'\ e_2$, we need to
+      show that we can extend $\Gamma_2$ to $\Gamma_2'$ such that $\Gamma_1'\oplus \Gamma_2'$ is
+      defined and $e_2$ is still typable. Let $\Gamma_2'$ be obtained in the same
+      way from $\Gamma_2$ as $\Gamma_1'$ from $\Gamma$, but without adding (or removing) any
+      capabilities. Using proposition \ref{prop:strongweak}, we see that $e_2$
+      is still typable using $\Gamma_2'$, and it is easy to see that $\Gamma_1' \oplus
+      \Gamma_2'$ is defined.
+
+    \item[Case $v\ E$] Similar to the previous case.
+
+    \item[Case $\rapp{E}{p}$]  Similar, the typing rule \appregrule{} does not
+      pose any problems.
+  \end{description}
+\end{proof}
+
+\begin{thm}[General Subject Reduction]
+  If $\Gamma,s,e, \tau,\varepsilon$ fulfill the properties of definition \ref{def:invariants},
+  and if $s,e \reduction s',e'$, there is $\Gamma'$  such that $\Gamma',s,e,\tau,\varepsilon$ do
+  fulfill these properties as well.
+  \label{thm:generalsubred}
+\end{thm}
+\begin{proof}
+  Simple induction over the transitive closure of $\onestep$ (over the length
+  of the reduction sequence). In the reflexive
+  case (0 steps), we have $s = s', e = e'$ and the claim is trivial. In the
+  case of a single $\onestep$ step, theorem \ref{thm:onestep-subred} says
+  exactly what we want. In the transitive case, we just apply the induction
+  hypothesis twice.
+\end{proof}
+
+In particular, the properties of definition \ref{def:invariants} are true for
+$\Gamma = \emptyset$, and $s = \emptyset$, and any well-typed closed
+($\Gamma = \emptyset$) program $e$ of type $\tau$ and effect $\varepsilon$.
+
+\subsection{Other properties}
+
+\begin{lem}[Values]
+  The only Values of type $\refreg{\tau}{p}$ are variables and locations.
+  \label{lem:valueprops}
+\end{lem}
+\begin{proof}
+  Simply by looking at the typing rules.
+\end{proof}
+
+
+\section{The Weakest Precondition Calculus}
+
+In this section we prove the correctness of the weakest precondition calculus,
+including the instantiation restriction. Instead of the dealing directly with
+region calculus, we take for granted that a region corresponds to a reference
+and use globally created references instead. While the weakest precondition
+calculus is insensible to aliasing questions, it is not presented as such
+here; we give a direct interpretation of the the store types $ε$ (written
+$\langle ε \rangle$ in the paper), by defining a logic called {\em effect
+logic}, which in turn can be translated to standard higher-order logic. In
+effect logic, all operations on stores (the combine operator $\oplus$ and the
+restriction operator $|_ε$) are carried out directly and this needs the
+aliasing restriction. Unfortunately, this makes the presented proof
+unnecessarily dependent on the aliasing restriction.  Our proof thus only
+applies in the context of alias-free programs. However, it would be easy to
+adapt it to the more general context. There are some other superficial
+differences with language in the paper. Here we separate more clearly between
+the logic and programs.  Other small differences are that here the {\bf let}
+and {\bf if}-typing rules do effect union, while in the paper the subeffecting
+rule takes care of that.
+
+\subsection{The Language}
+
+\subsubsection*{Syntax} 
+
+  \begin{eqnarray*}
+    c &::=& n \sep () \sep \true \sep \false\\
+    v &::=& c \sep x~\alist{κ} \sep \lambda x\colonτ.e \sep
+    R \sep \rec~(y\colonτ')~(x\colonτ).~e\\
+    e &::=& v \sep v~v\sep \letst~x~\alist{χ}=e~\inst~e \sep v := v\sep
+    !\,v\\
+    & & \ifst~v~\thenst~e~\elsest~e\\
+    r &::=& R \sep ρ \\
+    b &::=& r \sep \ev\\
+    ε  &::=& b,\cdots, b\\
+    χ &::=& ρ \sep \ev \\
+    κ &::=& τ \sep r \\
+    \iota &::& \inttype \sep \unit \sep \bool \\
+    τ  &::=& \iota \sep τ  ->^ε  τ \sep \reftype_r \\
+    S  &::=& \forall \alist{χ}.τ \\
+    E &::=& [~]\sep \letst~x~\alist{χ}=E~\inst~e\\
+    Γ &::=& \emptyset \sep Γ, χ \sep Γ, x : S
+  \end{eqnarray*}
+
+\subsubsection*{Semantics}
+%TODO lookup and assignment to type
+  \framebox{$ s,e--\ s',e'$}
+  \begin{mathpar}
+    {\inferrule* [left=Beta] {~} {s, (\lambda x\colonτ.e)~v --\ s, e[x|->v]} }
+    \and
+    {\inferrule* [left=Rec] {~} {s,
+        (\rec~(y\colonτ ')~(x\colonτ ).~e)~v --\ s,
+        e[x|->v,y|->\rec~(y\colonτ ')~(x\colonτ ).~e]} }
+    \and
+    {\inferrule* [left=Let] {~} {s, \letst~x~\alist{χ}=v~\inst~e --\ s,
+        e[\Lambda \alist{χ}.x|->v]} }
+    \and {\inferrule* [left=Lookup] {~} {s, !\,r --\ s, s(r)} }
+    \and {\inferrule* [left=Assign] {~} {s, r:=n --\ s[r:=n], \void} }
+    \and {\inferrule* [left=IfTrue] {~}
+      {s,\ifst~\true~\thenst~e_1~\elsest~e_2 --\ s,e_1} }
+    \and {\inferrule* [left=IfFalse] {~}
+      {s,\ifst~\false~\thenst~e_1~\elsest~e_2 --\ s,e_2} }
+  \end{mathpar}
+  \framebox{$ s,e--> s',e'$}
+  \begin{mathpar}
+    {\inferrule* [left=Context] {s,e --\ s',e'} 
+      {s, E[e] --> s',E[e']} }
+  \end{mathpar}
+  \framebox{$ s,e->> s',e'$}
+  \begin{mathpar}
+    {\inferrule* [left=Refl] {~} {s,e ->> s,e} }
+    \and {\inferrule* [left=Step] {s,e->>s',e' \\ s',e' ->> s'',e''} 
+      {s,e ->> s'',e''} }
+  \end{mathpar}
+
+\subsubsection*{Typing}
+%TODO define compatibility for ref substitution 
+\framebox{$Γ |-_vv:τ$}\\
+  \begin{mathpar}
+      {\inferrule* [left=Var] {Γ(x) = \forall\alist{χ}.τ \\
+          \sigma = [\alist{χ}|->\alist{κ}]\\ \sigma\simτ }
+        {Γ|-_v x~\alist{κ} :τ\sigma} } \and
+    { \inferrule* [left=Const] {~} {Γ |-_v c : \mathit{TypeOf}(c) } } \and
+    {\inferrule* [left=Ref] {~} {Γ|-R : \reftype_R}} \and
+    { 
+\inferrule* [left=Abs] 
+      {Γ ,x\colon τ '|- e : τ ;ε  \\ \ceil{Γ
+          ,x:τ '}|- p : ε -> \proptype;ε \\
+      \ceil{Γ ,x\colon τ '},|-q: ε -> ε
+      ->\ceil{τ }->\proptype;ε} 
+      {Γ |-_v \lambda x\colon τ '.\{p\}e\{q\}:τ '->^ε τ } }
+    \and
+    { \inferrule* [left=Rec]
+%{Γ|-_v \rec~(y:\colonτ'->^ε} }
+      {Γ ,y\colon τ '->^ετ ,~x\colon τ '|- e : τ ;ε  \\
+        \ceil{Γ ,x\colon τ '}|- p : ε
+        ->\proptype;ε \\
+      \ceil{Γ ,x\colon τ '}|-q:ε ->ε ->\ceil{τ }->\proptype;ε} 
+      {Γ |-_v \rec~(y\colon τ '->^{ε}τ )~(x\colon τ) 
+        ').\{p\}e\{q\}:τ '->^ε τ
+      } }
+    \end{mathpar}
+    \framebox{$Γ |-e:τ;ε$}\\
+    \begin{mathpar}
+    {\inferrule* [left=Val] {Γ |-_v v : τ } {Γ |-v : τ ;\emptyset} }
+    \and
+    {\inferrule* [left=Lookup] {Γ|-_v v : \reftype_ρ } {Γ |-!\,v : \inttype;ρ} }
+    \and
+    {\inferrule* [left=Assign] 
+      {Γ|-_v v_1 : \reftype_ρ \\Γ |-_v v_2 : \inttype} 
+      {Γ |-v_1:=v_2 : \unit;ρ} 
+    }
+    \and
+    {\inferrule* [left=App] {Γ |-_v v_1 : τ '->^ε τ  \\ Γ |-_v v_2 : τ '} 
+      {Γ |-v_1~v_2 : τ ;ε } }
+    \and
+    {\inferrule* [left=Let] {Γ |- e_1 : τ ';ε _1 \\ Γ ,x:τ '|- e_2 : τ ;ε _2} 
+      {Γ |-\letst~x = e_1~\inst~e_2 : τ ;ε _1ε _2} }
+    \and
+    {\inferrule* [left=Letv] 
+      {Γ ,\alist{χ}|-_v e : τ ' \\ Γ ,x:\forall \alist{χ}.τ '|- e : τ ;ε } 
+      {Γ |-\letst~x~\alist{χ} = v~\inst~e : τ ;ε } }
+    \and
+    {\inferrule* [left=If]
+      {Γ |- v : \bool \\ Γ |- e_1 : τ \\ Γ |- e_2 :
+        τ}
+      {Γ |- \ifst~v~\thenst~e_1~\elsest~e_2 : τ}
+    }
+  \end{mathpar}
+
+\subsection{SHOL}
+
+\subsubsection*{Syntax}
+  \begin{eqnarray*}
+    f &::=& c \sep x \sep \lambda x\colon\theta  .f \sep
+     \\
+    & & f~f\sep f => f \sep f = f \sep (f,f) \sep\\
+    & & \forall x\colon\theta  .f \sep \forall \alist{χ}.f \sep \pi_1 \sep
+    \pi_2 \\
+    \theta   &::=& \ev\sep \inttype \sep \unit \sep \proptype \sep \\
+    & & \theta   -> \theta   \sep \theta *\theta \\
+    \Delta  &::=& \emptyset  \sep \Delta , x \colon \theta   \sep \Delta ,\alist{χ}
+  \end{eqnarray*}
+\subsubsection*{Typing rules}
+    \framebox{$\Delta|-f:\theta$}\\
+  \begin{mathpar}
+   { \inferrule* [left=Var] {\Delta (x) = \theta  } {\Delta |- x : \theta  } } 
+   \and
+   { \inferrule* [left=Const] { } {\Delta |- c : \mathit{TypeOf}(c)  } } 
+   \and
+   { \inferrule* [left=Abs] {\Delta ,x\colon\theta  |-f:\theta  '} {\Delta |- \lambda x\colon\theta  .f : \theta  ->\theta  '} }
+   \and
+   { \inferrule* [left=App] {\Delta |-f:\theta  '->\theta   \\ \Delta |-f':\theta  '} {\Delta |- f~f' : \theta  } }
+   \and
+   { \inferrule* [left=Eq] {\Delta |-f,f':\theta   } {\Delta |- f=f' : \proptype} }
+   \and
+   { \inferrule* [left=Impl] {\Delta |-f,f':\proptype } {\Delta |- f=> f' : \proptype} }
+   \and
+   { \inferrule* [left=Ty] {\Delta ,\alist{χ}|-f:\proptype } {\Delta |-
+       \forall \alist{χ}.f : \proptype} }
+   \and
+   { \inferrule* [left=FA] {\Delta ,x\colon\theta  |-f:\proptype } {\Delta |- \forall x\colon\theta  .f : \proptype} }
+   \and
+   { \inferrule* [left=Pair] {\Delta |-f_i:\theta  _i\quad i =1,2} {\Delta |- (f_1,f_2): \theta  _1*\theta  _2} }
+   \and
+   { \inferrule* [left=Proj,right={~\textnormal i=1,2}] {\Delta |-f:\theta  _1*\theta  _2} {\Delta |- \pi _i~f: \theta  _i}}
+  \end{mathpar}
+
+\subsection{Effect logic}
+
+\begin{figure*}[tpb]
+  \begin{minipage}[t]{0.5\linewidth}
+  \end{minipage}
+  \begin{minipage}[t]{0.5\linewidth}
+  \end{minipage}
+  \caption{Syntax and typing of the new constructs}
+  \label{fig:pholeff}
+\end{figure*}
+\subsubsection*{Syntax}
+  \begin{eqnarray*}
+    l & & \text{Labels} \\
+    f &::=& ... \sep !\,r^l \sep x~\alist{ε }
+    \sep 
+    \lambda l\colonε.f \sep \\
+    & & \forall l\colonε.f \sep f~s\\
+    s &::=& \{r_1 = f_1 \cdots r_n = f_n, \ev_1 = l_1, \cdots, \ev_m
+      = l_m \}\\
+    \theta &::=& \iota \sep \proptype \sep \theta -> \theta \sep
+    \theta*\theta \sep ε ->\theta \\
+    \zeta &::=& \forall \alist{χ}.\theta \\
+    \Delta  &::=& \emptyset \sep \Delta ,x\colon\zeta \sep \Delta ,\alist{χ}
+    \sep \Delta , l\colonε 
+  \end{eqnarray*}
+\subsubsection*{Typing (extension of the previous rules)}
+  \begin{mathpar}
+    {\inferrule* [left=Var] {\Delta (x) = \forall \alist{χ}.\theta } {\Delta |-x~\alist{ε } :
+        \theta [\alist{χ}|->\alist{κ }]}} 
+    \and
+    {\inferrule* [left=Rvar] {r\in\Delta (l)} {\Delta |-!\,r^l : \inttype} }
+    \and
+    {\inferrule* [left=EffAbs] {\Delta ,l\colonε |-f:\theta }
+      {\Delta |-\lambda l \colon  ε .f : ε  -> \theta } }
+    \and
+    {\inferrule* [left=EffFA] {\Delta ,l\colonε |-f:\proptype}
+      {\Delta |-\forall l\colon ε .f : \proptype} }
+    \and
+    {\inferrule* [left=EffRec] 
+      {\Delta|-f:ε ->\theta  \\ \Delta |-f_i :
+        \inttype \\ \ev_j\in \Delta (l_j) \\ ε =
+        \alist{r_i}\alist{\ev_j} } 
+      {\Delta |-f~\{r_i = f_i,\ev_j = l_j\}: \theta } }
+  \end{mathpar}
+
+In the following, we denote $σ$ an atomic substitution either of the
+form $[\ev|->ε] $ or of the form $[ρ|->r]$.
+\begin{definition}
+  Let $σ$ be a substitution. Then the application of this substitution
+  is defined differently for effect substitutions and reference
+  substitutions. If $σ = [\ev|->ε_0]$, then
+  \begin{equation*}
+    s\sigma= \left(\bigoplus_{b\in
+                  ε_s,b\neq\ev}s(b)\sigma~\oplus
+                ε_0^{s(\ev)}\right).
+  \end{equation*}
+  In the other case of $σ=[ρ|->r]$, 
+  \begin{equation*}
+    %TODO introduce notation for that
+    s\sigma= \bigoplus_{b\in ε} bσ =  s(b)σ.
+  \end{equation*}
+    
+\end{definition}
+\begin{definition}
+  The application of a substitution $\sigma$ to a formula is defined in the
+  following way (we only show the cases for the additional constructs,
+  otherwise the definition is straightforward, descending recursively
+  into subterms):
+  \begin{eqnarray*}
+    (\lambda l\colonε.f)\sigma &=& \lambda l\colon(ε\sigma).(f\sigma)\\
+    (\forall l\colonε.f)\sigma &=& \forall l\colon(ε\sigma).(f\sigma)\\
+    (f~s)σ &=& fσ~sσ\\
+    (!\,r)σ &=& !\,(rσ)
+  \end{eqnarray*}
+\end{definition}
+
+\begin{definition}
+  %TODO polish
+  We define the application of a label substitution $[l|->s_l]$.
+  \begin{description}
+  \item[for records:] $s[l|->s_l] = \bigoplus_{b\inε}s(b)$
+  \end{description}
+\end{definition}
+
+\begin{prop}
+  For two effect records $s_1,s_2$ of domain $ε_1$ and $ε_2$,
+  respectively, and atomic substitution $σ$, we have
+  \begin{equation*}
+    (s_1\oplus s_2)σ \equiv s_1σ \oplus s_2σ.
+  \end{equation*}
+  \label{prop:recsubst}
+\end{prop}
+\begin{proof}
+  The proof is trivial for the reference substitution case. In the
+  case of an effect substitution, let $σ=[\ev|->ε_0]$. Then we write
+  the following chain of equations.
+  \begin{align*}
+  s_1 σ\oplus s_2σ &= 
+  \bigoplus_{b\inε_1σε_2σ}\left\{
+    \begin{array}[]{ll}
+      s_2σ(b) & \text{if}~ b\inε_2σ\\
+      s_1σ(b) & \text{otherwise}
+    \end{array}
+\right.\\
+  &=\bigoplus_{b\inε_1σε_2σ}\left\{
+    \begin{array}[]{ll}
+      (\bigoplus_{b\inε_1} s_2(b)σ \oplus ε^{s_2(\ev)})(b) & \text{if}~ b\inε_2\\
+      (\bigoplus_{b\inε_2} s_1(b)σ \oplus ε^{s_1(\ev)})(b) &
+      \text{otherwise}\
+    \end{array}
+\right.\\
+  &=\left(\bigoplus_{b\inε_1σε_2σ}\left\{
+    \begin{array}[]{ll}
+      (\bigoplus_{b\inε_1} s_2(b)σ )(b) & \text{if}~ b\inε_2\\
+      (\bigoplus_{b\inε_2} s_1(b)σ )(b) &
+      \text{otherwise}\
+    \end{array}
+\right.\right)
+\oplus ε^{(s_1\oplus s_2)(\ev)}\\
+  &=\left(\bigoplus_{b\inε_1σε_2σ}\left\{
+    \begin{array}[]{ll}
+      s_2(b)σ & \text{if}~ b\inε_2\\
+      s_1(b)σ &
+      \text{otherwise}\
+    \end{array}
+\right.\right)
+\oplus ε^{(s_1\oplus s_2)(\ev)}\\
+  &=\left(\bigoplus_{b\inε_1σε_2σ}\left\{
+    \begin{array}[]{ll}
+      s_2(b) & \text{if}~ b\inε_2\\
+      s_1(b) &
+      \text{otherwise}\
+    \end{array}
+\right.\right)σ\\
+&=(s_1\oplus s_2)σ
+  \end{align*}
+  This proof silently supposes that both effect records contain the
+  field $\ev$. If one defines $ε^{s(\ev)}$ to be the empty record if
+  $s$ does not contain $\ev$, then the same proof is true in the other
+  three cases.
+\end{proof}
+
+\subsubsection*{Interpretation of the new constructs}
+
+\begin{eqnarray*}
+  [|\lambda l\colon ε.f|] & = & \lambda _{b\inε }(b^l\colon \theta _b).[|f|]\\
+  ~[|\forall l\colon ε.f|] & = & \forall _{b\in ε
+  }(b^l\colon \theta _b). [|f|]\\
+  ~[|!\,r^l |] & = &r^l \\
+  ~[|f~s~|] & = &
+          [|f|]~[|f_1|]~\cdots~[|f_n|]~\ev_1^{l_1}~\cdots~\ev_m^{l_m}
+\end{eqnarray*}
+where
+\begin{equation*}
+s = \{r_1 = f_1,\cdots,r_n = f_n,\ev_1 = l_1,\cdots ,\ev_m
+  = l_m \}
+\end{equation*}
+
+\subsubsection*{Equational Theory}
+
+In addition to the equation schemes present in SHOL, we add the
+following equation schema:
+\begin{equation}
+  (λl:ε.f)~s = fμ,\qquad μ = [ b^l|->s(b) \mid b\inε].
+  \label{eq:eqschema}
+\end{equation}
+
+\subsubsection*{Effect substitutions}
+
+\begin{definition}
+  An effect substitution $σ = [\ev |-> ε]$ is {\em compatible} with an
+  effect $ε'$ if $\ev\inε$ implies $ε$ disjoint from
+  $ε'$. Furthermore, a reference substitution $[ρ|->r]$ is {\em
+    compatible} with $ε'$ if $ρ\inε'$ implies $r\notinε'$.
+\end{definition}
+\begin{definition}
+  A substitution $σ$ is {\em compatible } with a formula $f$
+  if $σ$ is compatible with every effect expression and effect record
+  in $f$.
+\end{definition}
+\begin{definition}
+  Let $μ = [Λ\alist{χ}.x |-> f_x]$. Then $μ$ is {\em compatible} with $f$
+  iff for any $x~\alist{κ}$ in $f$, $[\alist{χ} |-> κ ]$ is
+  compatible with $f_x$.
+\end{definition}
+
+\subsubsection*{Soundness of the translation to SHOL}
+
+\begin{prop}
+  We have $s(r)σ = sσ(rσ)$ for any compatible substitution
+  $σ$ and any effect record $s$ whose domain contains $r$.
+  \label{prop:effrecsubstswap}
+\end{prop}
+\begin{proof}
+  Let $σ=[ρ|->r_0]$. Then
+    \begin{equation*}
+      s(r)σ = \left(\bigoplus_{b\inε}bσ = s(b)σ\right)(rσ) = sσ(rσ)
+    \end{equation*}
+  On the other hand, if $σ=[\ev|->ε_0]$, then
+  \begin{equation*}
+  s(r)σ = (\bigoplus_{b\inε}s(b)σ \oplus ε_0^{s(\ev)})(r) = sσ(rσ)
+  \end{equation*}
+  We have used the fact that $ε_0$ does not contain $r$ (because it is
+  compatible with the domain of $s$, and that $rσ=r$ for effect
+  substitutions.
+\end{proof}
+
+\begin{definition}
+  Let $f$ be an effect formula and $μ$ be a compatible
+  value substitution. Then write $ μ||=f$ for $||= fμ$, or, equivalently, $
+  |=[|fμ|]$. Thus, $μ$ contains the only free variables of $f$.
+\end{definition}
+
+\begin{lem}
+  Let $s_0$ be an effect record of domain $ε_0$ such that 
+  $Δ|-_r s_0 : ε_0$. Let $Δ,l:ε_0|-f:θ$ and $Δ,l:ε_0|-_rs : ε$. Also,
+  let 
+  \begin{eqnarray*}
+μ &=& [b^l|->s_0(b)\mid b\in ε_0] \\
+μ'&=&[b^l|->s_0σ(b)\mid b\inε_0σ]
+  \end{eqnarray*}
+  where $σ$ is some substitution compatible with $ε,ε_0$ and $f$. We have
+  \begin{enumerate}
+    \item $fμσ == fσμ'$,
+    \item $sμσ == sμ'σ$.
+  \end{enumerate}
+  \label{lem:substequal}
+\end{lem}
+\begin{proof}
+  We have to prove both statements using mutual induction over the
+  structure of formulas and effect records. Let us start with the
+  first one We start by proving the first statement. The only
+  interesting cases are the cases where the substitutions come into
+  play. This concerns effect abstraction, quantification, effect
+  records and references to variables.
+  \begin{description}
+  \item[Case $!\,r^l$.]
+    We can write the following equation:
+    \begin{align*}
+      (!\,r^l)μσ &== s(r)σ ==sσ(rσ) == (!\,(rσ)^l)μ' == (!\,r^l)σμ'
+    \end{align*}
+    We have used proposition~\ref{prop:effrecsubstswap}.
+  \item[Case $λl:ε_1.f_1$.] We write the following chain of equations.
+    \begin{align*}
+      (λl_1:ε_1.f_1)μσ&== (λl_1:ε_1.f_1μ)σ\\
+      &== λl_1:ε_1σ.f_1μσ\\
+      &==λl_1:ε_1σ.f_1σμ'\\
+      &==(λl_1:ε_1σ.f_1σ)μ'\\
+      &==(λl_1:ε_1.f_1)σμ'
+    \end{align*}
+    We have used the induction hypothesis, and the fact that the
+    variable substitutions $μ,μ'$ simply descend to the body of the
+    abstraction.
+  \item[Case $∀l:ε_1.f_1$]. Analogous.
+  \item[Case $f_1~s_1$.]
+    We have $(f~s)μσ = fμσ~sμσ = fσμ'~sσμ' =(f~s)σμ' $ by the induction
+    hypotheses.
+  \end{description}
+  Now, we need to prove the second part of the claim. We distinguish
+  the two different kinds of substitutions: for effects and for references.
+  \begin{description}
+  \item[Case $σ=\lbracket\ev|->ε_σ\rbracket$.] 
+    We write
+    \begin{align*}
+       sμσ &== \left(\bigoplus_{b\in ε} s(b)μ\right)σ\\
+      &==\bigoplus_{b\in ε} s(b)μσ \oplusε_σ^{s(\ev)μ} \\
+      &==\bigoplus_{b\in ε}s(b)σμ'\oplus \bigoplus_{b\inε_σ}b^{s(\ev)}μ'\\
+      &==\left(\bigoplus_{b\inε_1σ}s(b)σ\oplusε_0^{s(\ev)}\right)μ' \\
+      &== sσμ'
+    \end{align*}
+    This step from the second to the third line requires some
+    explanations. First, we have used the induction hypothesis for the
+    references part of s. Second, let us give the proof that the right
+    hand sides of $\oplus$ are indeed equal. For this, first suppose
+    that $s(\ev) = l$. 
+    \begin{description}
+    \item[Subcase $\ev\inε_0$.] Then 
+    \end{description}
+
+Then we obtain the equality
+    \begin{equation*}
+      ε_σ^{s_0(\ev)} = \bigoplus_{b\inεσ}s_0(b)σ.
+    \end{equation*}
+    However, $σ$ does never change the term on the right, as
+    $\ev\notin εσ$. Thus, the equation is true by definition. In the
+    other case $s(\ev) \neq l$, we have 
+
+
+    However, the
+    induction hypothesis only accounts for the concrete reference
+    fields of $s_1$. For the others (effect variable fields), consider
+    some effect variable $\ev_1\in dom(s_1) = ε_1$. We know that
+    $\ev_1\notin ε_0$, because σ is compatible with $f$.  First
+    suppose $\ev_1\inε$. Then the identity becomes $s(\ev_1)== 
+    s(\ev_1)$, which is trivially true.  On the other hand, if
+    $\ev_1\notin ε$, the substitutions do not apply, and we obtain
+    $s_1(\ev_1) == s_1(\ev_1)$.
+  \end{description}
+\end{proof}
+
+\begin{lem}[Preservation of Equality under Substitution] In effect
+  logic, $μ||= f_1 = f_2$ implies $μ||=f_1σ = f_2σ$, for any (atomic)
+  substitution which is compatible with $f_1,f_2$.
+\end{lem}
+\begin{proof}
+  By induction over the last rule applied to derive the equality.
+  The only case to consider is the case when the last rule applied is
+  the equation scheme~(\ref{eq:eqschema}); all other
+  cases do not involve effect abstraction. This means that the
+  equation is of the form
+\begin{equation*}
+  (λl:ε.f)~s = fμ,\qquad μ = [ b^l|->s(b) \mid b\inε].
+\end{equation*}
+We now want to prove
+\begin{equation*}
+  ((λl:ε.f)~s)σ = (fμ)σ
+\end{equation*}
+for some substitution $σ=[\ev|->ε_0]$. We can write
+\begin{align*}
+  ((λl:ε.f)~s)σ &= (λl:εσ.fσ)~sσ \\
+      &= fσμ'\quad\text{where}~μ' = [b^l|->sσ(b)\mid b\in εσ]\\
+      &== fμσ\quad\text{by Lemma~\ref{lem:substequal}}
+\end{align*}
+\end{proof}
+
+\begin{lem}[Preservation of Equality under Translation]
+  $f = f'$ in effect logic implies $[|f|] = [|f'|]$ in SHOL.
+\end{lem}
+\begin{proof}
+  A straightforward induction over the derivation of the proof of $f =
+  f'$. In the case where the schema (\ref{eq:eqschema}) has been
+  applied, one can obtain the same equality in SHOL by applying
+  $β$-equality $n$ times, where $n$ is the number of fields of the
+  effect record involved.
+\end{proof}
+
+In summary, we have shown that equation schema~(\ref{eq:eqschema}) is
+actually {\em admissible} in effect logic, if one defines validity in
+effect logic by the validity of the translation to SHOL, as we do. No
+additional equation can be proved. Using the lemma about preservation
+of equality under substitution, we can also state the following
+theorem:
+\begin{thm}
+  For any $σ = [\ev |-> ε]$ and $f$ such that $σ$ is compatible with
+  $fμ$ and $fμ$ monomorphic, we have $μ||=∀\ev.f$ implies $μ||=fσ$.
+  \label{thm:formulasubstvalid}
+\end{thm}
+
+This theorem is essential to our calculus, as it directly applies to
+the proof obligations for correctness of effect polymorphic
+functions. It states that the correctness remains valid if one
+instantiates the function with a (compatible) effect substitution. Our
+typing constraints guarantee that no other effect instantiation can
+occur.
+
+\subsection{Lifting Values and Types}
+
+\begin{definition}
+  We define a function $\lceil \cdot \rceil$ from program values to logic
+  expressions as follows:
+  \begin{eqnarray*}
+    \ceil{c} &=& c \\
+    \ceil{x~\alist{ε }} &=& x~\alist{ε } \\
+    \ceil{\lambda x\colon τ .\{p\}e\{q\}}  &=& (\lambda x:\ceil{τ }.p,\lambda x:\ceil{τ }.q)\\
+    \ceil{\rec~f~(x:τ).\{p\}e\{q\}} &=&
+    (\lambda x:\ceil{τ }.p,\lambda x:\ceil{τ }.q)
+  \end{eqnarray*}
+\end{definition}
+\begin{definition}
+  We define a function $\lceil \cdot \rceil$ from program types to logic types
+  as follows:
+  \begin{eqnarray*}
+    \ceil{\iota } &=& \iota  \\
+    \ceil{τ ->^ε τ '} &=& (\ceil{τ } -> ε
+    -> \proptype) \times\\
+    & & (\ceil{τ } -> ε  -> ε  -> \ceil{τ '}
+    -> \proptype)\\
+  \ceil{\forall \alist{χ}.τ } & =& \forall \alist{χ}.\ceil{τ }
+  \end{eqnarray*}
+\end{definition}
+\begin{prop}
+The following two simple properties are trivially verified.
+  \begin{enumerate}
+  \item 
+  $\ceil{τ} [\alist{χ} |-> \alist{ε}] == \ceil{τ[\alist{χ} |-> \alist{ε}]}$
+  \item
+  $\ceil{v} [\alist{χ} |-> \alist{ε}] == \ceil{v[\alist{χ} |-> \alist{ε}]}$
+  \end{enumerate}
+  \label{prop:typevaleffsub}
+\end{prop}
+
+\subsection{Weakest preconditions}
+
+\subsection*{Definition}
+\begin{eqnarray*}
+  c(x~\alist{ε } ) &==& \True \\
+  c(c) &==& \True \\
+  c(\lambda x\colonτ .\{p\}e\{q\}) &==& \forall x\colon\ceil{τ }.\forall
+  l\colon ε.p~ε^l => \wpre_{ε ^l}(e,
+q~ε^l)\\
+  c(v = \rec~(y\colonτ ->^ε τ ')~(x \colon τ ).\{p\}e\{q\})
+  &==& \forall y\colon\ceil{τ ->^ε τ '}.\forall
+  x\colon\ceil{τ }.\forall l\colonε.p~ε^l => \\
+  & & y = \ceil{v}  => \wpre_{ε ^l}(e,q~ε^l)\\
+  & & \\
+  \wpre_{\emptyset}(v,q) &==& q~\{\}~\ceil{v} /\ c(v) \\
+  \wpre_{r^l}(!\,r,q) &==& q~\{r = r^l\}~!\,r^l \\
+  \wpre_{\emptyset}(r:=v,q) &==& c(v) /\ q~\{r = \ceil{v}\}~() \\
+  \wpre_{ε ^l}( v_{τ '->^ε  τ }~v', q) &==& 
+  c(v) /\ c(v') /\ \pre~ \ceil{v}~ \ceil{v'}~ ε ^l /\
+  \\
+  & & \forall m\colonε.\forall x\colon\ceil{τ }. 
+  \post~\ceil{v}~\ceil{v'}~ε ^l~ε ^m~x => q~ε ^m~x \\
+  \wpre_{ε ^l}( \letst~x~\alist{χ} = v~\inst~e , q) &==& 
+  \forall \alist{\ev}.c(v) /\ \wpre_{ε ^l}(e,q)[\Lambda
+  \alist{\ev}. x |-> \ceil{v} ] \\
+  \wpre_{(ε _1ε _2)^l}( \letst~x = {e_1}_{τ
+    '}~\inst~e_2, q) &==&
+  \wpre_{ε _1^l}(e_1,\lambda m:ε _1.\lambda x\colon\ceil{τ '}.
+  \wpre_{ε _2\subseteq (ε _2^l\oplusε _1^m)}(e_2,q))\\
+  \wpre_{ε^l}(\ifst~v~\thenst~e_1~\elsest~e_2,q) &==& \ceil{v} = \true =>
+  \wpre_{ε_1\subseteqε^l}(e_1,q) /\ \\
+  & & \ceil{v} = false => \wpre_{ε_2\subseteqε^l}(e_2,q) \\
+  & & \\
+  \wpre_{ε _1\subseteqε ^l}(e,q) &==&
+  \wpre_{ε ^l|ε _1}(e,\lambda m\colonε _1.q~(ε ^l\oplus ε _1^m))
+\end{eqnarray*}
+
+\subsection*{Soundness of the \wpre-calculus}
+
+\begin{prop}
+  If $v$ is well-typed of type $τ$ using $\alist{χ}$ and
+  $σ=[\alist{χ}|->\alist{ε}]$ such that $σ\simτ$, then $σ$ is
+  compatible with $c(v)$.
+  \label{prop:compatvcv}
+\end{prop}
+\begin{proof}
+  This is trivial for $v \equiv x~\alist{ε}$ and $v \equiv c$, because
+  $c(v) = \True$ in this case.  Now if $v == λx:τ.\{p\}e\{q\}$, then
+  $τ= τ_1->^ετ_2$ and because of $σ\simτ$, $σ$ is compatible with
+  $ε$. The formula
+  \begin{equation*}
+        c(v)== ∀x:\ceil{τ}.∀l:ε.p => \wpre_{ε^l}(e,λm:ε.q)
+  \end{equation*}
+  can only contain effects not larger than $ε$ (because of the side
+  conditions when typing the $λ$-abstraction), and thus the claim is
+  true. The case for $\rec$ is analogous.
+\end{proof}
+
+\begin{prop}
+  For any (not necessarily atomic nor idempotent) effect substitution
+  $σ$, we have
+  \begin{equation*}
+    \wpre(e,q)σ \equiv \wpre(eσ, qσ)
+  \end{equation*}
+  and
+  \begin{equation*}
+    c(v)σ \equiv c(vσ) 
+  \end{equation*}
+  \label{prop:wpceffsubeq}
+\end{prop}
+\begin{proof}
+  Straightforward using prop.~\ref{prop:recsubst}.
+\end{proof}
+
+\begin{rem}
+  Proposition \ref{prop:wpceffsubeq} together with Theorem
+  \ref{thm:formulasubstvalid} gives us the following fact: If
+  $∀\alist{χ}.c(v)$ is valid and $σ$ is compatible with
+  $c(v)$, then $c(vσ)$ is valid as well.
+  \label{rem:correcteffsub}
+\end{rem}
+
+The following is the main lemma. It plays a similar rôle as the
+substitution lemma in subject reduction proofs. Let us introduce the
+following convention: if we use effect substitution or generalized
+value substitution, as in $fσ$ or $fμ$, we assume (or have to prove)
+that $σ$, respectively $μ$, is compatible with $f$. We assume a
+similar statement for $μ||=f $, where $μ$ must be compatible with $f$
+and $[|fμ|]$ be monomorphic.
+ 
+\begin{lem}
+  Let $e$ be an expression, and let $ε$ and $τ$ be its effect and
+  type.  Let $μ = [Λ\alist{χ}.y |-> v']$, $q,q'$ be formulas of type
+  $ε->\ceil{τ}->\proptype$, and set $θ = \ceil{τ}$. Suppose for some
+  $μ'$ we have
+  the following premises:
+  \begin{itemize}
+  \item $μ'||=∀\alist{χ}.c(v') $;
+  \item $y$ does not occur in $q'$;
+  \item $μ'||=∀x:θ.∀l:ε. qμ~ε^l~x => q'~ε^l~x$
+  \end{itemize}
+  Then we have:
+  \begin{itemize}
+    \item $μ'||=∀l:ε.\wpre_{ε^l}(e,q)μ => \wpre_{ε^l}(eμ,q')$
+    \item $μ'||=c(v)μ => c(vμ)$ 
+    \item $μ'||=∀l:ε.\wpre_{ε'\subseteqε^l}(e,q)μ => \wpre_{ε'\subseteqε^l}(eμ,q')$
+  \end{itemize}
+  \label{lem:effsubweakeningwp}
+\end{lem}
+\begin{rem}
+  \label{rem:effsubweakeningwp}
+  Actually, we want to prove two simpler properties (with identical
+  assumptions on $μ,v',q$ and $q'$):
+  \begin{enumerate}
+  \item $μ'||=∀x:θ.∀l:ε.q~ε^l~x => q'~ε^l~x$ implies $μ'||=∀l:ε.\wpre_{ε^l}(e,q) =>
+    \wpre_{ε^l}(e,q')$ ;
+    \item $μ'||=∀l:ε.\wpre_{ε^l}(e,q)μ => \wpre_{ε^l}(eμ,qμ)$.
+  \end{enumerate}
+  The first states that the weakest precondition of a stronger
+  statement implies the one of a weaker statement; the second one
+  states that the weakest precondition calculus stays valid if one
+  substitutes a (correct) value for a variable. Both properties are
+  necessary for the $\wpre$ calculus to be modular.
+
+  The formulation of the $\wpre$ calculus, however, forces us to prove
+  the two properties at the same time, hence Lemma
+  \ref{lem:effsubweakeningwp}. It is easy to see that the two desired
+  properties are implied by this lemma: Setting $μ = id$ we obtain the
+  first property, and setting $q' = qμ$, we obtain the second. 
+\end{rem}
+
+\begin{proof}
+  The third part of the lemma follows easily from the first, by
+  expanding definitions. We will use this property, however, in some
+  cases for the induction hypotheses of the first property.
+  
+  Let's prove the second part about correctness of values. In the case of
+  constants, there is nothing to prove.
+  \begin{description}
+    \item[Case $λ$] 
+      \begin{align*}
+        μ'||=c(λx:τ.\{p\}e\{q\})μ ~&<=>~μ'||= (∀x:\ceil{τ}.∀l:ε. p~ε^l =>
+        \wpre_{ε^l}(e,q~ε^l))μ \\
+        & <=>~ μ'||= ∀x:\ceil{τ}.∀l:ε.pμ~ε^l => \wpre_{ε^l}(e,q~ε^l)μ \\
+        & =>~μ'||= ∀x:\ceil{τ}.∀l:ε.pμ~ε^l => \wpre_{ε^l}(eμ,qμ~ε^l) \\
+        &<=>~μ'||= c(λx:τ.\{pμ\}eμ\{qμ\})
+      \end{align*}
+      The step from line 2 to line 3 is possible because of the induction
+      hypothesis on $\wpre(e,q)$ (see remark \ref{rem:effsubweakeningwp}). 
+    \item[Case $\rec$] This case is entirely analogous.
+      
+    \item[Case $x~\alist{ε}$] If $x$ is different from $y$, there is
+      nothing to prove. Otherwise, set $σ = [\ev|->ε]$. As
+      $x~\alist{ε}$ is well-typed, we know that $x$ is of type
+      $∀\ev.τ'$ such that $σ\simτ$. Now $v$, under the assumption
+      $\alist{χ}$, must be of type $τ$. We thus know by proposition~
+      \ref{prop:compatvcv} that $c(v)$ is compatible to $σ$. We have
+      $c((x~\alist{ε}))= c(vσ) = c(v)σ$ (proposition
+      \ref{prop:wpceffsubeq}) and we can apply theorem
+      \ref{thm:formulasubstvalid} to conclude.
+  \end{description}
+  
+  Now let's prove the part about \wpre.
+  \begin{description}
+    \item[Case $v$]
+      \begin{align*}
+        μ'||= \wpre_{ε^l}(v,q)μ~ &<=>~μ'||= (q~\{\}~\ceil{v})μ /\ c(v)μ\\
+        & <=>~μ'||= qμ~\{\}~\ceil{v}μ /\ c(v)μ\\
+        & => ~μ'||=q'~\{\}~\ceil{vμ} /\ c(vμ) \\
+        &<=>~ μ'||=\wpre_{ε^l}(vμ,q')
+      \end{align*}
+      We can go from the second to the third line by using proposition
+      \ref{prop:typevaleffsub}, the induction hypothesis on values and the
+      hypothesis on the implication from $q$ to $q'$.
+
+    \item[Case $!\,r$]  
+      \begin{align*}
+        μ'||= \wpre_{ε^l}(!\,r,q)μ &<=>~μ'||= qμ~\{\}~r^l\\
+        & =>~μ'||= q'~\{\}~r^l\\
+        & <=>~μ'||= \wpre_{ε^l}(!\,r,q')
+      \end{align*}
+      We have only used the condition on $q$ and $q'$.
+
+    \item[Case $r:=v$ ] 
+      \begin{align*}
+        μ'||= \wpre_{ε^l}(r:=v,q)μ &<=>~μ'||= c(v)μ /\ qμ~\{r = \ceil{v}μ\}~\void\\
+        & =>~μ'||= c(vμ) /\ q'~\{r = \ceil{vμ}\}~\void\\
+        & <=>~μ'||= \wpre_{ε^l}(r:=vμ,q')
+      \end{align*}
+      We used the induction hypothesis on $c(v)$ and the implication
+      between $q$ and $q'$.
+
+   \item[Case app] This case is very similar to the cases before (but
+     the manipulated formula is more complex), and the induction
+     hypothesis on $c(v)$ is used twice.
+   \item[Case monomorphic $let$ ] 
+     Here we reason inside out: 
+     \begin{multline*}
+       μ'||= ∀x:θ.∀l:(ε_1ε_2). qμ~(ε_1ε_2)^l~x => q'(ε_1ε_2)^l~x\\
+       =>μ'||=
+       ∀l:(ε_1ε_2).∀ε_1^m.∀ε_2^o.∀z:θ.(λo:ε_2.qμ~(ε_1^m\oplusε_2^o))~ε_2^l~z
+       => (λo:ε_2.q'~(ε_1^m\oplusε_2^o))~ε_2^l~z\
+     \end{multline*}
+     Now set $f(q) = λo:ε_2.q~(ε_1^m\oplusε_2^o)$ (note that $f(qμ) =
+     f(q)μ$), so we can continue:
+     \begin{equation*}
+       μ'||=∀l:(ε_1ε_2).∀m:ε_1.\wpre_{(ε_2^l\oplusε_1^m)|_{ε_2}}(e_2,f(q))μ
+       =>\wpre_{(ε_2^l\oplusε_1^m)|_{ε_2}}(e_2μ,f(q'))
+      \end{equation*}
+      Now, set
+      \begin{equation*}
+        g(e,q) =
+        λm:ε_1.λx:\ceil{τ'}.\wpre_{(ε_2^l\oplusε_1^m)|_{ε_2}}(e,f(q))
+        = \wpre_{ε_2\subseteq (ε_2^l\oplusε_1^m)}(e,q)
+      \end{equation*}
+      and we have
+     \begin{align*}
+       &μ'||=∀l:(ε_1ε_2).∀z:\ceil{τ'}.g(e_2,q)μ~ε_1^l~z => g(e_2μ,q')~ε_1^l~z\\
+       =>~&μ'||=∀l:(ε_1ε_2).\wpre_{ε_1^l}(e_1,g(e_2,q))μ => \wpre_{ε_1^l}(e_1μ,g(e_2μ,q'))\\
+       =>~&μ'||=∀l:(ε_1ε_2).\wpre_{ε_1^l}(\letst~x=e_1~\inst~e_2,q)μ => 
+         \wpre_{ε_1^l}(\letst~x=e_1μ~\inst~e_2μ,q')
+     \end{align*}
+     We have used the induction hypothesis twice here, for $e_1$ and
+     $e_2$ and for different formulas.
+     
+   \item[Case polymorphic $let$ ] 
+     Let us write $μ_0$ for $[Λ\alist{χ}.x |-> v] $, $μ_0'$ for
+     $[Λ\alist{χ}.x |-> vμ] $ and $μ_0μ$ for the combination of the two
+     substitutions. Now,
+     \begin{align*}
+       μ'||= \wpre_{ε^l}(\letst~x~\alist{χ} = v : τ'~\inst~e,q)μ
+       &<=>~μ'||= ∀\alist{χ}.c(v)μ /\ \wpre_{ε^l}(e,q)μ_0μ\\
+         &<=>~μ'||= ∀\alist{χ}.c(v)μ /\ \wpre_{ε^l}(e,q)μμ_0'\\
+         &=>~μ'||= ∀\alist{χ}.c(vμ) /\ \wpre_{ε^l}(eμ,q')μ_0'\\
+         &<=>~μ'||= \wpre_{ε^l}(\letst~x~\alist{χ} = vμ : τ'~\inst~eμ,q')
+     \end{align*}
+     In the third line we can exchange the substitutions in this way because
+     $v'$ does not contain $x$. In the next line, we apply the
+     induction hypothesis, but on $μ'μ_0'||= \wpre_{ε_0}(e,q)μ$.
+     \item[Case $if$] We have
+       \begin{align*}
+         &μ'||=\wpre_{ε^l}(\ifst~v~\thenst~e_1~\elsest~e_2,q)μ\\
+         <=>& μ'||= \ceil{v}μ = true =>
+         \wpre_{ε_2\subseteqε^l}(e_2,q)μ/\ 
+         \ceil{v}μ = false => 
+         \wpre_{ε_2\subseteqε^l}(e_2,q)μ\\
+         =>& μ'||= \ceil{vμ} = true
+         =>\wpre_{ε_2\subseteqε^l}(e_2μ,q')/\
+         \ceil{vμ}
+         = false =>
+         \wpre_{ε_2\subseteqε^l}(e_2μ,q')\\
+         <=>& μ'||= \wpre_{ε^l}((\ifst~v~\thenst~e_1~\elsest~e_2)μ,q')
+       \end{align*}
+  \end{description}
+\end{proof}
+
+Let us now proceed to the subject reduction theorem. This kind of
+theorem always states that some property (typically the type of an
+expression in type safety proofs) remains valid when reducing a term
+using the reduction relation. Here, it's the validity of the
+preconditions that is preserved; if the weakest precondition $p$ of $e$
+and $q$ is valid at some point in the reduction process, the weakest
+precondition $p'$ of $e'$ and $q$ after reduction is valid as well.
+
+Let us define $ε_s$ (where $ε$ contains only references) as the effect
+record of type $ε$ in which every reference of $ε$ is set to its
+value according to $s$. Now define $μ,s||=_{ε} q$, where $q$ is of type
+$ε->\proptype$, as $μ||=q~ε_s$. In the particular case of
+$q=\wpre(e,q)$, this gives us: 
+\begin{equation*}
+μ,s||=_{ε}\wpre(e,q)~ <=>~μ||=(λl:ε.\wpre_{ε^l}(e,q))~ε_s~<=>~μ||=\wpre_{ε_s}(e,q). 
+\end{equation*}
+Therefore, in the proofs concerning the $\wpre$ calculus, we will use
+the names of the references to represent their value in s.
+
+In the following, we also use the notation $\wpre_{ε_1\subseteq
+  ε_2}(e,q)$ (note the subtle difference with $\wpre_{ε_1\subseteq
+  ε_2^l}(e,q)$, the difference is that the former contains two
+effects, while the latter contains one effect and one effect
+record). It is defined as
+\begin{equation*}
+  \wpre_{ε_1\subseteq ε_2}(e,q) = λl:ε_2.\wpre_{ε_1\subseteq
+    ε_2^l}(e,q).
+\end{equation*}
+
+\begin{thm}[Subject Reduction]
+  For any well-typed $e$ of effect $ε$, such that $s,e --\ s',e'$ and
+  $μ,s||={_ε} \wpre(e,q)$, we have $μ,s'||=_{ε} \wpre_{ε'\subseteqε}(e',q)$,
+  where $ε'$ is the effect of $e'$.
+  \label{thm:basered}
+\end{thm}
+\begin{proof}
+  By induction over the reduction of $s,e$.
+  \begin{description}
+
+  \item[Case $!\,r$] Let $s(r) = n$. In this case, $μ,s||=_r\wpre(!\,r,q)
+    <=> μ||=q~\{r = n\}~n <=> μ,s||=_r\wpre_{∅\subseteq r}(n,q)$. 
+
+  \item[Case $r:=n$ ] $s,r:= n --\ s[r|-> n], \void $. We have
+    $μ,s||=_r\wpre(r:=n,q) <=> μ||= c(v) /\ q~\{r=n\}~\void$ and
+    $\wpre_{∅\subseteq r}(\void,q) = q~\{r=n\}~\void $ is identical.
+
+    \item[Case $let$ without generalization] 
+      Suppose first that no effect generalization takes place.
+      Then $s, \letst~x = v~\inst~e --\ s, e[x|->v]$. We also have 
+      \begin{align*}
+      \wpre_{ε^l}(\letst~x = v : τ~\inst~ e , q) &=
+  \wpre_{∅}(v,λm:().λx:\ceil{τ'}.\wpre_{ε^l}(e_2, q))\\
+            &= c(v) /\  \wpre_{ε^l}(e_2,q)[x|->\ceil{v}]
+      \end{align*}
+      Using Lemma \ref{lem:effsubweakeningwp} and the fact that
+      $q[x|->[v] ] => q $ (because $q$ does not contain $x$), this can
+      also be written as $\wpre(e[x|->v],q)$. 
+      
+    \item[Case $let$ with generalization] 
+      We have 
+      \begin{equation*}
+      s, \letst~x~\alist{χ} = v~ \inst~ e --\ s, e[Λ\alist{χ}.x|->\ceil{v}] . 
+      \end{equation*}
+      We also have 
+      \begin{equation*}
+        \wpre_{ε^l}(\letst~x~\alist{χ} = v~\inst~e,q) = ∀\alist{χ}.c(v) /\ 
+        \wpre_{ε^l}(e,q)[Λ\alist{χ}.x|->v ].
+      \end{equation*}
+      For the same reason as above, we have $\wpre(e[Λ\alist{χ}.x|->v],q)$,
+      which is the desired formula. The substitution is compatible by
+      definition of the $\wpre$ calculus.
+
+    \item[Case $β$] In the following, let $v' = λy:τ.\{p'\}e\{q'\}$ and
+      suppose that the result of application is of type $τ'$.
+      We have $s, v'~v --\ s, e[y|-> v] $, and $s||= \wpre(v'~v, q)$.
+      We want to obtain $s||=\wpre(e[y|->v],q)$.
+       First, we have 
+       \begin{equation}
+         ||= p'[y|-> \ceil{v} ]~ε_s,
+         \label{eq:beta}
+       \end{equation}
+       as the precondition of $v'$ applied to the argument. Now, the
+       correctness of $v'$ is written
+       \begin{equation*}
+         c(v') = ∀l:ε.∀y:\ceil{τ}. p'~ε^l => \wpre_{ε^l}(e,q'~ε^l)
+       \end{equation*}
+       instantiating with $ε_s$ and $\ceil{v}$ and using
+       \ref{eq:beta}, we derive 
+       \begin{equation}
+         ||= \wpre_{ε_s}(e,q'~ε_s)[y|->\ceil{v}]
+         \label{eq:subst}
+       \end{equation}
+       We also have
+       \begin{equation*}
+         ∀m:ε.∀x:\ceil{τ'}.q'[y|->~\ceil{v}]~ε_s~ε^m~x => q~ε^m~x
+       \end{equation*}
+       By Lemma \ref{lem:effsubweakeningwp} and \ref{eq:subst}, we can conclude
+       \begin{equation*}
+         \wpre_{ε_s}(e[y|->\ceil{v}],q).
+       \end{equation*}
+       
+     \item[Case $\rec$] Let $v' = \rec~(z:τ'->τ)~(y:τ').\{p\}e\{q\}$.
+       The result of the application is of type $τ$. As in the $β$
+       case, we have 
+       \begin{equation}
+         ||= p'[y|-> \ceil{v} ]~ε_s,
+         \label{eq:recbeta}
+       \end{equation}
+       and we also have the correctness of both values, in particular
+       for the recursive function:
+       \begin{equation*}
+         c(v') = ∀l:ε.∀z:\ceil{τ'->τ}.∀y:\ceil{τ'}. p'~ε^l => z = \ceil{v'} => \wpre_{ε^l}(e,q'~ε^l)
+       \end{equation*}
+       Instantiating with $ε_s$ for $ε_0$, $v'$ for $z$ and $v$ for
+       $y$, we obtain again
+       \begin{equation*}
+         ||= \wpre_{ε_s}(e,q'~ε_s)[y|->\ceil{v}]
+       \end{equation*}
+       and we can proceed as in the case for $β$.
+     \item[Case $\mathit{if}$] One of the assertions $\ceil{v} = \true$ and
+       $\ceil{v} = \false$ is trivially true in both cases. In either
+       case, we obtain precisely the desired statement by applying
+       modus ponens.
+  \end{description}
+\end{proof}
+
+\begin{thm}
+  For any well-typed $e$ of effect $ε$, such that $s,e --> s',e'$ and
+  $s||={_ε} \wpre(e,q)$, we have $s'||=_{ε} \wpre_{ε'\subseteqε}(e',q)$,
+  where $ε'$ is the effect of $e'$.
+  \label{thm:onestep}
+\end{thm}
+\begin{proof}
+  There are only two cases here: the empty context and the
+  $\letst$-context. The statement about the empty context is precisely
+  Theorem~\ref{thm:basered}.
+
+  In the remaining case, we have $s,E[e]-->s',E[e']$ and thus also
+  \begin{equation*}
+    s,\letst~x=E[e]~\inst~e_1 --> s', \letst~x=E[e']~\inst~e_1.
+  \end{equation*}
+  Our induction hypothesis is that $s||=_ε\wpre(E[e],q)$ implies
+  $s'||=_ε\wpre_{ε'\subseteqε}(E[e'],q)$.  We also have
+  $s||=_ε\wpre(\letst~x=E[e]~\inst~e_1,q)$, which amounts to
+  \begin{equation*}
+    s||=_ε \wpre(E[e],λm:ε.λx:\ceil{τ'}.\wpre_{ε_2\subseteq ε_s}(e_2,q))
+  \end{equation*}
+  By the induction hypothesis, we have 
+  \begin{equation*}
+    s'||=_ε \wpre_{ε'\subseteq
+      ε}(E[e'],λm:ε.λx:\ceil{τ'}.\wpre_{ε_2\subseteq ε_s}(e_2,q))
+  \end{equation*}.
+\end{proof}
+
+\begin{thm}
+  For any well-typed $e$ of effect $ε$, such that $s,e->>s',e'$, we
+  have $s||=_ε\wpre(e,q)$ implies $s'||=_ε\wpre_{ε'\subseteq ε}(e',q)$
+\end{thm}
+\begin{proof}
+  There are two cases. In the case of reflexivity, this is
+  obvious. For transitivity, assume $s,e->>s',e'$ and
+  $s',e'->>s'',e''$. Also assume that the effects of $e'$ and $e''$
+  are $ε_1$ and $ε_2$, respectively. It is easy to obtain
+  $s'||=_ε\wpre_{ε'\subseteq ε}(e',q)$ by one of the induction
+  hypotheses. By unrolling definitions, this implies
+  \begin{equation*}
+s'||=_{ε_1} \wpre(e',λm:ε_1.q~(ε_{s'}\oplusε_1^m))
+  \end{equation*}
+  and again, by applying the induction hypothesis, we obtain
+  \begin{equation*}
+    s''||=_{ε_1} \wpre_{ε_2\subseteq ε_1}(e'',λm:ε_1.q~(ε_{s'}\oplusε_1^m)).
+  \end{equation*}
+  This transforms into the desired formula by the following chain of
+  equations:
+  \begin{align*}
+    &s''||=_{ε_1} \wpre_{ε_2\subseteq
+      ε_1}(e'',λm:ε_1.q~(ε_{s'}\oplusε_1^m))\\
+    <=>&
+    ||=\wpre_{ε_2\subseteq {ε_1}_{s''}}(e'',λm:ε_1.q~(ε_{s'}\oplusε_1^m)) \\
+    <=>&
+    ||=\wpre_{{ε_1}_{s''}|ε_2}(e'',λo:ε_2.(λm:ε_1.q~(ε_{s'}\oplusε_1^m))
+    ({ε_1}_{s''} \oplus ε_2^o)) \\
+    <=>&
+    ||=\wpre_{{ε_1}_{s''}|ε_2}(e'',λo:ε_2.q~(ε_{s'}\oplus({ε_1}_{s''} \oplus ε_2^o))) \\
+    <=> &||=\wpre_{ε_{s''}|ε_2}(e'',λo:ε_2.q~(ε_{s''}\oplus ε_2^o)) \\
+    <=> &||=\wpre_{ε_2\subseteq ε_{s''}}(e'',q) \\
+    <=> &s''||=_{ε}\wpre_{ε_2\subseteq ε}(e'',q) 
+  \end{align*}
+  From line 3 to line 4, we first exploit the fact that $ε_{s''}$
+  restricted to $ε_2$ is the same as ${ε_1}_{s''}$, because of
+  $ε_2\subseteq ε_1\subseteq ε$. For the same reason, and the
+  additional fact that the only difference between $ε_{s'}$ and
+  ${ε_1}_{s''}$ lies in the domain of $ε_2$, we can simplify the
+  $\oplus$ chain to the right form.
+\end{proof}
+
+\begin{cor}
+  For any $e$ and $q$ and $s,e->>s',v$, we have $s||=_ε\wpre(e,q)$
+  implies $||=q~\ceil{v}~ε_{s'}$.
+\end{cor}
+\begin{proof}
+  Direct consequence from the previous theorem and the definition of
+  the $\wpre$ for values.
+\end{proof}
+
+
+\end{document}

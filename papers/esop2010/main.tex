@@ -47,11 +47,6 @@ INRIA Saclay - Île-de-France, ProVal, Orsay, F-91894 \and
 }
 %TODO explain somewhere the correspondence store type <-> map, effect variable
 %<-> domain, region <-> key
-%TODO the constants dealing with maps
-
-%TODO clearly state possibilities/limitations of the system
-% * one can store everything in refs
-% * but aliasing restriction (refs in refs, lists of refs etc)
 
 %external TODO : proofs for Hashtbl
 %external TODO : proofs of system
@@ -361,6 +356,7 @@ contain an environment $Γ$, which is simply a map from variable names to {\em
 type schemes} of the form $∀\alist{χ}.τ$ .
 
 \begin{figure}[tbp]
+  \framebox{$Γ|-_v t : τ$}
   \begin{mathpar}
   { \inferrule*[Left=Var] {Γ(x) = ∀\alist{χ}.τ} {Γ|-_v x~[\alist{κ}] :
   τ[\alist{χ}|->\alist{κ}]} } \and
@@ -394,6 +390,7 @@ between values are considered as values as well, as they don't have any
 effect.
 
 \begin{figure}[tpb]
+  \framebox{$Γ|- t : τ,ε$}
 \begin{mathpar}
   { \inferrule*[Left=Value]
   { Γ |-_v t : τ  }
@@ -475,6 +472,7 @@ same, but in addition it expects the store {\em at the exit of the function},
 as well as the function's return value.
 
 \begin{figure}[tbp]
+  \framebox{$Γ|-_l t : τ$}
   \begin{mathpar}
   { \inferrule*[Left=Logic]
     { Γ |-_v t : τ  }
@@ -617,6 +615,10 @@ one separates name creation and allocation, while still maintaining that one
 can only allocate a single reference in each region. This is how it is done in
 the correctness proof of this restriction. The presented \letml\refml\
 construct is of course a special case.
+%TODO clearly state possibilities/limitations of the system
+% * one can store everything in refs
+% * but aliasing restriction (refs in refs, lists of refs etc)
+
 %TODO now, all operations on maps can be statically resolved.
 
 \subsection{Some properties}
