@@ -37,18 +37,17 @@
 \newcommand{\ceil}[1]{\lceil #1 \rceil}
 
 \begin{document}
-\title{\mbox{Specifying Imperative Higher-Order Programs}}
+\title{\mbox{Verifying Imperative Higher-Order Programs}}
 
 \author{Johannes Kanig\inst{1,}\inst{2} \and Jean-Christophe
 Fill\^atre\inst{2,}\inst{1}}
 \institute{
-INRIA Saclay - Île-de-France, ProVal, Orsay, F-91894 \and
+INRIA Saclay - Île-de-France, ProVal, Orsay, F-91893 \and
  LRI, Univ Paris-Sud, CNRS, Orsay, F-91405
 }
 %TODO explain somewhere the correspondence store type <-> map, effect variable
 %<-> domain, region <-> key
 
-%external TODO : proofs for Hashtbl
 %external TODO : proofs of system
 % 
 
@@ -61,26 +60,25 @@ INRIA Saclay - Île-de-France, ProVal, Orsay, F-91894 \and
   modular treatment of higher-order functions.  We also define a weakest
   precondition calculus for this language which generates proof obligations in
   higher-order logic.  To our knowledge, this is the first time that effect
-  polymorphism is put to use in program verification.  A simple mechanism
-  based on regions permits to restrict the analysis to alias-free programs,
-  thus obtaining much simpler proof obligations. Several examples demonstrate
-  the practicality of the system. A prototype implementation exists and has
-  been used to prove the correctness of these and more examples.
-\end{abstract}
+  polymorphism is put to use in program verification. Additionally, we propose
+  a region-based analysis to exclude aliasing, in order to obtain much simpler
+  proof obligations. Several examples demonstrate the practicality of the
+  system. A prototype implementation exists and has been used to prove the
+  correctness of these and more examples.  \end{abstract}
 
 \section{Introduction}
 
-The purpose of the present paper is to introduce a simple weakest precondition
-calculus for imperative higher-order programs. Higher-order functions are a
-key feature, not only of purely functional languages like Haskell and the pure
+The purpose of the present paper is to propose a language suited for reasoning
+about effectful higher-order programs.  Higher-order functions are a key
+feature, not only of purely functional languages like Haskell and the pure
 fragment of ML, but also in combination with imperative features, like
-references. However, reasoning about higher-order functions is difficult, and
-especially so in the presence of effectful computations. Any function's
-specification depends on its arguments. In a higher-order setting, arguments
-may be functions that have their own specification. In consequence, to be
-modular, the specification of a higher-order function can only be formulated
-{\em depending on the specifications of its functional arguments}. In a
-setting where side effects are possible, one also needs to formulate the
+references or arrays. However, reasoning about higher-order functions is
+difficult, and especially so in the presence of effectful computations. Any
+function's specification depends on its arguments. In a higher-order setting,
+arguments may be functions that have their own specification. In consequence,
+to be modular, the specification of a higher-order function can only be
+formulated {\em depending on the specifications of its functional arguments}.
+In a setting where side effects are possible, one also needs to formulate the
 specification {\em depending on the side effects of the functional arguments}.
 We claim that to be truly modular, the specification of a higher-order
 function must be generic with respect to the specification {\em and} the
@@ -91,117 +89,117 @@ a programming language and logic. It uses an effect system and a region
 calculus to track references. The effect system contains {\em effect
 polymorphism}, thus dealing well with higher-order functions. The
 specifications can be expressed in higher-order logic, to be able to state
-properties of functional arguments. We show how two very simple modifications
-to the system let us obtain alias-free programs, with the aim of obtaining
-much simpler proof obligations.
+properties of functional arguments.  We then proceed to define a weakest
+precondition calculus for this language, transforming an annotated
+program into a logic formula, which has to be valid for the program to be
+correct. This calculus is very straight-forward and syntax-directed.
 
-We then proceed to define a weakest precondition calculus based on this
-language, transforming an annotated program into a logic formula, which has to
-be valid for the program to be correct. This calculus is very straight-forward
-and syntax-directed.
-
-Finally, we show the usefulness of the system by giving several examples of
-annotated programs. All the programs have been proved correct using our
-prototype implementation called \who.
+Programs in our language may contain aliases. However, we obtain much simpler
+proof obligations when aliases are excluded. Therefore, we also propose a
+static region-based analysis rejecting programs with aliasing. The weakest
+precondition calculus on the alias-free fragment has been implemented in a
+prototype tool called \who~\cite{KanigFilliatre09wml}.  We show the usefulness
+of this tool on several examples, which have all been proved correct. 
 
 \paragraph{Outline.}
-Section~\ref{sec:genpic} gives an introduction to the described language as
-well as an example. Sections~\ref{sec:syntax} and \ref{sec:wp} give the
-details about the programming language and the weakest precondition calculus.
-In section~\ref{sec:examples} we speak about the implementation and show some
+Section~\ref{sec:genpic} introduces our language using a motivating example.
+Sections~\ref{sec:syntax} and \ref{sec:wp} give the details about the
+programming language and the weakest precondition calculus.  In
+section~\ref{sec:examples} we present our implementation and show some
 examples. Finally, section~\ref{sec:related} discusses related work.
 
 \section{The general picture and a motivating example}
 \label{sec:genpic}
 
 Consider the following first-order program\footnote{Throughout the document,
-we use \ocaml~Syntax for programs.} that accumulates the sum of the contents
-of some array $a$ in some global reference $c$, using an integer $i$ as
-a counter:
+we use \ocaml~syntax for programs.} that accumulates the sum of the contents
+of some array {\tt a} in some global reference {\tt c}, using an integer {\tt
+i} as a counter:
 \begin{ocaml}
   let sum () = 
     for i = 0 to Array.length a - 1 do
       c := !c + a.(i)
+    done
 \end{ocaml}
-This simple  can be annotated in a standard Hoare logic (for
+This simple program can be annotated in a standard Hoare logic (for
 example the system of \cite{Filliatre00a}) as follows:
 \begin{who}
   let sum () =
-  {!!c = 0}
-    for i = 0 to length !a - 1 do
-    { !!c = {{{ $\sum_0^{i-1}$ get !!a i }}} }
-
-      c := !c + get !a i
-
-      {!!c = {{{ $\sum_0^{ {\tt length~!a} - 1}$ get !!a i }}} }
+    { !c = 0 }
+    for i = 0 to Array.length a - 1 do
+      { !c = {{{ $\sum_0^{i-1}$ }}}  a.(i) }
+      c := !c + a.(i)
+    done
+    { !c = {{{ $\sum_0^{ {\tt Array.length~a} - 1}$ }}}  a.(i) }
 \end{who}
-
-Here, assuming we model the array in the programming language by a reference
-to a functional array, with functions {\tt length} and {\tt get} with the
-obvious meaning. Also, in the logic we use a derefence operator {\tt !!}
-instead of the usual {\tt !}. In this case, our program is a {\tt for} loop,
-so it needs an {\em invariant annotation}, indicating which relation is
-preserved by the loop body. The equalities that need to be proved are very
-simple. Also, it is obvious that the program modifies exactly the references
-$r$ and $c$, and this fact can be formally confirmed by an effect analysis.
+Our program is a {\tt for} loop, so it requires an {\em invariant
+annotation}, indicating which relation is preserved by the loop body. The
+equalities that need to be proved are very simple. Also, it is obvious that
+the program only modifies the reference {\tt c}, and this fact can be
+formally confirmed by an effect analysis.
 
 A common reaction of a functional programmer to a program like
-$\mathit{sum}$ is to factor out the structure of the recursion, which
-may be useful in other situations, in a higher-order function. The
-more specific program is then recovered by function application. In this case,
-the more general function is of course simply {\tt Array.iter}:
+{\tt sum} is to factor out the structure of the recursion, which
+may be useful in other situations, in a higher-order function. In this case,
+the more general function is the following iterator over arrays:
 \begin{ocaml}
   let iter f a = 
     for i = 0 to Array.length a - 1 do
       f a.(i)
-
+    done
+\end{ocaml}
+The more specific program is then recovered by function application. 
+\begin{ocaml}
   let sum () =
     iter (fun n -> c := !c + n) a
 \end{ocaml}
 It is obvious that the two programs do exactly the same
 thing. However, how do we prove the correctness of the second one? One
-possibility is to fix the future usage of ${\tt iter}$ by
-specifying what exactly is the specification of its argument {\tt f}:
+possibility is to impose the future usage of ${\tt iter}$ by
+specifying a particular specification for its argument {\tt f}:
 \begin{who}
   let iter 
     (f : (x : int) ->{c} 
-        { !!c = {{{ $\sum_0^{i-1}$ get !!a i }}} } 
+        { !c = {{{ $\sum_0^{i-1}$ }}} a.(i) } 
         unit 
-        { !!c = {{{ $\sum_0^{length !a - 1}$ get !!a i }}} } ) 
+        { !c = {{{ $\sum_0^{ {\tt Array.length~a} - 1}$ }}} a.(i) } ) 
     (a : int array) =
     ...
 \end{who}
 Here we impose precisely the specification of {\tt f}, and thus we can
-derive that {\tt sum} computes the right value,
+derive that {\tt sum} computes the expected value,
 using the same method as for the first-order case before. Note
 that, to be able to apply an effect analysis, we have to specify that
-$f$ modifies $c$, by giving it the type $\intml->^c\unitml$.
+$f$ modifies $c$, by giving it the type $\intml->^{\{c\}}\unitml$.
 
 Of course, this approach is not very satisfactory. While the program achieves
 the separation of the iterating function ({\tt iter}) and the combining
 function (the anonymous function), the specification does not do this at all;
 as specified,  {\tt iter} can basically only be applied to the same function,
 and can only compute a certain sum. If one wants to use {\tt iter} in another
-context, one has to copy the code, give a new specification adapted to the
+context, one has to copy the code, give it a new specification adapted to the
 application and prove this new specification again. In addition, in order to
 be able to write the specification at all, we had to specialize the type of
 {\tt iter} to integer arrays, while its \ocaml\ counterpart is of course
 polymorphic. Said otherwise, this approach is not modular at all.
 
-There are two obstacles related to higher-order functions to be
-overcome in order to achieve modularity on the level of specification
-in the presence of side effects. We must be able to refer to the
-effect of a function parameter, and we must be able to refer to the
-specification (pre- and postconditions) of a function parameter, in a
-generic way.
+There are two obstacles related to higher-order functions to be overcome in
+order to achieve modularity on the level of specification in the presence of
+side effects. We must be able to refer to the effect of a function parameter,
+and we must be able to refer to its specification (pre- and postconditions),
+in a generic way.
 
 The first obstacle has a well known solution using a type and effect
-system~\cite{talpin94taed} with effect variables: effect polymorphism
-does exactly what we want here. Using effect polymorphism, we can say
-that {\tt f} (the argument of {\tt iter}) has type
-$\intml->^e\unitml$, where $e$ is an {\em effect variable}, which
-amounts to say that {\tt f} has a {\em certain} effect $e$. The total
-effect of {\tt iter} is then $e$, meaning {\tt iter}
+system~\cite{talpin94taed} with effect variables: effect polymorphism does
+exactly what we want here. Using effect polymorphism, we can say that {\tt f}
+(the argument of {\tt iter}) has type $α->^e\unitml$, whera $α$ is the type of
+the array elements and where $e$ is an {\em effect variable}, which amounts to
+say that {\tt f} has a {\em certain} effect $e$. The complete type of {\tt
+iter} is thus:
+\begin{displaymath}
+  ∀α∀e. (α ->^e \unitml) ->^\emptyset α~\mathtt{array} ->^e \unitml
+\end{displaymath}
+The total effect of {\tt iter} is then $e$, meaning {\tt iter}
 modifies whatever {\tt f} modifies.
 
 A solution to the second problem concerning specifications consists in
@@ -219,12 +217,14 @@ we use operators \preml\ and \postml\ to access the pre- and postcondition of
 a function. However, in our system, a precondition takes as an argument not
 only the function argument, but also the initial state, before the execution
 of the function. The postcondition takes the argument and return value, but
-also the states before {\em and} after the function call. Th so-called
-two-state postconditions are a way to get rid of most uses of auxiliary
-variables. However, the pre- and postcondition of {\tt f} may not refer to
-arbitrary parts of the state, but only the part {\tt f} reads or modifies.
-With these conventions, one can now write a generic specification for the {\tt
-iter} function, see ~Fig.~\ref{fig:iter}.
+also the states before {\em and} after the function call. Two-state
+postconditions are a standard way to get rid of most auxiliary variables.
+However, the pre- and postcondition of {\tt f} may not refer to arbitrary
+parts of the state, but only the part {\tt f} reads or modifies.  With these
+conventions, one can now write a generic implementation and specification for
+the {\tt iter} function. It is given~Fig.~\ref{fig:iter}, in the input syntax
+of our prototype \who. There are a few syntactic differences with \ocaml, in
+particular for arrays.
 
 \begin{figure}[tbp]
 \begin{who}[lines]
@@ -244,51 +244,51 @@ let iter [e] (a : 'a farray ref) (inv : <e> -> int ->  prop)
   \label{fig:iter}
 \end{figure}
 
-There are several new elements here. First of all, we use effect polymorphism
-to introduce an effect variable {\tt e} standing for the effect of {\tt f}.
-Also, {\tt iter} has an additional argument {\tt inv}, the {\em invariant},
-taking as argument the portion of the state modified by f and the integer
-indicating the current iteration count. This is a logical argument, which
-means that it cannot be used in the program. Also, {\tt inv} is a {\em pure}
-function, which is indicated by the arrows without effect annotation. The
-postcondition is now quite clear: we simply want to establish the invariant
-for the final state (the keyword {\tt cur} for the current state of the
-postcondition) and the length of the array, indicating that we have iterated
-over the entire array. It is also easy to see that the invariant {\tt inv} is
-precisely the invariant of the {\tt for} loop. However, the precondition is a
-bit complicated: it states that we need the invariant to hold initially (for
-the current state of the precondition and index $0$) and we need the invariant
-to be preserved by the function call. This is expressed by quantifying over
-two states, saying that the invariant has to imply the precondition of {\tt f}
-and the postcondition has to imply the invariant for the next array index.
-With a bit of syntactic sugar, this could be expressed much more concisely
-using a Hoare triple:
-\begin{who}
-  { inv cur i} f (get i !!a) {inv cur (i+1)}
+There are several new elements here. First of all, we use effect polymorphism.
+An effect variable {\tt e}, standing for the effect of {\tt f}, is introduced
+by the notation ${\mathtt [e]}$.  {\tt iter} also has an additional argument
+{\tt inv}, the {\em invariant}, taking as argument the portion of the state
+modified by {\tt f} and the integer indicating the current iteration count.
+This is a logical argument, which means that it cannot be used in the program.
+Also, {\tt inv} is a {\em pure} function, which is indicated by the arrows
+without effect annotation. The postcondition is now quite clear: we simply
+want to establish the invariant for the final state (the keyword {\tt cur}
+stands for the current state of the postcondition) and the length of the
+array, indicating that we have iterated over the entire array. It is also easy
+to see that the invariant {\tt inv} is precisely the invariant of the {\tt
+for} loop.  However, the precondition is a bit complicated: it states that we
+need the invariant to hold initially (for the current state of the
+precondition and index $0$) and we need the invariant to be preserved by the
+function call.  This is expressed by quantifying over two states, saying that
+the invariant has to imply the precondition of {\tt f} and the postcondition
+has to imply the invariant for the next array index.  With a bit of syntactic
+sugar, this could be expressed much more concisely using a Hoare triple:
+\begin{who} 
+  { inv cur i } f (get i !!a) { inv cur (i+1) } 
 \end{who}
 
-The {\tt iter} function and its specification raise a question: is the
-specification correct if {\tt f} modifies the array {\tt a}, which is required
-for the good behavior of {\tt iter}? The answer is clearly no; if {\tt f}
-messes up the contents of {\tt a}, {\tt iter} may not actually maintain the
-invariant.  This is an instance of the {\em aliasing problem} (see, for
+The specification of {\tt iter} is correct, but it will be difficult to prove
+in general, because it is not clear wether {\tt f} modifies the array or not,
+or more precisely, if the effect variable {\tt e} does contain {\tt a} or not.
+This is an instance of the {\em aliasing problem} (see, for
 example, \cite{reynolds78popl}) and it is well known that standard Hoare logic
-does not support aliasing. In this paper we make the same choice and disallow
-aliasing in the programming language we introduce. Under this assumption, the
-specification we gave is correct. 
+is not well-suited for programs with aliasing. Without special techniques (for
+example {\em separation logic}), a large number of equalities and disequalities
+are needed to reason about potentially aliased references. 
 
-Entirely excluding aliasing renders our system inappropriate for
-reasoning about shared mutable structures. However, it is interesting
-to see that our alias exclusion restriction, in many cases,
-corresponds to a natural condition imposed on higher-order functions
-that operate on some data structure. It is a common
-requirement~\cite{Nanevski08Awkward,Krishnaswami06} for iteration
-functions, for example, that the functional argument must not modify
-the structure to be iterated on. In our system, this fact follows from
-the restriction on effect instantiations, as will be seen in
-section~\ref{sec:syntax}. In the example, the array {\tt a}
-of the iterating function {\tt iter} must not be modified by its
-argument.
+To avoid this situation, we additionally introduce a simple means to exclude
+programs with aliasing. The instantiation of effect variables is restricted to
+the ones which do not create aliasing situations. Our system, with aliasing
+exclusion enabled, is inappropriate for reasoning about shared mutable
+structures. However, it is interesting to see that this alias exclusion
+restriction, in many cases, corresponds to a natural condition imposed on
+higher-order functions that operate on some data structure. It is a common
+requirement~\cite{Nanevski08Awkward,Krishnaswami06} for iteration functions,
+for example, that the functional argument must not modify the structure to be
+iterated on. In our system, this fact follows from the restriction on effect
+instantiations, as will be seen in section~\ref{sec:syntax}. In the example,
+the array {\tt a} of the iterating function {\tt iter} must not be modified by
+its argument.
 
 \section{A programming language for specification}
 \label{sec:syntax}
@@ -330,7 +330,7 @@ Before we describe the syntax of types, let us first explain {\em regions} and
 {\em effects}. Regions are simply type level names for memory locations. An
 effect is a set of memory locations and {\em effect variables}. An effect
 variable stands for an unknown effect. Effects are used to specify
-of memory locations an expression can write. They are also used in function
+the memory locations an expression can write. They are also used in function
 types to describe the memory locations which may be written if the function is
 called.
 
@@ -386,7 +386,7 @@ occurrences are substituted in the type. The rule {\sc REC} simply states that
 the body of the function can use the argument $x$ as well as the function $f$.
 The specifications $p$ and $q$, however, cannot use $f$ and must be well-typed
 wrt. the typing relation $|-_l$ described later on. Finally, pure applications
-between values are considered as values as well, as they don't have any
+between values are considered to be values as well, as they don't have any
 effect.
 
 \begin{figure}[tpb]
@@ -426,7 +426,7 @@ The typing of programs, written $Γ|- t : τ,ε$, assigns a type $τ$ and an
 effect $ε$ to an expression $t$, given an environment. This typing is
 presented in {\em A-normal form}, a normal form where all intermediate values
 are \letml-introduced. This is not a restriction, as any program can be
-transformed an A-normal form.
+transformed into A-normal form.
 
 All values are also programs with no effect (rule {\sc
 Value}). An application must consist of two values and the effect of the
@@ -435,7 +435,7 @@ App}). There are two rules for \letml, due to the value restriction. One only
 can generalize type, effect and region variables when the bound expression is
 a value. In this case (rule {\sc LetV}), only the second term may produce
 effects. In the other case (rule {\sc Let}), no generalization takes place,
-but both terms can have effects. The {\sc Let} rule actually obliges both
+but both terms can have effects. The {\sc Let} rule actually requires both
 terms to have the same effect, but together with the {\sc Sub} rule, which can
 increase the effect of an expression, this can always be achieved.
 Finally, \ifml-expressions are typed in the usual way, both branches have to
@@ -477,7 +477,7 @@ as well as the function's return value.
   { \inferrule*[Left=Logic]
     { Γ |-_v t : τ  }
     { Γ |-_l t : \ceil{τ} }
-  } \and
+  } \qquad \and
   { \inferrule*[Left=LetLogic]
     { Γ, \alist{χ} |-_l : t' : τ' \\ Γ, x: ∀\alist{χ}.τ' |-_l t : τ  }
     { Γ |-_l \letml~x~[\alist{χ}] = t'~\inml~t : τ }
@@ -510,134 +510,54 @@ properties and so it makes sense to expect the predicate of the
 
 The reader may have wondered why the specification language does not contain
 any logical connectives. These can of course be declared independently, for
-example the conjunction is just a function: \begin{equation*} /\ :  \propml ->
-\propml -> \propml \end{equation*} Actually, when equality is given, all
-logical operations (even quantification) can be defined in the
-logic~\cite{andrews86}.  In the remainder of the paper, we suppose
-predefined the usual logical connectives conjunction, disjunction,
+example the conjunction is just a function: 
+\begin{equation*} 
+  /\ :  \propml -> \propml -> \propml 
+\end{equation*} 
+Actually, when equality is given, all logical operations (even quantification)
+can be defined in the logic~\cite{andrews86}.  In the remainder of the paper,
+we suppose predefined the usual logical connectives conjunction, disjunction,
 implication and equivalence, as well as universal and existential
 quantification. We also assume all the arithmetic operations as well as the
-constructor $(t,t)$  and the accessors $fst$ and $snd$ for pairs. We will also
-use the names \preml\ and \postml\ for $fst$ and $snd$, respectively.
+constructor $(t,t)$  and the accessors $\mathit{fst}$ and $\mathit{snd}$ for
+pairs. We will also use the names \preml\ and \postml\ for $\mathit{fst}$ and
+$\mathit{snd}$, respectively.
 
-% TODO TODO
-%Finally, we introduce two symbols
-%\begin{eqnarray*}
-%  \oplus &:&∀ e1 e2 . \efft{ e1 } -> \efft{ e2 } -> \efft { e1  e2 }\\
-%  |_{ε} &:& ∀ e. \efft{ e ε } -> \efft{ ε }.
-%  !! & : & ∀αρ e. α~\refml_ρ -> \efft{ ρ e } -> α
-%\end{eqnarray*}
-%The first one denotes a combining operation for stores; the resulting store
-%contains all the mappings of the second store, as well as all the mappings of
-%the first one, as long as they are not present in the second one.
-%union of the two arguments, in the sense that its domain is the union of its
-%arguments.
+Finally, we introduce three symbols
+\begin{eqnarray*}
+  \oplus &:&∀ e1 e2 . \efft{ e1 } -> \efft{ e2 } -> \efft { e1  e2 }\\
+  |_{ε} &:& ∀e. \efft{ e ε } -> \efft{ ε }\\
+  {\tt !!} & : & ∀αρe. α~\refml_ρ -> \efft{ ρ e } -> α.
+\end{eqnarray*}
+The first one denotes a combining operation for stores; the resulting store
+contains all the mappings of the second store, as well as all the mappings of
+the first one, as long as they are not present in the second one. The second
+operations is indexed by an effect and it restricts a store to a certain
+effect. Finally, the double bang {\tt !!} is the logic equivalent to the
+lookup operator {\tt !}. It is pure and it is always with respect to a certain
+state.
 
 \subsection{References}
 
 We haven't mentioned references yet, but all we need to support them is to add
-the three usual functions $ref, :=, !$ for reference creation, assignment and
+the three usual functions $\mathit{ref}, :=, !$ for reference creation, assignment and
 lookup, respectively, to the environment. In our system, these functions have
 the following types:
 \begin{eqnarray*}
-  ref &:& ∀αρ.α ->^ρ α~\refml_ρ\\
+  \mathit{ref} &:& ∀αρ.α ->^ρ α~\refml_ρ\\
   := &:& ∀αρ.α~\refml_ρ ->^\emptyset α ->^ρ \unitml\\
   ! &:& ∀αρ. α~\refml_ρ ->^ρ α
 \end{eqnarray*}
 
-\subsection{Alias restriction}
-
-The presented programming language, along with the specifications, can, in
-fact be used to prove programs. The weakest precondition calculus presented in
-the next section can be used to obtain proof obligations which, when proved,
-guarantee the correctness of the program with respect to its specification. On
-the other hand, in its presented form, and because of the presence of
-aliasing, one would constantly need equalities and inequalities between
-reference variables to be able to reason about a program.
-
-\begin{figure}[tpb]
-  \begin{mathpar}
-    {\inferrule*[Left=Var]
-      {Γ(x) = ∀\alist{χ}.τ \\ σ = [\alist{χ}|->\alist{κ}] \\ σ \sim τ }
-      {Γ |- x : τσ }
-    } \\
-    { \inferrule*[Left=LetRef, Right={ρ \textup{fresh}, $ρ\notin τ$}]
-      {Γ |-_v t1 : τ' \\ Γ, x : τ'~\refml_ρ |- t2 : τ, ε }
-      {Γ |- \letml~x = ref~ t1 ~\inml~ t2 : τ, ε \setminus ρ}
-    }
-  \end{mathpar}
-  \caption{A modified and a new rule for aliasing}
-  \label{fig:aliasing}
-\end{figure}
-
-A way out is to restrict programs to alias free programs. Fortunately, it is
-easy to modify the presented typing rules to render all programs with aliasing
-ill-typed (see Fig~\ref{fig:aliasing}). In the following, we will use regions
-to identify memory locations entirely; each region shall describe precisely
-one memory location. Starting from this assumption, a program can actually
-exhibit {\em two} forms of aliasing. In the first one, it may use several
-names (region variables) for the same memory location. This can happen when a
-function is generalized over, say, two region variables, assuming they are
-different, and is then instantiated with the same region variable twice. The
-classical example is the following program
-\begin{who}
-  let f [ρ ρ'] (x : int ref(ρ)) (y : int ref(ρ')) =
-  { }
-  x := !x + 1;
-  !y
-  { r : r = !!y old }
-\end{who}
-which is only correct if $ ρ $ and $ ρ' $ are indeed different. To enforce
-this, we add a side condition to the instantiation: the substitution $σ$ must
-be {\em compatible} with the type $τ$. To understand what compatibility means,
-consider an {\em atomic} region substitution (whose domain contains only one
-variable) $[ρ|->ρ']$. It is compatible with any type which does not contain
-$ρ'$. Similarly, the effect substitution $[e|-> ρ1  ρ2 e'$] is compatible with
-any type which does not contain $ ρ1 , ρ2 $ nor $e'$.  Expressed more
-generally, an atomic substitution is compatible with a type if the type does
-not contain any region or effect variables which are in the range of the
-substitution. Finally, a {\em composite} substitution (whose domain contains more
-than one variable) is compatible
-with a type if each atomic substitution is compatible with the result of the
-application of the previous substitution. In this way, it becomes impossible
-to have different names for a single reference cell.
-
-The second form of aliasing is when we use the same name for {\em different}
-memory locations. This can happen when we allow the user to call $ref$ several
-times with the same region instantiation. A simple possibility is to attach
-the suppress the $ref$ function entirely and to replace it by a \letml\refml\ 
-construct which combines name creation and memory allocation. In this way,
-there can of course be only one reference per name. On the other hand, because
-of the side condition $ρ\notin τ$, the reference cannot escape the scope of
-its \letml\refml\ construct, and so, a function cannot return a reference
-which has been created in its body. This restriction could be leveraged a bit if
-one separates name creation and allocation, while still maintaining that one
-can only allocate a single reference in each region. This is how it is done in
-the correctness proof of this restriction. The presented \letml\refml\
-construct is of course a special case.
-%TODO clearly state possibilities/limitations of the system
-% * one can store everything in refs
-% * but aliasing restriction (refs in refs, lists of refs etc)
-
-%TODO now, all operations on maps can be statically resolved.
-
-\subsection{Some properties}
-
-%TODO
-$Γ|-_v v : τ$ implies $Γ |-_l \ceil{v} : \ceil{τ}$
-
-Subject reduction of our type system is a consequence of subject reduction of
-the region calculus of Tofte/Talpin~\cite{tofte97ic}.
-
-\section{A Simple Weakest Preconditions Calculus}
+\section{A Weakest Preconditions Calculus}
 \label{sec:wp}
 
 The aim of the weakest precondition calculus is to obtain proof obligations
-from the annotated program. To do this, the calculus starts from a formula
+from annotated programs. To do this, the calculus starts from a formula
 which holds, or is supposed to hold, at the end of the program, and walks
 backwards in the program source to obtain the weakest formula which has to
 hold at the beginning of the program (hence the name {\em weakest
-precondition}. 
+precondition}). 
 
 In the following, we use the metasymbol $v$ to denote well-typed values, i.e.
 terms with a typing derivation $Γ|-_v v : τ$. In the definition of the weakest
@@ -682,7 +602,7 @@ over the function argument. The function body is thrown away.
     \wpre_s(\letml~x = ( t1 : τ,ε) ~\inml~ t2 , q) &=&
     \wpre_s( t1 ,λs':\efft{ ε }.λx:\ceil{τ}.\wpre_{s'}( t2 , q ))\\
     \wpre_s(\ifml~ t1 ~\thenml~ t2 ~\elseml~ t3 , q) &=&
-      \ifml~ \ceil{ t1 }~\thenml~ \wpre_s( t2 , q))~\elseml~\wpre_s( t3 , q)) \\
+      \ifml~ \ceil{ t1 }~\thenml~ \wpre_s( t2 , q)~\elseml~\wpre_s( t3 , q) \\
       \wpre_s( (t : ε <: ε'), q) &=& \wpre_{s|_ε}(t, λs':\efft{ε}.q~(s\oplus s'))
   \end{eqnarray*}
   \caption{The weakest precondition calculus}
@@ -710,12 +630,99 @@ proved.
 
 As for the typing relation, we have two rules for the \letml-binding. If the
 bound term is a value, we can translate the \letml-binding in the program by a
-\letml-binding in the language. In the other case, the \wpre\ of $ t2 $ becomes
-the argument of the \wpre of $ t1 $ (we denote $ε$ the effect of $ t1 $ and $
+\letml-binding in the logic. In the other case, the \wpre\ of $ t2 $ becomes
+the argument of the \wpre\ of $ t1 $ (we denote $ε$ the effect of $ t1 $ and $
 t2 $). The rule for \ifml-expressions is straightforward. The rule for
 subeffecting adapts the domain of the current store and the expected domain of
 the postcondition so that the types work out.
 
+\subsection{Alias restriction}
+
+The presented programming language, together with the weakest precondition
+calculus, form a basis for program verification and can already be used to
+prove programs. On the other hand, in its presented form, and because of the
+presence of aliasing, one would constantly need equalities and disequalities
+between reference variables to be able to reason about a program.
+
+\begin{figure}[tpb]
+  \begin{mathpar}
+    {\inferrule*[Left=Var]
+      {Γ(x) = ∀\alist{χ}.τ \\ σ = [\alist{χ}|->\alist{κ}] \\ σ \sim τ }
+      {Γ |- x : τσ }
+    } \\
+    { \inferrule*[Left=LetRef, Right={ρ \textup{fresh}, $ρ\notin τ$}]
+      {Γ |-_v t1 : τ' \\ Γ, x : τ'~\refml_ρ |- t2 : τ, ε }
+      {Γ |- \letml~x = ref~ t1 ~\inml~ t2 : τ, ε \setminus ρ}
+    }
+  \end{mathpar}
+  \caption{A modified and a new rule for aliasing}
+  \label{fig:aliasing}
+\end{figure}
+
+A way out is to restrict the attention to alias free programs. Fortunately, it
+is easy to modify the typing rules to render all programs with aliasing
+ill-typed (see Fig~\ref{fig:aliasing}). In the following, we will use regions
+in such a way that there is exactly one memory location in each region.
+Starting from this assumption, a program can actually exhibit {\em two} forms
+of aliasing. In the first one, it may use several names (region variables) for
+the same memory location. This can happen when a function is generalized over,
+say, two region variables, assuming they are different, and is then
+instantiated with the same region variable twice. The classical example is the
+following program
+\begin{who}
+  let f [ρ ρ'] (x : int ref(ρ)) (y : int ref(ρ')) =
+  { }
+  x := !x + 1;
+  !y
+  { r : r = !!y old }
+\end{who}
+which is only correct if $ ρ $ and $ ρ' $ are indeed different. To enforce
+this, we add a side condition to the instantiation: the substitution $σ$ must
+be {\em compatible} with the type $τ$, written $σ\sim τ$. To understand what
+compatibility means, consider an {\em atomic} region substitution (whose
+domain contains only one variable) $[ρ|->ρ']$. It is compatible with any type
+which does not contain $ρ'$. Similarly, the effect substitution $[e|-> ρ1  ρ2
+e'$] is compatible with any type which does not contain $ ρ1 , ρ2 $ nor $e'$.
+Expressed more generally, an atomic substitution is compatible with a type if
+the type does not contain any region or effect variables which are in the
+range of the substitution. Finally, a {\em composite} substitution (whose
+domain contains more than one variable) is compatible with a type if each
+atomic substitution is compatible with the result of the application of the
+previous substitution. In this way, it becomes impossible to have different
+names for a single reference cell.
+
+The second form of aliasing is when we use the same name for {\em different}
+memory locations. This can happen when we allow the user to call
+$\mathit{ref}$ several times with the same region instantiation. A simple
+possibility is to  suppress the $\mathit{ref}$ function entirely and to
+replace it by a \letml\refml\ construct which combines name creation and
+memory allocation. In this way, there can of course be only one reference per
+name. On the other hand, because of the side condition $ρ\notin τ$, the
+reference cannot escape the scope of its \letml\refml\ construct, and so, a
+function cannot return a reference which has been created in its body. This
+restriction could be leveraged a bit if one separates name creation and
+allocation, while still maintaining that one can only allocate a single
+reference in each region. This is how it is done in the correctness proof of
+this restriction. The presented \letml\refml\ construct is of course a special
+case.
+
+In alias-free programs, the operations $\oplus$ and $|_ε$ on stores we
+previously introduced can be executed {\em statically}, i.e. just by looking
+at the domains of the stores. Also, we statically know which value (or which
+named component) the accessor {\tt !!} will get from a store. 
+
+With the aliasing restriction, complex programs using shared mutable data
+structures are impossible to prove. Programs with references in lists,
+references in references and so on can be written, but only with the severe
+limitation that a list can only contain a single reference (potentially
+several times) and that a reference can only contain always the same
+(statically known) reference. However, references still are first-class
+values, i.e. they can be passed to functions, returned by functions and stored
+in data structures, with the above limitations.
+
+\paragraph{Correctness}
+
+In the 
 %TODO lemmas about correctness
 \section{Examples}
 \label{sec:examples}
@@ -733,65 +740,108 @@ logic get : forall ('a, 'b) . 'a -> ('a,'b) map -> 'b
 logic set : forall ('a, 'b) . 'a -> 'b -> ('a,'b) map -> ('a,'b) map
 
 let stores f0 m =
-  forall x : Z, mem x m = true -> get x m = f0 x
+  forall x : int, mem x m = true -> get x m = f0 x
 
 parameter table : (int,int) map ref(ρ)
 
-let memo [e] (f0 : int -> int) (f : int ->{} int) (x : int) = 
-  {pre f x /\ stores f0 !!table}
+let memo (f0 : int -> int) (x : int) = 
+  {stores f0 !!table}
   if mem x !table then get x !table
   else
-    let z = f x in
+    let z = f0 x in
     table := set x z !table;
     z
-  {r : post f x r}
+  {r : r = f0 x /\ stores f0 !!table}
 \end{who}
   \caption{The code along with the specification of the {\tt memo} function}
   \label{fig:memo}
 \end{figure}
 
 Our first example is a simple memoization function {\tt memo} for (pure)
-functions.  It takes as an argument a function (from {\tt int} to {\tt int}
-here) and an integer and returns the same result as the functional argument
-would; however, before executing the argument, it will look up the integer in
-a table to see if the function hasn't been called yet on this integer. If so,
-the table's value is returned, otherwise we call the function, store the
-result in the table, and return it. Fig~\ref{fig:memo} shows the code along
-with the specification. The specification is very simple; it states that {\tt
-memo} will return a value that verifies the postcondition of {\tt f}, as long
-is initially we have the precondition of f and as long as the table stores
-only valid key/value pairs. As we are not interested in the exact way of the
-implementation of the map, we simply model it here by a reference to a
-functional map with get/set functions.
+functions.  It takes as an argument a function {\tt f} (from {\tt int} to {\tt
+int} here) and an integer and returns the same result as {\tt f} would;
+however, before executing the argument, it looks up the integer in a table to
+see if the function hasn't been called yet on this integer. If so, the table's
+value is returned, otherwise we call the function, store the result in the
+table, and return it. Fig~\ref{fig:memo} shows the code along with the
+specification. Since we are not interested in the implementation of the table,
+we simply model it by a reference to a functional map with mem/get/set functions.
 
-\subsection{ymemo}
+The specification of {\tt memo} is very simple. The only precondition is that
+the table should only contain bindings $y |-> {\mathtt f}~y$, which is
+expressend by the {\tt stores} predicate. The postcondition states that the
+result is equal to {\tt f0~x} and that the table still verifies the {\tt
+stores} predicate.
 
-TODO %TODO
+\subsection{A more powerful memoization function}
+
 \begin{figure}[tpb]
 \begin{who}
-  let realizes 
+  let realizes (f0 : int -> int) (f : [[ int ->{table} int ]]) =
+    forall (x : int),
+    { stores f0 !!table } f x { r : r = f0 x /\ stores f0 !!table }
+
   let ymemo (f0 : int -> int) 
             (ff : (int ->{table} int) ->{} int ->{table} int) = 
-  { forall (k : [[int ->{table} int ]]),
-      { realizes f0 k} ff k { r : realizes f0 r} }
-  let rec f (x : int) : int ->{table} int =
-    { stores f0 !!table }
-    if mem x !table then get x !table
-    else
-      let z = ff f x in
-      table := set x z !table; z
-    {r : r = f0 x /\ stores f0 !!table}
-  in f
+    { forall (k : [[int ->{table} int ]]),
+        { realizes f0 k} ff k { r : realizes f0 r} }
+    let rec f (x : int) =
+      { stores f0 !!table }
+      if mem x !table then get x !table
+      else
+        let z = ff f x in
+        table := set x z !table; z
+      {r : r = f0 x /\ stores f0 !!table}
+    in f
   { rf : realizes f0 rf }
 \end{who}
 \caption{The {\tt ymemo function} and its specification}
   \label{fig:ymemo}
 \end{figure}
 
+Our second, more complicated example is the recursive version of {\tt memo},
+dubbed {\tt ymemo}. We want to be able to define a recursive function whose
+recursive calls are automatically memoized. The basic idea of {\tt ymemo} is
+analogous to the fixpoint combinator in λ-calculus. As an example, here is how
+one would implement a memoized Fibonacci function
+using ymemo (ignoring the logic argument $f0$):
+\begin{ocaml}
+  let fib = 
+    ymemo (fun g x -> if x <= 1 then x else g (x-1) + g (x-2))
+\end{ocaml}
+The anonymous function uses its first argument {\tt f} to do recursive calls.
+
+{\tt ymemo} achieves this by defining a recursive function {\tt f} inside its
+body (see Fig~\ref{fig:ymemo}). This function, when called with an integer
+argument {\tt x} first checks if the table contains {\tt x} and if not, calls
+{\tt ff} {\em with {\tt f} itself} and x as argument. As before, it stores the
+obtained result in the table and returns it. Now, the return value of {\tt
+ymemo} is precisely this recursive function {\tt f}. The only difference with
+the equivalent \ocaml\ code is the usage of a logical argument {\tt f0} which
+stands for the (mathematical) function to be defined.
+
+Let's move on to the specification of {\tt ymemo}. We first define the {\tt
+realizes} predicate between a pure function {\tt f0} and an impure one
+modifying the table. This predicate states that {\tt f} {\em realizes}, i.e.
+returns the same result as, {\tt f0} and additionally, if the table stored
+valid key/value pairs, this is also the case after executing {\tt f}.
+Actually, this is precisely the specification of {\tt memo}, so we could
+easily prove {\tt realizes f0~(memo f0)} for any pure {\tt f0}. The definition
+of the predicate uses the syntactic sugar for Hoare triples we introduced in
+section~\ref{sec:genpic}. 
+
+The recursive function {\tt f} in the body of {\tt ymemo} has the same spec as
+{\tt memo}, and indeed here it is trivial to prove the postcondition of {\tt
+ymemo}, which states that its return value realizes {\tt f0}. Now, in order to
+prove that the specification of {\tt f} is indeed correct, the only
+information we need is that {\tt ff k} realizes {\tt f0} if {\tt k} is a
+function which realizes {\tt f0}.
+
 \subsection{All examples - an overview}
 
-A prototype implementation of the presented system by the name ``\who''
-exists~\cite{KanigFilliatre09wml} and is freely available. It implements the
+A prototype implementation of the presented system, called ``\who'',
+ is freely available~\cite{KanigFilliatre09wml}%TODO \footnote
+. It implements the
 described language with type, region and effect polymorphism, higher-order
 logic and store types in the logic. It takes as an input a fully annotated
 program and outputs proof obligations which have to be proved to guarantee the
@@ -808,7 +858,6 @@ a limited form of type and effect inference.
     Program & Ocaml Code & Code + Spec in \who & Proofs \\ \hline
     Memo/ymemo & 15 loc & 26 loc & 90 lop  \\ \hline
     {\tt Array} & 69 loc & 170 loc  & 320 lop  \\ \hline
-    {\tt Hashtbl} (incomplete) & & &  \\ \hline
     Koda-Ruskey~\cite{KanigFilliatre09wml} & 10 loc & 30 loc & $\sim$700 lop  \\ \hline
     \end{tabular}
 \end{center}
@@ -829,16 +878,16 @@ interesting concerning higher-order functions or side effects. In this proof
 development, arrays are modeled as references to functional arrays with the
 usual axioms on access and update.
 
-The proof development concerning the {\tt Hashtbl} module is ongoing work. The
-difficult part of this development is the model of the \ocaml\ hash table; In
-\ocaml, when one overwrites a previously existing entry in the table, the old
-value still exists, and is only {\em shadowed} by the new key/value pair. If
-one calls {\tt Hashtbl.remove} using this key, the old value reappears. Also,
-if several bindings for a key exist, the key may be encountered several times,
-during a call of {\tt Hashtbl.iter}, for example. A possible way of modeling
-this is an association list instead of a simple mapping, where keys in front
-of the list can shadow the same key further down in the list. 
-% TODO Currently, only
+%The proof development concerning the {\tt Hashtbl} module is ongoing work. The
+%difficult part of this development is the model of the \ocaml\ hash table; In
+%\ocaml, when one overwrites a previously existing entry in the table, the old
+%value still exists, and is only {\em shadowed} by the new key/value pair. If
+%one calls {\tt Hashtbl.remove} using this key, the old value reappears. Also,
+%if several bindings for a key exist, the key may be encountered several times,
+%during a call of {\tt Hashtbl.iter}, for example. A possible way of modeling
+%this is an association list instead of a simple mapping, where keys in front
+%of the list can shadow the same key further down in the list. 
+% Currently, only
 %two functions of this module have been proved correct.
 
 Finally, the last line shows the numbers for the proof development of the
@@ -858,9 +907,13 @@ modularly about side effects of functional arguments. It also has the drawback
 of being difficult to implement, due to the presence of a large number of
 non-structural rules. Our system, starting from a correctly annotated program,
 is syntax-directed and thus entirely automated. Their logic of proof
-obligations is non-standard, while we obtain obligations in higher-order
-logic. They deal with aliasing using equalities and disequalities between
-pointers, which we chose not to do. They can reason about the classic {\em
+obligations is non-standard, while we obtain obligations in standard higher-order
+logic. 
+
+They deal with aliasing using equalities and disequalities between
+pointers, which we chose not to do. 
+
+They can reason about the classic {\em
 Landin's knot}, which consists in obtaining recursion by storing a function in
 a reference which calls this same reference. Our typing restriction prohibits
 this particular kind of programs.  Honda, Yoshida and Berger prove a
@@ -905,21 +958,6 @@ formulas~\cite{chlipalaicfp09}. We claim that we can obtain much better
 automation for alias-free programs, and even higher-order functions. We
 explain in the next section how we plan to achieve this.
 
-%On the other hand, Ynot shares the
-%Coq's main weakness: lack of automation. While we haven't yet presented a
-%platform to automatically discharge generated proof obligations, this seems
-%easily feasible, along the same vein as Régis-Gianas and
-%Pottier~\cite{regis-gianas-pottier-08}, who argue that first-order SMT
-%solvers~\cite{RanTin-SMTLIB} are suitable even for higher-order proof
-%obligations. They also present an encoding scheme to support their claim.
-%Their practical results are promising. The Ynot system can not use this kind
-%of automation because it uses separation logic.  Automated provers for
-%separation logic exist, but we are not aware of any attempts to use these
-%tools in a higher-order setting.
-
-%TODO also say that an approach like Ynot ou Coq doesn't give any help
-%for the mechanical part of the proof.
-
 The Pangolin system, the implementation of the theoretical system
 of~\cite{regis-gianas-pottier-08}, can also be used to reason about
 purely functional programs. It is also one of the starting points of
@@ -947,13 +985,12 @@ that extending our language and our \wpre-calculus is simple, as long as
 aliasing is tracked precisely.  We leave these extensions for future work.
 
 Systems for verification of first-order programs like
-Why~\cite{Filliatre00a} or Spec\#~\cite{BarnettLS04} are the other
-starting points of this work. These systems generally deal very well
-with usual features of first-order programs, for example arrays, use
-SMT solvers to discharge proof obligations and strive for the best
-possible automation. We try to improve on this work by adding
-higher-order features, trying to maintain the degree of automation and
-ease of use.
+Why~\cite{Filliatre00a,filliatre07cav} or Spec\#~\cite{BarnettLS04} are the
+other starting points of this work. These systems generally deal very well
+with usual features of first-order programs, for example arrays, use SMT
+solvers to discharge proof obligations and strive for the best possible
+automation. We improve on this work by adding higher-order features,
+while trying to maintain the degree of automation and ease of use.
 
 \section{Conclusion}
 \label{sec:conclusion}
@@ -1008,25 +1045,25 @@ would also be interesting to see if an ``impure'' function of type $τ
 ->^\emptyset τ'$ can be seen as pure function $τ -> τ'$ (and be used in the
 logic).
 
-We see two possibilities to add the possibility to reason about aliasing
-programs. The first one is to modify the effect system itself to allow for
-aliasing. In the setting with the aliasing restriction, our regions actually
-become {\em singleton regions}, regions containing exactly one memory
-location. Other, more powerful effect systems allow for {\em group regions},
-with the possibility to temporarily {\em focus } on a particular memory cell
-in that region. We see no fundamental difficulty in adopting such an effect
-system, but haven't worked out the details. A second possibility is to deal
-with aliasing via equalities and disequalities over pointers, using regions to
-obtain some separation automatically. On itself, we believe that this
-technique does not scale, due to the explosion of needed disequalities.
-However, in combination with other separation techniques, for example the
-Burstall-Bornat memory model which separates automatically objects of
-different structural types, this approach has worked well applied to
-first-order programs.
+We see two possibilities to deal with aliasing beyond plain usage of pointer
+disequalities. The first one is to modify the effect system itself to allow
+more precise tracking of aliasing. In the setting with the aliasing
+restriction, our regions actually become {\em singleton regions}, regions
+containing exactly one memory location. Other, more powerful effect systems
+allow for {\em group regions}, with the possibility to temporarily {\em focus
+} on a particular memory cell in that region. We see no fundamental difficulty
+in adopting such an effect system, but haven't worked out the details. A
+second possibility is to deal with aliasing via equalities and disequalities
+over pointers, using regions to obtain some separation automatically. On
+itself, we believe that this technique does not scale, due to the explosion of
+needed disequalities.  However, in combination with other separation
+techniques, for example the Burstall-Bornat memory model~\cite{bornat00mpc}
+which separates automatically objects of different structural types, this
+approach has worked well applied to first-order programs.
 
 Finally, from a programmer's point of view, it would be nice to have more
 features in the programming language, such as recursive types and algebraic
-data types. As long as so defined types verify a {\em positivity
+data types. As long as defined types verify a {\em positivity
 condition}~\cite{paulintlca93}, these extensions would be completely
 orthogonal to the weakest precondition calculus and the type and effect system
 used.
