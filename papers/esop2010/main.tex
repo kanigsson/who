@@ -53,7 +53,6 @@ INRIA Saclay - Île-de-France, ProVal, Orsay, F-91893 \and
 % * one can store everything in refs
 % * but aliasing restriction (refs in refs, lists of refs etc)
 
-%external TODO : proofs for Hashtbl
 %external TODO : proofs of system
 % 
 
@@ -526,18 +525,19 @@ constructor $(t,t)$  and the accessors $\mathit{fst}$ and $\mathit{snd}$ for
 pairs. We will also use the names \preml\ and \postml\ for $\mathit{fst}$ and
 $\mathit{snd}$, respectively.
 
-% TODO TODO
-%Finally, we introduce two symbols
-%\begin{eqnarray*}
-%  \oplus &:&∀ e1 e2 . \efft{ e1 } -> \efft{ e2 } -> \efft { e1  e2 }\\
-%  |_{ε} &:& ∀ e. \efft{ e ε } -> \efft{ ε }.
-%  !! & : & ∀αρ e. α~\refml_ρ -> \efft{ ρ e } -> α
-%\end{eqnarray*}
-%The first one denotes a combining operation for stores; the resulting store
-%contains all the mappings of the second store, as well as all the mappings of
-%the first one, as long as they are not present in the second one.
-%union of the two arguments, in the sense that its domain is the union of its
-%arguments.
+Finally, we introduce three symbols
+\begin{eqnarray*}
+  \oplus &:&∀ e1 e2 . \efft{ e1 } -> \efft{ e2 } -> \efft { e1  e2 }\\
+  |_{ε} &:& ∀e. \efft{ e ε } -> \efft{ ε }\\
+  {\tt !!} & : & ∀αρe. α~\refml_ρ -> \efft{ ρ e } -> α.
+\end{eqnarray*}
+The first one denotes a combining operation for stores; the resulting store
+contains all the mappings of the second store, as well as all the mappings of
+the first one, as long as they are not present in the second one. The second
+operations is indexed by an effect and it restricts a store to a certain
+effect. Finally, the double bang {\tt !!} is the logic equivalent to the
+lookup operator {\tt !}. It is pure and it is always with respect to a certain
+state.
 
 \subsection{References}
 
@@ -558,7 +558,7 @@ fact be used to prove programs. The weakest precondition calculus presented in
 the next section can be used to obtain proof obligations which, when proved,
 guarantee the correctness of the program with respect to its specification. On
 the other hand, in its presented form, and because of the presence of
-aliasing, one would constantly need equalities and inequalities between
+aliasing, one would constantly need equalities and disequalities between
 reference variables to be able to reason about a program.
 
 \begin{figure}[tpb]
@@ -622,7 +622,11 @@ allocation, while still maintaining that one can only allocate a single
 reference in each region. This is how it is done in the correctness proof of
 this restriction. The presented \letml\refml\ construct is of course a special
 case.
-%TODO now, all operations on maps can be statically resolved.
+
+In alias-free programs, the operations $\oplus$ and $|_ε$ on stores we
+previously introduced can be executed {\em statically}, i.e. just by looking
+at the domains of the stores. Also, we statically know which value (or which
+named component) the accessor {\tt !!} will get from a store. 
 
 \subsection{Some properties}
 
@@ -737,11 +741,11 @@ logic get : forall ('a, 'b) . 'a -> ('a,'b) map -> 'b
 logic set : forall ('a, 'b) . 'a -> 'b -> ('a,'b) map -> ('a,'b) map
 
 let stores f0 m =
-  forall x : Z, mem x m = true -> get x m = f0 x
+  forall x : int, mem x m = true -> get x m = f0 x
 
 parameter table : (int,int) map ref(ρ)
 
-let memo [e] (f0 : int -> int) (x : int) = 
+let memo (f0 : int -> int) (x : int) = 
   {stores f0 !!table}
   if mem x !table then get x !table
   else
@@ -770,13 +774,14 @@ expressend by the {\tt stores} predicate. The postcondition states that the
 result is equal to {\tt f0~x} and that the table still verifies the {\tt
 stores} predicate.
 
+\subsection{A more powerful memoization function}
 
-\subsection{ymemo}
-
-TODO %TODO
 \begin{figure}[tpb]
 \begin{who}
-  let realizes = .. .
+  let realizes (f0 : int -> int) (f : [[ int ->{table} int ]]) =
+    forall (x : int),
+    { stores f0 !!table } f x { r : r = f0 x /\ stores f0 !!table }
+
   let ymemo (f0 : int -> int) 
             (ff : (int ->{table} int) ->{} int ->{table} int) = 
     { forall (k : [[int ->{table} int ]]),
@@ -794,6 +799,44 @@ TODO %TODO
 \caption{The {\tt ymemo function} and its specification}
   \label{fig:ymemo}
 \end{figure}
+
+Our second, more complicated example is the recursive version of {\tt memo},
+dubbed {\tt ymemo}. We want to be able to define a recursive function whose
+recursive calls are automatically memoized. The basic idea of {\tt ymemo} is
+analogous to the fixpoint combinator in λ-calculus. As an example, here is how
+one would implement a memoized Fibonacci function
+using ymemo (ignoring the logic argument $f0$):
+\begin{ocaml}
+  let fib = 
+    ymemo (fun g x -> if x <= 1 then x else g (x-1) + g (x-2))
+\end{ocaml}
+The anonymous function uses its first argument {\tt f} to do recursive calls.
+
+{\tt ymemo} achieves this by defining a recursive function {\tt f} inside its
+body (see Fig~\ref{fig:ymemo}). This function, when called with an integer
+argument {\tt x} first checks if the table contains {\tt x} and if not, calls
+{\tt ff} {\em with {\tt f} itself} and x as argument. As before, it stores the
+obtained result in the table and returns it. Now, the return value of {\tt
+ymemo} is precisely this recursive function {\tt f}. The only difference with
+the equivalent \ocaml\ code is the usage of a logical argument {\tt f0} which
+stands for the (mathematical) function to be defined.
+
+Let's move on to the specification of {\tt ymemo}. We first define the {\tt
+realizes} predicate between a pure function {\tt f0} and an impure one
+modifying the table. This predicate states that {\tt f} {\em realizes}, i.e.
+returns the same result as, {\tt f0} and additionally, if the table stored
+valid key/value pairs, this is also the case after executing {\tt f}.
+Actually, this is precisely the specification of {\tt memo}, so we could
+easily prove {\tt realizes f0~(memo f0)} for any pure {\tt f0}. The definition
+of the predicate uses the syntactic sugar for Hoare triples we introduced in
+section~\ref{sec:genpic}. 
+
+The recursive function {\tt f} in the body of {\tt ymemo} has the same spec as
+{\tt memo}, and indeed here it is trivial to prove the postcondition of {\tt
+ymemo}, which states that its return value realizes {\tt f0}. Now, in order to
+prove that the specification of {\tt f} is indeed correct, the only
+information we need is that {\tt ff k} realizes {\tt f0} if {\tt k} is a
+function which realizes {\tt f0}.
 
 \subsection{All examples - an overview}
 
@@ -816,7 +859,6 @@ a limited form of type and effect inference.
     Program & Ocaml Code & Code + Spec in \who & Proofs \\ \hline
     Memo/ymemo & 15 loc & 26 loc & 90 lop  \\ \hline
     {\tt Array} & 69 loc & 170 loc  & 320 lop  \\ \hline
-    {\tt Hashtbl} (incomplete) & & &  \\ \hline
     Koda-Ruskey~\cite{KanigFilliatre09wml} & 10 loc & 30 loc & $\sim$700 lop  \\ \hline
     \end{tabular}
 \end{center}
@@ -837,16 +879,16 @@ interesting concerning higher-order functions or side effects. In this proof
 development, arrays are modeled as references to functional arrays with the
 usual axioms on access and update.
 
-The proof development concerning the {\tt Hashtbl} module is ongoing work. The
-difficult part of this development is the model of the \ocaml\ hash table; In
-\ocaml, when one overwrites a previously existing entry in the table, the old
-value still exists, and is only {\em shadowed} by the new key/value pair. If
-one calls {\tt Hashtbl.remove} using this key, the old value reappears. Also,
-if several bindings for a key exist, the key may be encountered several times,
-during a call of {\tt Hashtbl.iter}, for example. A possible way of modeling
-this is an association list instead of a simple mapping, where keys in front
-of the list can shadow the same key further down in the list. 
-% TODO Currently, only
+%The proof development concerning the {\tt Hashtbl} module is ongoing work. The
+%difficult part of this development is the model of the \ocaml\ hash table; In
+%\ocaml, when one overwrites a previously existing entry in the table, the old
+%value still exists, and is only {\em shadowed} by the new key/value pair. If
+%one calls {\tt Hashtbl.remove} using this key, the old value reappears. Also,
+%if several bindings for a key exist, the key may be encountered several times,
+%during a call of {\tt Hashtbl.iter}, for example. A possible way of modeling
+%this is an association list instead of a simple mapping, where keys in front
+%of the list can shadow the same key further down in the list. 
+% Currently, only
 %two functions of this module have been proved correct.
 
 Finally, the last line shows the numbers for the proof development of the
