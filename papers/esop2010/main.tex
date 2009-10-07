@@ -108,7 +108,7 @@ programming language and the weakest precondition calculus.  In
 section~\ref{sec:examples} we present our implementation and show some
 examples. Finally, section~\ref{sec:related} discusses related work.
 
-\section{The general picture and a motivating example}
+\section{The General Picture and a Motivating Example}
 \label{sec:genpic}
 
 Consider the following first-order program\footnote{Throughout the document,
@@ -290,7 +290,7 @@ instantiations, as will be seen in section~\ref{sec:syntax}. In the example,
 the array {\tt a} of the iterating function {\tt iter} must not be modified by
 its argument.
 
-\section{A programming language for specification}
+\section{A Programming Language for Specification}
 \label{sec:syntax}
 
 %TODO  notion of substitution - correspondence χ κ
@@ -636,7 +636,7 @@ t2 $). The rule for \ifml-expressions is straightforward. The rule for
 subeffecting adapts the domain of the current store and the expected domain of
 the postcondition so that the types work out.
 
-\subsection{Alias restriction}
+\subsection{Alias Restriction}
 
 The presented programming language, together with the weakest precondition
 calculus, form a basis for program verification and can already be used to
@@ -722,6 +722,7 @@ in data structures, with the above limitations.
 
 \subsection{Correctness}
 
+<<<<<<< HEAD:papers/esop2010/main.tex
 We have proved the correctness of our system. All the properties are proved in
 subject reduction style, maintaining an invariant during the execution of the
 program, modeled with small-step semantics. We only consider well-typed terms.
@@ -754,6 +755,8 @@ Both theorems are proved in the technical appendix~\cite{appendixesop2010}
 accompanying this paper. The aliasing restriction is proved there in a more
 general setting, while the correctness of the \wpre-calculus is proved in a
 slightly different version.
+
+\subsection{A Simple Memoization Function}
 
 \begin{figure}[tpb]
 \begin{who}
@@ -804,7 +807,7 @@ expressend by the {\tt stores} predicate. The postcondition states that the
 result is equal to {\tt f0~x} and that the table still verifies the {\tt
 stores} predicate.
 
-\subsection{A more powerful memoization function}
+\subsection{A More Powerful Memoization Function}
 
 \begin{figure}[tpb]
 \begin{who}
@@ -868,7 +871,7 @@ prove that the specification of {\tt f} is indeed correct, the only
 information we need is that {\tt ff k} realizes {\tt f0} if {\tt k} is a
 function which realizes {\tt f0}.
 
-\subsection{All examples - an overview}
+\subsection{All Examples - An Overview}
 
 A prototype implementation of the presented system, called ``\who'',
  is freely available~\cite{KanigFilliatre09wml}%TODO \footnote
