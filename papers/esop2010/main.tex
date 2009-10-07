@@ -49,9 +49,6 @@ Fill\^atre\inst{2,}\inst{1}}
 INRIA Saclay - Île-de-France, ProVal, Orsay, F-91893 \and
  LRI, Univ Paris-Sud, CNRS, Orsay, F-91405
 }
-%TODO explain somewhere the correspondence store type <-> map, effect variable
-%<-> domain, region <-> key
-
 \maketitle
 
 \begin{abstract} We present a specification language suited for reasoning
@@ -293,7 +290,6 @@ its argument.
 \section{A Programming Language for Specification}
 \label{sec:syntax}
 
-%TODO  notion of substitution - correspondence χ κ
 \subsection{Syntax}
 \begin{figure}[tpb]
 \begin{eqnarray*}
@@ -722,7 +718,6 @@ in data structures, with the above limitations.
 
 \subsection{Correctness}
 
-<<<<<<< HEAD:papers/esop2010/main.tex
 We have proved the correctness of our system. All the properties are proved in
 subject reduction style, maintaining an invariant during the execution of the
 program, modeled with small-step semantics. We only consider well-typed terms.
@@ -873,17 +868,17 @@ function which realizes {\tt f0}.
 
 \subsection{All Examples - An Overview}
 
-A prototype implementation of the presented system, called ``\who'',
- is freely available~\cite{KanigFilliatre09wml}%TODO \footnote
-. It implements the
-described language with type, region and effect polymorphism, higher-order
-logic and store types in the logic. It takes as an input a fully annotated
-program and outputs proof obligations which have to be proved to guarantee the
-correctness of the program with respect to its specification. Currently, only
-output to the interactive proof assistant Coq has been implemented. Our logic
-is a subset of Coq's, so the translation is particularly simple.
-The implementation consists of less than 3000 lines of \ocaml\ code, including
-a limited form of type and effect inference.
+A prototype implementation of the presented system, called ``\who'', is freely
+available~\cite{KanigFilliatre09wml}\footnote{It is available at
+\url{http://www.lri.fr/~kanig/who.html}.}. It implements the described
+language with type, region and effect polymorphism, higher-order logic and
+store types in the logic. It takes as an input a fully annotated program and
+outputs proof obligations which have to be proved to guarantee the correctness
+of the program with respect to its specification. Currently, only output to
+the interactive proof assistant Coq has been implemented. Our logic is a
+subset of Coq's, so the translation is particularly simple.  The
+implementation consists of less than 3000 lines of \ocaml\ code, including a
+limited form of type and effect inference.
 
 \begin{figure}[tbp]
 \begin{center}
