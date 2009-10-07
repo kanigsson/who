@@ -1,4 +1,9 @@
+pdf: appendix-pp.pdf
 dvi: appendix-pp.dvi
+
+%.pdf: %.tex
+	pdflatex $^
+	pdflatex $^
 
 %.dvi: %.tex
 	latex $^

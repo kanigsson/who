@@ -6,6 +6,10 @@
 \usepackage{stmaryrd}
 \usepackage{amsmath,amssymb}
 \usepackage{mathpartir}
+\usepackage{url}
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lem}[thm]{Lemma}
 
 \newcommand{\wpre}{{\bf wp}}
 \newcommand{\sep}{ ~|~ }
@@ -47,10 +51,6 @@ INRIA Saclay - Île-de-France, ProVal, Orsay, F-91893 \and
 }
 %TODO explain somewhere the correspondence store type <-> map, effect variable
 %<-> domain, region <-> key
-
-%external TODO : proofs of system
-% 
-
 
 \maketitle
 
@@ -721,15 +721,39 @@ values, i.e. they can be passed to functions, returned by functions and stored
 in data structures, with the above limitations.
 
 \subsection{Correctness}
-%TODO
 
-\section{Examples}
-\label{sec:examples}
+We have proved the correctness of our system. All the properties are proved in
+subject reduction style, maintaining an invariant during the execution of the
+program, modeled with small-step semantics. We only consider well-typed terms.
 
-In this section, we will show two simple examples which use higher-order
-features.
+For the \wpre-calculus, we want to obtain that if we can prove $\wpre_s(t,q)$
+where $s$ is the current state of the store, $t$ a program, and $q$ the
+postcondition, and if $t$ reduces to the (syntactic) value $v$ and the store
+$s'$, then $q~s'~v$ is valid. The subject reduction way of proving this
+proceeds by proving that the validity of the formula $\wpre_s(t,q)$ is in fact
+maintained during the execution of the program. However, in the presence of
+effect typing, the effect of $t$ may {\em decrease} during program execution.
+Thus, the main lemma for the \wpre-calculus is 
+\begin{lemma} 
+  $\wpre_s(t,q)$ and $s,t ->> s',t'$ implies $\wpre_{s'}( (t : ε'<:ε), q)$.
+\end{lemma}
+Here, $->>$ means ``reduces in zero or more steps to''. The main theorem
+is then an easy consequence.
 
-\subsection{A simple memoization function}
+For the alias restriction, or more precisely the restriction on reference
+creation, we formally prove that each region contains exactly one memory
+location, i.e. is actually a {\em singleton region}. Here we have to
+instrument the semantics and mark each reference cell in the store with the
+region it belongs to; therefore the exact statement is the following:
+\begin{theorem}
+  If $s,t ->>s',t$ and if $s$ contains only singleton regions (each reference
+  cell maps to a different region), then this is also the case for $s'$.
+\end{theorem}
+
+Both theorems are proved in the technical appendix~\cite{appendixesop2010}
+accompanying this paper. The aliasing restriction is proved there in a more
+general setting, while the correctness of the \wpre-calculus is proved in a
+slightly different version.
 
 \begin{figure}[tpb]
 \begin{who}
@@ -755,6 +779,14 @@ let memo (f0 : int -> int) (x : int) =
   \caption{The code along with the specification of the {\tt memo} function}
   \label{fig:memo}
 \end{figure}
+
+\section{Examples}
+\label{sec:examples}
+
+In this section, we will show two simple examples which use higher-order
+features.
+
+\subsection{A simple memoization function}
 
 Our first example is a simple memoization function {\tt memo} for (pure)
 functions.  It takes as an argument a function {\tt f} (from {\tt int} to {\tt
