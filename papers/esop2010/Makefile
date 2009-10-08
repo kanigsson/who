@@ -1,12 +1,19 @@
 main: main-pp.dvi
 
 dvi: main-pp.dvi
+pdf: main-pp.pdf
 
 %.dvi : %.tex biblio.bib
 	latex $^
 	bibtex $*
 	latex $^
 	latex $^
+
+%.pdf : %.tex biblio.bib
+	pdflatex $^
+	bibtex $*
+	pdflatex $^
+	pdflatex $^
 
 %-pp.tex : %-proc.tex uproc
 	./uproc < $< > $@
