@@ -72,7 +72,7 @@ fragment of ML, but also in combination with imperative features, like
 references or arrays. However, reasoning about higher-order functions is
 difficult, and especially so in the presence of effectful computations. Any
 function's specification depends on its arguments. In a higher-order setting,
-arguments may be functions that have their own specification. In consequence,
+arguments may be functions that have their own specification. As a consequence,
 to be modular, the specification of a higher-order function can only be
 formulated {\em depending on the specifications of its functional arguments}.
 In a setting where side effects are possible, one also needs to formulate the
@@ -102,7 +102,7 @@ of this tool on several examples, which have all been proved correct.
 Section~\ref{sec:genpic} introduces our language using a motivating example.
 Sections~\ref{sec:syntax} and \ref{sec:wp} give the details about the
 programming language and the weakest precondition calculus.  In
-section~\ref{sec:examples} we present our implementation and show some
+section~\ref{sec:examples} we present our implementation and some
 examples. Finally, section~\ref{sec:related} discusses related work.
 
 \section{The General Picture and a Motivating Example}
@@ -317,7 +317,7 @@ functions; $p$ and $q$ in this term are {\em specifications}, which are
 of the same syntax as programs, but are differently typed (typing will be
 discussed in the next subsection). The term $p$ corresponds to the {\em
 precondition}, $q$ to the {\em postcondition} of the function. The analogy to
-Hoare triples is of course obvious. As usual, there are also variables,
+Hoare triples is obvious. As usual, there are also variables,
 \letml-bindings and an \ifml-\thenml-\elseml-construct. Variables on the type
 level can be generalized at \letml-boundaries and have to be instantiated when
 the corresponding program variable is used.
@@ -702,14 +702,14 @@ reference in each region. This is how it is done in the correctness proof of
 this restriction. The presented \letml\refml\ construct is of course a special
 case.
 
-In alias-free programs, the operations $\oplus$ and $|_ε$ on stores we
-previously introduced can be executed {\em statically}, i.e. just by looking
-at the domains of the stores. Also, we statically know which value (or which
-named component) the accessor {\tt !!} will get from a store. 
+In alias-free programs, the operations $\oplus$ and $|_ε$ on stores can be
+executed {\em statically}, i.e. just by looking at the domains of the stores.
+Also, we statically know which value (or which named component) the accessor
+{\tt !!} will get from a store. 
 
 With the aliasing restriction, complex programs using shared mutable data
 structures are impossible to prove. Programs with references in lists,
-references in references and so on can be written, but only with the severe
+references in references, etc., can be written, but only with the severe
 limitation that a list can only contain a single reference (potentially
 several times) and that a reference can only contain always the same
 (statically known) reference. However, references still are first-class
@@ -849,7 +849,7 @@ ymemo} is precisely this recursive function {\tt f}. The only difference with
 the equivalent \ocaml\ code is the usage of a logical argument {\tt f0} which
 stands for the (mathematical) function to be defined.
 
-Let's move on to the specification of {\tt ymemo}. We first define the {\tt
+Let us move on to the specification of {\tt ymemo}. We first define the {\tt
 realizes} predicate between a pure function {\tt f0} and an impure one
 modifying the table. This predicate states that {\tt f} {\em realizes}, i.e.
 returns the same result as, {\tt f0} and additionally, if the table stored
