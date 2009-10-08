@@ -51,7 +51,7 @@ INRIA Saclay - Île-de-France, ProVal, Orsay, F-91893 \and
 }
 \maketitle
 
-\begin{abstract} We present a specification language suited for reasoning
+\begin{abstract} We introduce a specification language suited for reasoning
   about effectful higher-order programs. The language's main features are
   higher-order logic and effect polymorphism, both of which enable a truly
   modular treatment of higher-order functions.  We also define a weakest
@@ -61,7 +61,10 @@ INRIA Saclay - Île-de-France, ProVal, Orsay, F-91893 \and
   a region-based analysis to exclude aliasing, in order to obtain much simpler
   proof obligations. Several examples demonstrate the practicality of the
   system. A prototype implementation exists and has been used to prove the
-  correctness of these and more examples.  \end{abstract}
+  correctness of these and more examples.  
+\end{abstract}
+
+%TODO overfull boxes
 
 \section{Introduction}
 
@@ -101,9 +104,11 @@ of this tool on several examples, which have all been proved correct.
 \paragraph{Outline.}
 Section~\ref{sec:genpic} introduces our language using a motivating example.
 Sections~\ref{sec:syntax} and \ref{sec:wp} give the details about the
-programming language and the weakest precondition calculus.  In
-section~\ref{sec:examples} we present our implementation and some
-examples. Finally, section~\ref{sec:related} discusses related work.
+programming language and the weakest precondition calculus.
+Section~\ref{sec:alias} shows how two modifications to the type system can
+eliminate aliasing. In section~\ref{sec:examples} we present our
+implementation and some examples. Finally, section~\ref{sec:related} discusses
+related work.
 
 \section{The General Picture and a Motivating Example}
 \label{sec:genpic}
@@ -221,7 +226,10 @@ parts of the state, but only the part {\tt f} reads or modifies.  With these
 conventions, one can now write a generic implementation and specification for
 the {\tt iter} function. It is given~Fig.~\ref{fig:iter}, in the input syntax
 of our prototype \who. There are a few syntactic differences with \ocaml, in
-particular for arrays.
+particular for arrays: the type of arrays is {\tt 'a farray ref}, the length
+of the array {\tt a} is {\tt length !a} in the program and {\tt length !!a} in
+the logic, and similarily access to the {\tt i}th element is {\tt get i !a} in
+the program and {\tt get i !!a} in the logic.
 
 \begin{figure}[tbp]
 \begin{who}[lines]
@@ -273,19 +281,24 @@ is not well-suited for programs with aliasing. Without special techniques (for
 example {\em separation logic}), a large number of equalities and disequalities
 are needed to reason about potentially aliased references. 
 
-To avoid this situation, we additionally introduce a simple means to exclude
-programs with aliasing. The instantiation of effect variables is restricted to
-the ones which do not create aliasing situations. Our system, with aliasing
-exclusion enabled, is inappropriate for reasoning about shared mutable
-structures. However, it is interesting to see that this alias exclusion
-restriction, in many cases, corresponds to a natural condition imposed on
-higher-order functions that operate on some data structure. It is a common
+That is why we also propose in this paper a simple technique to exclude
+programs with aliasing and to obtain simpler proof obligations. The solution
+consists in restricting the instantiation of effect variables. In the example
+of Fig.~\ref{fig:iter}, this means that {\tt e} could not be instantiated with
+an effect containing {\tt a}.  With aliasing exclusion enabled, our system is
+of course inappropriate for reasoning about shared mutable structures.
+However, it is interesting to see that this alias exclusion restriction, in
+many cases, corresponds to a natural condition imposed on higher-order
+functions that operate on some data structure. It is a common
 requirement~\cite{Nanevski08Awkward,Krishnaswami06} for iteration functions,
 for example, that the functional argument must not modify the structure to be
 iterated on. In our system, this fact follows from the restriction on effect
-instantiations, as will be seen in section~\ref{sec:syntax}. In the example,
-the array {\tt a} of the iterating function {\tt iter} must not be modified by
-its argument.
+instantiations, as will be seen in section~\ref{sec:alias}. 
+
+It is important to note that neither our specification language nor its
+weakest precondition calculus are restricted to alias-free programs. The
+aliasing exclusion is only a means to get simpler proof obligations whenever
+possible.
 
 \section{A Programming Language for Specification}
 \label{sec:syntax}
@@ -519,7 +532,10 @@ constructor $(t,t)$  and the accessors $\mathit{fst}$ and $\mathit{snd}$ for
 pairs. We will also use the names \preml\ and \postml\ for $\mathit{fst}$ and
 $\mathit{snd}$, respectively.
 
-Finally, we introduce three symbols
+The store types $\efft{ε}$ describe a portion of the store and are basically
+mappings from region variables to values. The domain of the mapping is the
+effect $ε$, where effect variables stand for unknown parts of the domain. To
+dea with objects of these types, we introduce three symbols
 \begin{eqnarray*}
   \oplus &:&∀ e1 e2 . \efft{ e1 } -> \efft{ e2 } -> \efft { e1  e2 }\\
   |_{ε} &:& ∀e. \efft{ e ε } -> \efft{ ε }\\
@@ -632,7 +648,11 @@ t2 $). The rule for \ifml-expressions is straightforward. The rule for
 subeffecting adapts the domain of the current store and the expected domain of
 the postcondition so that the types work out.
 
-\subsection{Alias Restriction}
+We do not give a correctness proof for this calculus; this proof would be very
+similar to and actually simpler than the proof given in the next section.
+
+\section{The Alias Restriction}
+\label{sec:alias}
 
 The presented programming language, together with the weakest precondition
 calculus, form a basis for program verification and can already be used to
@@ -705,7 +725,8 @@ case.
 In alias-free programs, the operations $\oplus$ and $|_ε$ on stores can be
 executed {\em statically}, i.e. just by looking at the domains of the stores.
 Also, we statically know which value (or which named component) the accessor
-{\tt !!} will get from a store. 
+{\tt !!} will get from a store. Therefore, reasoning about stores and
+equalities between regions can be completely eliminated.
 
 With the aliasing restriction, complex programs using shared mutable data
 structures are impossible to prove. Programs with references in lists,
@@ -716,7 +737,7 @@ several times) and that a reference can only contain always the same
 values, i.e. they can be passed to functions, returned by functions and stored
 in data structures, with the above limitations.
 
-\subsection{Correctness}
+\paragraph{Correctness.}
 
 We have proved the correctness of our system. All the properties are proved in
 subject reduction style, maintaining an invariant during the execution of the
@@ -751,8 +772,6 @@ accompanying this paper. The aliasing restriction is proved there in a more
 general setting, while the correctness of the \wpre-calculus is proved in a
 slightly different version.
 
-\subsection{A Simple Memoization Function}
-
 \begin{figure}[tpb]
 \begin{who}
 type ('a,'b) map
@@ -784,7 +803,7 @@ let memo (f0 : int -> int) (x : int) =
 In this section, we will show two simple examples which use higher-order
 features.
 
-\subsection{A simple memoization function}
+\subsection{A Simple Memoization Function}
 
 Our first example is a simple memoization function {\tt memo} for (pure)
 functions.  It takes as an argument a function {\tt f} (from {\tt int} to {\tt
@@ -802,7 +821,7 @@ expressend by the {\tt stores} predicate. The postcondition states that the
 result is equal to {\tt f0~x} and that the table still verifies the {\tt
 stores} predicate.
 
-\subsection{A More Powerful Memoization Function}
+\subsection{Memoization of Recursive Functions}
 
 \begin{figure}[tpb]
 \begin{who}
@@ -824,25 +843,25 @@ stores} predicate.
     in f
   { rf : realizes f0 rf }
 \end{who}
-\caption{The {\tt ymemo function} and its specification}
+\caption{The {\tt ymemo} function and its specification}
   \label{fig:ymemo}
 \end{figure}
 
-Our second, more complicated example is the recursive version of {\tt memo},
-dubbed {\tt ymemo}. We want to be able to define a recursive function whose
-recursive calls are automatically memoized. The basic idea of {\tt ymemo} is
-analogous to the fixpoint combinator in λ-calculus. As an example, here is how
-one would implement a memoized Fibonacci function
-using ymemo (ignoring the logic argument $f0$):
+Our second, more complicated example is a version of {\tt memo} for recursive
+functions, dubbed {\tt ymemo}. We want to be able to define a recursive
+function whose recursive calls are automatically memoized. The basic idea of
+{\tt ymemo} is analogous to the fixpoint combinator in λ-calculus, hence the
+name. As an example, here is how one would implement a memoized Fibonacci
+function using {\tt ymemo}:
 \begin{ocaml}
   let fib = 
     ymemo (fun g x -> if x <= 1 then x else g (x-1) + g (x-2))
 \end{ocaml}
-The anonymous function uses its first argument {\tt f} to do recursive calls.
+The anonymous function uses its first argument {\tt g} to do recursive calls.
 
 {\tt ymemo} achieves this by defining a recursive function {\tt f} inside its
 body (see Fig~\ref{fig:ymemo}). This function, when called with an integer
-argument {\tt x} first checks if the table contains {\tt x} and if not, calls
+argument {\tt x} first checks if the table contains {\tt x}, and if not, calls
 {\tt ff} {\em with {\tt f} itself} and x as argument. As before, it stores the
 obtained result in the table and returns it. Now, the return value of {\tt
 ymemo} is precisely this recursive function {\tt f}. The only difference with
@@ -872,11 +891,12 @@ A prototype implementation of the presented system, called ``\who'', is freely
 available~\cite{KanigFilliatre09wml}\footnote{It is available at
 \url{http://www.lri.fr/~kanig/who.html}.}. It implements the described
 language with type, region and effect polymorphism, higher-order logic and
-store types in the logic. It takes as an input a fully annotated program and
-outputs proof obligations which have to be proved to guarantee the correctness
-of the program with respect to its specification. Currently, only output to
-the interactive proof assistant Coq has been implemented. Our logic is a
-subset of Coq's, so the translation is particularly simple.  The
+store types in the logic. It is currently restricted to the subset
+characterized by the alias restriction. It takes as an input a fully annotated
+program and outputs proof obligations which have to be proved to guarantee the
+correctness of the program with respect to its specification. Currently, only
+output to the interactive proof assistant Coq has been implemented. Our logic
+is a subset of Coq's, so the translation is particularly simple.  The
 implementation consists of less than 3000 lines of \ocaml\ code, including a
 limited form of type and effect inference.
 
@@ -936,28 +956,13 @@ modularly about side effects of functional arguments. It also has the drawback
 of being difficult to implement, due to the presence of a large number of
 non-structural rules. Our system, starting from a correctly annotated program,
 is syntax-directed and thus entirely automated. Their logic of proof
-obligations is non-standard, while we obtain obligations in standard higher-order
-logic. 
-
-They deal with aliasing using equalities and disequalities between
-pointers, which we chose not to do. 
-
-They can reason about the classic {\em
-Landin's knot}, which consists in obtaining recursion by storing a function in
-a reference which calls this same reference. Our typing restriction prohibits
-this particular kind of programs.  Honda, Yoshida and Berger prove a
-completeness result for their system. We have proved no such result.
-
-%, using a slightly more
-%expressive language than ours. However, their calculus can
-%deal easily with functions in references, even if the stored function
-%reads or modifies the reference it is stored in. While, with the
-%appropriate extensions, one can reason about functions in references
-%in our system, this particular kind of programs cannot be reasoned
-%about.  Their extended
-%system~\cite{BergerHondaYoshida05aliasing} has the same advantages and
-%drawbacks compared to ours, but additionally deals with aliasing
-%situations.
+obligations is non-standard, while we obtain obligations in standard
+higher-order logic. They deal with aliasing using equalities and disequalities
+between pointers.  They can reason about the classic {\em Landin's knot},
+which consists in obtaining recursion by storing a function in a reference
+which calls this same reference. Our typing restriction prohibits this
+particular kind of programs.  Honda, Yoshida and Berger prove a completeness
+result for their system. We have proved no such result.
 
 The Coq proof assistant~\cite{CoqManualV81}, in particular in combination with
 the Program extension~\cite{sozeau07icfp}, can be used to implement and prove
@@ -1082,13 +1087,11 @@ containing exactly one memory location. Other, more powerful effect systems
 allow for {\em group regions}, with the possibility to temporarily {\em focus
 } on a particular memory cell in that region. We see no fundamental difficulty
 in adopting such an effect system, but haven't worked out the details. A
-second possibility is to deal with aliasing via equalities and disequalities
-over pointers, using regions to obtain some separation automatically. On
-itself, we believe that this technique does not scale, due to the explosion of
-needed disequalities.  However, in combination with other separation
+second possibility is to use techniques of static analysis to infer disjoint
+regions, each possibly containing several pointers~\cite{hubert07hav}.
+This approach has proved useful in combination with other separation
 techniques, for example the Burstall-Bornat memory model~\cite{bornat00mpc}
-which separates automatically objects of different structural types, this
-approach has worked well applied to first-order programs.
+which separates automatically objects of different structural types.
 
 Finally, from a programmer's point of view, it would be nice to have more
 features in the programming language, such as recursive types and algebraic
@@ -1096,7 +1099,6 @@ data types. As long as defined types verify a {\em positivity
 condition}~\cite{paulintlca93}, these extensions would be completely
 orthogonal to the weakest precondition calculus and the type and effect system
 used.
-
 
 \bibliographystyle{plain}
 \bibliography{biblio}{}
