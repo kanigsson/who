@@ -1,0 +1,238 @@
+\documentclass[a4paper]{article}
+
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc} 
+\input{utf8symbols}
+\usepackage{stmaryrd}
+\usepackage{amsmath,amssymb}
+\usepackage{amsthm}
+\usepackage{mathpartir}
+\usepackage{url}
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lem}[thm]{Lemma}
+\theoremstyle{definition}
+\newtheorem{definition}[thm]{Definition}
+
+
+\newcommand{\wpre}{{\bf wp}}
+\newcommand{\sep}{ ~|~ }
+\newcommand{\letml}{{\bf let}}
+\newcommand{\inml}{{\bf in}}
+\newcommand{\ifml}{{\bf if}}
+\newcommand{\thenml}{{\bf then}}
+\newcommand{\elseml}{{\bf else}}
+\newcommand{\refml}{{\bf ref}}
+\newcommand{\preml}{{\bf pre}}
+\newcommand{\postml}{{\bf post}}
+\newcommand{\propml}{{\bf prop}}
+\newcommand{\boolml}{{\bf bool}}
+\newcommand{\recml}{{\bf rec}}
+\newcommand{\efft}[1]{\langle #1 \rangle}
+\newcommand{\lift}[1]{\langle #1 \rangle}
+\newcommand{\alist}[1]{\overline{#1} }
+\newcommand{\Trueml}{{\bf True}}
+\newcommand{\Falseml}{{\bf False}}
+\newcommand{\trueml}{{\bf true}}
+\newcommand{\falseml}{{\bf false}}
+\newcommand{\unitml}{{\bf unit}}
+\newcommand{\intml}{{\bf int}}
+\newcommand{\coq}{Coq}
+\newcommand{\who}{Who}
+\newcommand{\ocaml}{Ocaml}
+\newcommand{\correct}[1]{c(#1)}
+
+\newcommand{\ceil}[1]{\lceil #1 \rceil}
+
+\title{A proof}
+\author{Johannes Kanig \and Jean-Christophe Fill\^atre}
+\begin{document}
+\maketitle
+
+\section{Definitions}
+
+\begin{figure}[tpb]
+\begin{eqnarray*}
+  x & & \text{Program Variables}\\
+  α & & \text{Type Variables}\\
+  e & & \text{Effect Variables}\\
+  ρ & & \text{Region Variables}\\
+  r & & \text{runtime regions}\\
+  χ &::=& α \sep e \sep ρ \\
+  t,p,q &::=& r \sep x~[\alist{κ}] \sep λx:τ.t \sep \recml~f~(x:τ).\{p\}t\{q\} \sep t~t\sep \\ 
+  & & \letml~ x~[\alist{χ}] = t~\inml~t \sep \ifml~t~\thenml~t~\elseml~t \sep
+  \letregionml~ρ~\inml~t\\
+  τ &::=& α \sep τ -> τ \sep τ ->^ε τ \sep τ \times τ \sep τ~\refml_ρ \sep
+  \efft{ε} \\
+  ε &::=& (ρ \sep r \sep e)*\\
+  κ &::=& τ \sep ε \sep ρ
+\end{eqnarray*}
+  \caption{Syntax}
+  \label{fig:syntax}
+\end{figure}
+
+\begin{figure}[tpb]
+\begin{equation*}
+   \begin{array}[t]{rrcl}
+    β & s, (λ x:τ.e)\ v & --\ & s, e [x|->v] \\
+    \recml & s, (\recml\ f\ (x : τ). v_1)\ v_2 & --\ & s, v_1[f |->
+    (\recml~f~(x:τ).v_1), x |-> v_2]\\
+    let & s, \letml~ x~\alist{χ} = t~\inml~t & --\ & s, e[x|->Λ\alist{χ}.v] \\
+    ref & s, \refml~v & --\ & s[r|->v], r \qquad r~{\textup fresh}\\
+    := & s, r := v & --\ & s[r|->v], () \qquad r\in dom(s) \\
+    ! & s, !r & --\ & s, s(r) \qquad r\in dom(s)
+  \end{array}
+\end{equation*}
+  \caption{Semantics}
+  \label{fig:semantics}
+\end{figure}
+
+\begin{figure}[tbp]
+  \framebox{$Γ|-_v t : τ$}
+  \begin{mathpar}
+  { \inferrule*[Left=Var] {Γ(x) = ∀\alist{χ}.τ} {Γ|-_v x~[\alist{κ}] :
+  τ[\alist{χ}|->\alist{κ}]} } \and
+  { \inferrule*[Left=PureFun] {Γ,x : τ' |-_v t : τ} {Γ|-_v λx : τ'.t : τ' ->
+  τ} } \and
+  { \inferrule*[Left=Rec] 
+  { Γ' = Γ, x : τ' \\ Γ'' = Γ',~f : τ' ->^ε τ \\ Γ'' |- t : τ,ε \\ Γ' |-_l
+  p : \efft{ε} -> \propml \\ Γ' |-_l q : \efft{ε} ->
+  \efft{ε} -> τ -> \propml } 
+      {Γ|-_v \recml~f~(x : τ').\{p\}t\{q\} : τ' ->^ε τ} 
+  } \and
+  { \inferrule*[Left=PureApp]
+    {Γ |-_v t1 : τ' -> τ \\ Γ|-_v t2 : τ'}
+    {Γ |-_v  t1 ~ t2 : τ}
+  } \and
+  { \inferrule*[Left=Ref]
+    { }
+    { Γ |- r : Γ(r)~\refml_r }
+  }
+  \end{mathpar}
+  \caption{Value typing}
+  \label{fig:valuetyping}
+\end{figure}
+
+\paragraph{Value typing.}
+
+\begin{figure}[tpb]
+  \framebox{$Γ|- t : τ,ε$}
+\begin{mathpar}
+  { \inferrule*[Left=Value]
+  { Γ |-_v t : τ  }
+  { Γ |- t : τ,\emptyset  }
+  } \and
+  { \inferrule*[Left=App]
+    {Γ |-_v t1 : τ' ->^ε τ \\ Γ|-_v t2 : τ'}
+    {Γ |- t1 ~ t2 : τ, ε}
+  } \and
+  { \inferrule*[Left=ite]
+    { Γ |- _v t1 : \boolml \\ Γ |- t2 : τ, ε1 \\ Γ |- t3 : τ, ε2 }
+    { Γ |- \ifml~ t1 ~\thenml~ t2 ~\elseml ~ t3 : τ, ε1  ε2 }
+  } \and
+  { \inferrule*[Left=Letv]
+    { Γ, \alist{χ} |-_v t1 : τ' \\ Γ, x : ∀\alist{χ}.τ' |- t2 : τ,ε }
+    { Γ |- \letml~ x~[\alist{χ}] = t1 ~ \inml~ t2 : τ, ε}
+  } \and
+  { \inferrule*[Left=Let]
+    { Γ |- t1 : τ', ε \\ Γ, x : τ' |- t2 : τ, ε }
+    { Γ |- \letml~ x = t1 ~ \inml~ t2 : τ, ε }
+  } \and
+  { \inferrule*[Left=Sub]
+    { Γ |- t : τ', ε \\ ε \subseteq ε' }
+    { Γ |- t : τ, ε' }
+  }
+\end{mathpar}
+  \caption{Program typing}
+  \label{fig:progtyping}
+\end{figure}
+
+\paragraph{Program typing.}
+
+\begin{figure}[tpb]
+  \begin{eqnarray*}
+    \ceil{α} &=& α\\
+    \ceil{τ~\refml_ρ} &=& \ceil{τ}~\refml_ρ\\
+    \ceil{τ -> τ'} &=& \ceil{τ} -> \ceil{τ'}\\
+    \ceil{τ \times τ'} &=& \ceil{τ} \times \ceil{τ'}\\
+    \ceil{\efft{ε}} &=& \efft{ε}\\
+    \ceil{τ ->^ε τ'} &=& (\ceil{τ} -> \efft{ε} -> \propml)\times (\ceil{τ} ->
+    \efft{ε} -> \efft{ε} -> \ceil{τ'} -> \propml)
+  \end{eqnarray*}
+  \caption{Lifting types}
+  \label{fig:typelift}
+\end{figure}
+
+\begin{figure}[tbp]
+  \framebox{$Γ|-_l t : τ$}
+  \begin{mathpar}
+  { \inferrule*[Left=Logic]
+    { Γ |-_v t : τ  }
+    { Γ |-_l t : \ceil{τ} }
+  } \qquad \and
+  { \inferrule*[Left=LetLogic]
+    { Γ, \alist{χ} |-_l : t' : τ' \\ Γ, x: ∀\alist{χ}.τ' |-_l t : τ  }
+    { Γ |-_l \letml~x~[\alist{χ}] = t'~\inml~t : τ }
+  }\and
+  { \inferrule*[Left=IteLogic]
+    { Γ |- _l t1 : \boolml \\ Γ |-_l t2 : τ \\ Γ |-_l t3 : τ }
+    { Γ |- \ifml~ t1 ~\thenml~ t2 ~\elseml ~ t3 : τ }
+  }
+  \end{mathpar}
+  \caption{Logic typing}
+  \label{fig:logictyping}
+\end{figure}
+
+\begin{figure}[tbp]
+  \begin{eqnarray*}
+    \ceil{x~[\alist{κ}]} &=& x~[\alist{κ}]\\
+    \ceil{λx:τ.t} &=& λx:τ.\ceil{t}\\
+    \ceil{\recml~f~(x:τ).\{p\} t \{q\}} &=& 
+    (λx:\ceil{τ}.p,λx:\ceil{τ}.q)\\
+    \ceil{t_{τ' -> τ}~t'} &=& \ceil{t}~\ceil{t'}
+  \end{eqnarray*}
+  \caption{Lifting values}
+  \label{fig:valuelift}
+\end{figure}
+
+\begin{figure}[tbp]
+  \begin{eqnarray*}
+    c(r) &=& \Trueml \\
+    c(x~[\alist{κ}]) &=& \Trueml \\
+    c(λx:τ.t) &=& ∀x:\ceil{τ}.c(t) \\
+    c(t~t') &=& c(t) /\ c(t') \\
+    c(\recml~f~(x:τ).\{p\}(t : τ',ε)\{q\}) &=&
+    ∀x:\ceil{τ}.∀f:\ceil{τ->^ετ'}.  f = \ceil{v} => \\& &
+    ∀s:\efft{ε}.p~s => \wpre_s(t,q~s) \\
+    \wpre_s(v, q) &=& c(v) /\ q~s~\ceil{v}\\
+    \wpre_s( t_{τ'->^ε τ} t' ,q) &=& \correct{t} /\ \correct{t'} /\
+    fst~\ceil{t}~\ceil{t'}~s /\ \\ 
+    & & ∀s':\efft{ε}∀ x:\ceil{τ}.~  snd~\ceil{t}~\ceil{t'}~s~s'~x => q~s'~x\\
+    \wpre_s(\letml~x~[\alist{χ}] = v~\inml~t, q) &=&
+      ∀\alist{χ}.c(v) /\ \letml~x~[\alist{χ}]=\ceil{v}~\inml~ \wpre(t,q)\\
+    \wpre_s(\letml~x = ( t1 : τ,ε) ~\inml~ t2 , q) &=&
+    \wpre_s( t1 ,λs':\efft{ ε }.λx:\ceil{τ}.\wpre_{s'}( t2 , q ))\\
+    \wpre_s(\ifml~ t1 ~\thenml~ t2 ~\elseml~ t3 , q) &=&
+      \ifml~ \ceil{ t1 }~\thenml~ \wpre_s( t2 , q)~\elseml~\wpre_s( t3 , q) \\
+      \wpre_s( (t : ε <: ε'), q) &=& \wpre_{s|_ε}(t, λs':\efft{ε}.q~(s\oplus s'))
+  \end{eqnarray*}
+  \caption{The weakest precondition calculus}
+  \label{fig:wp}
+\end{figure}
+
+\begin{definition}
+  We define $s||-_ε f(s)$ to be $|= (λs:\efft{ε}. f)~s|_ε$, where $ε$ is an
+  effect expression which only contains region variables in the store.
+\end{definition}
+
+In the following, we only consider well-typed formulae.
+
+\begin{thm}
+  For any well-typed $t$ of effect $ε$, $s ||-_ε \wpre_s(t,q)$ and $s,t --\ s',t'$
+  implies $s'||-_ε \wpre_s( (t : ε' <: ε), q)$.
+\end{thm}
+\begin{proof}
+  
+\end{proof}
+
+\end{document}
