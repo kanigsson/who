@@ -152,6 +152,7 @@ let rec infer' env t loc = function
       let e = infer env t e in
       EndSec e, e.e
   | Let (p,g,e1,(_,x,e2),r) ->
+(*       Myformat.printf "infer-let: %a@." Name.print x; *)
       let nt = U.new_ty () in
       let env' = 
         match r with

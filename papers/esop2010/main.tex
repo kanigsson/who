@@ -122,7 +122,7 @@ i} as a counter:
     done
 \end{ocaml}
 This simple program can be annotated in a standard Hoare logic (for
-example the system of \cite{Filliatre00a}) as follows:
+example the Why system~\cite{Filliatre00a}) as follows:
 \begin{who}
   let sum () =
     { !c = 0 }
@@ -209,25 +209,26 @@ functional programs by Régis-Gianas and
 Pottier~\cite{regis-gianas-pottier-08}. 
 
 The main idea of this paper is to combine the effect-based Hoare logic of
-\cite{Filliatre00a} with the more powerful effect system of
-\cite{talpin94taed} and the more powerful annotations of
-\cite{regis-gianas-pottier-08} to obtain a modular system for proving
-higher-order programs with side effects. As in~\cite{regis-gianas-pottier-08},
-we use operators \preml\ and \postml\ to access the pre- and postcondition of
-a function. However, in our system, a precondition takes as an argument not
-only the function argument, but also the initial state, before the execution
-of the function. The postcondition takes the argument and return value, but
-also the states before {\em and} after the function call. Two-state
-postconditions are a standard way to get rid of most auxiliary variables.
-However, the pre- and postcondition of {\tt f} may not refer to arbitrary
-parts of the state, but only the part {\tt f} reads or modifies.  With these
-conventions, one can now write a generic implementation and specification for
-the {\tt iter} function. It is given~Fig.~\ref{fig:iter}, in the input syntax
-of our prototype \who. There are a few syntactic differences with \ocaml, in
-particular for arrays: the type of arrays is {\tt 'a farray ref}, the length
-of the array {\tt a} is {\tt length !a} in the program and {\tt length !!a} in
-the logic, and similarly access to the {\tt i}th element is {\tt get i !a} in
-the program and {\tt get i !!a} in the logic.
+Why~\cite{Filliatre00a} with the more powerful effect system of Talpin and
+Jouvelot~\cite{talpin94taed} and the more powerful annotations of
+Régis-Gianas/Pottier~\cite{regis-gianas-pottier-08} to obtain a modular
+system for proving higher-order programs with side effects. As
+in~\cite{regis-gianas-pottier-08}, we use operators \preml\ and \postml\ to
+access the pre- and postcondition of a function. However, in our system, a
+precondition takes as an argument not only the function argument, but also the
+initial state, before the execution of the function. The postcondition takes
+the argument and return value, but also the states before {\em and} after the
+function call. Two-state postconditions are a standard way to get rid of most
+auxiliary variables.  However, the pre- and postcondition of {\tt f} may not
+refer to arbitrary parts of the state, but only the part {\tt f} reads or
+modifies.  With these conventions, one can now write a generic implementation
+and specification for the {\tt iter} function. It is
+given~Fig.~\ref{fig:iter}, in the input syntax of our prototype \who. There
+are a few syntactic differences with \ocaml, in particular for arrays: the
+type of arrays is {\tt 'a farray ref}, the length of the array {\tt a} is {\tt
+length !a} in the program and {\tt length !!a} in the logic, and similarly
+access to the {\tt i}th element is {\tt get i !a} in the program and {\tt get
+i !!a} in the logic.
 
 \begin{figure}[tbp]
 \begin{who}[lines]

@@ -118,10 +118,9 @@ let rec unify a b =
       | Ty.Map e1, Ty.Map e2 -> eunify e1 e2
       | Ty.App (v1,i1), Ty.App (v2,i2) when v1 = v2 ->
           Inst.iter2 unify runify eunify i1 i2
-      | _ , _ -> 
-          raise CannotUnify
+      | _ , _ -> raise CannotUnify
       end; 
-      (* We really should unify afterwards, in case of an exception being
+      (* We really have to unify afterwards, in case of an exception being
        * raised *)
       union a b;
 and runify a b = 
@@ -133,7 +132,7 @@ and runify a b =
   | RT _, RU -> union a b
   | RT s1, RT s2 when s1 = s2 -> ()
   | RT _, RT _ -> 
-(*       printf "runify: %s and %s@." x1 x2; *)
+(*       printf "runify: %a and %a@." prvar a prvar b; *)
       raise CannotUnify
 and eunify a b = 
 (*   printf "eunify : %a and %a@." preff a preff b; *)
@@ -141,7 +140,9 @@ and eunify a b =
     begin match Uf.desc a, Uf.desc b with
     | ET (_,_,c1), ET (_,_,c2) -> 
         begin try List.iter2 runify c1 c2 
-        with Invalid_argument _ -> raise CannotUnify end
+        with Invalid_argument _ -> 
+(*           printf "eunify: problem with lists@."; *)
+          raise CannotUnify end
     | _ -> ()
     end ;
     eunion a b;

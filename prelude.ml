@@ -32,35 +32,37 @@ end
 
 logic == ['a||] : 'a -> 'a -> bool
 logic != ['a||] : 'a -> 'a -> bool
-logic !! ['a|r|e] : ref(r,'a) -> <|e> -> 'a
 
-parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r|} =
-  {}
-  {r : !!x = r /\\ !!x|old = !!x}
+section Whoref
+  coq \"WhoRef\"
+  logic !! ['a|r|e] : ref(r,'a) -> <|e> -> 'a
+  parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r|} =
+    {}
+    {r : !!x = r /\\ !!x|old = !!x}
 
-parameter := ['a|r|] (x : ref(r,'a)) (v : 'a) : unit, {r|} =
-  {}
-  { !!x = v}
+  parameter := ['a|r|] (x : ref(r,'a)) (v : 'a) : unit, {r|} =
+    {}
+    { !!x = v}
 
-parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r||r} =
-  {}
-  { x : !!x = v }
+  parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r||r} =
+    {}
+    { x : !!x = v }
 
-logic combine [||e1 e2] : <|e1> -> <|e2> -> <|e1 e2>
-logic restrict [||e1 e2] : <|e1> -> <|e2>
-logic empty : <|>
+  logic combine [||e1 e2] : <|e1> -> <|e2> -> <|e1 e2>
+  logic restrict [||e1 e2] : <|e1> -> <|e2>
+  logic empty : <|>
 
-type kmap
-type key
-logic kcombine [||e1 e2] : kmap -> kmap -> kmap
-logic krestrict [||e1 e2] : kmap -> kmap
-logic kset ['a||] : key -> 'a -> kmap -> kmap
-logic kget ['a|r|] : ref(r,'a) -> kmap -> 'a
-logic kempty : kmap
+  type kmap
+  type key
+  logic kcombine [||e1 e2] : kmap -> kmap -> kmap
+  logic krestrict [||e1 e2] : kmap -> kmap
+  logic kset ['a||] : key -> 'a -> kmap -> kmap
+  logic kget ['a|r|] : ref(r,'a) -> kmap -> 'a
+  logic kempty : kmap 
+end
 
 let pre ['a 'b||]  (x : 'a * 'b) = fst x
 let post ['a 'b||] (x : 'a * 'b) = snd x
-
 
 parameter forto [||e] (inv : int -> <|e> -> prop) (start end_ : int) 
   (f : int ->{|e} unit) : unit, {|e} =

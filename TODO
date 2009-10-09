@@ -1,7 +1,6 @@
 IMPORTANT FEATURES
 
 better inference without explicitely introduced variables 
-type definitions
 diff3 for proof preservation
 
 MINOR ISSUES

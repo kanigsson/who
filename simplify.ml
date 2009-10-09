@@ -37,26 +37,25 @@ let rec find_type rname x =
   | Some x -> x
   | None -> 
       match x.v with
-      | Quant (_,t,b) ->
+      | Quant (_,t,b)
+      | PureFun (t,b) ->
           begin match Ty.find_type_of_r rname t with
           | Some x -> x
           | None -> 
               let _,e = sopen b in
               find_type rname e
           end
-      | _ -> assert false
+      | _ -> 
+          Myformat.printf "finding no type for %a in %a@." Name.print rname print x;
+          assert false
 
 
 let name_add n1 n2 n3 env =
+(*
   Myformat.printf "adding (%a,%a) -> %a@." Name.print n1 Name.print n2 Name.print
   n3;
-  { env with renames = NPM.add (n1,n2) n3 env.renames;
-(*
-    rtypes = 
-      try Name.M.add n3 (rtype n1 env) env.rtypes 
-      with Not_found -> env.rtypes  
 *)
-  }
+  { env with renames = NPM.add (n1,n2) n3 env.renames; }
 
 let getname n1 n2 env = 
   try NPM.find (n1,n2) env.renames 
@@ -143,7 +142,7 @@ let boolean_prop _ l _ x =
              | {name = Some "==" } -> "=="
              | {name = Some "!=" } -> "!="
              | _ -> raise No_Match in
-           let f = appi (spre_defvar op l) arg1 arg2 l in
+           let f = appi (spredef_var op l) arg1 arg2 l in
            if n = Const Btrue then Simple_change f 
            else Simple_change (neg f l)
        | _ -> Nochange
@@ -214,14 +213,16 @@ let beta_reduce _ _ _ = function
       Nochange
   | Let (_,g,v,l,_) -> 
       let x,e = vopen l in
-(*       Myformat.printf "substing ∀[%a].%a in %a@." Ty.Generalize.print g
- *       Name.print x print e; *)
+(*
+      Myformat.printf "substing ∀%a.[%a|->%a] in %a@." 
+      Ty.Generalize.print g Name.print x print v print e; 
+*)
       Change_rerun (polsubst g x v e)
   | _ -> Nochange
 
 let get_restrict_combine _ l _ x = 
   match destruct_get' x with
-  | Some (_,r,_,map) -> 
+  | Some (_,r,_,_,map) -> 
       begin match destruct_restrict map with
       | Some (map,_,_) -> Simple_change (get r map l)
       | None -> 
@@ -236,17 +237,6 @@ let get_restrict_combine _ l _ x =
       end
   | _ -> Nochange
 
-let get_map env _ _ x = 
-  match destruct_kget' x with
-  | Some (_,r,_,{v = Var (v,_)}) -> 
-      let nf = build_var (Ty.get_reg r.t) v env in
-(*
-      Myformat.printf "found get(%a,%a), building %a@." print r Name.print v
-      print nf;
-*)
-      Simple_change nf
-  | _ -> Nochange
-
 type effrec = Name.t Name.M.t * Name.t Name.M.t
 
 let e_combine (r1,e1) (r2,e2) = 
@@ -259,40 +249,45 @@ let e_restrict d (r,e) =
   Name.M.fold (fun k v acc -> 
     if NEffect.emem k d then Name.M.add k v acc else acc) e Name.M.empty
 
-let rec form2effrec t x = 
-  match destruct_kcombine' x with
-  | Some (m1,_,m2,_) -> e_combine (form2effrec m1.t m1.v) (form2effrec m2.t m2.v)
+let rec form2effrec d x = 
+(*   Myformat.printf "finding effrec for %a@." print' x; *)
+  match destruct_combine' x with
+  | Some (m1,_,m2,_) -> e_combine (form2effrec_t m1.t m1.v) (form2effrec_t m2.t m2.v)
   | None -> 
-      match destruct_krestrict' x with
-      | Some (m,_,e2) -> e_restrict e2 (form2effrec m.t m.v)
+      match destruct_restrict' x with
+      | Some (m,_,e2) -> e_restrict e2 (form2effrec_t m.t m.v)
       | None ->
           match x with
           | Var (s,_) -> 
-              let d = Ty.domain t in
               NEffect.rfold (fun k acc -> Name.M.add k s acc) Name.M.empty d,
               NEffect.efold (fun k acc -> Name.M.add k s acc) Name.M.empty d 
           | _ -> 
               Myformat.printf "strange term: %a@." print' x;
               assert false
+and form2effrec_t t x = form2effrec (Ty.domain t) x
+
 
 let effrec2form env (r,_) =
   (* TODO effect vars *)
+(*   Myformat.printf "building effrec@."; *)
   Name.M.fold (fun r s acc ->
     app 
       (app2 (pre_defvar "kset" ([rtype r env],[],[]) env.l)
       (svar r (Ty.spredef_var "key") env.l) 
       (build_var r s env) env.l) 
-      acc env.l) r (spre_defvar "kempty" env.l )
-
-
+      acc env.l) r (spredef_var "kempty" env.l )
 
 let replace_map env _ t x =
   if Ty.is_map t then
-    let m = form2effrec t x in
-    let f = effrec2form env m in
-    Simple_change f
+    match x with
+    | Logic t -> Simple_change (logic (Ty.selim_map t) env.l)
+    | _ -> 
+      let m = form2effrec_t t x in
+      let f = effrec2form env m in
+      Simple_change f
   else Nochange
 
+(*
 let replace_bang _ l _ x = 
   match x with
   | Var ({ name = Some "!!"},(t,r,_)) -> 
@@ -301,6 +296,17 @@ let replace_bang _ l _ x =
       Simple_change (pre_defvar "krestrict" ([],[],e) l)
   | Var ({ name = Some "combine"},(_,_,e)) -> 
       Simple_change (pre_defvar "kcombine" ([],[],e) l)
+  | _ -> Nochange
+
+*)
+
+let get_map env _ _ x = 
+(*   Myformat.printf "get_form: %a@." print' x; *)
+  match destruct_get' x with
+  | Some (_,_,reg,dom,m) -> 
+      let (rm,_) = form2effrec dom m.v in
+      let nf = build_var reg (Name.M.find reg rm) env in
+      Simple_change nf
   | _ -> Nochange
 
 let simplifiers =
@@ -318,7 +324,7 @@ let simplifiers =
 let simplify_maps = 
   [ 
     replace_map;
-    replace_bang;
+(*     replace_bang; *)
     get_map; 
   ]
 
@@ -334,6 +340,7 @@ let exhaust simplifiers env f =
   aux false f simplifiers
 
 let add_effect env x d = 
+(*   Myformat.printf "adding effect : %a@." NEffect.print d; *)
   let env,rl = 
     NEffect.rfold (fun r (env,rl) -> 
       let n = Name.new_name r in
@@ -346,11 +353,16 @@ let add_effect env x d =
 
 let simplify ~genbind 
              ~(varbind : 'a -> [`FA | `LAM | `EX] -> 'b) 
-             ~tyfun simplifiers f = 
+             ~tyfun before after env f = 
 (*   Format.printf "simplify: %a@." print f; *)
-  let rec simplify env f = 
+  let rec aux env f = 
     let l = f.loc in
     let env = { env with l = f.loc; et = f.t } in
+    let f =
+      match exhaust before env f with
+      | Nochange -> f
+      | Simple_change f -> f
+      | Change_rerun f -> aux env f in
     let f = 
       match f.v with
       | (Const _  | Axiom _ ) -> f
@@ -358,58 +370,79 @@ let simplify ~genbind
       | Var (v,i) -> 
           var_i v (Inst.map tyfun Misc.id Misc.id i) f.t l
       | App (f1,f2,k,c) -> 
-          app ~kind:k ~cap:c (simplify env f1) (simplify env f2) l
-      | Gen (g,t) -> 
-          let env = genbind g env t in
-          gen g (simplify env t) l
+          app ~kind:k ~cap:c (aux env f1) (aux env f2) l
+      | Gen (g,t) -> gen g (genbind g env t) env.l
       | Let (p, g ,e1,b,r) ->
           let x,e2 = if p then sopen b else vopen b in
-          Myformat.printf "let %b: %a@." p Name.print x;
-          let env' = genbind g env e1 in
-          let_ ~prelude:p g (simplify env' e1) x (simplify env e2) r l
+(*           Myformat.printf "let %b: %a@." p Name.print x; *)
+          let e1 = genbind g env e1 in
+          let_ ~prelude:p g e1 x (aux env e2) r l
       | PureFun (t,b) ->
           let x,e = vopen b in
-          varbind env `LAM x t (fun env -> simplify env e) l
+          varbind env `LAM x t e l
       | Quant (k,t,b) -> 
           let x,e = vopen b in
-          varbind env (k :> [`EX | `FA | `LAM ]) x t (fun env -> simplify env e) l
+          varbind env (k :> [`EX | `FA | `LAM ]) x t e l
       | Ite (e1,e2,e3) -> 
-          ite (simplify env e1) (simplify env e2) (simplify env e3) l
+          ite (aux env e1) (aux env e2) (aux env e3) l
       | TypeDef (g,t,x,e) -> 
-          typedef g t x (simplify env e) l
+          typedef g t x (aux env e) l
       | Section (n,f,e) -> 
-          section n f (simplify env e) l
-      | EndSec e -> endsec (simplify env e) l 
+          section n f (aux env e) l
+      | EndSec e -> endsec (aux env e) l 
       | Lam _ | Annot _ | Param _ | For _ | LetReg _ -> assert false in
     let f =
-      match exhaust simplifiers env f with
+      match exhaust after env f with
       | Nochange -> f
       | Simple_change f -> f
-      | Change_rerun f -> simplify env f in
+      | Change_rerun f -> aux env f in
     let f = {f with t = tyfun f.t} in
     f
   in
-  simplify empty f
+  aux env f
 
-let allsimplify f =
-  let f = simplify ~genbind:(fun _ env _ -> env) 
-                   ~varbind:(fun env k x t e l -> aquant k x t (e env) l) 
-                   ~tyfun:Misc.id simplifiers f in
-  Myformat.printf "=============@.%a@.=================@." print f;
-  let f = 
+let logic_simplify f = 
+  let rec aux env f =
+    simplify ~genbind:(fun _ env e -> aux env e) 
+             ~varbind:(fun env k x t e l -> aquant k x t (aux env e) l)
+             ~tyfun:Misc.id [] simplifiers env f in
+  aux empty f
+
+let map_simplify f = 
+  let rec aux env f =
     simplify 
       ~genbind:(fun (_,rl,_) env t -> 
-        List.fold_left (fun env r -> rtype_add r (find_type r t) env) env rl)
+(*
+        Myformat.printf "treating gen %a for expression %a@." 
+          Ty.Generalize.print g print t;
+*)
+        let env = List.fold_left (fun env r -> 
+          rtype_add r (find_type r t) env) env rl in
+        let t = aux env t in
+        if Ty.equal t.t Ty.prop then 
+          List.fold_left (fun acc r -> 
+            aquant `FA r (Ty.spredef_var "key") acc env.l) t rl
+        else t
+          )
       ~varbind:(fun env k x t e l ->
+(*
+        Myformat.printf "varbind: %a : %a. %a@." Name.print x Ty.print t print
+        e;
+*)
         if Ty.is_map t then
           let env, rl,el = add_effect env x (Ty.domain t) in
-          let e = e env in
+          let e = aux env e in
           let f = List.fold_left (fun acc (x,t) -> aquant k x t acc l) e rl in
           List.fold_left (fun acc e -> 
             aquant k e (Ty.spredef_var "kmap") acc l) f el
-        else aquant k x (Ty.selim_map t) (e env) l)
-      ~tyfun:Ty.selim_map
-        simplify_maps f 
-  in
-  Myformat.printf "<<<<<<<<<<<<<@.%a@.<<<<<<<<<<<<<<<<<@." print f;
+        else aquant k x (Ty.selim_map t) (aux env e) l)
+      ~tyfun:Ty.selim_map simplify_maps [] env f in
+  aux empty f
+
+let allsimplify f =
+  let f = logic_simplify f in
+(*   Myformat.printf "=============@.%a@.=================@." print f; *)
+  Typing.formtyping f;
+  let f = map_simplify f in
+(*   Myformat.printf "<<<<<<<<<<<<<@.%a@.<<<<<<<<<<<<<<<<<@." print f; *)
   f

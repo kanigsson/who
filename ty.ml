@@ -33,8 +33,7 @@ let print' print_map pt pr pe is_c fmt x =
   | Ref (r,t) -> 
       if print_map then fprintf fmt "ref(%a,%a)" pr r pt t
       else fprintf fmt "ref@ %a@ %a" mayp t pr r
-  | Map e -> 
-      if print_map then fprintf fmt "kmap%a" pe e else pp_print_string fmt "kmap"
+  | Map e -> fprintf fmt "map%a" pe e
   | App (v,i) -> 
       fprintf fmt "%a%a" Name.print v (Inst.print ~whoapp:print_map mayp pr pe) i
 

@@ -31,42 +31,6 @@ and ('a,'b,'c) pre = Name.t * ('a,'b,'c) t' option
 and ('a,'b,'c) post = Name.t * Name.t * ('a,'b,'c) post'
 and isrec = Rec of Ty.t | NoRec
 
-let transform ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun transform env t =
-  let rec aux' env = function
-    | (Const _ ) as t -> t
-    | Param (t,e) -> Param (tyfun t, effectfun e)
-    | Var (v,i) -> varfun v (Inst.map tyfun rvarfun effectfun i)
-    | App (t1,t2,p,_) -> App (aux env t1, aux env t2, p, [])
-    | Annot (e,t) -> Annot (aux env e, tyfun t)
-    | Lam (x,t,p,e,q) -> 
-        let f e = Name.close_bind x e in
-        Lam (x,tyfun t, pre env p, aux env e, post env q)
-    | LetReg (l,e) -> LetReg (l, aux env e)
-    | For _ -> assert false
-    | Let (p,g,e1,b,r) -> 
-        Let (p,g,aux env e1, varbindfun p b, r)
-    | PureFun (t,b) -> PureFun (tyfun t, varbindfun false b)
-    | Ite (e1,e2,e3) -> Ite (aux env e1, aux env e2, aux env e3)
-    | Axiom e -> Axiom (aux env e)
-    | TypeDef (g,t,x,e) -> TypeDef (g,t,x,aux env e)
-    | Quant (k,t,b) -> 
-        let env = addvar x t env in
-        Quant (k,tyfun t, varbindfun false b)
-    | Gen (g,e) -> Gen (g,aux env e)
-    | Section (n,f,e) -> Section (n,f,aux env e)
-    | EndSec e -> EndSec (aux env e)
-  and pre env (x,o) = (x, Misc.opt_map aux o)
-  and post env (x,y,f) = 
-    let f = match f with
-    | PNone -> PNone
-    | PPlain f -> PPlain (aux env f)
-    | PResult (r,f) -> PResult (r,aux env f) in
-    x, y, f
-  and aux env t = 
-    let t = {t with v = aux' env t.v; t = tyfun t.t} in
-    transform env t in
-  aux f
-
 let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f = 
   let rec aux' = function
     | (Const _ | Param _ ) as t -> t
@@ -271,7 +235,7 @@ module Recon = struct
     let v,g,t = Ty.get_predef_var s in
     var v inst (g,t) 
 
-  let spre_defvar s  = pre_defvar s Inst.empty
+  let spredef_var s  = pre_defvar s Inst.empty
 
   open Const
 
@@ -282,23 +246,23 @@ module Recon = struct
   let void loc = mk_val (Const Void) T.unit loc
 
   let svar s t = var s Inst.empty (G.empty,t) 
-  let le t1 t2 loc = appi (spre_defvar "<=" loc) t1 t2 loc
+  let le t1 t2 loc = appi (spredef_var "<=" loc) t1 t2 loc
   let and_ t1 t2 loc = 
     match t1.v,t2.v with
     | Const Ptrue, _ -> t2
     | _, Const Ptrue -> t1
     | Const Pfalse, _ -> t1
     | _, Const Pfalse -> t2
-    | _ -> appi (spre_defvar "/\\" loc) t1 t2 loc
+    | _ -> appi (spredef_var "/\\" loc) t1 t2 loc
 
-  let mempty l = spre_defvar "empty" l 
+  let mempty l = spredef_var "empty" l 
 
   let impl t1 t2 loc = 
     match t1.v,t2.v with
     | Const Ptrue, _ -> t2
     | _, Const Ptrue -> t2
     | Const Pfalse, _ -> ptrue_ loc
-    | _ -> appi (spre_defvar "->" loc) t1 t2 loc
+    | _ -> appi (spredef_var "->" loc) t1 t2 loc
 
   let eq t1 t2 loc = 
     appi (pre_defvar "=" ([t1.t],[],[]) loc) t1 t2 loc
@@ -308,7 +272,7 @@ module Recon = struct
     | T.C (T.Tuple (t1,t2)) -> app (pre_defvar "fst" ([t1;t2],[],[]) loc) t loc
     | _ -> assert false
 
-  let neg f l = app (spre_defvar "~" l) f l
+  let neg f l = app (spredef_var "~" l) f l
   let post t loc = 
     match t.t with
     | T.C (T.Tuple (t1,t2)) -> app (pre_defvar "snd" ([t1;t2],[],[]) loc) t loc
@@ -319,7 +283,7 @@ module Recon = struct
     mk_val (PureFun (t,Name.close_bind x e)) (T.parr t e.t) loc
   let efflam x eff e = plam x (T.map eff) e
   let lam x t p e q = mk_val (Lam (x,t,p,e,q)) (T.arrow t e.t e.e)
-  let plus t1 t2 loc = appi (spre_defvar "+" loc) t1 t2 loc
+  let plus t1 t2 loc = appi (spredef_var "+" loc) t1 t2 loc
   let one = mk_val (Const (Int Big_int.unit_big_int)) T.int 
   let succ t loc = plus t (one loc) loc
   let let_ ?(prelude=false) g e1 x e2 r = 
@@ -549,14 +513,14 @@ let destruct_app2_var' x =
 
 let destruct_get' x = 
   match destruct_app2_var' x with
-  | Some ({name = Some "!!"}, ([t],[_],[e]), r,map) -> 
-      Some (t,r,e,map)
+  | Some ({name = Some "!!"}, ([t],[reg],[e]), r,map) -> 
+      Some (t,r,reg,e,map)
   | _ -> None
 
 let destruct_kget' x = 
   match destruct_app2_var' x with
-  | Some ({name = Some "kget"}, ([t],[_],[e]), r,map) -> 
-      Some (t,r,e,map)
+  | Some ({name = Some "kget"}, ([t],[reg],[]), ref,map) -> 
+      Some (t,ref,reg,map)
   | _ -> None
 
 let destruct_restrict' x = 

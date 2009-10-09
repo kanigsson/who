@@ -44,14 +44,15 @@ let rec formtyping' env loc = function
       let t1 = formtyping env e1 in
       let t2 = formtyping env e2 in
 (*
-      printf "app of %a and %a of types %a and %a@."
+      Myformat.printf "app of %a and %a of types %a and %a@."
       Recon.print e1 Recon.print e2 Ty.print t1 Ty.print t2;
 *)
       begin match t1 with
       | C (Arrow _) -> error "effectful application not allowed in logic" loc
       | C (PureArr (ta,tb)) ->
           if Ty.equal ta t2 then tb else 
-            error (Error.ty_app_mismatch t2 ta) loc
+            (Myformat.printf "here@.";
+            error (Error.ty_app_mismatch t2 ta) loc)
       | _ -> error "no function type" loc
       end
   | TypeDef (_,_,_,e) -> formtyping env e

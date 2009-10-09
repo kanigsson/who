@@ -196,14 +196,7 @@ module Flatten = struct
 
   let coqdecls = 
     List.map (fun s -> FCoqDecl (s, name_of_string s))
-      [
-       "Set Implicit Arguments";
-       "Require Import WhoMap";
-       "Variable ref : forall (a : Type) (k : key), Type";
-       "Definition ___get (A : Type) (k : key) (r : ref A k) (m : kmap) :=
-        __get A k m";
-       "Notation \"!!\" := (___get) (at level 50)";
-      ]
+      [ "Set Implicit Arguments"; ]
   let main s = 
     coqdecls @ section s []
 
