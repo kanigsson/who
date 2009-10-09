@@ -192,7 +192,7 @@ in a generic way.
 The first obstacle has a well known solution using a type and effect
 system~\cite{talpin94taed} with effect variables: effect polymorphism does
 exactly what we want here. Using effect polymorphism, we can say that {\tt f}
-(the argument of {\tt iter}) has type $α->^e\unitml$, whera $α$ is the type of
+(the argument of {\tt iter}) has type $α->^e\unitml$, where $α$ is the type of
 the array elements and where $e$ is an {\em effect variable}, which amounts to
 say that {\tt f} has a {\em certain} effect $e$. The complete type of {\tt
 iter} is thus:
@@ -226,7 +226,7 @@ the {\tt iter} function. It is given~Fig.~\ref{fig:iter}, in the input syntax
 of our prototype \who. There are a few syntactic differences with \ocaml, in
 particular for arrays: the type of arrays is {\tt 'a farray ref}, the length
 of the array {\tt a} is {\tt length !a} in the program and {\tt length !!a} in
-the logic, and similarily access to the {\tt i}th element is {\tt get i !a} in
+the logic, and similarly access to the {\tt i}th element is {\tt get i !a} in
 the program and {\tt get i !!a} in the logic.
 
 \begin{figure}[tbp]
@@ -271,7 +271,7 @@ sugar, this could be expressed much more concisely using a Hoare triple:
 \end{who}
 
 The specification of {\tt iter} is correct, but it will be difficult to prove
-in general, because it is not clear wether {\tt f} modifies the array or not,
+in general, because it is not clear whether {\tt f} modifies the array or not,
 or more precisely, if the effect variable {\tt e} does contain {\tt a} or not.
 This is an instance of the {\em aliasing problem} (see, for
 example, \cite{reynolds78popl}) and it is well known that standard Hoare logic
@@ -533,7 +533,7 @@ $\mathit{snd}$, respectively.
 The store types $\efft{ε}$ describe a portion of the store and are basically
 mappings from region variables to values. The domain of the mapping is the
 effect $ε$, where effect variables stand for unknown parts of the domain. To
-dea with objects of these types, we introduce three symbols
+deal with objects of these types, we introduce three symbols
 \begin{eqnarray*}
   \oplus &:&∀ e1 e2 . \efft{ e1 } -> \efft{ e2 } -> \efft { e1  e2 }\\
   |_{ε} &:& ∀e. \efft{ e ε } -> \efft{ ε }\\
@@ -815,7 +815,7 @@ we simply model it by a reference to a functional map with mem/get/set functions
 
 The specification of {\tt memo} is very simple. The only precondition is that
 the table should only contain bindings $y |-> {\mathtt f}~y$, which is
-expressend by the {\tt stores} predicate. The postcondition states that the
+expressed by the {\tt stores} predicate. The postcondition states that the
 result is equal to {\tt f0~x} and that the table still verifies the {\tt
 stores} predicate.
 

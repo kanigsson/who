@@ -31,6 +31,42 @@ and ('a,'b,'c) pre = Name.t * ('a,'b,'c) t' option
 and ('a,'b,'c) post = Name.t * Name.t * ('a,'b,'c) post'
 and isrec = Rec of Ty.t | NoRec
 
+let transform ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun transform env t =
+  let rec aux' env = function
+    | (Const _ ) as t -> t
+    | Param (t,e) -> Param (tyfun t, effectfun e)
+    | Var (v,i) -> varfun v (Inst.map tyfun rvarfun effectfun i)
+    | App (t1,t2,p,_) -> App (aux env t1, aux env t2, p, [])
+    | Annot (e,t) -> Annot (aux env e, tyfun t)
+    | Lam (x,t,p,e,q) -> 
+        let f e = Name.close_bind x e in
+        Lam (x,tyfun t, pre env p, aux env e, post env q)
+    | LetReg (l,e) -> LetReg (l, aux env e)
+    | For _ -> assert false
+    | Let (p,g,e1,b,r) -> 
+        Let (p,g,aux env e1, varbindfun p b, r)
+    | PureFun (t,b) -> PureFun (tyfun t, varbindfun false b)
+    | Ite (e1,e2,e3) -> Ite (aux env e1, aux env e2, aux env e3)
+    | Axiom e -> Axiom (aux env e)
+    | TypeDef (g,t,x,e) -> TypeDef (g,t,x,aux env e)
+    | Quant (k,t,b) -> 
+        let env = addvar x t env in
+        Quant (k,tyfun t, varbindfun false b)
+    | Gen (g,e) -> Gen (g,aux env e)
+    | Section (n,f,e) -> Section (n,f,aux env e)
+    | EndSec e -> EndSec (aux env e)
+  and pre env (x,o) = (x, Misc.opt_map aux o)
+  and post env (x,y,f) = 
+    let f = match f with
+    | PNone -> PNone
+    | PPlain f -> PPlain (aux env f)
+    | PResult (r,f) -> PResult (r,aux env f) in
+    x, y, f
+  and aux env t = 
+    let t = {t with v = aux' env t.v; t = tyfun t.t} in
+    transform env t in
+  aux f
+
 let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f = 
   let rec aux' = function
     | (Const _ | Param _ ) as t -> t
