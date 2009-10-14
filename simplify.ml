@@ -309,6 +309,21 @@ let get_map env _ _ x =
       Simple_change nf
   | _ -> Nochange
 
+let swap_impl _ l _ x = 
+  match destruct_app2_var' x with
+  | Some ({name = Some "->"}, _, h1,goal)  ->
+      begin match destruct_app2_var goal with
+      | Some ({name = Some "->"}, _, h2,goal)  ->
+          begin match destruct_app2_var h1, destruct_app2_var h2 with
+          | Some ({name= Some "="}, _,_, _), _ -> Nochange
+          | _, Some ({name= Some "="}, _,_, _) -> 
+              Simple_change (impl h2 (impl h1 goal l) l)
+          | _ -> Nochange
+      end
+      | _ -> Nochange 
+      end
+  | _ -> Nochange
+
 let simplifiers =
   [
     beta_reduce;
@@ -327,6 +342,9 @@ let simplify_maps =
 (*     replace_bang; *)
     get_map; 
   ]
+
+let elim_eqs =
+  [ swap_impl; elim_eq_intro; ]
 
 let exhaust simplifiers env f = 
   let rec aux b f = function
@@ -439,10 +457,18 @@ let map_simplify f =
       ~tyfun:Ty.selim_map simplify_maps [] env f in
   aux empty f
 
+let eq_simplify f = 
+  let rec aux env f = 
+    simplify ~genbind:(fun _ env e -> aux env e)
+             ~varbind:(fun env k x t e l -> aquant k x t (aux env e) l)
+             ~tyfun:Misc.id [] elim_eqs env f in
+  aux empty f
+
 let allsimplify f =
   let f = logic_simplify f in
 (*   Myformat.printf "=============@.%a@.=================@." print f; *)
   Typing.formtyping f;
   let f = map_simplify f in
 (*   Myformat.printf "<<<<<<<<<<<<<@.%a@.<<<<<<<<<<<<<<<<<@." print f; *)
+  let f = eq_simplify f in
   f
