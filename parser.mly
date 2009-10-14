@@ -71,7 +71,7 @@
 %token <string Loc.t> IDENT
 %token <string> TYVAR STRING
 %token IN SEMICOLON COQ
-%token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND
+%token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND OR
 %token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION TILDE
 %token <Loc.loc> BLE BLT BGT BGE
 %token EOF
@@ -84,7 +84,7 @@
 %nonassoc let_
 %right ARROW
 %nonassoc ifprec
-%left AND
+%left AND OR
 %nonassoc LE LT GE GT BLE BLT BGT BGE
 %nonassoc ASSIGN
 %right EQUAL NEQ BEQUAL BNEQ
@@ -165,6 +165,7 @@ constant:
   | p = BNEQ       { p,"!=" }
   | p = NEQ        { p,"<>" }
   | p = AND        { p,"/\\" }
+  | p = OR        { p,"\\/" }
   | p = COMMA      { p,"," }
   | p = ARROW      { p,"->" }
   | p = BLE         { p,"<<=" }

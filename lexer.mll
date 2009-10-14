@@ -105,6 +105,7 @@ rule token = parse
   | '~' { TILDE (create_info lexbuf) }
   | "<=" { LE (create_info lexbuf)  }
   | "/\\" { AND (create_info lexbuf) }
+  | "\\/" { OR (create_info lexbuf) }
   | '<' { LT (create_info lexbuf)  }
   | "<<" { BLT (create_info lexbuf) }
   | ">>" { BGT (create_info lexbuf) }

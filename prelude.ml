@@ -2,6 +2,7 @@ let prelude = "
 section basiclogic
   coq predefined
   logic /\\ : prop -> prop -> prop
+  logic \\/ : prop -> prop -> prop
   logic -> : prop -> prop -> prop
   logic ~ : prop -> prop
   logic = ['a||] : 'a -> 'a -> prop

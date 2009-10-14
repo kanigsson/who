@@ -1,54 +1,64 @@
-(*whoSet*) Set Implicit Arguments. (*who*) 
-
-(*whobeginsec*)
-Section sec. (*who*)
-  (*whobasiclogi*)  (*who*) (*whoarit*) Require Import WhoArith. (*who*) 
-  (*whoWhore*) Require Import WhoRef. (*who*) 
-  (*whoArra*) Require Import WhoArray. (*who*) 
-  (*whoLis*) Require Import WhoList. (*who*) 
-  (*whohmap*) Definition hmap : forall (a b : Type)  , Type.  (*who*) 
+Set Implicit Arguments.
+Section sec.
+  
+  Require Import WhoArith.
+  Require Import WhoRef.
+  Require Import WhoArray.
+  Require Import WhoList.
+  Definition hmap : forall (a b : Type)  , Type. 
   Admitted.
-  (*whohmem*) Definition hmem: forall (a1 b1 : Type)  , a1 -> (hmap a1 b1) ->
-                bool.  (*who*) Admitted.
-  (*whohget*) Definition hget: forall (a2 b2 : Type)  , a2 -> (hmap a2 b2) ->
-                b2.  (*who*) Admitted.
-  (*whohset*) Definition hset: forall (a3 b3 : Type)  , a3 -> b3 -> (hmap a3
-                b3) -> hmap a3 b3.  (*who*) Admitted.(*whot*) Variables t :
-  key.  (*who*) (*whot1*) Variable t1: key.  (*who*) 
-  (*whotable*) Variable table: ref (hmap int int) t.  (*who*) 
-  (*whof0*) Variable f0: int -> int.  (*who*) 
-  (*whot2*) Variable t2: hmap int int.  (*who*) 
-  (*whox*) Variable x: int.  (*who*) 
-  (*whoH*) Hypothesis H:
-           forall (x1:int), ((hmem x1 t2) = true) -> ((hget x1 t2) = (f0 x1)).  (*who*) 
+  Definition hmem: forall (a1 b1 : Type)  , a1 -> (hmap a1 b1) -> bool. 
+  Admitted.
+  Definition hget: forall (a2 b2 : Type)  , a2 -> (hmap a2 b2) -> b2. 
+  Admitted.
+  Definition hset: forall (a3 b3 : Type)  , a3 -> b3 -> (hmap a3 b3) -> hmap
+    a3 b3. 
+  Admitted.
+  Axiom hgethset: forall (a4 b4 : Type)  ,
+   forall (k:a4),
+   forall (v:b4), forall (map:hmap a4 b4), (hget k (hset k v map)) = v. 
+  Axiom hgethset2: forall (a5 b5 : Type)  ,
+   forall (k1:a5),
+   forall (k2:a5),
+   forall (v1:b5),
+   forall (map1:hmap a5 b5),
+   (k1 <> k2) -> ((hget k1 (hset k2 v1 map1)) = (hget k1 map1)). 
+  Axiom set_mem: forall (a6 b6 : Type)  ,
+   forall (k11:a6),
+   forall (k21:a6),
+   forall (v2:b6),
+   forall (map2:hmap a6 b6),
+   ((hmem k11 (hset k21 v2 map2)) = true) ->
+   ((k11 = k21) \/ ((hmem k11 map2) = true)). 
+  Variables t : key.
   
-  (*whobeginsec1*)
-  Section sec1. (*who*)
-    (*whoH1*) Hypothesis H1: (hmem x t2) = true.  (*who*) 
-    (*whogoal*) Lemma goal: (hget x t2) = (f0 x). (*who*) 
-    
-    (*whobeginsec2*)
-    Section sec2. (*who*)
-      (*whox2*) Variable x2: int.  (*who*) 
-      (*whoH2*) Hypothesis H2: (hmem x2 t2) = true.  (*who*) 
-      (*whogoal1*) Lemma goal1: (hget x2 t2) = (f0 x2). (*who*) 
-      
-      (*whoendsec2*)
-      End sec2. (*who*)
-    
-    (*whoendsec1*)
-    End sec1. (*who*)
-  
-  (*whobeginsec3*)
-  Section sec3. (*who*)
-    (*whoH3*) Hypothesis H3: ~ ((hmem x t2) = true).  (*who*) 
-    Proof. subst; auto. Qed.(*whox3*) Variable x3: int.  (*who*) 
-    (*whoH4*) Hypothesis H4: (hmem x3 (hset x (f0 x) t2)) = true.  (*who*) 
-    Proof. auto. Qed.
-    (*whogoal2*) Lemma goal2: (hget x3 (hset x (f0 x) t2)) = (f0 x3). (*who*) 
-    Proof.
-    (*whoendsec3*)
-    End sec3. (*who*)
-  
-  (*whoendsec*)
-  End sec. (*who*)
+  Variable t1: key. 
+  Variable table: ref (hmap int int) t. 
+  Variable f0: int -> int. 
+  Variable t2: hmap int int. 
+ Variable x: int. 
+  Hypothesis H:
+  forall (x1:int), ((hmem x1 t2) = true) -> ((hget x1 t2) = (f0 x1)). 
+  Section sec1.
+    Hypothesis H1: (hmem x t2) = true. 
+    Lemma goal: (hget x t2) = (f0 x).
+      auto. Qed.
+    Section sec2.
+      Variable x2: int. 
+      Hypothesis H2: (hmem x2 t2) = true. 
+      Lemma goal1: (hget x2 t2) = (f0 x2).
+        auto. Qed.
+      End sec2.
+    End sec1.
+  Section sec3.
+    Hypothesis H3: ~ ((hmem x t2) = true). 
+    Variable x3: int. 
+    Hypothesis H4: (hmem x3 (hset x (f0 x) t2)) = true. 
+    Lemma goal2: (hget x3 (hset x (f0 x) t2)) = (f0 x3).
+      generalize (set_mem  H4); intros [A | A ].
+        rewrite A, hgethset in *; auto.
+        assert (x <> x3) by congruence.
+        rewrite hgethset2; auto. 
+    Qed.
+    End sec3.
+  End sec.

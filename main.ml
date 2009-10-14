@@ -50,7 +50,7 @@ let _ =
     Typing.formtyping p;
     let s = Sectionize.section p in
 (*     maybe_abort Options.sectionize_only Sectionize.print s; *)
-    Regen.main (Sectionize.Flatten.main s)
+    Regen2.main (Sectionize.Flatten.main s)
   with
   | Sys_error e -> Error.bad e
   | Infer.Error (s,loc) 

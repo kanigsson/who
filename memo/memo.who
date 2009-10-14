@@ -3,6 +3,19 @@ logic hmem ['a 'b||]: 'a -> ('a,'b) hmap -> bool
 logic hget ['a 'b||]: 'a -> ('a,'b) hmap -> 'b
 logic hset ['a 'b||]: 'a -> 'b -> ('a,'b) hmap -> ('a,'b) hmap
 
+axiom hgethset ['a 'b ||] : 
+  forall (k : 'a) (v : 'b) (map : ('a,'b) hmap). 
+    hget k (hset k v map) = v
+
+axiom hgethset2 ['a 'b ||] : 
+  forall (k1 k2 : 'a) (v : 'b) (map : ('a,'b) hmap). 
+    k1 <> k2 -> hget k1 (hset k2 v map) = hget k1 map
+
+axiom set_mem ['a 'b||] :
+  forall (k1 k2 : 'a) (v : 'b) (map : ('a, 'b) hmap).
+    hmem k1 (hset k2 v map) = true -> (k1 = k2 \/ hmem k1 map = true)
+
+
 let stores (f0 : int -> int) (m : (int,int) hmap) =
   forall (x : int). hmem x m = true -> hget x m = f0 x
 
