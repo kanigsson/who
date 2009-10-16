@@ -27,7 +27,7 @@ let ftype_of_var env x =
 
 let prety eff = parr (map eff) prop
 let postty eff t = 
-  parr (map eff) (parr (map eff) (parr t prop)) 
+  parr (map eff) (parr (map eff) (parr (Ty.to_logic_type t) prop)) 
 
 (* TODO hybrid environment *)
 let rec formtyping' env loc = function

@@ -15,6 +15,7 @@ type ty =
   | TApp of tvar * inst
   | Ref of rvar * ty
   | Map of effect
+  | ToLogic of ty
 and inst = (ty, rvar, effect) Inst.t
 
 type t' =
@@ -80,5 +81,6 @@ let print_ty fmt t =
   | Arrow (t1,t2,_) -> fprintf fmt "(%a ->{...} %a)" pt t1 pt t2
   | Ref _ -> pp_print_string fmt "ref(...)"
   | Map _ -> pp_print_string fmt "<...>"
-  | TApp (v,_) -> fprintf fmt "app(%s)" v in
+  | TApp (v,_) -> fprintf fmt "app(%s)" v
+  | ToLogic t -> fprintf fmt "[[ %a ]]" pt t in
   pt fmt t

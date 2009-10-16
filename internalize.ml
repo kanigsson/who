@@ -95,6 +95,7 @@ let ty env t =
         with Not_found -> Ty.app v i end
     | I.Ref (r,t) -> Ty.ref_ (rvar env r) (aux t)
     | I.Map e -> Ty.map (effect env e)
+    | I.ToLogic t -> Ty.to_logic_type (aux t)
   and inst i = Inst.map aux (rvar env) (effect env) i in
   aux t
 

@@ -38,10 +38,6 @@ let print' print_map pt pr pe is_c fmt x =
   | App (v,i) -> 
       fprintf fmt "%a%a" Name.print v (Inst.print ~whoapp:print_map mayp pr pe) i
 
-let rec basic_print fmt (C x) =
-  print' true basic_print Name.print NEffect.print 
-    (function C x -> is_compound x) fmt x
-
 let rec print fmt (C x) = 
   print' true print Name.print NEffect.print 
     (function C x -> is_compound x) fmt x

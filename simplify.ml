@@ -312,10 +312,10 @@ let effrec2form env (r,_) =
   (* TODO effect vars *)
 (*   Myformat.printf "building effrec@."; *)
   Name.M.fold (fun r s acc ->
-    app 
-      (app2 (pre_defvar "kset" ([rtype r env],[],[]) env.l)
-      (svar r (Ty.spredef_var "key") env.l) 
-      (build_var r s env) env.l) 
+    app (
+      app2 (pre_defvar "kset" ([rtype r env],[],[]) env.l) 
+        (svar r (Ty.spredef_var "key") env.l)
+        (build_var r s env) env.l) 
       acc env.l) r (spredef_var "kempty" env.l )
 
 let replace_map env _ t x =
@@ -543,8 +543,8 @@ let eq_simplify f =
 let allsimplify f =
   let f = logic_simplify f in
   Myformat.printf "firstsimpl@.";
-  Myformat.printf "=============@.%a@.=================@." print f;
   Typing.formtyping f;
+  Myformat.printf "=============@.%a@.=================@." print f;
   let f = map_simplify f in
   Myformat.printf "secondsimpl@.";
   Myformat.printf ">>>>>>>>>>>>>@.%a@.>>>>>>>>>>>>>>>>>@." print f;

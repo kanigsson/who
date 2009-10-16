@@ -35,17 +35,19 @@ let unify t1 t2 loc =
   try U.unify t1 t2 
   with U.CannotUnify ->
     error 
-      (Myformat.sprintf "type mismatch between %a and %a" 
+      (Myformat.sprintf "Inference: type mismatch between %a and %a" 
         U.print_node t1 U.print_node t2) loc
 
 let bh f l = 
   let h = Hashtbl.create 3 in
   List.map (fun x -> let n = f () in Hashtbl.add h x n; n) l,h
 
-let prety eff = U.parr (U.map eff) U.prop
-let postty eff t = 
+let base_pre_ty eff = U.parr (U.map eff) U.prop
+let base_post_ty eff t = 
   U.parr (U.map eff) (U.parr (U.map eff) (U.parr t U.prop)) 
-
+let prety t eff = U.parr t (base_pre_ty eff)
+let postty t eff t2 = U.parr t (base_post_ty eff t2)
+let prepost_type t1 t2 e = U.tuple (prety t1 e) (postty t1 e t2)
 let rlist_from_set_map f l = S.fold (fun x acc -> f x :: acc) l []
 let elist_from_set_map f l = S.fold (fun x acc -> f x :: acc) l []
 
@@ -82,6 +84,9 @@ let to_uf_enode (rl,el,cl) =
              (rlist_from_set_map U.mkr cl)
 
 let sto_uf_node x = fst (to_uf_node G.empty x)
+
+let to_logic_ty t = 
+  sto_uf_node (Ty.to_logic_type (U.to_ty t))
 
 let pref eff cur (p : ParseT.t) = 
   Ast.ParseT.pure_lam cur (Ty.map (U.to_eff eff)) p p.loc
@@ -195,18 +200,19 @@ and infer env t (e : ParseT.t) : Ast.Infer.t =
 and pre env eff (cur,x) = 
   let p = match x with
   | None -> None
-  | Some f -> Some (infer {env with pm = true} (prety eff) (pref eff cur f))
+  | Some f -> 
+      Some (infer {env with pm = true} (base_pre_ty eff) (pref eff cur f))
   in cur, p
 and post env eff t (old,cur,x) = 
   let p = match x with
   | PNone -> PNone
   | PPlain f -> 
-(*       let t = U.to_logic_type t in *)
-      PPlain (infer {env with pm = true} (postty eff t) 
+      let t = to_logic_ty t in
+      PPlain (infer {env with pm = true} (base_post_ty eff t) 
         (postf eff t old cur (Name.new_anon ()) f))
   | PResult (r,f) ->
-(*       let t = U.to_logic_type t in *)
-      PPlain (infer {env with pm = true} (postty eff t) 
+      let t = to_logic_ty t in
+      PPlain (infer {env with pm = true} (base_post_ty eff t) 
         (postf eff t old cur r f)) in
   old,cur,p
 

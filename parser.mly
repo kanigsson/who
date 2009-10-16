@@ -70,7 +70,7 @@
 
 %token <Big_int.big_int Loc.t> INT
 %token <Loc.loc> LPAREN RPAREN LCURL SECTION END
-%token LBRACKET RBRACKET RCURL DLCURL DRCURL PREDEFINED
+%token LBRACKET RBRACKET RCURL DLCURL DRCURL PREDEFINED DLBRACKET DRBRACKET
 %token <string Loc.t> IDENT
 %token <string> TYVAR STRING
 %token IN SEMICOLON COQ
@@ -135,6 +135,7 @@ ty:
     { Arrow (t1,t2,e) }
   | t1 = ty STAR t2 = ty { Tuple (t1, t2) }
   | LT e = effect GT { Map e }
+  | DLBRACKET t = ty DRBRACKET { ToLogic t }
   | REF LPAREN id = IDENT COMMA t = ty  RPAREN { Ref (id.c,t) }
 
 inst:
