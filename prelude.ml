@@ -35,7 +35,7 @@ logic == ['a||] : 'a -> 'a -> bool
 logic != ['a||] : 'a -> 'a -> bool
 
 section Whoref
-  coq \"WhoRef\"
+  coq \"WhoMap\"
   logic !! ['a|r|e] : ref(r,'a) -> <|e> -> 'a
   parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r|} =
     {}
@@ -60,10 +60,9 @@ section Whoref
   logic kset ['a||] : key -> 'a -> kmap -> kmap
   logic kget ['a|r|] : ref(r,'a) -> kmap -> 'a
   logic kempty : kmap 
+  let pre ['a 'b||] (x : 'a * 'b) = fst x
+  let post ['a 'b||] (x : 'a * 'b) = snd x
 end
-
-let pre ['a 'b||]  (x : 'a * 'b) = fst x
-let post ['a 'b||] (x : 'a * 'b) = snd x
 
 parameter forto [||e] (inv : int -> <|e> -> prop) (start end_ : int) 
   (f : int ->{|e} unit) : unit, {|e} =

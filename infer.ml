@@ -179,6 +179,7 @@ let rec infer' env t loc = function
       let inv = pre env body.e inv in
       For (dir,inv,i,s,e,body), body.e
   | Logic t' -> 
+(*       Myformat.printf "logic: %a@." Ty.print t'; *)
       let nt = sto_uf_node t' in
       unify nt t loc; 
       Logic t', U.new_e ()
@@ -200,9 +201,11 @@ and post env eff t (old,cur,x) =
   let p = match x with
   | PNone -> PNone
   | PPlain f -> 
+(*       let t = U.to_logic_type t in *)
       PPlain (infer {env with pm = true} (postty eff t) 
         (postf eff t old cur (Name.new_anon ()) f))
   | PResult (r,f) ->
+(*       let t = U.to_logic_type t in *)
       PPlain (infer {env with pm = true} (postty eff t) 
         (postf eff t old cur r f)) in
   old,cur,p

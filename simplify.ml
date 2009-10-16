@@ -45,6 +45,12 @@ let rec find_type rname x =
               let _,e = sopen b in
               find_type rname e
           end
+      | Let (_,_,{ v = Logic t} ,b,_) ->
+          begin match Ty.find_type_of_r rname t with
+          | Some x -> x
+          | None -> let _,e = sopen b in find_type rname e
+          end
+      | Gen (_,t) -> find_type rname t
       | _ -> 
           Myformat.printf "finding no type for %a in %a@." Name.print rname print x;
           assert false
@@ -220,6 +226,41 @@ let beta_reduce _ _ _ = function
       Change_rerun (polsubst g x v e)
   | _ -> Nochange
 
+(*
+let efflamho = efflamho ~s:"s"
+let plamho = plamho ~s:"r"
+let effFA e = effFA ~s:"s" e
+
+let build_pre l x t e (_,p) = 
+  let p = 
+    match p with 
+    | None -> efflamho e (fun _ -> ptrue_ l) l
+    | Some p -> p in
+  plam x t p l
+
+let build_post l x t e rt (_,_,q) = 
+  let q = 
+    match q with
+    | PResult _ -> assert false
+    | PPlain q -> q
+    | PNone ->
+        efflamho e (fun _ -> 
+          efflamho e (fun _ -> 
+            plamho rt (fun _ -> ptrue_ l) l) l) l in
+  plam x t q l
+
+let remove_pre_post _ l _ x =
+  match x with
+  | App ({ v = Var ({name = Some "pre"},(_,_,[e]))}, { v = Lam (x,t,p,_,_)}, _ ,_) ->
+      Simple_change (build_pre l x t e p)
+  | App ({ v = Var ({name = Some "post"},([_;rt],_,[e]))}, 
+       { v = Lam (x,t,_,_,q)}, _ ,_) ->
+      Simple_change (build_post l x t e rt q)
+  | _ -> 
+(*       Myformat.printf "nothing removed : %a@." print' x; *)
+      Nochange
+*)
+
 let get_restrict_combine _ l _ x = 
   match destruct_get' x with
   | Some (_,r,_,_,map) -> 
@@ -288,6 +329,23 @@ let replace_map env _ t x =
   else Nochange
 
 (*
+let replace_lam _ l _ x =
+  match x with
+  | Lam (x,t,p,e,q) ->
+      let t = Ty.selim_map t in
+      Simple_change 
+        (mk_tuple (build_pre l x t e.e p) 
+          (build_post l x t e.e (Ty.selim_map e.t) q) l)
+  | Var ({ name = Some "pre"}, ([targ;tres],[],[e])) ->
+      Simple_change (pre_defvar "fst" 
+      ([Ty.pretype targ e; Ty.posttype targ tres e],[],[]) l)
+  | Var ({ name = Some "post"}, ([targ;tres],[],[e])) ->
+      Simple_change (pre_defvar "snd" 
+      ([Ty.pretype targ e; Ty.posttype targ tres e],[],[]) l)
+  | _ -> Nochange
+*)
+
+(*
 let replace_bang _ l _ x = 
   match x with
   | Var ({ name = Some "!!"},(t,r,_)) -> 
@@ -307,7 +365,9 @@ let get_map env _ _ x =
       let (rm,_) = form2effrec dom m.v in
       let nf = build_var reg (Name.M.find reg rm) env in
       Simple_change nf
-  | _ -> Nochange
+  | _ -> 
+(*       Myformat.printf "get_form: %a@." print' x; *)
+      Nochange
 
 let swap_impl _ l _ x = 
   match destruct_app2_var' x with
@@ -333,7 +393,8 @@ let simplifiers =
     unit_void;
     quant_over_true;
     boolean_prop;
-    get_restrict_combine
+    get_restrict_combine;
+(*     remove_pre_post; *)
   ]
 
 let simplify_maps = 
@@ -341,6 +402,7 @@ let simplify_maps =
     replace_map;
 (*     replace_bang; *)
     get_map; 
+(*     replace_lam; *)
   ]
 
 let elim_eqs =
@@ -386,7 +448,7 @@ let simplify ~genbind
       | (Const _  | Axiom _ ) -> f
       | Logic t -> logic (tyfun t) l
       | Var (v,i) -> 
-          var_i v (Inst.map tyfun Misc.id Misc.id i) f.t l
+          var_i v (Inst.map tyfun Misc.id Misc.id i) (tyfun f.t) l
       | App (f1,f2,k,c) -> 
           app ~kind:k ~cap:c (aux env f1) (aux env f2) l
       | Gen (g,t) -> gen g (genbind g env t) env.l
@@ -408,7 +470,12 @@ let simplify ~genbind
       | Section (n,f,e) -> 
           section n f (aux env e) l
       | EndSec e -> endsec (aux env e) l 
-      | Lam _ | Annot _ | Param _ | For _ | LetReg _ -> assert false in
+      | Param (t,e) -> param (tyfun t) e l
+(*
+      | Lam (x,t,p,e,q) -> 
+          lam x t (pre env p) (aux env e) (post env q) l
+*)
+      | Lam _ | Annot _ | For _ | LetReg _ -> assert false in
     let f =
       match exhaust after env f with
       | Nochange -> f
@@ -416,6 +483,15 @@ let simplify ~genbind
       | Change_rerun f -> aux env f in
     let f = {f with t = tyfun f.t} in
     f
+(*
+  and pre env (n,p) = n, Misc.opt_map (aux env) p
+  and post env (a,b,q) = 
+    a,b,
+    match q with
+    | PNone -> PNone
+    | PPlain f -> PPlain (aux env f)
+    | PResult _ -> assert false in
+*)
   in
   aux env f
 
@@ -466,9 +542,13 @@ let eq_simplify f =
 
 let allsimplify f =
   let f = logic_simplify f in
-(*   Myformat.printf "=============@.%a@.=================@." print f; *)
+  Myformat.printf "firstsimpl@.";
+  Myformat.printf "=============@.%a@.=================@." print f;
   Typing.formtyping f;
   let f = map_simplify f in
-(*   Myformat.printf "<<<<<<<<<<<<<@.%a@.<<<<<<<<<<<<<<<<<@." print f; *)
+  Myformat.printf "secondsimpl@.";
+  Myformat.printf ">>>>>>>>>>>>>@.%a@.>>>>>>>>>>>>>>>>>@." print f;
+  Typing.formtyping f;
   let f = eq_simplify f in
+  Myformat.printf "third simpl@.";
   f

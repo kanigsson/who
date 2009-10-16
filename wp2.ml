@@ -11,11 +11,29 @@ let efflamho = efflamho ~s:"s"
 let plamho = plamho ~s:"r"
 let effFA = effFA ~s:"s"
 
+(*
+let rec abs_value v = 
+  let l = v.loc in
+  match v.v with
+  | Var (_,_) -> v
+  | Const _ | Logic _ | Axiom _ | Quant _ -> v
+  | App (v1,v2,kind,_) -> app ~kind (abs_value v1) (abs_value v2) l
+  | PureFun (t,(_,x,e)) -> plam x t (abs_value e) l
+  | Lam (x,t,p,e,q) -> lam x t p (param e.t e.e e.loc) q l
+  | Let (p,g,e1,b,NoRec) -> 
+      let x,f = sopen b in
+      let_ ~prelude:p g (abs_value e1) x (abs_value f) NoRec l
+  | _ -> error (Myformat.sprintf "not a value: %a" print v) l
+*)
+
 let rec lift_value v = 
 (*   Format.printf "lift: %a@." print v ; *)
   let l = v.loc in
   match v.v with
-  | Var _ -> { v with t = ty v.t }
+  | Var (_,_) -> 
+(*       Format.printf "var: %a@." Name.print n ; *)
+(*       v *)
+      { v with t = ty v.t }
   | Const _ | Logic _ | Axiom _ | Quant _ -> v
   | App (v1,v2,kind,_) -> 
 (*       Format.printf "app: %a,%a@." print v1 print v2; *)
@@ -38,6 +56,10 @@ let rec lift_value v =
                 efflamho eff (fun _ -> 
                   plamho (ty e.t) (fun _ -> ptrue_ l) l) l) l) l
         | PPlain q -> plam x t q l in
+(*
+      Format.printf "lam %a: %a,%a; argument: %a; result : %a@." 
+        Name.print x print p print q Ty.print t Ty.print e.t;
+*)
       mk_tuple p q l
   | Let (p,g,e1,b,NoRec) -> 
       let x,f = sopen b in
@@ -92,7 +114,7 @@ and wp m q e =
             (efflamho (NEffect.union eff ef) (fun s -> 
               app q (restrict resteff s l) l) l) se) l) l
     | App (v1,v2,_,_) -> 
-        let lv1 = lift_value v1 and lv2 = lift_value v2 
+        let lv1 = lift_value v1 and lv2 = lift_value v2
         and eff = NEffect.clean e.e in
 (*         Format.printf "app; v1 of type %a; effect : %a@." *)
 (*         Ty.print v1.t NEffect.print eff; *)
@@ -107,6 +129,7 @@ and wp m q e =
                 (applist [q;m2; x] l) l) l) l ] l 
     | Let (p,g,e1,b,r) -> 
         let x,e2 = sopen b in
+(*         Myformat.printf "let: %a@." Name.print x; *)
         (* TODO recursive case *)
         if is_value_node e1 then
           let lv = lift_value e1 in
@@ -116,10 +139,8 @@ and wp m q e =
           match r with
           | NoRec -> and_ f (gen wp) l
           | Rec _ -> gen (and_ f wp l)
-
         else
-          let t = ty e1.t in
-          let eff = e.e in
+          let t = ty e1.t and eff = e.e in
           let f = efflamho eff (fun m2 ->
             plam x t (wp_node (combine m m2 l) q e2) l) l in
           wp_node m f e1

@@ -33,7 +33,8 @@ and isrec = Rec of Ty.t | NoRec
 
 let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f = 
   let rec aux' = function
-    | (Const _ | Param _ ) as t -> t
+    | (Const _ ) as t -> t
+    | Param (t,e) -> Param (tyfun t, effectfun e)
     | Logic t -> 
 (*         Myformat.printf "var@."; *)
         Logic (tyfun t)
@@ -210,7 +211,7 @@ module Recon = struct
     if not (Ty.sequal (Ty.arg t1.t) t2.t) then begin
       Myformat.printf "type mismatch on application: function %a has type %a,
       and argument %a has type %a@." print t1 Ty.print t1.t 
-      print t2 Ty.print t2.t ; exit 1 end
+      print t2 Ty.print t2.t ; invalid_arg "app" end
     else
     mk (App (t1,t2,kind,cap)) t (NEffect.union t1.e (NEffect.union t2.e e)) loc
 
@@ -269,13 +270,23 @@ module Recon = struct
 
   let pre t loc = 
     match t.t with
-    | T.C (T.Tuple (t1,t2)) -> app (pre_defvar "fst" ([t1;t2],[],[]) loc) t loc
+(*
+    | T.C (T.Arrow (t1,t2,e)) -> 
+        app (pre_defvar "pre" ([t1;t2],[],[e]) loc) t loc
+*)
+    | T.C (T.Tuple (t1,t2)) -> 
+        app (pre_defvar "fst" ([t1;t2],[],[]) loc) t loc
     | _ -> assert false
 
   let neg f l = app (spredef_var "~" l) f l
   let post t loc = 
     match t.t with
-    | T.C (T.Tuple (t1,t2)) -> app (pre_defvar "snd" ([t1;t2],[],[]) loc) t loc
+(*
+    | T.C (T.Arrow (t1,t2,e)) -> 
+        app (pre_defvar "post" ([t1;t2],[],[e]) loc) t loc
+*)
+    | T.C (T.Tuple (t1,t2)) -> 
+        app (pre_defvar "snd" ([t1;t2],[],[]) loc) t loc
     | _ -> assert false
 
   let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
@@ -292,6 +303,7 @@ module Recon = struct
 
   let axiom e = mk (Axiom e) T.prop e.e
   let logic t = mk (Logic t) t NEffect.empty
+  let param t e = mk (Param (t,e)) t e
 
   let mk_tuple t1 t2 loc = 
     appi (pre_defvar "," ([t1.t;t2.t],[],[]) loc) t1 t2 loc

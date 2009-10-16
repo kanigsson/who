@@ -26,7 +26,8 @@ let ftype_of_var env x =
   m, to_logic_type t
 
 let prety eff = parr (map eff) prop
-let postty eff t = parr (map eff) (parr (map eff) (parr t prop)) 
+let postty eff t = 
+  parr (map eff) (parr (map eff) (parr t prop)) 
 
 (* TODO hybrid environment *)
 let rec formtyping' env loc = function
@@ -79,6 +80,7 @@ let rec formtyping' env loc = function
   | Gen (_,e)-> formtyping env e
   | Let (_,g,e1,b,_) ->
       let x,e2 = sopen b in
+(*       Myformat.printf "let: %a@." Name.print x; *)
       let t = formtyping env e1 in
       let env = add_var env x g t in
       let t = formtyping env e2 in
@@ -95,7 +97,8 @@ and formtyping env (e : Ast.Recon.t) : Ty.t =
     if NEffect.is_empty e.e then t
     else error (Myformat.sprintf "not empty: %a" NEffect.print e.e) e.loc
   else
-    error (Myformat.sprintf "fannotation mismatch: %a and %a@." 
+    error (Myformat.sprintf "fannotation mismatch on %a: %a and %a@." 
+             Ast.Recon.print e 
              Ty.print e.t Ty.print t) e.loc
 and pre env eff (_,x) =
   match x with
@@ -141,6 +144,7 @@ and typing' env loc = function
       arrow t t' eff, NEffect.empty
   | Let (_,g,e1,b,r) ->
       let x, e2 = sopen b in
+(*       Myformat.printf "plet: %a@." Name.print x; *)
       if not ( G.is_empty g || Recon.is_value_node e1) then 
         error "generalization over non-value" loc;
       let env' =
@@ -190,14 +194,15 @@ and typing env (e : Ast.Recon.t) : Ty.t * NEffect.t =
 (*   Myformat.printf "typing %a@." Ast.Recon.print e; *)
   let ((t',_) as x) = typing' env e.loc e.v in
   if Ty.equal e.t t' then x else 
-    error (Myformat.sprintf "annotation mismatch: %a and %a@." 
-             Ty.print e.t Ty.print t') e.loc
+    error (Myformat.sprintf "annotation mismatch on %a: %a and %a@." 
+             Ast.Recon.print e Ty.print e.t Ty.print t') e.loc
 and fis_oftype env t e =
   let t' = formtyping env e in
   if Ty.equal t t' then () 
   else 
     error 
-      (Myformat.sprintf "typing mismatch: %a and %a" Ty.print t Ty.print t') 
+      (Myformat.sprintf "typing mismatch on %a: expected %a but is %a" 
+        Ast.Recon.print e Ty.print t Ty.print t') 
       e.loc
 
 let typing t = ignore (typing { types = Name.M.empty} t)
