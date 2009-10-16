@@ -1,14 +1,10 @@
 tests/*/*/*output
 tests/*/*/*counter
 tests/*/*/Makefile
-_build
-main.native
 tests/*counter
-tests/good/*/*bak
+_build
+*.native
 *.bak
-coq_files/*.vo
-coq_files/*.glob
-coq_files/*.v.vd
 *.aux
 *.bbl
 *.blg
@@ -17,3 +13,7 @@ coq_files/*.v.vd
 *.cmx
 *.o
 *.cmi
+*.glob
+*.vo
+*.v.vd
+*.dvi
