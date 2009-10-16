@@ -1,33 +1,50 @@
-type ('a,'b) map
-logic mem : forall ('a, 'b) . 'a -> ('a,'b) map -> bool
-logic get : forall ('a, 'b) . 'a -> ('a,'b) map -> 'b
-logic set : forall ('a, 'b) . 'a -> 'b -> ('a,'b) map -> ('a,'b) map
+type hmap ['a 'b||]
+logic hmem ['a 'b||]: 'a -> ('a,'b) hmap -> bool
+logic hget ['a 'b||]: 'a -> ('a,'b) hmap -> 'b
+logic hset ['a 'b||]: 'a -> 'b -> ('a,'b) hmap -> ('a,'b) hmap
 
-use (table : (int,int) map)
+axiom hgethset ['a 'b ||] : 
+  forall (k : 'a) (v : 'b) (map : ('a,'b) hmap). 
+    hget k (hset k v map) = v
 
-logic stores : (int -> int) -> <table> -> prop
-logic realizes : 
-  (int -> int) -> 
-  (int -> <table> -> prop) * (int -> <table> -> <table> -> int -> prop) ->
-  prop
+axiom hgethset2 ['a 'b ||] : 
+  forall (k1 k2 : 'a) (v : 'b) (map : ('a,'b) hmap). 
+    k1 <> k2 -> hget k1 (hset k2 v map) = hget k1 map
 
-let ymemo (f0 : int -> int) (ff : (int ->{table} int) ->{} int ->{table} int) = 
-  { 
-    forall 
-      (k r : (int -> <table> -> prop) * (int -> <table> -> <table> -> int -> prop)).
-      realizes f0 k -> (pre ff k /\ (post ff k r -> realizes f0 r))}
-  let rec f (x : int) : int ->{table} int =
-    { stores f0 cur }
-    if mem [|int,int|] x !table then get [|int,int|] x !table
+axiom set_mem ['a 'b||] :
+  forall (k1 k2 : 'a) (v : 'b) (map : ('a, 'b) hmap).
+    hmem k1 (hset k2 v map) = true -> (k1 = k2 \/ hmem k1 map = true)
+
+
+let stores (f0 : int -> int) (m : (int,int) hmap) =
+  forall (x : int). hmem x m = true -> hget x m = f0 x
+
+region t
+logic table : ref(t, (int,int) hmap)
+
+let realizes (f0 : int -> int) ( f : int ->{t|} int) =
+  forall (m n : <t|>) (x r : int).
+    (stores f0 (!!table|m) -> pre f x m) /\
+      (post f x m n r -> r = f0 x /\ stores f0 (!!table|n))
+
+let ymemo (f0 : int -> int) 
+          (ff : (int ->{t|} int) ->{|} int ->{t|} int) = 
+  { forall (k r : int ->{t|} int).
+      (realizes f0 k -> pre ff k empty) /\ 
+      (post ff k empty empty r -> realizes f0 r)}
+  let rec (f : int ->{t|} int) (x : int) =
+    { stores f0 (!!table) }
+    if hmem x (!table) then hget x (!table)
     else
       let z = ff f x in
-      let () = table := set [|int,int|] x z !table in
+      let k = table := hset  x z (!table) in
       z
-    {r : r = f0 x /\ stores f0 cur}
+    {r : r = f0 x /\ stores f0 (!!table)}
   in
   f
   { rf : realizes f0 rf }
       
+(* 
 logic Fib : int -> int
 axiom fib_zero : forall (n:int). n <= 1 -> Fib n = 1
 axiom fib_succ : forall (n:int). 1 < n -> Fib n = Fib (n-1) + Fib (n-2)
@@ -44,3 +61,4 @@ let main () =
   ) arg
   {r : r = Fib arg}
   
+  *)

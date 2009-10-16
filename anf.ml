@@ -12,10 +12,11 @@ and normalize e k =
   | Lam (x,t,p,e,q) -> k (lam x t p (normalize_term e) q loc)
   | PureFun (t,(_,x,e))-> k (plam x t (normalize_term e) loc)
   | Let (p,g,e1,(_,x,e2),r) -> 
+(*       Myformat.printf "normalizing let: %a@." Name.print x; *)
       normalize e1 (fun v -> let_ ~prelude:p g v x (normalize e2 k) r loc)
   | Section (n,f,e) -> k (section n f (normalize_term e) loc)
   | EndSec e -> k (endsec (normalize_term e) loc)
-  | LetReg (l,e) -> k (letreg l e loc)
+  | LetReg (l,e) -> k (letreg l (normalize_term e) loc)
   | TypeDef (g,t,v,e) -> k (typedef g t v (normalize_term e) loc)
   | Ite (e1,e2,e3) ->
       normalize_name e1

@@ -42,6 +42,7 @@ let id_or_keyword =
         ("in", fun _ -> IN );
         ("if", fun i -> IF (create_info i) );
         ("letregion", fun i -> LETREGION (create_info i) );
+        ("region", fun i -> REGION (create_info i) );
         ("then", fun _ -> THEN );
         ("else", fun _ -> ELSE );
         ("rec", fun _ -> REC );

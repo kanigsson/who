@@ -9,3 +9,11 @@ tests/good/*/*bak
 coq_files/*.vo
 coq_files/*.glob
 coq_files/*.v.vd
+*.aux
+*.bbl
+*.blg
+*.log
+*.cmo
+*.cmx
+*.o
+*.cmi

@@ -13,6 +13,7 @@
     | TypeDef (g,t,x,e) -> typedef g t x (put_at_end tail e) l
     | Section (n,f,e) -> mk (Section (n,f,put_at_end tail e)) l
     | EndSec t  -> mk (EndSec (put_at_end tail t)) l
+    | LetReg (rl,e) -> mk (LetReg (rl, put_at_end tail e)) l
     | _ -> assert false
 
   let rec merge = function
@@ -24,6 +25,8 @@
     | {v = Section (n,f,e) ; loc = loc } :: xs ->
         let tail = merge xs in
         mk (Section (n,f, put_at_end (mk (EndSec tail) loc) e)) loc
+    | {v = LetReg (l,{v = Const Const.Void}); loc = loc} :: xs ->
+        mk (LetReg (l, merge xs)) loc
     | _ -> assert false
 
   let embrace inf1 inf2 = 
@@ -72,7 +75,7 @@
 %token <string> TYVAR STRING
 %token IN SEMICOLON COQ
 %token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND OR
-%token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION TILDE
+%token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION TILDE REGION
 %token <Loc.loc> BLE BLT BGT BGE
 %token EOF
 %token REC
@@ -286,9 +289,11 @@ decl:
   | p = LOGIC x = defprogvar_no_pos l = optgen COLON t = ty
     { let_wconst l (mk (Logic t) p) x NoRec p }
   | p = TYPE x = IDENT l = optgen
-    { typedef l None x.c (const (Const.Void) p) p }
+    { typedef l None x.c void p }
   | p = TYPE x = IDENT l = optgen EQUAL t = ty
-    { typedef l (Some t) x.c (const (Const.Void) p) p }
+    { typedef l (Some t) x.c void p }
+  | p = REGION l = list(IDENT)
+    { mk (LetReg (strip_info l, void)) p  }
   | p1 = SECTION x = IDENT COQ fn = opt_filename l = nonempty_list(decl) p2 = END
     { mk (Section (x.c, fn, merge l)) (embrace p1 p2) }
 

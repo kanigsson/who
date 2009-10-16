@@ -68,3 +68,17 @@ let concat t1 t2 =
     | _ -> assert false 
   and aux t = { t with v = aux' t.v } in
   aux t1
+
+open Myformat
+
+let print_ty fmt t = 
+  let rec pt fmt = function
+  | TVar v -> pp_print_string fmt v
+  | TConst c -> Const.print_ty fmt c
+  | Tuple (t1,t2) -> fprintf fmt "(%a * %a)" pt t1 pt t2
+  | PureArr (t1,t2) -> fprintf fmt "(%a -> %a)" pt t1 pt t2
+  | Arrow (t1,t2,_) -> fprintf fmt "(%a ->{...} %a)" pt t1 pt t2
+  | Ref _ -> pp_print_string fmt "ref(...)"
+  | Map _ -> pp_print_string fmt "<...>"
+  | TApp (v,_) -> fprintf fmt "app(%s)" v in
+  pt fmt t

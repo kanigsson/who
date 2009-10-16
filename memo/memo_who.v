@@ -2,18 +2,18 @@ Set Implicit Arguments.
 Section sec.
   
   Require Import WhoArith.
-  Require Import WhoRef.
+  Require Import WhoMap.
   Require Import WhoArray.
   Require Import WhoList.
   Definition hmap : forall (a b : Type)  , Type. 
-  Admitted.
+    Admitted.
   Definition hmem: forall (a1 b1 : Type)  , a1 -> (hmap a1 b1) -> bool. 
-  Admitted.
+    Admitted.
   Definition hget: forall (a2 b2 : Type)  , a2 -> (hmap a2 b2) -> b2. 
-  Admitted.
+    Admitted.
   Definition hset: forall (a3 b3 : Type)  , a3 -> b3 -> (hmap a3 b3) -> hmap
     a3 b3. 
-  Admitted.
+    Admitted.
   Axiom hgethset: forall (a4 b4 : Type)  ,
    forall (k:a4),
    forall (v:b4), forall (map:hmap a4 b4), (hget k (hset k v map)) = v. 
@@ -36,18 +36,18 @@ Section sec.
   Variable table: ref (hmap int int) t. 
   Variable f0: int -> int. 
   Variable t2: hmap int int. 
- Variable x: int. 
+  Variable x: int. 
   Hypothesis H:
   forall (x1:int), ((hmem x1 t2) = true) -> ((hget x1 t2) = (f0 x1)). 
   Section sec1.
     Hypothesis H1: (hmem x t2) = true. 
     Lemma goal: (hget x t2) = (f0 x).
-      auto. Qed.
+      Proof. auto. Qed.
     Section sec2.
       Variable x2: int. 
       Hypothesis H2: (hmem x2 t2) = true. 
       Lemma goal1: (hget x2 t2) = (f0 x2).
-        auto. Qed.
+       Proof. auto. Qed.
       End sec2.
     End sec1.
   Section sec3.
@@ -55,10 +55,11 @@ Section sec.
     Variable x3: int. 
     Hypothesis H4: (hmem x3 (hset x (f0 x) t2)) = true. 
     Lemma goal2: (hget x3 (hset x (f0 x) t2)) = (f0 x3).
-      generalize (set_mem  H4); intros [A | A ].
-        rewrite A, hgethset in *; auto.
-        assert (x <> x3) by congruence.
-        rewrite hgethset2; auto. 
-    Qed.
+      Proof.
+        generalize (set_mem H4); intros [A | A].
+        subst; rewrite hgethset; auto.
+        case_eq (Z_eq_dec x x3); intros; try congruence.
+        rewrite hgethset2; auto.
+     Qed.
     End sec3.
   End sec.

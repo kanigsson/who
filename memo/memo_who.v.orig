@@ -2,7 +2,7 @@ Set Implicit Arguments.
 Section sec.
   
   Require Import WhoArith.
-  Require Import WhoRef.
+  Require Import WhoMap.
   Require Import WhoArray.
   Require Import WhoList.
   Definition hmap : forall (a b : Type)  , Type. 

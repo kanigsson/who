@@ -1,7 +1,8 @@
 IMPORTANT FEATURES
-
 better inference without explicitely introduced variables 
-diff3 for proof preservation
+Syntax for lifted types
+Syntax for Hoare triples
+Effect variables are with a '
 
 MINOR ISSUES
 error messages for unknown variables in internalize

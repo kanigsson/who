@@ -20,10 +20,12 @@ check:
 clean:
 	$(OCAMLBUILD) -clean
 
-$(COQFILES):
+coqfiles: $(COQTARGETS)
+
+$(COQTARGETS): $(COQFILES)
 	make -C coq_files
 
-install: main.native $(COQFILES)
+install: main.native $(COQTARGETS)
 	cp -f _build/main.native /usr/local/bin/pwho
 	cp -f $(COQTARGETS) $(COQFILES) /usr/local/lib/coq/user-contrib/
 

@@ -28,4 +28,3 @@ let memo [|t|] (table : ref(t,(int,int) hmap)) (f0 : int -> int)
     (table := hset x z (!table));
     z
   {r : r = f0 x /\ stores f0 (!!table)}
-
