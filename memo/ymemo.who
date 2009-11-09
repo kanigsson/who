@@ -62,3 +62,18 @@ let main () =
   {r : r = Fib arg}
   
   *)
+
+(* une note : ymemo sans etat *)
+(*
+let realizes (f0 : int -> int) (f : int ->{t|} int) =
+  forall (x : int).
+    { stores f0 (!!table)} f x {r : r = f0 x /\ stores f0 (!!table) }
+
+let ymemo (f0 : int -> int)
+          (ff : (int ->{t|} int) ->{|} int ->{t|} int) = 
+  { forall (k : int ->{t|} int ).
+    {realizes f0 k} ff k { r : realizes f0 r } }
+  ...
+  { rf : realizes f0 rf }
+
+  *)
