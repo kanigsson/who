@@ -1,3 +1,5 @@
+(* This module represents the parse tree and is there uniquely to simplify the
+  parser *)
 module C = Const
 type var = string
 type rvar = string
@@ -59,6 +61,7 @@ let pure_lam x t e = mk (PureFun (x,t,e))
 let typedef l t x e = mk (TypeDef (l,t,x,e))
 let quant k x t e = mk (Quant (k,x,t,e))
 
+(* concatenate two abstract programs *)
 let concat t1 t2 =
   let rec aux' = function
     | Const Const.Void -> t2.v
@@ -66,6 +69,7 @@ let concat t1 t2 =
     | TypeDef (g,t,x,t2) -> TypeDef (g,t,x,aux t2)
     | Section (n,f,t) -> Section (n,f,aux t)
     | EndSec t -> EndSec (aux t)
+    | LetReg (rl,t) -> LetReg (rl, aux t)
     | _ -> assert false 
   and aux t = { t with v = aux' t.v } in
   aux t1

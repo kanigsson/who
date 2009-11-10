@@ -5,35 +5,43 @@
 
   let void = const (Const.Void) Loc.dummy
 
-  let rec put_at_end tail x =
-    let l = x.loc in
-    match x.v with
-    | Const Const.Void -> tail
-    | Let (p,g,t,x,e,r) -> let_ ~prelude:p g t x (put_at_end tail e) r l
-    | TypeDef (g,t,x,e) -> typedef g t x (put_at_end tail e) l
-    | Section (n,f,e) -> mk (Section (n,f,put_at_end tail e)) l
-    | EndSec t  -> mk (EndSec (put_at_end tail t)) l
-    | LetReg (rl,e) -> mk (LetReg (rl, put_at_end tail e)) l
-    | _ -> assert false
+  (* Syntactically, a program is a list of declarations; 
+    In the parser, this is represented by two different forms:
+      * Once indeed as an [ast list]
+      * later as a nesting of the following constructs (referred to as abstract
+      programs):
+        - let ... in
+        - typedef ... in
+        - section ... end in 
+        - letreg ... in 
+        - Void as terminator
+  *)
 
-  let rec merge = function
+  (* takes an [ast list] and transforms it into an abstract program *)
+  let rec to_abst_ast = function
     | [] -> void
     | { v = Let (p,l,t,x,{ v = Const Const.Void },r); loc = loc }::xs -> 
-        let_ ~prelude:p l t x (merge xs) r loc
+        let_ ~prelude:p l t x (to_abst_ast xs) r loc
     | { v = TypeDef (l,t,x,{ v = Const Const.Void }); loc = loc }::xs -> 
-        typedef l t x (merge xs) loc
+        typedef l t x (to_abst_ast xs) loc
     | {v = Section (n,f,e) ; loc = loc } :: xs ->
-        let tail = merge xs in
-        mk (Section (n,f, put_at_end (mk (EndSec tail) loc) e)) loc
+        let tail = to_abst_ast xs in
+        mk (Section (n,f, concat e (mk (EndSec tail) loc))) loc
+(*         append_ast (mk (EndSec tail) loc) e)) loc *)
     | {v = LetReg (l,{v = Const Const.Void}); loc = loc} :: xs ->
-        mk (LetReg (l, merge xs)) loc
+        mk (LetReg (l, to_abst_ast xs)) loc
     | _ -> assert false
 
+  (* build a new location out of two old ones by forming the large region
+  containing both *)
   let embrace inf1 inf2 = 
     if inf1 = Loc.dummy then inf2 else
       if inf2 = Loc.dummy then inf1 else
         { st = inf1.st ; en = inf2.en }
 
+  (* take a nonempty list of variable bindings l and a function [f] and
+  build [λv1:t1 ... λv(n-1):t(n-1).u], where [u] is the result of [f vn tn];
+  all lambdas are pure. *)
   let mk_lam f l loc =
     let l = List.rev l in
     match l with
@@ -42,19 +50,32 @@
         let acc = f x t loc in
         List.fold_left (fun acc (x,t) -> pure_lam x t acc loc) acc xs
         
+  (* construct a sequence of pure lambdas on top of [e], using [l] *)
   let mk_pure_lam l e loc = 
     if l = [] then e else mk_lam (fun x t -> pure_lam x t e) l loc
+
+  (* construct a sequence of pure lambdas on top of [e], using [l]; 
+    the innermost lambda is effectful, using [p] and [q] as pre and post *)
   let mk_efflam l p e q = mk_lam (fun x t -> lam x t p e q) l
+
+  (* construct a sequence of pure lambdas on top of a parameter with type [rt] 
+     and effect [eff]; the innermost lambda is effectful as in [mk_efflam] *)
   let mk_param l p q rt eff loc = 
     mk_efflam l p (mk (Param (rt,eff)) loc) q loc
 
+  (* construct a sequence of quantifiers on top of [e] *)
   let mk_quant k l e loc = 
     List.fold_right (fun (x,t) acc -> quant k x t acc loc) l e
 
+  (* build a let-binding with the void terminator; detect if we are in prelude
+  mode or not *)
   let let_wconst l t x r p = 
     let_ ~prelude:(!Options.prelude) l t x void r p
+
+  (* remove location information from a list of annotated values *)
   let strip_info l = List.map (fun x -> x.c) l
 
+  (* build a for loop *)
   let forfunction dir i start end_ inv body pos =
     let s = "-start" and e = "-end" in
     let forterm = mk (For (dir,inv,i.c,s,e,body)) pos in
@@ -63,8 +84,6 @@
        forvar inv start end_ body *)
     let_ em start s (let_ em end_ e forterm NoRec end_.loc) 
       NoRec start.loc
-
-
 
 %}
 
@@ -98,6 +117,7 @@
 %start <Parsetree.t> main
 %%
 
+(* a program variable which can be used in declarations *)
 defprogvar:
   | x = IDENT { x }
   | x = infix { { c = snd x; info = fst x } }
@@ -111,6 +131,7 @@ tconstant:
   | UNIT { Const.TUnit }
   | PROP { Const.TProp }
 
+(* basic types *)
 stype:
   | x = tconstant { TConst x }
   | v = TYVAR { TVar v }
@@ -128,6 +149,7 @@ effect:
 sepeffect:
   | LCURL e = effect RCURL { e }
 
+(* more complex types *)
 ty:
   | t = stype { t }
   | t1 = ty ARROW t2 = ty { PureArr (t1, t2) }
@@ -155,6 +177,7 @@ constant:
   | p = PFALSE { p, Const.Pfalse }
   | p = VOID   { p, Const.Void }
 
+(* infix operators - can be used in definitions *)
 %inline infix:
   | p = GT         { p,">" }
   | p = LT         { p,"<" }
@@ -177,11 +200,13 @@ constant:
   | p = BGT         { p,">>" }
   | p = BLT         { p,"<<" }
 
+(* prefix operators - can be used in definitions *)
 prefix:
   | p = EXCLAM { p, "!" }
   | p = REF { p, "ref" }
   | p = TILDE { p, "~" }
 
+(* basic terms *)
 aterm:
   | p = DEXCLAM x = IDENT 
     { app2 "!!" (var x.c x.info) (var "cur" p) (embrace p x.info) }
@@ -194,12 +219,14 @@ aterm:
   | l = LPAREN t = nterm e = RPAREN { mk t.v (embrace l e) }
   | l = LPAREN e = nterm COLON t = ty r = RPAREN { mk (Annot (e,t)) (embrace l r) }
 
+(* applicative terms *)
 appterm:
   | t = aterm { t }
   | t1 = appterm DLCURL l = list(IDENT) DRCURL t2 = aterm 
     {cap_app t1 t2 (strip_info l) (embrace t1.loc t2.loc) }
   | t1 = appterm t2 = aterm { app t1 t2 (embrace t1.loc t2.loc) }
 
+(* all the more complex terms *)
 nterm:
   | t1 = appterm { t1 }
   | t1 = appterm SEMICOLON t2 = appterm { mk (Seq (t1,t2)) (embrace t1.loc t2.loc) }
@@ -218,6 +245,7 @@ nterm:
     { mk (LetReg (strip_info l,t)) p }
   | st = IF it = nterm THEN tb = nterm ELSE eb = nterm %prec ifprec
     { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
+  (* a local let is like a global one, but with an IN following *)
   | f = alllet IN e2 = nterm %prec let_ {(f : t -> t) e2 }
   | st = FOR i = IDENT EQUAL e1 = nterm dir = todownto e2 = nterm DO 
        p = precond
@@ -236,14 +264,17 @@ onetyarg:
 arglist: l = nonempty_list(onetyarg) { List.flatten l }
 may_empty_arglist: l = list(onetyarg) { List.flatten l}
 
+(* the common part of every let binding *)
 letcommon:
   | p = LET x = defprogvar_no_pos l = optgen args = may_empty_arglist EQUAL 
     { p, x ,l,args }
 
 alllet:
+(* the simplest case *)
   | b = letcommon t = nterm 
     { let p,x,l,args = b in
       fun t2 -> let_ l (mk_pure_lam args t p) x t2 NoRec (embrace p t2.loc) }
+(* the function definition case *)
   | b = letcommon body = funcbody 
     { let p,x,l,args = b in
       let pre,e,q = body in
@@ -251,6 +282,7 @@ alllet:
       fun t2 -> 
         let_ l (mk_efflam args (snd pre) e (snd q) p) x t2 NoRec 
           (embrace p t2.loc) }
+(* the recursive function definition case *)
   | p = LET REC l = optgen LPAREN x = defprogvar_no_pos 
     COLON t = ty RPAREN args = arglist EQUAL b = funcbody
     { let pre,e,q = b in
@@ -278,6 +310,16 @@ optgen:
 opt_filename:
   | fn = STRING { Some fn}
   | PREDEFINED { None }
+
+(* a declaration is either
+  - a let
+  - a parameter
+  - an axiom
+  - a logic
+  - a typedef
+  - a region definition
+  - a section
+  *)
 decl:
   | f = alllet {(f : t -> t) void }
   | p = PARAMETER x = defprogvar_no_pos l = optgen args = arglist 
@@ -296,6 +338,8 @@ decl:
   | p = REGION l = list(IDENT)
     { mk (LetReg (strip_info l, void)) p  }
   | p1 = SECTION x = IDENT COQ fn = opt_filename l = nonempty_list(decl) p2 = END
-    { mk (Section (x.c, fn, merge l)) (embrace p1 p2) }
+    { mk (Section (x.c, fn, to_abst_ast l)) (embrace p1 p2) }
 
-main: l = nonempty_list(decl) EOF { merge l }
+(* a program is simply a list of declarations; we call [to_abst_ast] to
+  obtain a single AST *)
+main: l = nonempty_list(decl) EOF { to_abst_ast l }

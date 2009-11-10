@@ -1,10 +1,23 @@
+(* This module transforms a Parsetree.t into a Ast.ParseT.t;
+   For this, we need to build unique variables for each variable (string) in the
+   parse tree. The following simplifications take place:
+     * type definitions are expanded
+     * sequences e1; e2 are transformed to let _ = e1 in e2 
+  Also, we enter global names (types and variables) into a table stored in the
+  [Ty] module. We need to do this to save the chosen names for the predefined
+  variables, such as +, /\, ...
+   *)
+
 module I = Parsetree
 open Ast
+
 
 module SM = Misc.StringMap
 module G = Ty.Generalize
 module NM = Name.M
 
+(* the environment maps each variable name to a 
+   unique name *)
 type env = 
   { 
     v : Name.t SM.t ;
@@ -16,14 +29,12 @@ type env =
 
 exception UnknownVar of string
 let error s = raise (UnknownVar s)
-let var env x = 
-  try SM.find x env.v with Not_found -> error ("program var: " ^ x)
-let tyvar env x = 
-  try SM.find x env.t with Not_found -> error ("type var : " ^ x)
-let rvar env x =
-  try SM.find x env.r with Not_found -> error ("region var: " ^ x)
-let effvar env x =
-  try SM.find x env.e with Not_found -> error ("effect var: " ^ x)
+let gen_var s m x = try SM.find x m with Not_found -> error (s ^ " var: " ^ x)
+
+let var env = gen_var "program" env.v
+let tyvar env = gen_var "type" env.t
+let rvar env = gen_var "region" env.r
+let effvar env = gen_var "effect" env.e
 
 let add_var env x = 
   let y = Name.from_string x in
@@ -100,8 +111,10 @@ let ty env t =
   aux t
 
 open Myformat
+
 let print v env = 
   printf "%s : %a@." v (print_string_map Name.print) env.e
+
 let rec ast' env = function
   | I.Const c -> Const c
   | I.Var v -> Var (var env v,([],[],[]))
@@ -120,6 +133,7 @@ let rec ast' env = function
         match e1.I.v with 
         | I.Logic t ->
             let t = ty env' t in
+            (* in the case of a logic, we save the chosen variable name *)
             Ty.add_var x (nv,g',t);
             { Ast.v = Logic t; loc = e1.I.loc; t = (); e = () }
         | _ -> ast env' e1 in
@@ -140,6 +154,7 @@ let rec ast' env = function
       let env', g = add_gen env g in
       let t = Misc.opt_map (ty env') t in
       let env,nv = add_tvar env x g t in
+      (* we also save the type names *)
       Ty.add_tyvar x (nv,g);
       TypeDef (g, t, nv, ast env e)
   | I.Param (t,e) -> Param (ty env t, effect env e)

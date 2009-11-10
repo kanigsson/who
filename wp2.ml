@@ -11,21 +11,6 @@ let efflamho = efflamho ~s:"s"
 let plamho = plamho ~s:"r"
 let effFA = effFA ~s:"s"
 
-(*
-let rec abs_value v = 
-  let l = v.loc in
-  match v.v with
-  | Var (_,_) -> v
-  | Const _ | Logic _ | Axiom _ | Quant _ -> v
-  | App (v1,v2,kind,_) -> app ~kind (abs_value v1) (abs_value v2) l
-  | PureFun (t,(_,x,e)) -> plam x t (abs_value e) l
-  | Lam (x,t,p,e,q) -> lam x t p (param e.t e.e e.loc) q l
-  | Let (p,g,e1,b,NoRec) -> 
-      let x,f = sopen b in
-      let_ ~prelude:p g (abs_value e1) x (abs_value f) NoRec l
-  | _ -> error (Myformat.sprintf "not a value: %a" print v) l
-*)
-
 let rec lift_value v = 
 (*   Format.printf "lift: %a@." print v ; *)
   let l = v.loc in

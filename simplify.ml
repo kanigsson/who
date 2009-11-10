@@ -178,22 +178,6 @@ let elim_eq_intro _ _ _ = function
               Change_rerun (subst x (fun _ -> def.v) f)
           | _ -> Nochange
           end
-(*
-      | Some ({name = Some "/\\" }, t1,t2) ->
-          begin match destruct_infix t1, destruct_infix t2 with
-          | Some ({name=Some "->"},eq1, f1), Some ({name=Some "->"},eq2,f2) ->
-              begin match destruct_infix eq1, destruct_infix eq2 with
-              | Some ({name = Some "="}, {v = Var (x1,_)}, def1), 
-                Some ({name = Some "="}, {v = Var (x2,_)}, def2) when
-                  Name.equal x1 x && Name.equal x2 x ->
-                    Change_rerun (and_ 
-                    (subst x1 (fun _ -> def1.v) f1)
-                    (subst x2 (fun _ -> def2.v) f2) l)
-              | _ -> Nochange
-              end
-          | _ -> Nochange
-          end
-*)
       | _ -> Nochange
       end
   | _ -> Nochange
@@ -225,41 +209,6 @@ let beta_reduce _ _ _ = function
 *)
       Change_rerun (polsubst g x v e)
   | _ -> Nochange
-
-(*
-let efflamho = efflamho ~s:"s"
-let plamho = plamho ~s:"r"
-let effFA e = effFA ~s:"s" e
-
-let build_pre l x t e (_,p) = 
-  let p = 
-    match p with 
-    | None -> efflamho e (fun _ -> ptrue_ l) l
-    | Some p -> p in
-  plam x t p l
-
-let build_post l x t e rt (_,_,q) = 
-  let q = 
-    match q with
-    | PResult _ -> assert false
-    | PPlain q -> q
-    | PNone ->
-        efflamho e (fun _ -> 
-          efflamho e (fun _ -> 
-            plamho rt (fun _ -> ptrue_ l) l) l) l in
-  plam x t q l
-
-let remove_pre_post _ l _ x =
-  match x with
-  | App ({ v = Var ({name = Some "pre"},(_,_,[e]))}, { v = Lam (x,t,p,_,_)}, _ ,_) ->
-      Simple_change (build_pre l x t e p)
-  | App ({ v = Var ({name = Some "post"},([_;rt],_,[e]))}, 
-       { v = Lam (x,t,_,_,q)}, _ ,_) ->
-      Simple_change (build_post l x t e rt q)
-  | _ -> 
-(*       Myformat.printf "nothing removed : %a@." print' x; *)
-      Nochange
-*)
 
 let get_restrict_combine _ l _ x = 
   match destruct_get' x with
@@ -327,36 +276,6 @@ let replace_map env _ t x =
       let f = effrec2form env m in
       Simple_change f
   else Nochange
-
-(*
-let replace_lam _ l _ x =
-  match x with
-  | Lam (x,t,p,e,q) ->
-      let t = Ty.selim_map t in
-      Simple_change 
-        (mk_tuple (build_pre l x t e.e p) 
-          (build_post l x t e.e (Ty.selim_map e.t) q) l)
-  | Var ({ name = Some "pre"}, ([targ;tres],[],[e])) ->
-      Simple_change (pre_defvar "fst" 
-      ([Ty.pretype targ e; Ty.posttype targ tres e],[],[]) l)
-  | Var ({ name = Some "post"}, ([targ;tres],[],[e])) ->
-      Simple_change (pre_defvar "snd" 
-      ([Ty.pretype targ e; Ty.posttype targ tres e],[],[]) l)
-  | _ -> Nochange
-*)
-
-(*
-let replace_bang _ l _ x = 
-  match x with
-  | Var ({ name = Some "!!"},(t,r,_)) -> 
-      Simple_change (pre_defvar "kget" (t,r,[]) l)
-  | Var ({ name = Some "restrict"},(_,_,e)) -> 
-      Simple_change (pre_defvar "krestrict" ([],[],e) l)
-  | Var ({ name = Some "combine"},(_,_,e)) -> 
-      Simple_change (pre_defvar "kcombine" ([],[],e) l)
-  | _ -> Nochange
-
-*)
 
 let get_map env _ _ x = 
 (*   Myformat.printf "get_form: %a@." print' x; *)
