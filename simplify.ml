@@ -12,18 +12,27 @@ module NPM = Map.Make(NPair)
 
 exception No_Match
 
+(* rtypes : returns a type for a region name 
+   renames : retuns a unique name for a couple (region, state) 
+   et : current type 
+   l : current location
+*)
 type env = 
   { rtypes : Ty.t Name.M.t ; 
     renames : Name.t NPM.t;
     et : Ty.t;
     l : Loc.loc
   }
+
 let empty = 
   { rtypes = Name.M.empty ; renames = NPM.empty; et = Ty.unit; l = Loc.dummy }
 
 
+  (* [rtype_add] adds a type for a given region name *)
 let rtype_add n t env = 
   { env with rtypes = Name.M.add n t env.rtypes }
+
+  (* [rtype] finds the type for a region name *)
 let rtype n env = 
   try Name.M.find n env.rtypes
   with Not_found -> 
@@ -31,6 +40,7 @@ let rtype n env =
     (Myformat.sprintf "type not found for region: %a@." 
       Name.print n)
 
+(* [find_type] searches for a [tau ref(r)] in the given term *)
 let rec find_type rname x =
 (*   Myformat.printf "find_type: %a in %a@." Name.print rname print x; *)
   match Ty.find_type_of_r rname x.t with
@@ -55,14 +65,16 @@ let rec find_type rname x =
           Myformat.printf "finding no type for %a in %a@." Name.print rname print x;
           assert false
 
+(* add the mapping (n1,n2) -> n3 to the environment for names
+ * n1: region
+ * n2: state
+ * n3: fresh name
+ * *)
 
 let name_add n1 n2 n3 env =
-(*
-  Myformat.printf "adding (%a,%a) -> %a@." Name.print n1 Name.print n2 Name.print
-  n3;
-*)
   { env with renames = NPM.add (n1,n2) n3 env.renames; }
 
+(* find the name corresponding to (n1,n2) *)
 let getname n1 n2 env = 
   try NPM.find (n1,n2) env.renames 
   with Not_found -> 
@@ -70,21 +82,34 @@ let getname n1 n2 env =
     (Myformat.sprintf "name not found in state: %a, %a@." 
       Name.print n1 Name.print n2)
 
+(* for region [r] and state [v], build the term variable using the fresh name
+ * corresponding to (r,v) *)
 let build_var r v env = 
   let nv = getname r v env in
-(*
-  Myformat.printf "from (%a, %a), building: %a@." 
-    Name.print r Name.print v Name.print nv;
-*)
   svar nv (rtype r env) env.l
 
+(* a simplification either does nothing, a simple top-level change, or a deeper
+ *  change requiring all simplifications to rerun *)
 type simpl = 
   | Nochange
   | Simple_change of Recon.t
   | Change_rerun of Recon.t
 
-let logic_simpl _ l t x =
-  if t = Ty.prop then
+(* simplify the logical structure of the formula 
+ * ~ True => False
+ * ~ False => True
+ * if True then e1 else e2 => e1
+ * if False then e1 else e2 => e2
+ * True /\ f, f /\ True => f
+ * True -> f => f
+ * f -> True => True
+ * False -> f => True
+ * f -> f => True
+ * f = f => True
+ *)
+let logic_simpl env x =
+  let t = env.et and l = env.l in
+  if Ty.equal t Ty.prop then
     match x with
     | App ({v = Var ({name = Some "~"},_)},t,_,_) ->
         begin match t.v with
@@ -120,7 +145,14 @@ let logic_simpl _ l t x =
         | _ -> Nochange 
   else Nochange
 
-let unit_void _ l t = function
+(* 
+ * x : unit -> ()
+ * m : <> -> empty
+ * ∀x:unit.f -> f
+ * ∀m:<>.f -> f *)
+let unit_void env x =
+  let l = env.l and t = env.et in
+  match x with
   | Var _ when Ty.equal t Ty.unit -> Simple_change (void l)
   | Var ({name = Some "empty"},_) -> Nochange
   | Var _ ->
@@ -134,7 +166,10 @@ let unit_void _ l t = function
       let _,f = vopen b in Simple_change f
   | _ -> Nochange
 
-let boolean_prop _ l _ x = 
+(* t1 <<= t2 = true => t1 <= t2
+ * etc *)
+let boolean_prop env x = 
+  let l = env.l in
   try match destruct_app2_var' x with
   | Some ({name = Some "="},_,t1,{v = (Const Btrue | Const Bfalse as n)}) ->
       begin match destruct_app2_var t1 with
@@ -156,7 +191,9 @@ let boolean_prop _ l _ x =
   | _ -> Nochange
   with No_Match -> Nochange
 
-let tuple_reduce _ _ _ = function
+(* fst (t1,t2) -> t1
+ * snd (t1,t2) -> t2 *)
+let tuple_reduce _ = function
   | App ({ v = Var ({name=Some ("fst" | "pre" | "snd" | "post" as n) },_)},t,_,_) 
   ->
       begin match destruct_app2_var t with
@@ -166,7 +203,8 @@ let tuple_reduce _ _ _ = function
       end
   | _ -> Nochange
 
-let elim_eq_intro _ _ _ = function
+(* ∀x. x = d -> f => f[x->d] *)
+let elim_eq_intro _ = function
   | Quant (`FA,_,b) ->
       let x,f = vopen b in
       begin match destruct_app2_var f with
@@ -182,7 +220,9 @@ let elim_eq_intro _ _ _ = function
       end
   | _ -> Nochange
 
-let quant_over_true _ l _ x =
+(* ∀x.True => True etc for all introduction constructions *)
+let quant_over_true env x =
+  let l = env.l in
   let s = Simple_change (ptrue_ l) in
   match x with
   (* we can directly access the value here, because constants are not subject to
@@ -195,7 +235,8 @@ let quant_over_true _ l _ x =
   | TypeDef (_,_,_,{v = Const Ptrue}) -> s
   | _ -> Nochange
 
-let beta_reduce _ _ _ = function
+(* beta-reduction: (λx:f) d => f[x|-> d] *)
+let beta_reduce _ = function
   | App ({v = PureFun (_, l)} ,f2,_,_) ->
       let x,body = vopen l in
       Change_rerun (subst x (fun _ -> f2.v) body)
@@ -203,14 +244,11 @@ let beta_reduce _ _ _ = function
       Nochange
   | Let (_,g,v,l,_) -> 
       let x,e = vopen l in
-(*
-      Myformat.printf "substing ∀%a.[%a|->%a] in %a@." 
-      Ty.Generalize.print g Name.print x print v print e; 
-*)
       Change_rerun (polsubst g x v e)
   | _ -> Nochange
 
-let get_restrict_combine _ l _ x = 
+let get_restrict_combine env x = 
+  let l = env.l in
   match destruct_get' x with
   | Some (_,r,_,_,map) -> 
       begin match destruct_restrict map with
@@ -267,7 +305,8 @@ let effrec2form env (r,_) =
         (build_var r s env) env.l) 
       acc env.l) r (spredef_var "kempty" env.l )
 
-let replace_map env _ t x =
+let replace_map env x =
+  let t = env.et in
   if Ty.is_map t then
     match x with
     | Logic t -> Simple_change (logic (Ty.selim_map t) env.l)
@@ -277,7 +316,7 @@ let replace_map env _ t x =
       Simple_change f
   else Nochange
 
-let get_map env _ _ x = 
+let get_map env x = 
 (*   Myformat.printf "get_form: %a@." print' x; *)
   match destruct_get' x with
   | Some (_,_,reg,dom,m) -> 
@@ -288,7 +327,8 @@ let get_map env _ _ x =
 (*       Myformat.printf "get_form: %a@." print' x; *)
       Nochange
 
-let swap_impl _ l _ x = 
+let swap_impl env x = 
+  let l = env.l in
   match destruct_app2_var' x with
   | Some ({name = Some "->"}, _, h1,goal)  ->
       begin match destruct_app2_var goal with
@@ -332,7 +372,7 @@ let exhaust simplifiers env f =
     | [] when b -> Simple_change f
     | [] -> Nochange
     | simpl :: xs ->
-        match simpl env f.loc f.t f.v with
+        match simpl env f.v with
         | Change_rerun f -> Change_rerun f
         | Simple_change f -> aux true f simplifiers
         | Nochange -> aux b f xs in
