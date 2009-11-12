@@ -307,16 +307,17 @@ let get_reg = function
 let selim_map get_rtype t = 
   let rec aux' = function
     | (Var _ | Const _) as t -> C t
-    | Map _ -> assert false
+    | Map _ -> spredef_var "kmap"
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
     | PureArr (C (Map e), t) ->
-        let t = NEffect.efold (fun e acc -> parr (var e) acc) t e in
+        let t = NEffect.efold (fun e acc -> parr (var e) acc) (aux t) e in
         NEffect.rfold (fun r acc -> parr (get_rtype r) acc) t e
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)    
     | Arrow (t1,t2,e) -> arrow (aux t1) (aux t2) e
     | Ref (r,t) -> ref_ r (aux t)
     | App (v,i) -> app v (Inst.map aux Misc.id Misc.id i)
   and aux (C t) = aux' t in
+(*   Myformat.printf "converting type: %a@." print t; *)
   aux t
 
 let selim_map_log t = 

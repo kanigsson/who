@@ -27,7 +27,7 @@ $(COQTARGETS): $(COQFILES)
 
 install: main.native $(COQTARGETS)
 	cp -f _build/main.native /usr/local/bin/pwho
-	cp -f $(COQTARGETS) $(COQFILES) /usr/local/lib/coq/user-contrib/
+	cp -f $(COQTARGETS) $(COQFILES) /usr/lib/coq/user-contrib/
 
 uninstall:
 	rm -f /usr/local/bin/pwho

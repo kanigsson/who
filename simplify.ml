@@ -254,6 +254,7 @@ let distrib_app env x =
   match x with
   | App (t1,t2,_,_) when Ty.is_map t2.t -> 
       let er = Effrec.from_form_t t2.t t2.v in
+      let t1 = {t1 with t = Ty.selim_map (rtype env) t1.t} in
       let f = Effrec.rfold (fun r s acc -> 
         app acc (build_var r s env) l) er t1 in
       let f = Effrec.efold (fun e s acc -> 
@@ -446,11 +447,11 @@ let allsimplify f =
   let f = logic_simplify f in
   Myformat.printf "firstsimpl@.";
   Typing.formtyping f;
-  Myformat.printf "=============@.%a@.=================@." print f;
+(*   Myformat.printf "=============@.%a@.=================@." print f; *)
   let f = map_simplify f in
   Myformat.printf "secondsimpl@.";
-  Myformat.printf ">>>>>>>>>>>>>@.%a@.>>>>>>>>>>>>>>>>>@." print f;
+(*   Myformat.printf ">>>>>>>>>>>>>@.%a@.>>>>>>>>>>>>>>>>>@." print f; *)
   Typing.formtyping f;
   let f = eq_simplify f in
-  Myformat.printf "third simpl@.";
+(*   Myformat.printf "third simpl@."; *)
   f
