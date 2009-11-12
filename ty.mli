@@ -81,8 +81,7 @@ val find_type_of_r : Name.t -> t -> t option
 val spredef_var : string -> t
 val get_reg : t -> Name.t
 
-val selim_map : t -> t
-val selim_map_log : t -> t
+val selim_map : (Name.t -> t) -> t -> t
 
 val pretype : t -> NEffect.t -> t
 val posttype : t -> t -> NEffect.t -> t

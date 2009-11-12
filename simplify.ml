@@ -33,7 +33,7 @@ let rtype_add n t env =
   { env with rtypes = Name.M.add n t env.rtypes }
 
   (* [rtype] finds the type for a region name *)
-let rtype n env = 
+let rtype env n = 
   try Name.M.find n env.rtypes
   with Not_found -> 
     failwith 
@@ -86,7 +86,7 @@ let getname n1 n2 env =
  * corresponding to (r,v) *)
 let build_var r v env = 
   let nv = getname r v env in
-  svar nv (rtype r env) env.l
+  svar nv (rtype env r) env.l
 
 (* a simplification either does nothing, a simple top-level change, or a deeper
  *  change requiring all simplifications to rerun *)
@@ -247,80 +247,26 @@ let beta_reduce _ = function
       Change_rerun (polsubst g x v e)
   | _ -> Nochange
 
-let get_restrict_combine env x = 
+
+(* transform f (m : <r1 r2| e>) into f r1m r2m em *)
+let distrib_app env x =
   let l = env.l in
-  match destruct_get' x with
-  | Some (_,r,_,_,map) -> 
-      begin match destruct_restrict map with
-      | Some (map,_,_) -> Simple_change (get r map l)
-      | None -> 
-          begin match destruct_combine map with
-          | Some (m1,_,m2,e2) -> 
-              let f = 
-                if NEffect.rmem (Ty.get_reg r.t) e2 then get r m2 l 
-                else get r m1 l in
-              Simple_change f
-          | None -> Nochange
-          end
-      end
+  match x with
+  | App (t1,t2,_,_) when Ty.is_map t2.t -> 
+      let er = Effrec.from_form_t t2.t t2.v in
+      let f = Effrec.rfold (fun r s acc -> 
+        app acc (build_var r s env) l) er t1 in
+      let f = Effrec.efold (fun e s acc -> 
+        app acc (build_var e s env) l) er f in
+      Simple_change f
   | _ -> Nochange
 
-type effrec = Name.t Name.M.t * Name.t Name.M.t
-
-let e_combine (r1,e1) (r2,e2) = 
-  Name.M.fold Name.M.add r2 r1,
-  Name.M.fold Name.M.add e2 e1
-
-let e_restrict d (r,e) = 
-  Name.M.fold (fun k v acc -> 
-    if NEffect.rmem k d then Name.M.add k v acc else acc) r Name.M.empty,
-  Name.M.fold (fun k v acc -> 
-    if NEffect.emem k d then Name.M.add k v acc else acc) e Name.M.empty
-
-let rec form2effrec d x = 
-(*   Myformat.printf "finding effrec for %a@." print' x; *)
-  match destruct_combine' x with
-  | Some (m1,_,m2,_) -> e_combine (form2effrec_t m1.t m1.v) (form2effrec_t m2.t m2.v)
-  | None -> 
-      match destruct_restrict' x with
-      | Some (m,_,e2) -> e_restrict e2 (form2effrec_t m.t m.v)
-      | None ->
-          match x with
-          | Var (s,_) -> 
-              NEffect.rfold (fun k acc -> Name.M.add k s acc) Name.M.empty d,
-              NEffect.efold (fun k acc -> Name.M.add k s acc) Name.M.empty d 
-          | _ -> 
-              Myformat.printf "strange term: %a@." print' x;
-              assert false
-and form2effrec_t t x = form2effrec (Ty.domain t) x
-
-
-let effrec2form env (r,_) =
-  (* TODO effect vars *)
-(*   Myformat.printf "building effrec@."; *)
-  Name.M.fold (fun r s acc ->
-    app (
-      app2 (pre_defvar "kset" ([rtype r env],[],[]) env.l) 
-        (svar r (Ty.spredef_var "key") env.l)
-        (build_var r s env) env.l) 
-      acc env.l) r (spredef_var "kempty" env.l )
-
-let replace_map env x =
-  let t = env.et in
-  if Ty.is_map t then
-    match x with
-    | Logic t -> Simple_change (logic (Ty.selim_map t) env.l)
-    | _ -> 
-      let m = form2effrec_t t x in
-      let f = effrec2form env m in
-      Simple_change f
-  else Nochange
-
+(* transform !! x m into m|x *)
 let get_map env x = 
 (*   Myformat.printf "get_form: %a@." print' x; *)
   match destruct_get' x with
   | Some (_,_,reg,dom,m) -> 
-      let (rm,_) = form2effrec dom m.v in
+      let (rm,_) = Effrec.from_form dom m.v in
       let nf = build_var reg (Name.M.find reg rm) env in
       Simple_change nf
   | _ -> 
@@ -352,16 +298,13 @@ let simplifiers =
     unit_void;
     quant_over_true;
     boolean_prop;
-    get_restrict_combine;
 (*     remove_pre_post; *)
   ]
 
 let simplify_maps = 
   [ 
-    replace_map;
-(*     replace_bang; *)
     get_map; 
-(*     replace_lam; *)
+    distrib_app;
   ]
 
 let elim_eqs =
@@ -383,7 +326,7 @@ let add_effect env x d =
   let env,rl = 
     NEffect.rfold (fun r (env,rl) -> 
       let n = Name.new_name r in
-      name_add r x n env, (n,rtype r env)::rl) (env,[]) d in
+      name_add r x n env, (n,rtype env r)::rl) (env,[]) d in
   let env, el = 
     NEffect.efold (fun e (env,el) -> 
       let n = Name.new_name e in
@@ -405,9 +348,9 @@ let simplify ~genbind
     let f = 
       match f.v with
       | (Const _  | Axiom _ ) -> f
-      | Logic t -> logic (tyfun t) l
+      | Logic t -> logic (tyfun env t) l
       | Var (v,i) -> 
-          var_i v (Inst.map tyfun Misc.id Misc.id i) (tyfun f.t) l
+          var_i v (Inst.map (tyfun env) Misc.id Misc.id i) (tyfun env f.t) l
       | App (f1,f2,k,c) -> 
           app ~kind:k ~cap:c (aux env f1) (aux env f2) l
       | Gen (g,t) -> gen g (genbind g env t) env.l
@@ -429,7 +372,7 @@ let simplify ~genbind
       | Section (n,f,e) -> 
           section n f (aux env e) l
       | EndSec e -> endsec (aux env e) l 
-      | Param (t,e) -> param (tyfun t) e l
+      | Param (t,e) -> param (tyfun env t) e l
 (*
       | Lam (x,t,p,e,q) -> 
           lam x t (pre env p) (aux env e) (post env q) l
@@ -440,7 +383,7 @@ let simplify ~genbind
       | Nochange -> f
       | Simple_change f -> f
       | Change_rerun f -> aux env f in
-    let f = {f with t = tyfun f.t} in
+    let f = {f with t = tyfun env f.t} in
     f
 (*
   and pre env (n,p) = n, Misc.opt_map (aux env) p
@@ -458,7 +401,7 @@ let logic_simplify f =
   let rec aux env f =
     simplify ~genbind:(fun _ env e -> aux env e) 
              ~varbind:(fun env k x t e l -> aquant k x t (aux env e) l)
-             ~tyfun:Misc.id [] simplifiers env f in
+             ~tyfun:(fun _ -> Misc.id) [] simplifiers env f in
   aux empty f
 
 let map_simplify f = 
@@ -488,15 +431,15 @@ let map_simplify f =
           let f = List.fold_left (fun acc (x,t) -> aquant k x t acc l) e rl in
           List.fold_left (fun acc e -> 
             aquant k e (Ty.spredef_var "kmap") acc l) f el
-        else aquant k x (Ty.selim_map t) (aux env e) l)
-      ~tyfun:Ty.selim_map simplify_maps [] env f in
+        else aquant k x (Ty.selim_map (rtype env) t) (aux env e) l)
+      ~tyfun:(fun env -> Ty.selim_map (rtype env)) simplify_maps [] env f in
   aux empty f
 
 let eq_simplify f = 
   let rec aux env f = 
     simplify ~genbind:(fun _ env e -> aux env e)
              ~varbind:(fun env k x t e l -> aquant k x t (aux env e) l)
-             ~tyfun:Misc.id [] elim_eqs env f in
+             ~tyfun:(fun _ -> Misc.id) [] elim_eqs env f in
   aux empty f
 
 let allsimplify f =

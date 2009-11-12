@@ -304,11 +304,14 @@ let get_reg = function
   | C (Ref (reg,_)) -> reg 
   | _ -> assert false
 
-let selim_map t = 
+let selim_map get_rtype t = 
   let rec aux' = function
     | (Var _ | Const _) as t -> C t
-    | Map _ -> spredef_var "kmap"
+    | Map _ -> assert false
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
+    | PureArr (C (Map e), t) ->
+        let t = NEffect.efold (fun e acc -> parr (var e) acc) t e in
+        NEffect.rfold (fun r acc -> parr (get_rtype r) acc) t e
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)    
     | Arrow (t1,t2,e) -> arrow (aux t1) (aux t2) e
     | Ref (r,t) -> ref_ r (aux t)

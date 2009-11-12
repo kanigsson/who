@@ -1,150 +1,168 @@
-let /\ = logic Prop -> Prop -> Prop in
-let -> = logic Prop -> Prop -> Prop in
-let ~ = logic Prop -> Prop in
-let = [a||]= logic a -> a -> Prop in
-let <> [a1||]= logic a1 -> a1 -> Prop in
-let fst [a2 b||]= logic (a2 * b) -> a2 in
-let snd [a3 b1||]= logic (a3 * b1) -> b1 in
-let , [a4 b2||]= logic a4 -> b2 -> a4 * b2 in
-let == [a5||]= logic a5 -> a5 -> bool in
-let != [a6||]= logic a6 -> a6 -> bool in
-let !! [a7|r|e]= logic ref(r,a7) -> kmap{|e } -> a7 in
-let
-! [a8|r1|]=
-           (λ(x:ref(r1,a8)) -->  param(a8,{r1 |})
-           {(λ(old:kmap{r1 |}) ->
-            (λ(cur:kmap{r1 |}) ->
-            (λ(r2:a8) ->
-            ((!! [a8|r1|{r1 |}] x cur) = r2) /\
-            ((!! [a8|r1|{r1 |}] x old) = (!! [a8|r1|{r1 |}] x cur)))))})
-in
-let
-:= [a9|r3|]=
-            (λ(x1:ref(r3,a9)) ->
-            (λ(v:a9) -->  param(unit,{r3 |})
-            {(λ(old1:kmap{r3 |}) ->
-             (λ(cur1:kmap{r3 |}) ->
-             (λ(anon:unit) -> (!! [a9|r3|{r3 |}] x1 cur1) = v)))}))
-in
-let
-ref [a10|r4|]=
-              (λ(v1:a10) -->  param(ref(r4,a10),{r4 ||r4 })
-              {(λ(old2:kmap{r4 ||r4 }) ->
-               (λ(cur2:kmap{r4 ||r4 }) ->
-               (λ(x2:ref(r4,a10)) -> (!! [a10|r4|{r4 ||r4 }] x2 cur2) = v1)))})
-in
-let + = logic Z -> Z -> Z in
-let - = logic Z -> Z -> Z in
-let * = logic Z -> Z -> Z in
-let < = logic Z -> Z -> Prop in
-let <= = logic Z -> Z -> Prop in
-let > = logic Z -> Z -> Prop in
-let >= = logic Z -> Z -> Prop in
-let << = logic Z -> Z -> bool in
-let <<= = logic Z -> Z -> bool in
-let >> = logic Z -> Z -> bool in
-let >>= = logic Z -> Z -> bool in
-let max = logic Z -> Z -> Z in
-let min = logic Z -> Z -> Z in
-let combine [||e1 e2]= logic kmap{|e1 } -> kmap{|e2 } -> kmap{|e1 e2 } in
-let restrict [||e11 e21]= logic kmap{|e11 } -> kmap{|e21 } in
-let empty = logic kmap{|} in
-let pre [a11 b3||]= (λ(x3:a11 * b3) -> fst [a11,b3||] x3) in
-let post [a12 b4||]= (λ(x4:a12 * b4) -> snd [a12,b4||] x4) in
-let
-forto [||e1]=
-             (λ(inv:Z -> kmap{|e1 } -> Prop) ->
-             (λ(start:Z) ->
-             (λ(end_:Z) ->
-             (λ(f:Z ->{|e1 } unit) -->
-             {(λ(cur3:kmap{|e1 }) ->
-              (inv start cur3) /\
-              (forall (i:Z),
-               ((start <= i) /\ (i <= end_)) ->
-               (forall (m:kmap{|e1 }),
-                (inv i m) ->
-                ((pre [Z -> kmap{|e1 } -> Prop,Z -> kmap{|e1 } -> kmap{|e1
-                  } -> unit -> Prop||] f i m)
-                 /\
-                 (forall (n:kmap{|e1 }),
-                  (post [Z -> kmap{|e1 } -> Prop,Z -> kmap{|e1 } -> kmap{|e1
-                   } -> unit -> Prop||] f i m n tt)
-                  -> (inv (i + 1) n))))))}
-             param(unit,{|e1 })
-             {(λ(old3:kmap{|e1 }) ->
-              (λ(cur4:kmap{|e1 }) ->
-              (λ(anon1:unit) -> inv (max start (end_ + 1)) cur4)))}))))
-in
-let
-fordownto [||e2]=
-                 (λ(inv1:Z -> kmap{|e2 } -> Prop) ->
-                 (λ(start1:Z) ->
-                 (λ(end_1:Z) ->
-                 (λ(f1:Z ->{|e2 } unit) -->
-                 {(λ(cur5:kmap{|e2 }) ->
-                  (inv1 start1 cur5) /\
-                  (forall (i1:Z),
-                   ((start1 <= i1) /\ (i1 <= end_1)) ->
-                   (forall (m1:kmap{|e2 }),
-                    (inv1 i1 m1) ->
-                    ((pre [Z -> kmap{|e2 } -> Prop,Z -> kmap{|e2 } ->
-                      kmap{|e2 } -> unit -> Prop||] f1 i1 m1)
-                     /\
-                     (forall (n1:kmap{|e2 }),
-                      (post [Z -> kmap{|e2 } -> Prop,Z -> kmap{|e2 } ->
-                       kmap{|e2 } -> unit -> Prop||] f1 i1 m1 n1 tt)
-                      -> (inv1 (i1 - 1) n1))))))}
-                 param(unit,{|e2 })
-                 {(λ(old4:kmap{|e2 }) ->
-                  (λ(cur6:kmap{|e2 }) ->
-                  (λ(anon2:unit) -> inv1 (min start1 (end_1 - 1)) cur6)))}))))
-in type array[a13||] =  in
-let get [a14||]= logic Z -> (array[a14||]) -> a14 in
-let set [a15||]= logic Z -> a15 -> (array[a15||]) -> array[a15||] in
-let length [a16||]= logic (array[a16||]) -> Z in
-let
-update_length [a17||]=
-                      axiom forall (t:array[a17||]),
-                            forall (i2:Z),
-                            forall (z:a17),
-                            (length [a17||] t) =
-                            (length [a17||] (set [a17||] i2 z t))
-in
-let
-get_set_eq [a18||]=
-                   axiom forall (t1:array[a18||]),
-                         forall (i3:Z),
-                         forall (z1:a18),
-                         (i3 < (length [a18||] t1)) ->
-                         ((get [a18||] i3 (set [a18||] i3 z1 t1)) = z1)
-in
-let
-get_set_neq [a19||]=
-                    axiom forall (t2:array[a19||]),
-                          forall (i4:Z),
-                          forall (j:Z),
-                          forall (z2:a19),
-                          (i4 < (length [a19||] t2)) ->
-                          ((j < (length [a19||] t2)) ->
-                           ((i4 <> j) ->
-                            ((get [a19||] i4 (set [a19||] j z2 t2)) =
-                             (get [a19||] i4 t2))))
-in
-let
-length_nonnegative [a20||]=
-                           axiom forall (t3:array[a20||]),
-                                 0 <= (length [a20||] t3)
-in
-let
-f2 [||e3]=
-          (λ(g:Z ->{|e3 } Z) -->
-          {(λ(cur7:kmap{|e3 }) ->
-           fst [Z -> kmap{|e3 } -> Prop,Z -> kmap{|e3 } -> kmap{|e3 } -> Z ->
-           Prop||] g 5 cur7)}
-          g 5
-          {(λ(old5:kmap{|e3 }) ->
-           (λ(cur8:kmap{|e3 }) ->
-           (λ(r5:Z) ->
-           snd [Z -> kmap{|e3 } -> Prop,Z -> kmap{|e3 } -> kmap{|e3 } -> Z ->
-           Prop||] g 5 old5 cur8 r5)))})
-in tt
+section basiclogic Coq 
+ let /\ = logic Prop -> Prop -> Prop in
+ let \/ = logic Prop -> Prop -> Prop in
+ let -> = logic Prop -> Prop -> Prop in
+ let ~ = logic Prop -> Prop in
+ let = [a||]= logic a -> a -> Prop in
+ let <> [a1||]= logic a1 -> a1 -> Prop in
+ let fst [a2 b||]= logic (a2 * b) -> a2 in
+ let snd [a3 b1||]= logic (a3 * b1) -> b1 in
+ let , [a4 b2||]= logic a4 -> b2 -> a4 * b2 in end
+  section arith Coq WhoArith
+   let + = logic int -> int -> int in
+   let - = logic int -> int -> int in
+   let * = logic int -> int -> int in
+   let < = logic int -> int -> Prop in
+   let <= = logic int -> int -> Prop in
+   let > = logic int -> int -> Prop in
+   let >= = logic int -> int -> Prop in
+   let << = logic int -> int -> bool in
+   let <<= = logic int -> int -> bool in
+   let >> = logic int -> int -> bool in
+   let >>= = logic int -> int -> bool in
+   let max = logic int -> int -> int in
+   let min = logic int -> int -> int in
+   let mod = logic int -> int -> int in end
+    let == [a5||]= logic a5 -> a5 -> bool in
+    let != [a6||]= logic a6 -> a6 -> bool in
+    section Whoref Coq WhoMap
+     let !! [a7|r|e]= logic ref(r,a7) -> <{|e }> -> a7 in
+     let
+     ! [a8|r1|]=
+                (λ(x:ref(r1,a8)) -->  param(a8,{r1 |})
+                {(λ(old:<{r1 |}>) ->
+                 (λ(cur:<{r1 |}>) ->
+                 (λ(r2:a8) ->
+                 ((!! [a8|r1|{r1 |}] x cur) = r2) /\
+                 ((!! [a8|r1|{r1 |}] x old) = (!! [a8|r1|{r1 |}] x cur)))))})
+     in
+     let
+     := [a9|r3|]=
+                 (λ(x1:ref(r3,a9)) ->
+                 (λ(v:a9) -->  param(unit,{r3 |})
+                 {(λ(old1:<{r3 |}>) ->
+                  (λ(cur1:<{r3 |}>) ->
+                  (λ(anon:unit) -> (!! [a9|r3|{r3 |}] x1 cur1) = v)))}))
+     in
+     let
+     ref [a10|r4|]=
+                   (λ(v1:a10) -->  param(ref(r4,a10),{r4 ||r4 })
+                   {(λ(old2:<{r4 ||r4 }>) ->
+                    (λ(cur2:<{r4 ||r4 }>) ->
+                    (λ(x2:ref(r4,a10)) ->
+                    (!! [a10|r4|{r4 ||r4 }] x2 cur2) = v1)))})
+     in
+     let combine [||e1 e2]= logic <{|e1 }> -> <{|e2 }> -> <{|e1 e2 }> in
+     let restrict [||e11 e21]= logic <{|e11 }> -> <{|e21 }> in
+     let empty = logic <{|}> in type kmap =  in type key =  in
+     let kcombine [||e12 e22]= logic (kmap) -> (kmap) -> kmap in
+     let krestrict [||e13 e23]= logic (kmap) -> kmap in
+     let kset [a11||]= logic (key) -> a11 -> (kmap) -> kmap in
+     let kget [a12|r5|]= logic ref(r5,a12) -> (kmap) -> a12 in
+     let kempty = logic kmap in
+     let pre [a13 b3||]= (λ(x3:a13 * b3) -> fst [a13,b3||] x3) in
+     let post [a14 b4||]= (λ(x4:a14 * b4) -> snd [a14,b4||] x4) in end
+      let
+      forto [||e1]=
+                   (λ(inv:int -> <{|e1 }> -> Prop) ->
+                   (λ(start:int) ->
+                   (λ(end_:int) ->
+                   (λ(f:int ->{|e1 } unit) -->
+                   {(λ(cur3:<{|e1 }>) ->
+                    (inv start cur3) /\
+                    (forall (i:int),
+                     ((start <= i) /\ (i <= end_)) ->
+                     (forall (m:<{|e1 }>),
+                      (inv i m) ->
+                      ((pre [int -> <{|e1 }> -> Prop,int -> <{|e1 }> -> <{|e1
+                        }> -> unit -> Prop||] f i m)
+                       /\
+                       (forall (n:<{|e1 }>),
+                        (post [int -> <{|e1 }> -> Prop,int -> <{|e1 }> ->
+                         <{|e1 }> -> unit -> Prop||] f i m n tt)
+                        -> (inv (i + 1) n))))))}
+                   param(unit,{|e1 })
+                   {(λ(old3:<{|e1 }>) ->
+                    (λ(cur4:<{|e1 }>) ->
+                    (λ(anon1:unit) -> inv (max start (end_ + 1)) cur4)))}))))
+      in
+      let
+      fordownto [||e2]=
+                       (λ(inv1:int -> <{|e2 }> -> Prop) ->
+                       (λ(start1:int) ->
+                       (λ(end_1:int) ->
+                       (λ(f1:int ->{|e2 } unit) -->
+                       {(λ(cur5:<{|e2 }>) ->
+                        (inv1 start1 cur5) /\
+                        (forall (i1:int),
+                         ((start1 <= i1) /\ (i1 <= end_1)) ->
+                         (forall (m1:<{|e2 }>),
+                          (inv1 i1 m1) ->
+                          ((pre [int -> <{|e2 }> -> Prop,int -> <{|e2 }> ->
+                            <{|e2 }> -> unit -> Prop||] f1 i1 m1)
+                           /\
+                           (forall (n1:<{|e2 }>),
+                            (post [int -> <{|e2 }> -> Prop,int -> <{|e2 }> ->
+                             <{|e2 }> -> unit -> Prop||] f1 i1 m1 n1 tt)
+                            -> (inv1 (i1 - 1) n1))))))}
+                       param(unit,{|e2 })
+                       {(λ(old4:<{|e2 }>) ->
+                        (λ(cur6:<{|e2 }>) ->
+                        (λ(anon2:unit) ->
+                        inv1 (min start1 (end_1 - 1)) cur6)))}))))
+      in
+      section Array Coq WhoArray type array[a15||] =  in
+      let get [a16||]= logic int -> (array[a16||]) -> a16 in
+      let set [a17||]= logic int -> a17 -> (array[a17||]) -> array[a17||] in
+      let len [a18||]= logic (array[a18||]) -> int in
+      let
+      update_length [a19||]=
+                            axiom forall (t:array[a19||]),
+                                  forall (i2:int),
+                                  forall (z:a19),
+                                  (len [a19||] t) =
+                                  (len [a19||] (set [a19||] i2 z t))
+      in
+      let
+      get_set_eq [a20||]=
+                         axiom forall (t1:array[a20||]),
+                               forall (i3:int),
+                               forall (z1:a20),
+                               (i3 < (len [a20||] t1)) ->
+                               ((get [a20||] i3 (set [a20||] i3 z1 t1)) = z1)
+      in
+      let
+      get_set_neq [a21||]=
+                          axiom forall (t2:array[a21||]),
+                                forall (i4:int),
+                                forall (j:int),
+                                forall (z2:a21),
+                                (i4 < (len [a21||] t2)) ->
+                                ((j < (len [a21||] t2)) ->
+                                 ((i4 <> j) ->
+                                  ((get [a21||] i4 (set [a21||] j z2 t2)) =
+                                   (get [a21||] i4 t2))))
+      in
+      let
+      length_nonnegative [a22||]=
+                                 axiom forall (t3:array[a22||]),
+                                       0 <= (len [a22||] t3)
+      in end
+       section List Coq WhoList type list[a23||] =  in
+       let nil [a24||]= logic list[a24||] in
+       let cons [a25||]= logic a25 -> (list[a25||]) -> list[a25||] in
+       let is_nil [a26||]= logic (list[a26||]) -> bool in
+       let l_in [a27||]= logic a27 -> (list[a27||]) -> Prop in end
+        let
+        f2 [||e3]=
+                  (λ(g:int ->{|e3 } int) -->
+                  {(λ(cur7:<{|e3 }>) ->
+                   fst [int -> <{|e3 }> -> Prop,int -> <{|e3 }> -> <{|e3
+                   }> -> int -> Prop||] g 5 cur7)}
+                  g 5
+                  {(λ(old5:<{|e3 }>) ->
+                   (λ(cur8:<{|e3 }>) ->
+                   (λ(r6:int) ->
+                   snd [int -> <{|e3 }> -> Prop,int -> <{|e3 }> -> <{|e3
+                   }> -> int -> Prop||] g 5 old5 cur8 r6)))})
+        in tt     

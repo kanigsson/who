@@ -1,84 +1,106 @@
-let /\ = logic Prop -> Prop -> Prop in
-let -> = logic Prop -> Prop -> Prop in
-let ~ = logic Prop -> Prop in
-let = [a||]= logic a -> a -> Prop in
-let <> [a1||]= logic a1 -> a1 -> Prop in
-let fst [a2 b||]= logic (a2 * b) -> a2 in
-let snd [a3 b1||]= logic (a3 * b1) -> b1 in
-let , [a4 b2||]= logic a4 -> b2 -> a4 * b2 in
-let == [a5||]= logic a5 -> a5 -> bool in
-let != [a6||]= logic a6 -> a6 -> bool in
-let !! [a7|r|e]= logic ref(r,a7) -> kmap{|e } -> a7 in
-let + = logic Z -> Z -> Z in
-let - = logic Z -> Z -> Z in
-let * = logic Z -> Z -> Z in
-let < = logic Z -> Z -> Prop in
-let <= = logic Z -> Z -> Prop in
-let > = logic Z -> Z -> Prop in
-let >= = logic Z -> Z -> Prop in
-let << = logic Z -> Z -> bool in
-let <<= = logic Z -> Z -> bool in
-let >> = logic Z -> Z -> bool in
-let >>= = logic Z -> Z -> bool in
-let max = logic Z -> Z -> Z in
-let min = logic Z -> Z -> Z in
-let combine [||e1 e2]= logic kmap{|e1 } -> kmap{|e2 } -> kmap{|e1 e2 } in
-let restrict [||e11 e21]= logic kmap{|e11 } -> kmap{|e21 } in
-let empty = logic kmap{|} in type array[a8||] =  in
-let get [a9||]= logic Z -> (array[a9||]) -> a9 in
-let set [a10||]= logic Z -> a10 -> (array[a10||]) -> array[a10||] in
-let length [a11||]= logic (array[a11||]) -> Z in
-let
-update_length [a12||]=
-                      axiom forall (t:array[a12||]),
-                            forall (i:Z),
-                            forall (z:a12),
-                            (length [a12||] t) =
-                            (length [a12||] (set [a12||] i z t))
-in
-let
-get_set_eq [a13||]=
-                   axiom forall (t1:array[a13||]),
-                         forall (i1:Z),
-                         forall (z1:a13),
-                         (i1 < (length [a13||] t1)) ->
-                         ((get [a13||] i1 (set [a13||] i1 z1 t1)) = z1)
-in
-let
-get_set_neq [a14||]=
-                    axiom forall (t2:array[a14||]),
-                          forall (i2:Z),
-                          forall (j:Z),
-                          forall (z2:a14),
-                          (i2 < (length [a14||] t2)) ->
-                          ((j < (length [a14||] t2)) ->
-                           ((i2 <> j) ->
-                            ((get [a14||] i2 (set [a14||] j z2 t2)) =
-                             (get [a14||] i2 t2))))
-in
-let
-length_nonnegative [a15||]=
-                           axiom forall (t3:array[a15||]),
-                                 0 <= (length [a15||] t3)
-in
-forall [|r1|], forall (s:kmap{r1 |}),
-               forall (x:ref(r1,Z)),
-               (forall (s1:kmap{r1 |}),
-                forall (i3:Z),
-                (1 <= i3) ->
-                ((i3 <= 5) ->
-                 (((!! [Z|r1|{r1 |}] x s1) < (i3 * 10)) ->
-                  (forall (s2:kmap{r1 |}),
-                   ((!! [Z|r1|{r1 |}] x s1) = (!! [Z|r1|{r1 |}] x s2)) ->
-                   (forall (s3:kmap{r1 |}),
-                    ((!! [Z|r1|{r1 |}] x s3) = ((!! [Z|r1|{r1 |}] x s2) + i3))
-                    -> ((!! [Z|r1|{r1 |}] x s3) < ((i3 + 1) * 10)))))))
-               /\
-               (((!! [Z|r1|{r1 |}] x s) < (1 * 10)) /\
-                (forall (i4:Z),
-                 (1 <= i4) ->
-                 ((i4 <= 5) ->
-                  (forall (m:kmap{r1 |}),
-                   ((!! [Z|r1|{r1 |}] x m) < (i4 * 10)) ->
-                   (((1 <= i4) /\ (i4 <= 5)) /\
-                    ((!! [Z|r1|{r1 |}] x m) < (i4 * 10)))))))
+firstsimpl
+=============
+section basiclogic Coq 
+ let /\ = logic Prop -> Prop -> Prop in
+ let \/ = logic Prop -> Prop -> Prop in
+ let -> = logic Prop -> Prop -> Prop in
+ let ~ = logic Prop -> Prop in
+ let = [a||]= logic a -> a -> Prop in
+ let <> [a1||]= logic a1 -> a1 -> Prop in
+ let fst [a2 b||]= logic (a2 * b) -> a2 in
+ let snd [a3 b1||]= logic (a3 * b1) -> b1 in
+ let , [a4 b2||]= logic a4 -> b2 -> a4 * b2 in end
+  section arith Coq WhoArith
+   let + = logic int -> int -> int in
+   let - = logic int -> int -> int in
+   let * = logic int -> int -> int in
+   let < = logic int -> int -> Prop in
+   let <= = logic int -> int -> Prop in
+   let > = logic int -> int -> Prop in
+   let >= = logic int -> int -> Prop in
+   let << = logic int -> int -> bool in
+   let <<= = logic int -> int -> bool in
+   let >> = logic int -> int -> bool in
+   let >>= = logic int -> int -> bool in
+   let max = logic int -> int -> int in
+   let min = logic int -> int -> int in
+   let mod = logic int -> int -> int in end
+    let == [a5||]= logic a5 -> a5 -> bool in
+    let != [a6||]= logic a6 -> a6 -> bool in
+    section Whoref Coq WhoMap
+     let !! [a7|r|e]= logic ref(r,a7) -> <{|e }> -> a7 in
+     let combine [||e1 e2]= logic <{|e1 }> -> <{|e2 }> -> <{|e1 e2 }> in
+     let restrict [||e11 e21]= logic <{|e11 }> -> <{|e21 }> in
+     let empty = logic <{|}> in type kmap =  in type key =  in
+     let kcombine [||e12 e22]= logic (kmap) -> (kmap) -> kmap in
+     let krestrict [||e13 e23]= logic (kmap) -> kmap in
+     let kset [a8||]= logic (key) -> a8 -> (kmap) -> kmap in
+     let kget [a9|r1|]= logic ref(r1,a9) -> (kmap) -> a9 in
+     let kempty = logic kmap in end
+      section Array Coq WhoArray type array[a10||] =  in
+      let get [a11||]= logic int -> (array[a11||]) -> a11 in
+      let set [a12||]= logic int -> a12 -> (array[a12||]) -> array[a12||] in
+      let len [a13||]= logic (array[a13||]) -> int in
+      let
+      update_length [a14||]=
+                            axiom forall (t:array[a14||]),
+                                  forall (i:int),
+                                  forall (z:a14),
+                                  (len [a14||] t) =
+                                  (len [a14||] (set [a14||] i z t))
+      in
+      let
+      get_set_eq [a15||]=
+                         axiom forall (t1:array[a15||]),
+                               forall (i1:int),
+                               forall (z1:a15),
+                               (i1 < (len [a15||] t1)) ->
+                               ((get [a15||] i1 (set [a15||] i1 z1 t1)) = z1)
+      in
+      let
+      get_set_neq [a16||]=
+                          axiom forall (t2:array[a16||]),
+                                forall (i2:int),
+                                forall (j:int),
+                                forall (z2:a16),
+                                (i2 < (len [a16||] t2)) ->
+                                ((j < (len [a16||] t2)) ->
+                                 ((i2 <> j) ->
+                                  ((get [a16||] i2 (set [a16||] j z2 t2)) =
+                                   (get [a16||] i2 t2))))
+      in
+      let
+      length_nonnegative [a17||]=
+                                 axiom forall (t3:array[a17||]),
+                                       0 <= (len [a17||] t3)
+      in end
+       section List Coq WhoList type list[a18||] =  in
+       let nil [a19||]= logic list[a19||] in
+       let cons [a20||]= logic a20 -> (list[a20||]) -> list[a20||] in
+       let is_nil [a21||]= logic (list[a21||]) -> bool in
+       let l_in [a22||]= logic a22 -> (list[a22||]) -> Prop in end
+        forall [|r2|], forall (s:<{r2 |}>),
+                       forall (x:ref(r2,int)),
+                       (forall (s1:<{r2 |}>),
+                        forall (i3:int),
+                        (1 <= i3) ->
+                        ((i3 <= 5) ->
+                         (((!! [int|r2|{r2 |}] x s1) < (i3 * 10)) ->
+                          (forall (s2:<{r2 |}>),
+                           ((!! [int|r2|{r2 |}] x s1) =
+                            (!! [int|r2|{r2 |}] x s2))
+                           ->
+                           (forall (s3:<{r2 |}>),
+                            ((!! [int|r2|{r2 |}] x s3) =
+                             ((!! [int|r2|{r2 |}] x s2) + i3))
+                            -> ((!! [int|r2|{r2 |}] x s3) < ((i3 + 1) * 10)))))))
+                       /\
+                       (((!! [int|r2|{r2 |}] x s) < (1 * 10)) /\
+                        (forall (i4:int),
+                         (1 <= i4) ->
+                         ((i4 <= 5) ->
+                          (forall (m:<{r2 |}>),
+                           ((!! [int|r2|{r2 |}] x m) < (i4 * 10)) ->
+                           (((1 <= i4) /\ (i4 <= 5)) /\
+                            ((!! [int|r2|{r2 |}] x m) < (i4 * 10)))))))     
+=================
