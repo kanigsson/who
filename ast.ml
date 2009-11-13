@@ -295,8 +295,10 @@ module Recon = struct
   let efflam x eff e = plam x (T.map eff) e
   let lam x t p e q = mk_val (Lam (x,t,p,e,q)) (T.arrow t e.t e.e)
   let plus t1 t2 loc = appi (spredef_var "+" loc) t1 t2 loc
+  let minus t1 t2 loc = appi (spredef_var "-" loc) t1 t2 loc
   let one = mk_val (Const (Int Big_int.unit_big_int)) T.int 
   let succ t loc = plus t (one loc) loc
+  let prev t loc = minus t (one loc) loc
   let let_ ?(prelude=false) g e1 x e2 r = 
     mk (Let (prelude, g, e1,Name.close_bind x e2,r)) 
       e2.t (NEffect.union e1.e e2.e)

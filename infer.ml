@@ -239,6 +239,7 @@ let rec recon' = function
   | Logic t -> Logic t
   | TypeDef (g,t,x,e) -> TypeDef (g,t,x,recon e)
   | For (dir,inv,i,st,en,body) ->
+      let bdir = match dir with {Name.name = Some "forto"} -> true|_ -> false in
       let cur,inv = pre inv and body = recon body in
       let e = body.e and l = body.loc in
       let inv = match inv with | None -> ptrue_ l | Some f -> f in
@@ -247,15 +248,21 @@ let rec recon' = function
       let curvar = svar cur (Ty.map e) l in
       let sv = intvar st and ev = intvar en and iv = intvar i in
       let pre = 
-        (* pre : λcur. start <= i /\ i <= end_ /\ inv *)
-          efflam cur e (and_ (encl sv iv ev l) (app inv curvar l) l) l in
+        if bdir then
+        (* forto: λcur. start <= i /\ i <= end_ /\ inv *)
+          efflam cur e (and_ (encl sv iv ev l) (app inv curvar l) l) l
+        else
+        (* fordownto: λcur. end_ <= i /\ i <= start /\ inv *)
+          efflam cur e (and_ (encl ev iv sv l) (app inv curvar l) l) l in
       let old = Name.new_anon () in
       let post = 
-        (* post : λold.λcurλ(). inv (i+1) cur *)
+        let next = if bdir then succ iv l else prev iv l in
+        (* forto : λold.λcurλ(). inv (i+1) cur *)
+        (* fordownto : λold.λcurλ(). inv (i-1) cur *)
         efflam old e
           (efflam cur e
             (plam (Name.new_anon ()) Ty.unit
-              (app2 inv' (succ iv l) curvar l) l) l) l in
+              (app2 inv' next curvar l) l) l) l in
       let bodyfun = lam i Ty.int (cur,Some pre) body (old,cur,PPlain post) l in
       (* forvar inv start end bodyfun *)
       (app2 (app2 (var dir ([],[],[e]) Ty.forty l) inv' sv l) ev bodyfun l).v

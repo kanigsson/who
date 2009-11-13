@@ -77,7 +77,7 @@ parameter forto [||e] (inv : int -> <|e> -> prop) (start end_ : int)
 parameter fordownto [||e] (inv :  int -> <|e> -> prop) (start end_ : int) 
   (f : int ->{|e} unit) : unit, {|e} =
     { inv start cur /\\
-          forall (i : int). start <= i /\\ i <= end_ ->
+          forall (i : int). end_ <= i /\\ i <= start ->
           forall (m : <|e>) . inv i m -> pre f i m /\\
           forall (n : <|e>). post f i m n () -> inv (i-1) n
     }
