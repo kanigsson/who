@@ -1,56 +1,29 @@
-type 'a array
+let id_bet ['a||] (a1 a2 : 'a array) (i j : int) (l : int) =
+    i + l <= len a1 /\ j + l <= len a2 /\
+    forall (k : int).  (0 <= k -> k < l -> get (i + k) a1 = get (j + k) a2)
 
-logic get : forall 'a. int -> 'a array -> 'a
-logic set : forall 'a. int -> 'a -> 'a array -> 'a array
-logic length : forall 'a. 'a array -> int
-logic create : forall 'a. int -> 'a array
-
-axiom update_length : 
-  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
-    length [| 'a|] t = length [|'a|] (set [|'a|] i z t)
-
-axiom get_set_eq : 
-  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
-    i < length [|'a|] t -> get [|'a|] i (set [|'a|] i z t) = z
-
-axiom get_set_neq : 
-  forall 'a. forall (t : 'a array) (i : int) (j : int) (z : 'a).
-    i < length [|'a|] t -> j < length [|'a|] t -> i <> j -> 
-    get [|'a|] i (set [|'a|] j z t) = get [|'a|] i t
-
-axiom length_nonnegative : 
-  forall 'a. forall (t : 'a array).  0 <= length [|'a|] t
-
-axiom length_create : 
-  forall 'a. forall (l : int). 0 <= l -> length [|'a|] (create [|'a|] l) = l
-
-predicate id_bet ['a] (a1 a2 : 'a array) (i j : int) (l : int) =
-    i + l <= length [|'a|] a1 /\ j + l <= length [|'a|] a2 /\
-    forall (k : int). 
-    (0 <= k -> k < l -> get [|'a|] (i + k) a1 = get [|'a|] (j + k) a2)
-
-let append [|'a|(x: 'a array) (y : 'a array) (z : 'a array)] cap(z) 
-           (ar : ref(x)) (ar2 : ref(y)) =
+let append ['a|x y z|] (ar : ref(x,'a array)) (ar2 : ref(y,'a array)) =
   {}
-  let l1 = length [|'a|] !ar in
-  let l2 = length [|'a|] !ar2 in
-  let res = ref{z} (create [|'a|] (l1 + l2)) in
+  let l1 = len (!ar) in
+  let l2 = len (!ar2) in
+  let res = ref {{z}} (create (l1 + l2)) in
   let arold = !ar in
   let arold2 = !ar2 in
-  let () = 
+  let anon = 
     for i = 0 to l1 -1 do 
-      {arold = ar /\ id_bet [|'a|] ar res 0 0 i /\ length [|'a|] res = l1 + l2}
-      res := set [|'a|] i (get [|'a|] i !ar) !res
+      {arold = !!ar /\ id_bet (!!ar) (!!res) 0 0 i /\ len (!!res) = l1 + l2}
+      res := set i (get i (!ar)) !res
     done in
   let ari = !ar in
-  let () = 
+  let anon = 
     for j = 0 to l2 -1 do 
-      { id_bet [|'a|] ari res 0 0 (length [|'a|] ari) /\ 
-        arold2 = ar2 /\ id_bet [|'a|] ar2 res 0 l1 j /\ length [|'a|] res = l1 + l2}
-      res := set [|'a|] (l1 + j) (get [|'a|] j !ar2) !res
+      { id_bet ari (!!res) 0 0 (len ari) /\ 
+        arold2 = !!ar2 /\ id_bet (!!ar2) (!!res) 0 l1 j /\ len (!!res) = l1 + l2}
+      res := set (l1 + j) (get j !ar2) !res
     done in
     res
-  { let l1 = length [|'a|] ar in
-    let l2 = length [|'a|] ar2 in
-    id_bet [|'a|] ar z 0 0 l1 /\ id_bet [|'a|] ar2 z 0 l1 l2
-     /\ ar|old = ar /\ ar2|old = ar2 /\ length [|'a|] z = l1 + l2 }
+  { r: 
+    let l1 = len (!!ar) in
+    let l2 = len (!!ar2) in
+    id_bet (!!ar)  0 0 l1 /\ id_bet (!!ar2) (!!r) 0 l1 l2
+     /\ !!ar|old = !!ar /\ !!ar2|old = !!ar2 /\ len (!!r) = l1 + l2 }

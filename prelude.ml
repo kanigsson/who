@@ -90,7 +90,7 @@ section Array
   logic get ['a||] : int -> 'a array -> 'a
   logic set ['a||]: int -> 'a -> 'a array -> 'a array 
   logic len ['a||] :  'a array -> int
-  (* logic create ['a||] :  int -> 'a array *)
+  logic create ['a||] :  int -> 'a array
 
   axiom update_length ['a||] : 
     forall (t : 'a array) (i : int) (z : 'a).
