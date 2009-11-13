@@ -165,7 +165,9 @@ let rec infer' env t loc = function
         | Rec  ty -> (add_svar env x ty) in
       let e1 = infer env' nt e1 in
       let xt = try U.to_ty nt 
-               with Assert_failure _ -> error (Name.to_string x) loc  in
+               with Assert_failure _ -> 
+                 error (Myformat.sprintf "%a: %a@." Name.print x U.print_node nt) 
+                   loc in
       let e2 = infer (add_var env x g xt) t e2 in
       Let (p,g, e1,Name.close_bind x e2,r), 
       U.effect [] [e1.e; e2.e] []
