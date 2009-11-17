@@ -6,7 +6,7 @@ let append ['a|x y z|] (ar : ref(x,'a array)) (ar2 : ref(y,'a array)) =
   {}
   let l1 = len (!ar) in
   let l2 = len (!ar2) in
-  let res = ref {{z}} (create (l1 + l2))  in
+  let res = ref {{z}} ((create (l1 + l2) : 'a array))  in
   let arold = !ar in
   let arold2 = !ar2 in
   let anon = 
