@@ -1,0 +1,88 @@
+Reviewer 1
+==========
+
+Lemma 1 of section 5 states the soundness theorem of the WP calculus. The
+soundness of the type system itself is included in the precise formulation of
+Theorem 1 (in the technical appendix). Despite the superficial differences,
+the soundness theorem (and proof) is very similar to the classical
+presentation of effect systems, so we judged it to be of less importance. 
+
+Concerning the related works, this paper aims at achieving (almost) as much as
+others (such as YNot) without using dependent types or separation logic. Our
+aim, stated in the section of future works, is to be able to discharge the
+majority of the proof obligations by  off-the-shelve first-order provers. This
+would bring a higher degree of automation than existing tools, but we are not
+there yet.
+
+We do not share the reviewers' aversion against regions. Regions are employed
+in many recent papers (Charguéraud/Pottier ICFP 2008), and once an effect
+system is used, they are a very simple way to improve the precision of the
+system (compared to using program names).
+
+We don't understand the "suspicion" expressed by the reviewer. We believe that
+there are basically the following possibilities to deal with aliasing:
+  1) separation logic (the systems cited by the reviewer use it)
+  2) a very powerful effect system
+     (again Charguéraud/Pottier ICFP 2008, for example)
+  3) separation analyses (see for example Hubert/Marché [11] and Bornat [4])
+  4) pointer (dis-)equalities
+We do not want to use separation logic, and we need time to integrate ideas
+from the domains 2) and 3) (stated in the future works). The remaining
+solution is 4), which is possible in our system, but we consider it to be not
+very practical for the difficult case of shared mutable data structures. We
+therefore decided to deal with alias-free programs first. But there is no
+inherent incapacity of effect systems to deal with aliasing programs.
+
+We think that the paragraph "It would have been a somewhat different
+matter ..." does not do justice to our paper. Sections 3 and 4 present a type
+system and a wp calculus which *allow* programs with aliasing. The current
+prototype implementation treats alias-free programs by default, but to enable
+aliasing there is just a simple check in the type system to be removed
+(Section 5) and the simplifications enabled by the absence of aliasing
+omitted.
+
+Reviewer 2
+==========
+
+Yes, distinguishing read/write effects would be a very valuable extension, as
+it greatly improve the practical usage of such a system. We are aware of the
+importance of such an extension, but haven't worked out the details.
+
+p12 - "The second form of aliasing" - No, this is not about alpha-conversion.
+In the usual region calculus and in [24] (Talpin/Jouvelot), a region may
+contain more than one reference. You seem to understand the notion of region
+in the same way, see your comment about "effects" and "regions" before.
+Different references which lay in the same region are aliased in this way -
+they cannot be distinguished by the type system. The second restriction of
+section 5 disallows allocating twice in the same region, thus eliminating this
+form of aliasing. Maybe calling this aliasing is confusing because this notion
+usually refers only to the first form in the literature. However, both are
+really dual.
+
+Our contribution with respect to Why / Spec# is of cours the support for
+higher-order programs; both tools only address first-order programs.
+
+
+Reviewer 3
+==========
+
+Detail a bit more what our concrete contributions are
+
+Concerning aliasing: While reasoning about programs containing aliasing is
+possible in our system, we do not claim to present a practical solution for
+this problem in this paper. Our system is practical for alias-free programs
+and we believe that the examples show this. However, just as separating
+analyses other than separation logic are possible in a first-order setting, we
+believe this to be true for higher-order programs. These analyses could be
+done on top of our system. However, we don't have any experimental data to
+support this claim.
+
+Yes, our ML Workshop 2009 paper is mainly about an extended case study using
+our tool Who. The citation always appears in connection with the tool our the
+case study.
+
+Reviewer 4
+===========
+
+Detail a bit more what our concrete contributions are
+
