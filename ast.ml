@@ -5,9 +5,12 @@ module G = Ty.Generalize
 type ('a,'b,'c) t'' =
   | Const of Const.t
   | Var of Name.t * ('a,'b,'c) Inst.t
+  (* app (f,x,_,r) - r is the list of region names this execution creates -
+  obligatory *)
   | App of ('a,'b,'c) t' * ('a,'b,'c) t' * [`Infix | `Prefix ] * Name.t list
   | Lam of 
       Name.t * Ty.t * ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post 
+  (* boolean which describes if the let comes from the prelude or not *)  
   | Let of bool * G.t * ('a,'b,'c) t' * ('a,'b,'c) t' Name.bind * isrec
   | PureFun of Ty.t * ('a,'b,'c) t' Name.bind
   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
