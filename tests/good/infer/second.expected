@@ -95,7 +95,7 @@ section basiclogic Coq
                        {(λ(cur5:<{|e2 }>) ->
                         (inv1 start1 cur5) /\
                         (forall (i1:int),
-                         ((start1 <= i1) /\ (i1 <= end_1)) ->
+                         ((end_1 <= i1) /\ (i1 <= start1)) ->
                          (forall (m1:<{|e2 }>),
                           (inv1 i1 m1) ->
                           ((pre [int -> <e2> -> Prop,int -> <e2> -> <e2> ->
@@ -115,44 +115,62 @@ section basiclogic Coq
       let get [a16||]= logic int -> (array[a16||]) -> a16 in
       let set [a17||]= logic int -> a17 -> (array[a17||]) -> array[a17||] in
       let len [a18||]= logic (array[a18||]) -> int in
+      let create [a19||]= logic int -> a19 -> array[a19||] in
       let
-      update_length [a19||]=
-                            axiom forall (t:array[a19||]),
+      update_length [a20||]=
+                            axiom forall (t:array[a20||]),
                                   forall (i2:int),
-                                  forall (z:a19),
-                                  (len [a19||] t) =
-                                  (len [a19||] (set [a19||] i2 z t))
+                                  forall (z:a20),
+                                  (len [a20||] t) =
+                                  (len [a20||] (set [a20||] i2 z t))
       in
       let
-      get_set_eq [a20||]=
-                         axiom forall (t1:array[a20||]),
+      get_set_eq [a21||]=
+                         axiom forall (t1:array[a21||]),
                                forall (i3:int),
-                               forall (z1:a20),
-                               (i3 < (len [a20||] t1)) ->
-                               ((get [a20||] i3 (set [a20||] i3 z1 t1)) = z1)
+                               forall (z1:a21),
+                               (i3 < (len [a21||] t1)) ->
+                               ((get [a21||] i3 (set [a21||] i3 z1 t1)) = z1)
       in
       let
-      get_set_neq [a21||]=
-                          axiom forall (t2:array[a21||]),
+      get_set_neq [a22||]=
+                          axiom forall (t2:array[a22||]),
                                 forall (i4:int),
                                 forall (j:int),
-                                forall (z2:a21),
-                                (i4 < (len [a21||] t2)) ->
-                                ((j < (len [a21||] t2)) ->
+                                forall (z2:a22),
+                                (i4 < (len [a22||] t2)) ->
+                                ((j < (len [a22||] t2)) ->
                                  ((i4 <> j) ->
-                                  ((get [a21||] i4 (set [a21||] j z2 t2)) =
-                                   (get [a21||] i4 t2))))
+                                  ((get [a22||] i4 (set [a22||] j z2 t2)) =
+                                   (get [a22||] i4 t2))))
       in
       let
-      length_nonnegative [a22||]=
-                                 axiom forall (t3:array[a22||]),
-                                       0 <= (len [a22||] t3)
+      length_nonnegative [a23||]=
+                                 axiom forall (t3:array[a23||]),
+                                       0 <= (len [a23||] t3)
+      in
+      let
+      length_create [a24||]=
+                            axiom forall (l:int),
+                                  forall (v2:a24),
+                                  (0 <= l) ->
+                                  ((len [a24||] (create [a24||] l v2)) = l)
+      in
+      let
+      length_access [a25||]=
+                            axiom forall (i5:int),
+                                  forall (l1:int),
+                                  forall (v3:a25),
+                                  (0 <= i5) ->
+                                  ((i5 <= l1) ->
+                                   ((get [a25||] i5 (create [a25||] l1 v3)) =
+                                    v3))
       in end
-       section List Coq WhoList type list[a23||] =  in
-       let nil [a24||]= logic list[a24||] in
-       let cons [a25||]= logic a25 -> (list[a25||]) -> list[a25||] in
-       let is_nil [a26||]= logic (list[a26||]) -> bool in
-       let l_in [a27||]= logic a27 -> (list[a27||]) -> Prop in end
-        let f2 [a28||]= (λ(x5:a28) -> (λ(y:a28) -->  x5 == y )) in
-        let f3 [a29||]= (λ(x6:a29) -->  true ) in
+       section List Coq WhoList type list[a26||] =  in
+       let nil [a27||]= logic list[a27||] in
+       let cons [a28||]= logic a28 -> (list[a28||]) -> list[a28||] in
+       let is_nil [a29||]= logic (list[a29||]) -> bool in
+       let l_in [a30||]= logic a30 -> (list[a30||]) -> Prop in end
+        let f2 [a31||]= (λ(x5:a31) -> (λ(y:a31) -->  x5 == y )) in
+        let f3 [a32||]= (λ(x6:a32) -->  true ) in
         let g = f3 [bool||] true in let h = f3 [int||] 5 in tt     

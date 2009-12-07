@@ -1,5 +1,7 @@
 IMPORTANT FEATURES
-better inference without explicitely introduced variables 
+change the handling of creation effects; 
+  I think it's much better to handle it like an additional, obligatory (type)
+  argument
 Syntax for lifted types
 Syntax for Hoare triples
 Effect variables are with a '

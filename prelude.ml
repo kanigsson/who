@@ -90,7 +90,7 @@ section Array
   logic get ['a||] : int -> 'a array -> 'a
   logic set ['a||]: int -> 'a -> 'a array -> 'a array 
   logic len ['a||] :  'a array -> int
-  logic create ['a||] :  int -> 'a array
+  logic create ['a||] :  int -> 'a -> 'a array
 
   axiom update_length ['a||] : 
     forall (t : 'a array) (i : int) (z : 'a).
@@ -107,8 +107,11 @@ section Array
   axiom length_nonnegative ['a||] : 
     forall (t : array ['a||]).  0 <= len t
 
-  (* axiom length_create ['a||] : 
-    forall (l : int). 0 <= l -> length ((create l : 'a array)) = l *)
+  axiom length_create ['a||] : 
+    forall (l : int) (v : 'a). 0 <= l -> len (create l v) = l
+
+  axiom length_access ['a||] :
+    forall (i l : int) (v : 'a). 0 <= i -> i <= l -> get i (create l v) = v
 end
 
 section List

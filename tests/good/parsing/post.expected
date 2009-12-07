@@ -76,7 +76,7 @@ section basiclogic Coq
                        (λ(f1:int --> unit) -->
                        {(inv1 start1 cur5) /\
                         (forall (i1:int),
-                         ((start1 <= i1) /\ (i1 <= end_1)) ->
+                         ((end_1 <= i1) /\ (i1 <= start1)) ->
                          (forall (m1:<{|e2 }>),
                           (inv1 i1 m1) ->
                           ((pre f1 i1 m1) /\
@@ -89,38 +89,54 @@ section basiclogic Coq
       let get [a16||]= logic int -> (array a16) -> a16 in
       let set [a17||]= logic int -> a17 -> (array a17) -> array a17 in
       let len [a18||]= logic (array a18) -> int in
+      let create [a19||]= logic int -> a19 -> array a19 in
       let
-      update_length [a19||]=
-                            axiom forall (t:array a19),
+      update_length [a20||]=
+                            axiom forall (t:array a20),
                                   forall (i2:int),
-                                  forall (z:a19),
+                                  forall (z:a20),
                                   (len t) = (len (set i2 z t))
       in
       let
-      get_set_eq [a20||]=
-                         axiom forall (t1:array a20),
+      get_set_eq [a21||]=
+                         axiom forall (t1:array a21),
                                forall (i3:int),
-                               forall (z1:a20),
+                               forall (z1:a21),
                                (i3 < (len t1)) ->
                                ((get i3 (set i3 z1 t1)) = z1)
       in
       let
-      get_set_neq [a21||]=
-                          axiom forall (t2:array a21),
+      get_set_neq [a22||]=
+                          axiom forall (t2:array a22),
                                 forall (i4:int),
                                 forall (j:int),
-                                forall (z2:a21),
+                                forall (z2:a22),
                                 (i4 < (len t2)) ->
                                 ((j < (len t2)) ->
                                  ((i4 <> j) ->
                                   ((get i4 (set j z2 t2)) = (get i4 t2))))
       in
       let
-      length_nonnegative [a22||]= axiom forall (t3:array a22), 0 <= (len t3)
+      length_nonnegative [a23||]= axiom forall (t3:array a23), 0 <= (len t3)
+      in
+      let
+      length_create [a24||]=
+                            axiom forall (l:int),
+                                  forall (v2:a24),
+                                  (0 <= l) -> ((len (create l v2)) = l)
+      in
+      let
+      length_access [a25||]=
+                            axiom forall (i5:int),
+                                  forall (l1:int),
+                                  forall (v3:a25),
+                                  (0 <= i5) ->
+                                  ((i5 <= l1) ->
+                                   ((get i5 (create l1 v3)) = v3))
       in end
-       section List Coq WhoList type list[a23||] =  in
-       let nil [a24||]= logic list a24 in
-       let cons [a25||]= logic a25 -> (list a25) -> list a25 in
-       let is_nil [a26||]= logic (list a26) -> bool in
-       let l_in [a27||]= logic a27 -> (list a27) -> Prop in end
+       section List Coq WhoList type list[a26||] =  in
+       let nil [a27||]= logic list a27 in
+       let cons [a28||]= logic a28 -> (list a28) -> list a28 in
+       let is_nil [a29||]= logic (list a29) -> bool in
+       let l_in [a30||]= logic a30 -> (list a30) -> Prop in end
         let f2 = (λ(x5:int) -->  x5 {True}) in tt     

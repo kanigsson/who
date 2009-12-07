@@ -136,7 +136,8 @@ and runify a b =
       raise CannotUnify
 and eunify a b = 
 (*   printf "eunify : %a and %a@." preff a preff b; *)
-  if Uf.equal a b then () else 
+  if Uf.equal a b then () else eunion a b;
+(*
     begin match Uf.desc a, Uf.desc b with
     | ET (_,_,c1), ET (_,_,c2) -> 
         begin try List.iter2 runify c1 c2 
@@ -145,7 +146,8 @@ and eunify a b =
           raise CannotUnify end
     | _ -> ()
     end ;
-    eunion a b;
+*)
+(*     eunion a b; *)
 (*   printf "gives %a@." preff a; *)
       
 module H = Hashtbl.Make (struct 
