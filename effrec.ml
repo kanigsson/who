@@ -9,9 +9,9 @@ let e_combine (r1,e1) (r2,e2) =
 
 let e_restrict d (r,e) = 
   Name.M.fold (fun k v acc -> 
-    if NEffect.rmem k d then Name.M.add k v acc else acc) r Name.M.empty,
+    if NEffect.rmem d k then Name.M.add k v acc else acc) r Name.M.empty,
   Name.M.fold (fun k v acc -> 
-    if NEffect.emem k d then Name.M.add k v acc else acc) e Name.M.empty
+    if NEffect.emem d k then Name.M.add k v acc else acc) e Name.M.empty
 
 let rec from_form d x = 
 (*   Myformat.printf "finding effrec for %a@." print' x; *)

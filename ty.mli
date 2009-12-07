@@ -2,7 +2,7 @@ type ('a,'b,'c) t' =
   | Var of Name.t
   | Const of Const.ty
   | Tuple of 'a * 'a
-  | Arrow of 'a * 'a * 'c
+  | Arrow of 'a * 'a * 'c * 'b list
   | PureArr of 'a * 'a
   | App of Name.t * ('a,'b,'c) Inst.t
   | Ref of 'b * 'a
@@ -20,7 +20,7 @@ val cprint : t Myformat.fmt
 val is_compound : ('a,'b,'c) t' -> bool
 val var : Name.t -> t
 val const : Const.ty -> t
-val arrow : t -> t -> NEffect.t -> t
+val arrow : t -> t -> NEffect.t -> Name.t list -> t
 (* val caparrow : t -> t -> NEffect.t -> Name.t list -> t *)
 val parr : t -> t -> t
 val tuple : t -> t -> t

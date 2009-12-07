@@ -76,7 +76,7 @@ let rec formtyping' env loc = function
       let t',eff = typing env e in
       pre env eff p;
       post env eff t' q;
-      to_logic_type (arrow t t' eff)
+      to_logic_type (arrow t t' eff [])
   | Gen (_,e)-> formtyping env e
   | Let (_,g,e1,b,_) ->
       let x,e2 = sopen b in
@@ -128,7 +128,7 @@ and typing' env loc = function
       Recon.print e1 Recon.print e2 NEffect.print eff1 NEffect.print eff2;
 *)
       begin match t1 with
-      | C (Arrow (ta,tb,eff)) -> 
+      | C (Arrow (ta,tb,eff,cap)) -> 
           if Ty.equal ta t2 then tb, NEffect.union eff effi
           else error (Error.ty_app_mismatch t2 ta) loc
       | C (PureArr (ta,tb)) ->
@@ -186,7 +186,7 @@ and typing' env loc = function
       else error "condition is not of boolean type" loc
   | LetReg (vl,e) ->
       let t, eff = typing env e in
-      t, NEffect.rremove vl eff
+      t, NEffect.rremove eff vl
   | For _ -> assert false
   | Gen _ -> assert false
 

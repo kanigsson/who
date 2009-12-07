@@ -2,7 +2,7 @@ type ('a,'b,'c) t' =
   | Var of Name.t
   | Const of Const.ty
   | Tuple of 'a * 'a
-  | Arrow of 'a * 'a * 'c
+  | Arrow of 'a * 'a * 'c * 'c list
   | PureArr of 'a * 'a
   | App of Name.t * ('a,'b,'c) Inst.t
   | Ref of 'b * 'a

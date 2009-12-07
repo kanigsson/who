@@ -28,9 +28,11 @@ let opt_print prf fmt = function
 
 let pr_opt_string fmt s = opt_print pp_print_string fmt s
 
-let sprintf s =
+let ksprintf k s =
   ignore(flush_str_formatter ());
-  kfprintf (fun _ -> flush_str_formatter ()) str_formatter s
+  kfprintf (fun _ -> k (flush_str_formatter ())) str_formatter s
+
+let sprintf s = ksprintf Misc.id s
 
 let print_set fmt s = 
   Misc.SS.iter (fun x -> pp_print_string fmt x ; space fmt ()) s

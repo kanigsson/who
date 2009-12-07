@@ -48,15 +48,14 @@ let base_post_ty eff t =
 let prety t eff = U.parr t (base_pre_ty eff)
 let postty t eff t2 = U.parr t (base_post_ty eff t2)
 let prepost_type t1 t2 e = U.tuple (prety t1 e) (postty t1 e t2)
-let rlist_from_set_map f l = S.fold (fun x acc -> f x :: acc) l []
-let elist_from_set_map f l = S.fold (fun x acc -> f x :: acc) l []
 
 let to_uf_node (tl,rl,el) x = 
   let tn,th = bh U.new_ty tl and rn,rh = bh U.new_r rl 
   and en,eh = bh U.new_e el in
   let rec aux' f = function
     | (Ty.Const c) -> Unify.const c
-    | Ty.Arrow (t1,t2,e) -> U.arrow (f t1) (f t2) (eff e)
+    | Ty.Arrow (t1,t2,e, c) -> 
+        U.arrow (f t1) (f t2) (eff e) (List.map auxr c)
     | Ty.Tuple (t1,t2) -> U.tuple (f t1) (f t2)
     | Ty.Var x -> (try HT.find th x with Not_found -> U.var x)
     | Ty.Ref (r,t) -> U.ref_ (auxr r) (f t)
@@ -67,21 +66,19 @@ let to_uf_node (tl,rl,el) x =
   and real x = ymemo aux x
   and auxr r = try HT.find rh r with Not_found -> U.mkr r
   and auxe e = try HT.find eh e with Not_found -> U.mke e 
-  and eff (rl,el,cl) = 
-    if S.is_empty rl && S.is_empty cl && S.cardinal el = 1 then 
-      auxe (S.choose el)
-    else
-      U.effect (rlist_from_set_map auxr rl)
-             (elist_from_set_map auxe el)
-             (rlist_from_set_map auxr cl) in
+  and eff eff = 
+    if NEffect.is_esingleton eff then auxe (NEffect.e_choose eff)
+    else 
+      let rl, el = NEffect.to_lists eff in
+      U.effect (List.map auxr rl) (List.map auxe el) in
   real x, (tn,rn,en)
 
-let to_uf_enode (rl,el,cl) = 
-    if S.is_empty rl && S.is_empty cl && S.cardinal el = 1 then 
-      U.mke (S.choose el)
-    else U.effect (rlist_from_set_map U.mkr rl)
-             (elist_from_set_map U.mke el)
-             (rlist_from_set_map U.mkr cl)
+let to_uf_rnode r = U.mkr r
+let to_uf_enode eff = 
+  if NEffect.is_esingleton eff then U.mke (NEffect.e_choose eff)
+  else 
+    let rl, el = NEffect.to_lists eff in
+    U.effect (List.map U.mkr rl) (List.map U.mke el)
 
 let sto_uf_node x = fst (to_uf_node G.empty x)
 
@@ -99,12 +96,10 @@ let postf eff t old cur res (p : ParseT.t) =
 
 let rec infer' env t loc = function
   | App (e1,e2,k,cap) ->
-      let nt = U.new_ty () 
-      and e = if cap = [] then U.new_e () 
-              else to_uf_enode (NEffect.from_cap_list cap) in
-      let e1 = infer env (U.arrow nt t e) e1 in
+      let nt = U.new_ty () and e = U.new_e () in
+      let e1 = infer env (U.arrow nt t e (List.map to_uf_rnode cap)) e1 in
       let e2 = infer env nt e2 in
-      App (e1,e2,k,cap), Unify.effect [] [e;e1.e;e2.e] []
+      App (e1,e2,k,cap), Unify.effect [] [e;e1.e;e2.e]
   | Annot (e,xt) -> 
       unify (sto_uf_node xt) t loc;
       let e = infer env t e in
@@ -139,7 +134,7 @@ let rec infer' env t loc = function
       let nt' = U.new_ty () in
       let env = add_svar env x xt in
       let e = infer {env with pm = false} nt' e in
-      unify (U.arrow nt nt' e.e ) t loc;
+      unify (U.arrow nt nt' e.e []) t loc;
       let p = pre env e.e p in
       let q = post env e.e nt' q in
       Lam (x,xt,p,e,q), U.new_e ()
@@ -170,12 +165,12 @@ let rec infer' env t loc = function
                    loc in
       let e2 = infer (add_var env x g xt) t e2 in
       Let (p,g, e1,Name.close_bind x e2,r), 
-      U.effect [] [e1.e; e2.e] []
+      U.effect [] [e1.e; e2.e]
   | Ite (e1,e2,e3) ->
       let e1 = infer env U.bool e1 in
       let e2 = infer env t e2 in
       let e3 = infer env t e3 in
-      Ite (e1,e2,e3), U.effect [] [e1.e;e2.e; e3.e] []
+      Ite (e1,e2,e3), U.effect [] [e1.e;e2.e; e3.e]
   | Axiom e -> 
       unify U.prop t loc;
       Axiom (infer env U.prop e), U.new_e ()

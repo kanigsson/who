@@ -38,6 +38,7 @@ let _ =
     maybe_abort Options.infer_only Ast.Infer.print p;
     let p = Infer.recon p in
     maybe_abort Options.constr_only Ast.Recon.print p;
+(*
     Typing.typing p;
     let p = Anf.normalize_term p in
     maybe_abort Options.anf_only Ast.Recon.print p;
@@ -51,8 +52,10 @@ let _ =
     let s = Sectionize.section p in
 (*     maybe_abort Options.sectionize_only Sectionize.print s; *)
     Regen2.main (Sectionize.Flatten.main s)
+*)
   with
   | Sys_error e -> Error.bad e
   | Infer.Error (s,loc) 
-  | Typing.Error (s,loc) -> Error.with_loc s loc 
+(*   | Typing.Error (s,loc)  *)
+      -> Error.with_loc s loc 
 

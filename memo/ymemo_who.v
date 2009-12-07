@@ -36,11 +36,13 @@ Section sec.
   Variable t2: hmap int int. 
   Definition table: ref (hmap int int) t. Admitted.
   Variable f0: int -> int. 
-  Variable ff: (((int -> (hmap int int) -> Prop) * (int -> (hmap int int) ->
-    (hmap int int) -> int -> Prop)) -> Prop) * (((int -> (hmap int int) ->
+  Variable ff_pre : 
+    ((int -> (hmap int int) -> Prop) * (int -> (hmap int int) ->
+    (hmap int int) -> int -> Prop)) -> Prop.
+  Variable ff_post:  ((int -> (hmap int int) ->
     Prop) * (int -> (hmap int int) -> (hmap int int) -> int -> Prop)) ->
     ((int -> (hmap int int) -> Prop) * (int -> (hmap int int) -> (hmap int
-    int) -> int -> Prop)) -> Prop). 
+    int) -> int -> Prop)) -> Prop. 
   Hypothesis H:
   forall (k1:(int -> (hmap int int) -> Prop) * (int -> (hmap int int) ->
   (hmap int int) -> int -> Prop)),
@@ -56,9 +58,9 @@ Section sec.
     ((snd k1 x t3 t4 r1) ->
      ((r1 = (f0 x)) /\
       (forall (x2:int), ((hmem x2 t4) = true) -> ((hget x2 t4) = (f0 x2))))))
-   -> (fst ff k1))
+   -> (ff_pre k1))
   /\
-  ((snd ff k1 r) ->
+  ((ff_post k1 r) ->
    (forall (t5:hmap int int),
     forall (t6:hmap int int),
     forall (x3:int),
@@ -92,7 +94,7 @@ Section sec.
      (forall x12 : int, hmem x12 t10 = true -> hget x12 t10 = f0 x12)).
     Hypothesis H4: ~ ((hmem x6 t7) = true). 
     Lemma goal2:
-    fst ff
+    ff_pre
     ((fun (x9:int) (t8:hmap int int) =>
      forall (x10:int), ((hmem x10 t8) = true) -> ((hget x10 t8) = (f0 x10)))
      ,
@@ -110,7 +112,7 @@ Section sec.
       Variable anon: (int -> (hmap int int) -> Prop) * (int -> (hmap int
         int) -> (hmap int int) -> int -> Prop). 
       Hypothesis H5:
-      snd ff
+      ff_post
       ((λ(x13:int) =>
        (λ(t11:hmap int int) =>
        forall (x14:int),

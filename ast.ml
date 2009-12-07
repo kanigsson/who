@@ -185,7 +185,8 @@ module Infer = struct
   let mk_val v t = mk v t (U.new_e ())
   let const c = mk_val (Const c) (U.const (Const.type_of_constant c))
 
-  let lam x t p e q = mk_val (Lam (x,U.to_ty t,p,e,q)) (U.arrow t e.t e.e)
+  let lam x t p e q = 
+    mk_val (Lam (x,U.to_ty t,p,e,q)) (U.arrow t e.t e.e [])
 (*   let plam x t e = mk_val (PureFun (x,t,e)) (U.parr t e.t) *)
   let lam_anon t e p = lam (Name.new_anon ()) t e p
 
@@ -296,7 +297,8 @@ module Recon = struct
   let plam x t e loc = 
     mk_val (PureFun (t,Name.close_bind x e)) (T.parr t e.t) loc
   let efflam x eff e = plam x (T.map eff) e
-  let lam x t p e q = mk_val (Lam (x,t,p,e,q)) (T.arrow t e.t e.e)
+  let lam x t p e q = 
+    mk_val (Lam (x,t,p,e,q)) (T.arrow t e.t e.e [])
   let plus t1 t2 loc = appi (spredef_var "+" loc) t1 t2 loc
   let minus t1 t2 loc = appi (spredef_var "-" loc) t1 t2 loc
   let one = mk_val (Const (Int Big_int.unit_big_int)) T.int 
@@ -314,7 +316,7 @@ module Recon = struct
     appi (pre_defvar "," ([t1.t;t2.t],[],[]) loc) t1 t2 loc
 
 
-  let letreg l e = mk (LetReg (l,e)) e.t (NEffect.rremove l e.e)
+  let letreg l e = mk (LetReg (l,e)) e.t (NEffect.rremove e.e l)
   let ite e1 e2 e3 = 
     mk (Ite (e1,e2,e3)) e2.t (NEffect.union e1.e (NEffect.union e2.e e3.e))
 
@@ -406,7 +408,7 @@ module Recon = struct
 
   let restrict eff t l =
     let d = domain t in
-    if NEffect.sequal d eff then t else
+    if NEffect.equal d eff then t else
       app (pre_defvar "restrict" ([],[],[domain t; eff]) l) t l
 
   let get ref map l = 

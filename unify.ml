@@ -12,11 +12,11 @@ and r =
 and e = 
   | EU
   | EV of Name.t
-  | ET of rnode list * enode list * rnode list
+  | ET of rnode list * enode list
 
 let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh (T t)
-let arrow t1 t2 e = mkt (Ty.Arrow (t1,t2,e))
+let arrow t1 t2 e c = mkt (Ty.Arrow (t1,t2,e,c))
 let tuple t1 t2 = mkt (Ty.Tuple (t1,t2)) 
 let ref_ r t = mkt (Ty.Ref (r,t))
 let mkr r = Uf.fresh (RT r)
@@ -29,7 +29,7 @@ let parr t1 t2 = mkt (Ty.PureArr (t1,t2))
 let new_e () = Uf.fresh EU
 let mke e = Uf.fresh (EV e)
 
-let effect rl el cl = Uf.fresh (ET (rl,el,cl))
+let effect rl el = Uf.fresh (ET (rl,el))
 
 open Const
 let const =
@@ -61,7 +61,7 @@ let eunion a b =
   | (EV a, ET (rl, el,cl)) 
   | ET (rl,el,cl), EV a ->  ET (rl, (mke a)::el,cl)
 *)
-  | ET (rl1,el1,cl1), ET (rl2,el2,_) -> ET (rl1@rl2, el1 @ el2, cl1)
+  | ET (rl1,el1), ET (rl2,el2) -> ET (rl1@rl2, el1 @ el2)
 
 let eunion a b = Uf.union eunion a b
 
@@ -83,12 +83,9 @@ and preff fmt x =
   match Uf.desc x with
   | EU -> fprintf fmt "%d" (Uf.tag x)
   | EV x -> Name.print fmt x
-  | ET (rl,el,cl) -> 
-      let pc fmt = function
-        | [] -> ()
-        | l -> fprintf fmt "|%a" (print_list space prvar) l in
-      fprintf fmt "{%a|%a%a}" (print_list space prvar) rl 
-        (print_list space preff) el pc cl
+  | ET (rl,el) -> 
+      fprintf fmt "{%a|%a}" (print_list space prvar) rl 
+        (print_list space preff) el
 
 exception CannotUnify
 
@@ -105,15 +102,16 @@ let rec unify a b =
       | Ty.Var s1, Ty.Var s2 when s1 = s2 -> ()
       | Ty.Const c1, Ty.Const c2 when c1 = c2 -> ()
       | Ty.PureArr (ta1,ta2), Ty.PureArr (tb1,tb2)
-      | Ty.Arrow (ta1,ta2,_), Ty.PureArr (tb1,tb2)
-      | Ty.PureArr (ta1,ta2), Ty.Arrow (tb1,tb2,_)
+      | Ty.Arrow (ta1,ta2,_,_), Ty.PureArr (tb1,tb2)
+      | Ty.PureArr (ta1,ta2), Ty.Arrow (tb1,tb2,_,_)
       | Ty.Tuple (ta1,ta2), Ty.Tuple (tb1,tb2) -> 
           unify ta1 tb1;
           unify ta2 tb2
-      | Ty.Arrow (ta1,ta2,e1), Ty.Arrow (tb1,tb2,e2) ->
+      | Ty.Arrow (ta1,ta2,e1,c1), Ty.Arrow (tb1,tb2,e2,c2) ->
           unify ta1 tb1;
           unify ta2 tb2;
-          eunify e1 e2
+          eunify e1 e2;
+          List.iter2 runify c1 c2;
       | Ty.Ref (r1,t1), Ty.Ref (r2,t2) -> runify r1 r2; unify t1 t2
       | Ty.Map e1, Ty.Map e2 -> eunify e1 e2
       | Ty.App (v1,i1), Ty.App (v2,i2) when v1 = v2 ->
@@ -160,7 +158,8 @@ let to_ty, to_eff, to_r =
   let h = H.create 127 in
   let rec ty' : (node, rnode, enode) Ty.t' -> Ty.t = function
     | Ty.Var s -> Ty.var s
-    | Ty.Arrow (t1,t2,e) -> Ty.arrow (ty t1) (ty t2) (eff e)
+    | Ty.Arrow (t1,t2,e,cap) -> 
+        Ty.arrow (ty t1) (ty t2) (eff e) (List.map rv cap)
     | Ty.Tuple (t1,t2) -> Ty.tuple (ty t1) (ty t2)
     | Ty.Const c -> Ty.const c
     | Ty.Ref (r,t) -> Ty.ref_ (rv r) (ty t)
@@ -180,14 +179,14 @@ let to_ty, to_eff, to_r =
     | RU -> assert false
     | RT s -> s
   and eff x =
-    let f acc x = List.fold_left (fun acc x -> Name.S.add x acc) acc x in
-    let rec aux ((racc,eacc,cacc) as acc) x = 
+    let rec aux acc x = 
       match Uf.desc x with
       | EU -> acc
-      | EV x -> racc, Name.S.add x eacc, cacc
-      | ET (rl,el,cl) -> 
-          let acc = f racc (List.map rv rl),eacc, f cacc (List.map rv cl) in
+      | EV x -> NEffect.eadd acc x
+      | ET (rl,el) -> 
+          let acc = 
+            List.fold_left (fun acc r -> NEffect.radd acc (rv r)) acc rl in
           List.fold_left aux acc el in
-    aux (Name.S.empty, Name.S.empty, Name.S.empty) x in
+    aux NEffect.empty x in
   ty, eff, rv
 
