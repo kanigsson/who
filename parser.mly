@@ -143,18 +143,25 @@ stype:
     { TApp(v.c,(t::l,[],[])) }
 
 effect:
-  | lr = list(IDENT) MID le =  list(IDENT) cl = maycap
-    { strip_info lr, strip_info le,  cl}
+  | lr = list(IDENT) MID le =  list(IDENT) 
+    { strip_info lr, strip_info le}
 
 sepeffect:
   | LCURL e = effect RCURL { e }
+
+createeffect:
+  | e = effect cl = maycap 
+    { let rl, el = e in rl, el, cl }
+
+sepcreateeffect:
+  | LCURL e = createeffect RCURL { e }
 
 (* more complex types *)
 ty:
   | t = stype { t }
   | t1 = ty ARROW t2 = ty { PureArr (t1, t2) }
-  | t1 = ty ARROW e = sepeffect t2 = ty %prec ARROW 
-    { Arrow (t1,t2,e) }
+  | t1 = ty ARROW e = sepcreateeffect t2 = ty %prec ARROW 
+    { let rl,el,cl = e in Arrow (t1,t2,(rl,el),cl) }
   | t1 = ty STAR t2 = ty { Tuple (t1, t2) }
   | LT e = effect GT { Map e }
   | DLBRACKET t = ty DRBRACKET { ToLogic t }

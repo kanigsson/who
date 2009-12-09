@@ -6,13 +6,13 @@ type rvar = string
 type effvar = string
 type tvar = string
 
-type effect = rvar list * effvar list * rvar list
+type effect = rvar list * effvar list 
 
 type ty = 
   | TVar of tvar
   | TConst of Const.ty
   | Tuple of ty * ty
-  | Arrow of ty * ty * effect
+  | Arrow of ty * ty * effect * rvar list
   | PureArr of ty * ty
   | TApp of tvar * inst
   | Ref of rvar * ty
@@ -25,8 +25,7 @@ type t' =
   | Var of var
   | App of t * t * [`Infix | `Prefix ] * rvar list
   | Seq of t * t
-  | Lam of 
-      var * ty * t option * t * post
+  | Lam of var * ty * rvar list * t option * t * post
   | Let of bool * generalize * t * var * t * isrec
   | PureFun of var * ty * t
   | Ite of t * t * t
@@ -56,7 +55,8 @@ let const c = mk (Const c)
 let app2 s t1 t2 loc = app (app (var s loc) t1 loc) t2 loc
 let appi s t1 t2 loc = app ~kind:`Infix (app (var s loc) t1 loc) t2 loc
 let let_ ?(prelude=false) l e1 x e2 r = mk (Let (prelude,l,e1,x,e2,r)) 
-let lam x t p e q = mk (Lam (x,t,p,e,q))
+let lam x t p e q = mk (Lam (x,t,[],p,e,q))
+let lamcap x t c p e q = mk (Lam (x, t, c, p, e, q))
 let pure_lam x t e = mk (PureFun (x,t,e))
 let typedef l t x e = mk (TypeDef (l,t,x,e))
 let quant k x t e = mk (Quant (k,x,t,e))
@@ -82,7 +82,7 @@ let print_ty fmt t =
   | TConst c -> Const.print_ty fmt c
   | Tuple (t1,t2) -> fprintf fmt "(%a * %a)" pt t1 pt t2
   | PureArr (t1,t2) -> fprintf fmt "(%a -> %a)" pt t1 pt t2
-  | Arrow (t1,t2,_) -> fprintf fmt "(%a ->{...} %a)" pt t1 pt t2
+  | Arrow (t1,t2,_,_) -> fprintf fmt "(%a ->{...} %a)" pt t1 pt t2
   | Ref _ -> pp_print_string fmt "ref(...)"
   | Map _ -> pp_print_string fmt "<...>"
   | TApp (v,_) -> fprintf fmt "app(%s)" v

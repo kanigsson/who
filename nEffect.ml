@@ -3,14 +3,12 @@ type t = S.t * S.t
 
 let empty = S.empty, S.empty
 
-exception CapError
-
-let is_empty (r,e,c) = S.is_empty r && S.is_empty e
+let is_empty (r,e) = S.is_empty r && S.is_empty e
 let are_disjoint s1 s2 = S.is_empty (S.inter s1 s2)
 let union (r1,e1) (r2,e2) = S.union r1 r2, S.union e1 e2
 
 let to_lists =
-  let list_from_set l = S.fold (::) l [] in
+  let list_from_set l = S.fold (fun x acc -> x ::acc) l [] in
   fun (r,e) -> list_from_set r, list_from_set e 
 
 let is_esingleton (rl,el) =  
@@ -24,8 +22,8 @@ let esingleton e = S.empty, S.add e S.empty
 let radd (r,e) rv = S.add rv r, e
 let eadd (r,e) ev = r, S.add ev e
 
-let rmem r (rs,_) = S.mem r rs
-let emem e (_,es) = S.mem e es
+let rmem (rs,_) r = S.mem r rs
+let emem (_,es) e = S.mem e es
 
 open Myformat
 let print fmt (r,e) = 
@@ -48,7 +46,7 @@ let lsubst el effl (rt,et) =
   let map = build_effvar_map el effl in
   let (nrt,ne) = 
     S.fold (fun ev acc -> 
-      try union acc (Name.M.find ev map) with Not_found -> eadd ev acc)
+      try union acc (Name.M.find ev map) with Not_found -> eadd acc ev)
       et empty in
   S.union rt nrt, ne
 

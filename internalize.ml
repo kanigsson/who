@@ -95,7 +95,8 @@ let ty env t =
     | I.TVar v -> Ty.var (tyvar env v)
     | I.TConst c -> Ty.const c
     | I.Tuple (t1,t2) -> Ty.tuple (aux t1) (aux t2)
-    | I.Arrow (t1,t2,e) -> Ty.arrow (aux t1) (aux t2) (effect env e)
+    | I.Arrow (t1,t2,e) -> 
+        Ty.arrow (aux t1) (aux t2) (effect env e)
     | I.PureArr (t1,t2) -> Ty.parr (aux t1) (aux t2)
     | I.TApp (v,i) -> 
         let v = tyvar env v in

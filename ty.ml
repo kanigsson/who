@@ -2,7 +2,7 @@ type ('a,'b,'c) t' =
   | Var of Name.t
   | Const of Const.ty
   | Tuple of 'a * 'a
-  | Arrow of 'a * 'a * 'c * 'c list
+  | Arrow of 'a * 'a * 'c * 'b list
   | PureArr of 'a * 'a
   | App of Name.t * ('a,'b,'c) Inst.t
   | Ref of 'b * 'a
@@ -23,8 +23,9 @@ let print' print_map pt pr pe is_c fmt x =
   let mayp fmt t = if is_c t then paren pt fmt t else pt fmt t in
   match x with 
   | Var x -> Name.print fmt x
-  | Arrow (t1,t2,eff) -> 
-      if print_map then fprintf fmt "%a ->%a %a" mayp t1 pe eff pt t2
+  | Arrow (t1,t2,eff,cap) -> 
+      if print_map then fprintf fmt "%a ->%a{{%a}} %a" 
+        mayp t1 pe eff (maycap pr) cap pt t2
       else fprintf fmt "%a --> %a" mayp t1 mayp t2
   | PureArr (t1,t2) -> 
       fprintf fmt "%a ->@ %a" mayp t1 pt t2
@@ -50,7 +51,8 @@ let print_list sep fmt t =
   print_list sep print fmt t
 
 let var v = C (Var v)
-let arrow t1 t2 eff = C (Arrow (t1,t2,eff))
+let arrow t1 t2 eff = C (Arrow (t1,t2,eff,[]))
+let caparrow t1 t2 eff cap = C (Arrow (t1,t2,eff,cap))
 let parr t1 t2 = C (PureArr (t1,t2))
 let tuple t1 t2 = C (Tuple (t1,t2))
 let const c = C (Const c)
@@ -64,17 +66,17 @@ let bool = const (Const.TBool)
 let int = const (Const.TInt)
 
 let arg = function
-  | C (Arrow (t1,_,_)) -> t1
+  | C (Arrow (t1,_,_,_)) -> t1
   | C (PureArr (t1,_)) -> t1
   | _ -> assert false
 
 let latent_effect = function
-  | C (Arrow (_,_,e)) -> e
+  | C (Arrow (_,_,e,_)) -> e
   | C (PureArr _) -> NEffect.empty
   | _ -> assert false
 
 let result = function
-  | C (Arrow (_,t2,_)) -> t2
+  | C (Arrow (_,t2,_,_)) -> t2
   | C (PureArr (_,t2)) -> t2
   | _ -> assert false
 
@@ -88,16 +90,14 @@ let is_map = function
 
 let pretype a e = parr a (parr (map e) prop)
 let posttype a b e = parr a (parr (map e) (parr (map e) (parr b prop)))
-let prepost_type a b e = 
-  let e = NEffect.clean e in
-  tuple (pretype a e) (posttype a b e)
+let prepost_type a b e = tuple (pretype a e) (posttype a b e)
 
 let to_logic_type t = 
   let rec aux' = function
     | (Var _ | Const _ | Map _) as t -> C t
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)
-    | Arrow (t1,t2,e) -> prepost_type (aux t1) (aux t2) e 
+    | Arrow (t1,t2,e,_) -> prepost_type (aux t1) (aux t2) e 
     | Ref (x,t) -> ref_ x (aux t)
     | App (v,i) -> app v i 
   and aux (C x) = aux' x in
@@ -120,7 +120,7 @@ let tlsubst xl tl target =
     | (Const _ | Map _ ) as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
-    | Arrow (t1,t2,eff) -> Arrow (aux t1, aux t2,eff) 
+    | Arrow (t1,t2,eff,cap) -> Arrow (aux t1, aux t2,eff, cap) 
     | Ref (r,t) -> Ref (r, aux t)
     | App (v,i) -> App (v,Inst.map aux Misc.id Misc.id i) 
   and aux (C x) = C (aux' x) in
@@ -144,8 +144,8 @@ let rlsubst rvl rl target =
     | (Var _ | Const _) as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
-    | Arrow (t1,t2,eff) -> 
-        Arrow (aux t1, aux t2,effsubst eff) 
+    | Arrow (t1,t2,eff, cap) -> 
+        Arrow (aux t1, aux t2,effsubst eff, List.map auxr cap) 
     | Ref (r,t) -> Ref (auxr r, aux t)
     | Map e -> Map (effsubst e)
     | App (v,i) -> App (v, Inst.map aux auxr effsubst i)
@@ -166,7 +166,7 @@ let elsubst evl effl target =
     | (Var _ | Const _ ) as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
-    | Arrow (t1,t2,eff') -> Arrow (aux t1, aux t2,effsubst eff') 
+    | Arrow (t1,t2,eff',cap) -> Arrow (aux t1, aux t2,effsubst eff' ,cap) 
     | Map eff' -> Map (effsubst eff')
     | Ref (r,t) -> Ref (r, aux t)
     | App (v,i) -> App (v, Inst.map aux Misc.id effsubst i)
@@ -223,8 +223,9 @@ let rec equal' eff t1 t2 =
   | Tuple (ta1,ta2), Tuple (tb1,tb2)
   | PureArr (ta1,ta2), PureArr (tb1,tb2) -> 
       equal eff ta1 tb1 && equal eff ta2 tb2
-  | Arrow (ta1,ta2,e1), Arrow (tb1,tb2,e2) -> 
-      equal eff ta1 tb1 && equal eff ta2 tb2 && eff e1 e2 
+  | Arrow (ta1,ta2,e1, cap1), Arrow (tb1,tb2,e2, cap2) -> 
+      equal eff ta1 tb1 && equal eff ta2 tb2 && eff e1 e2 &&
+      Misc.list_equal Name.compare cap1 cap2
   | Ref (r1,t1), Ref (r2,t2) -> Name.equal r1 r2 && equal eff t1 t2
   | Map e1, Map e2 -> eff e1 e2
   | App (v1,i1), App (v2,i2) -> 

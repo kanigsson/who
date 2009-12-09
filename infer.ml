@@ -187,7 +187,7 @@ let rec infer' env t loc = function
       Logic t', U.new_e ()
   | LetReg (vl,e) ->
       let e = infer env t e in
-      let eff = NEffect.rremove vl (U.to_eff e.e) in
+      let eff = NEffect.rremove (U.to_eff e.e) vl in
       LetReg (vl,e), to_uf_enode eff
   | Gen _ -> assert false
 
