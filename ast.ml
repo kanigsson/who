@@ -9,7 +9,7 @@ type ('a,'b,'c) t'' =
   obligatory *)
   | App of ('a,'b,'c) t' * ('a,'b,'c) t' * [`Infix | `Prefix ] * Name.t list
   | Lam of 
-      Name.t * Ty.t * ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post 
+      Name.t * Ty.t * Name.t list * ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post 
   (* boolean which describes if the let comes from the prelude or not *)  
   | Let of bool * G.t * ('a,'b,'c) t' * ('a,'b,'c) t' Name.bind * isrec
   | PureFun of Ty.t * ('a,'b,'c) t' Name.bind
@@ -47,11 +47,11 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
         Name.print NEffect.print) i;
 *)
         varfun v (Inst.map tyfun rvarfun effectfun i)
-    | App (t1,t2,p,_) -> App (aux t1, aux t2, p, [])
+    | App (t1,t2,p,cap) -> App (aux t1, aux t2, p, List.map rvarfun cap)
     | Annot (e,t) -> Annot (aux e, tyfun t)
-    | Lam (x,t,p,e,q) -> 
+    | Lam (x,t,cap,p,e,q) -> 
 (*         Myformat.printf "lam@."; *)
-        Lam (x,tyfun t, pre p, aux e, post q)
+        Lam (x,tyfun t, List.map rvarfun cap, pre p, aux e, post q)
     | LetReg (l,e) -> LetReg (l,aux e)
     | For _ -> assert false
     | Let (p,g,e1,b,r) -> Let (p,g,aux e1,varbindfun p b, r)
@@ -97,6 +97,8 @@ let is_compound = function
   | Quant _ | Param _ | For _ | LetReg _ | Gen _ | Section _ | EndSec _ -> true
 let is_compound_node t = is_compound t.v
 
+let maycaplist fmt l = print_list space Name.print fmt l
+
 let print tyapp pra prb prc open_ fmt t = 
   let typrint = if tyapp then Ty.print else Ty.cprint in
   let rec print' fmt = function
@@ -108,9 +110,9 @@ let print tyapp pra prb prc open_ fmt t =
         fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 Name.print v with_paren t2
     | App (t1,t2,_,cap) ->
           fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
-    | Lam (x,t,p,e,q) -> 
-        fprintf fmt "@[(λ%a@ -->@ %a@ %a@ %a)@]" binder (x,t) pre p print e 
-          post q
+    | Lam (x,t,cap,p,e,q) -> 
+        fprintf fmt "@[(λ%a@ ->{%a}@ %a@ %a@ %a)@]" 
+          binder (x,t) maycaplist cap pre p print e post q
     | PureFun (t,b) ->
         let x,e = open_ b in
         fprintf fmt "@[(λ%a@ ->@ %a)@]" binder (x,t) print e
@@ -186,7 +188,9 @@ module Infer = struct
   let const c = mk_val (Const c) (U.const (Const.type_of_constant c))
 
   let lam x t p e q = 
-    mk_val (Lam (x,U.to_ty t,p,e,q)) (U.arrow t e.t e.e [])
+    mk_val (Lam (x,U.to_ty t,[],p,e,q)) (U.arrow t e.t e.e [])
+  let caplam x t cap p e q = 
+    mk_val (Lam (x,U.to_ty t,cap,p,e,q)) (U.arrow t e.t e.e [])
 (*   let plam x t e = mk_val (PureFun (x,t,e)) (U.parr t e.t) *)
   let lam_anon t e p = lam (Name.new_anon ()) t e p
 
@@ -212,7 +216,7 @@ module Recon = struct
   let app ?(kind=`Prefix) ?(cap=[]) t1 t2 loc = 
 (*     Format.printf "termapp: %a and %a@." print t1 print t2; *)
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
-    if not (Ty.sequal (Ty.arg t1.t) t2.t) then begin
+    if not (Ty.equal (Ty.arg t1.t) t2.t) then begin
       Myformat.printf "type mismatch on application: function %a has type %a,
       and argument %a has type %a@." print t1 Ty.print t1.t 
       print t2 Ty.print t2.t ; invalid_arg "app" end
@@ -298,7 +302,9 @@ module Recon = struct
     mk_val (PureFun (t,Name.close_bind x e)) (T.parr t e.t) loc
   let efflam x eff e = plam x (T.map eff) e
   let lam x t p e q = 
-    mk_val (Lam (x,t,p,e,q)) (T.arrow t e.t e.e [])
+    mk_val (Lam (x,t,[],p,e,q)) (T.arrow t e.t e.e)
+  let caplam x t cap p e q = 
+    mk_val (Lam (x,t,cap,p,e,q)) (T.caparrow t e.t e.e cap)
   let plus t1 t2 loc = appi (spredef_var "+" loc) t1 t2 loc
   let minus t1 t2 loc = appi (spredef_var "-" loc) t1 t2 loc
   let one = mk_val (Const (Int Big_int.unit_big_int)) T.int 
@@ -388,7 +394,7 @@ module Recon = struct
   let rec is_param e = 
     match e.v with
     | Param _ -> true
-    | Lam (_,_,_,e,_) -> is_param e
+    | Lam (_,_,_,_,e,_) -> is_param e
     | PureFun (_,(_,_,e)) -> is_param e
     | _ -> false
 

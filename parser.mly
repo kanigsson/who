@@ -56,12 +56,13 @@
 
   (* construct a sequence of pure lambdas on top of [e], using [l]; 
     the innermost lambda is effectful, using [p] and [q] as pre and post *)
-  let mk_efflam l p e q = mk_lam (fun x t -> lam x t p e q) l
+  let mk_efflam l cap p e q = mk_lam (fun x t -> lamcap x t cap p e q) l
 
   (* construct a sequence of pure lambdas on top of a parameter with type [rt] 
      and effect [eff]; the innermost lambda is effectful as in [mk_efflam] *)
-  let mk_param l p q rt eff loc = 
-    mk_efflam l p (mk (Param (rt,eff)) loc) q loc
+  let mk_param l cap p q rt eff loc = 
+    (* TODO caps for params *)
+    mk_efflam l cap p (mk (Param (rt,eff)) loc) q loc
 
   (* construct a sequence of quantifiers on top of [e] *)
   let mk_quant k l e loc = 
@@ -92,7 +93,7 @@
 %token LBRACKET RBRACKET RCURL DLCURL DRCURL PREDEFINED DLBRACKET DRBRACKET
 %token <string Loc.t> IDENT
 %token <string> TYVAR STRING
-%token IN SEMICOLON COQ
+%token IN SEMICOLON COQ CAP
 %token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND OR
 %token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION TILDE REGION
 %token <Loc.loc> BLE BLT BGT BGE
@@ -240,8 +241,8 @@ nterm:
   | t1 = nterm i = infix t2 = nterm  
     { appi (snd i) t1 t2 (embrace t1.loc t2.loc) }
   | sp = FUN l = arglist ARROW body = funcbody
-    { let p,e,q = body in
-      mk_efflam l (snd p) e (snd q) (embrace sp (fst q)) }
+    { let cap, p,e,q = body in
+      mk_efflam l cap (snd p) e (snd q) (embrace sp (fst q)) }
   | sp = FUN l = arglist ARROW e = nterm 
     { mk_pure_lam l e (embrace sp e.loc) }
   | sp = FORALL l = arglist DOT e = nterm %prec forall
@@ -268,13 +269,18 @@ onetyarg:
   LPAREN xl = nonempty_list(defprogvar_no_pos) COLON t = ty RPAREN
     { List.map (fun x -> x,t) xl }
 
+
 arglist: l = nonempty_list(onetyarg) { List.flatten l }
 may_empty_arglist: l = list(onetyarg) { List.flatten l}
 
 (* the common part of every let binding *)
 letcommon:
-  | p = LET x = defprogvar_no_pos l = optgen args = may_empty_arglist EQUAL 
+  | p = LET x = defprogvar_no_pos l = optgen args = may_empty_arglist EQUAL
     { p, x ,l,args }
+
+maycapdef:
+  | {[] }
+  | CAP l = nonempty_list(IDENT) { (strip_info l) }
 
 alllet:
 (* the simplest case *)
@@ -284,21 +290,21 @@ alllet:
 (* the function definition case *)
   | b = letcommon body = funcbody 
     { let p,x,l,args = b in
-      let pre,e,q = body in
+      let cap, pre,e,q = body in
       if args = [] then $syntaxerror;
       fun t2 -> 
-        let_ l (mk_efflam args (snd pre) e (snd q) p) x t2 NoRec 
+        let_ l (mk_efflam args cap (snd pre) e (snd q) p) x t2 NoRec 
           (embrace p t2.loc) }
 (* the recursive function definition case *)
   | p = LET REC l = optgen LPAREN x = defprogvar_no_pos 
     COLON t = ty RPAREN args = arglist EQUAL b = funcbody
-    { let pre,e,q = b in
-      (fun e2 -> let_ l (mk_efflam args (snd pre) e (snd q) p) x e2 (Rec t)
+    { let cap, pre,e,q = b in
+      (fun e2 -> let_ l (mk_efflam args cap (snd pre) e (snd q) p) x e2 (Rec t)
         (embrace p e2.loc))
     }
     
 funcbody:
-  p = precond e = nterm q = postcond { p,e,q }
+  cap = maycapdef p = precond e = nterm q = postcond { cap, p,e,q }
 
 postcond:
   | p = precond { match p with p, None -> p, PNone | p, Some f -> p, PPlain f }
@@ -330,9 +336,10 @@ opt_filename:
 decl:
   | f = alllet {(f : t -> t) void }
   | p = PARAMETER x = defprogvar_no_pos l = optgen args = arglist 
-    COLON rt = ty COMMA e = sepeffect EQUAL pre = precond post = postcond
+    COLON rt = ty COMMA e = sepeffect EQUAL 
+      cap = maycapdef pre = precond post = postcond
   { 
-    let par = mk_param args (snd pre) (snd post) rt e p in
+    let par = mk_param args cap (snd pre) (snd post) rt e p in
     let_wconst l par x NoRec (embrace p (fst post))} 
   | p = AXIOM x = defprogvar_no_pos l = optgen COLON t = nterm
     { let_wconst l (mk (Axiom t) p) x NoRec (embrace p t.loc) }

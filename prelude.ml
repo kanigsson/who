@@ -45,7 +45,7 @@ section Whoref
     {}
     { !!x = v}
 
-  parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r||r} =
+  parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r|} = cap r
     {}
     { x : !!x = v }
 

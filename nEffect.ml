@@ -2,19 +2,10 @@ module S = Name.S
 type t = S.t * S.t
 
 let empty = S.empty, S.empty
-
 let is_empty (r,e) = S.is_empty r && S.is_empty e
+
 let are_disjoint s1 s2 = S.is_empty (S.inter s1 s2)
 let union (r1,e1) (r2,e2) = S.union r1 r2, S.union e1 e2
-
-let to_lists =
-  let list_from_set l = S.fold (fun x acc -> x ::acc) l [] in
-  fun (r,e) -> list_from_set r, list_from_set e 
-
-let is_esingleton (rl,el) =  
-  S.is_empty rl && S.cardinal el = 1 
-  
-let e_choose (_,el) = S.choose el
 
 let rsingleton r = S.add r S.empty, S.empty
 let esingleton e = S.empty, S.add e S.empty
@@ -25,11 +16,14 @@ let eadd (r,e) ev = r, S.add ev e
 let rmem (rs,_) r = S.mem r rs
 let emem (_,es) e = S.mem e es
 
-open Myformat
-let print fmt (r,e) = 
-    fprintf fmt "{%a|%a}" Name.print_set r Name.print_set e
+let from_lists rl el = Name.list_to_set rl, Name.list_to_set el
 
-let print_list sep fmt l = print_list sep print fmt l
+let to_lists =
+  let list_from_set l = S.fold (fun x acc -> x ::acc) l [] in
+  fun (r,e) -> list_from_set r, list_from_set e 
+
+let is_esingleton (rl,el) =  S.is_empty rl && S.cardinal el = 1 
+let e_choose (_,el) = S.choose el
 
 let rsmap f x = 
   S.fold (fun x acc -> S.add (f x) acc) x S.empty
@@ -56,3 +50,10 @@ let equal =
 
 let rremove (r,e) l = 
   S.filter (fun x -> not (List.mem x l)) r, e
+
+open Myformat
+let print fmt (r,e) = 
+    fprintf fmt "{%a|%a}" Name.print_set r Name.print_set e
+
+let print_list sep fmt l = print_list sep print fmt l
+

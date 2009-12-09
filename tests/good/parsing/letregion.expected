@@ -29,17 +29,17 @@ section basiclogic Coq
      let !! [a7|r|e]= logic ref a7 r -> <{|e }> -> a7 in
      let
      ! [a8|r1|]=
-                (λ(x:ref a8 r1) -->  param(a8,{r1 |})
+                (λ(x:ref a8 r1) ->{}  param(a8,{r1 |})
                 { r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))})
      in
      let
      := [a9|r3|]=
                  (λ(x1:ref a9 r3) ->
-                 (λ(v:a9) -->  param(unit,{r3 |}) {(!! x1 cur1) = v}))
+                 (λ(v:a9) ->{}  param(unit,{r3 |}) {(!! x1 cur1) = v}))
      in
      let
      ref [a10|r4|]=
-                   (λ(v1:a10) -->  param(ref a10 r4,{r4 ||r4 })
+                   (λ(v1:a10) ->{r4}  param(ref a10 r4,{r4 |})
                    { x2 : (!! x2 cur2) = v1})
      in
      let combine [||e1 e2]= logic <{|e1 }> -> <{|e2 }> -> <{|e1 e2 }> in
@@ -57,7 +57,7 @@ section basiclogic Coq
                    (λ(inv:int -> <{|e1 }> -> Prop) ->
                    (λ(start:int) ->
                    (λ(end_:int) ->
-                   (λ(f:int --> unit) -->
+                   (λ(f:int --> unit) ->{}
                    {(inv start cur3) /\
                     (forall (i:int),
                      ((start <= i) /\ (i <= end_)) ->
@@ -73,7 +73,7 @@ section basiclogic Coq
                        (λ(inv1:int -> <{|e2 }> -> Prop) ->
                        (λ(start1:int) ->
                        (λ(end_1:int) ->
-                       (λ(f1:int --> unit) -->
+                       (λ(f1:int --> unit) ->{}
                        {(inv1 start1 cur5) /\
                         (forall (i1:int),
                          ((end_1 <= i1) /\ (i1 <= start1)) ->
@@ -141,6 +141,6 @@ section basiclogic Coq
        let l_in [a30||]= logic a30 -> (list a30) -> Prop in end
         let
         main =
-              (λ(z3:unit) -->  letregion rho in let x5 = ref{rho} 5 in ! x5
+              (λ(z3:unit) ->{}  letregion rho in let x5 = ref{rho} 5 in ! x5
               { r6 : r6 = 5})
         in tt     

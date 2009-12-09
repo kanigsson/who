@@ -159,7 +159,7 @@ let to_ty, to_eff, to_r =
   let rec ty' : (node, rnode, enode) Ty.t' -> Ty.t = function
     | Ty.Var s -> Ty.var s
     | Ty.Arrow (t1,t2,e,cap) -> 
-        Ty.arrow (ty t1) (ty t2) (eff e) (List.map rv cap)
+        Ty.caparrow (ty t1) (ty t2) (eff e) (List.map rv cap)
     | Ty.Tuple (t1,t2) -> Ty.tuple (ty t1) (ty t2)
     | Ty.Const c -> Ty.const c
     | Ty.Ref (r,t) -> Ty.ref_ (rv r) (ty t)

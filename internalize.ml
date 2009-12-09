@@ -79,24 +79,18 @@ let add_gen env (tl,rl,el) =
   let env, el = add_evars env el in
   env, (List.rev tl,List.rev rl,List.rev el)
 
-let rlist_to_set env l = 
-  List.fold_left (fun acc x -> Name.S.add (rvar env x) acc) Name.S.empty l
-
-let elist_to_set env l = 
-  List.fold_left 
-    (fun acc x -> 
-      Name.S.add (effvar env x) acc) Name.S.empty l
-
-let effect env (rl,el,cl) = 
-  rlist_to_set env rl, elist_to_set env el, rlist_to_set env cl
+let effect env (rl,el) = 
+  NEffect.from_lists
+    (List.map (rvar env) rl)
+    (List.map (effvar env) el)
 
 let ty env t = 
   let rec aux = function
     | I.TVar v -> Ty.var (tyvar env v)
     | I.TConst c -> Ty.const c
     | I.Tuple (t1,t2) -> Ty.tuple (aux t1) (aux t2)
-    | I.Arrow (t1,t2,e) -> 
-        Ty.arrow (aux t1) (aux t2) (effect env e)
+    | I.Arrow (t1,t2,e,cap) -> 
+        Ty.caparrow (aux t1) (aux t2) (effect env e) (List.map (rvar env) cap)
     | I.PureArr (t1,t2) -> Ty.parr (aux t1) (aux t2)
     | I.TApp (v,i) -> 
         let v = tyvar env v in
@@ -119,10 +113,11 @@ let print v env =
 let rec ast' env = function
   | I.Const c -> Const c
   | I.Var v -> Var (var env v,([],[],[]))
-  | I.App (e1,e2,f,c) -> App (ast env e1, ast env e2, f, List.map (rvar env) c)
-  | I.Lam (x,t,p,e,q) ->
+  | I.App (e1,e2,f,c) -> 
+      App (ast env e1, ast env e2, f, List.map (rvar env) c)
+  | I.Lam (x,t,cap,p,e,q) ->
       let env, nv = add_var env x in
-      Lam (nv,ty env t, pre env p, ast env e, post env q)
+      Lam (nv,ty env t, List.map (rvar env) cap,  pre env p, ast env e, post env q)
   | I.Let (p,g,e1,x,e2,r) ->
       let env', g' = add_gen env g in
       let nv = Name.from_string x in

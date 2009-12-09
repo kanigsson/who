@@ -233,7 +233,6 @@ let rec equal' eff t1 t2 =
   | _ -> false
 and equal eff (C a) (C b) = equal' eff a b
 
-let sequal = equal NEffect.sequal
 let equal = equal NEffect.equal
 (*
   Format.printf "equal: %a and %a: %b@." print t1 print t2 r;
@@ -281,7 +280,7 @@ let find_type_of_r name x =
   let rec aux' = function
     | Var _ | Const _ | Map _ -> None
     | Ref (n,t) -> if Name.equal n name then Some t else aux t
-    | Tuple (t1,t2) | Arrow (t1,t2,_) | PureArr (t1,t2) -> 
+    | Tuple (t1,t2) | Arrow (t1,t2,_,_) | PureArr (t1,t2) -> 
         begin match aux t1 with
         | (Some _) as r -> r
         | None -> aux t2
@@ -314,7 +313,7 @@ let selim_map get_rtype t =
         let t = NEffect.efold (fun e acc -> parr (var e) acc) (aux t) e in
         NEffect.rfold (fun r acc -> parr (get_rtype r) acc) t e
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)    
-    | Arrow (t1,t2,e) -> arrow (aux t1) (aux t2) e
+    | Arrow (t1,t2,e,cap) -> caparrow (aux t1) (aux t2) e cap
     | Ref (r,t) -> ref_ r (aux t)
     | App (v,i) -> app v (Inst.map aux Misc.id Misc.id i)
   and aux (C t) = aux' t in
@@ -327,7 +326,7 @@ let selim_map_log t =
     | Map _ -> spredef_var "kmap"
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)    
-    | Arrow (t1,t2,e) -> prepost_type (aux t1) (aux t2) e
+    | Arrow (t1,t2,e,_) -> prepost_type (aux t1) (aux t2) e
     | Ref (r,t) -> ref_ r (aux t)
     | App (v,i) -> app v (Inst.map aux Misc.id Misc.id i)
   and aux (C t) = aux' t in

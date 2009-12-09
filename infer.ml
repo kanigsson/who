@@ -129,15 +129,15 @@ let rec infer' env t loc = function
       let e = infer env t e in
       unify U.prop t loc;
       Quant (k,xt,Name.close_bind x e), U.new_e ()
-  | Lam (x,xt,p,e,q) ->
+  | Lam (x,xt,cap,p,e,q) ->
       let nt = sto_uf_node xt in
       let nt' = U.new_ty () in
       let env = add_svar env x xt in
       let e = infer {env with pm = false} nt' e in
-      unify (U.arrow nt nt' e.e []) t loc;
+      unify (U.arrow nt nt' e.e (List.map to_uf_rnode cap)) t loc;
       let p = pre env e.e p in
       let q = post env e.e nt' q in
-      Lam (x,xt,p,e,q), U.new_e ()
+      Lam (x,xt,cap,p,e,q), U.new_e ()
   | Param (t',e) -> 
       unify t (sto_uf_node t') loc;
       Param (t',e), to_uf_enode e
@@ -226,8 +226,8 @@ let rec recon' = function
   | App (e1,e2,k,cap) -> App (recon e1, recon e2,k,cap)
   | PureFun (t,(s,x,e)) -> PureFun (t,(s,x, recon e))
   | Quant (k,t,(s,x,e)) -> Quant (k,t,(s,x, recon e))
-  | Lam (x,ot,p,e,q) -> 
-      Lam (x,ot, pre p, recon e, post q)
+  | Lam (x,ot,cap,p,e,q) -> 
+      Lam (x,ot, cap, pre p, recon e, post q)
   | Param (t,e) -> Param (t,e)
   | Let (p,g,e1,(_,x,e2),r) -> 
       Let (p,g, recon e1, Name.close_bind x (recon e2),r)

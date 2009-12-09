@@ -29,7 +29,7 @@ section basiclogic Coq
      let !! [a7|r|e]= logic ref(r,a7) -> <{|e }> -> a7 in
      let
      ! [a8|r1|]=
-                (λ(x:ref(r1,a8)) -->  param(a8,{r1 |})
+                (λ(x:ref(r1,a8)) ->{}  param(a8,{r1 |})
                 {(λ(old:<{r1 |}>) ->
                  (λ(cur:<{r1 |}>) ->
                  (λ(r2:a8) ->
@@ -39,18 +39,17 @@ section basiclogic Coq
      let
      := [a9|r3|]=
                  (λ(x1:ref(r3,a9)) ->
-                 (λ(v:a9) -->  param(unit,{r3 |})
+                 (λ(v:a9) ->{}  param(unit,{r3 |})
                  {(λ(old1:<{r3 |}>) ->
                   (λ(cur1:<{r3 |}>) ->
                   (λ(anon:unit) -> (!! [a9|r3|{r3|}] x1 cur1) = v)))}))
      in
      let
      ref [a10|r4|]=
-                   (λ(v1:a10) -->  param(ref(r4,a10),{r4 ||r4 })
-                   {(λ(old2:<{r4 ||r4 }>) ->
-                    (λ(cur2:<{r4 ||r4 }>) ->
-                    (λ(x2:ref(r4,a10)) ->
-                    (!! [a10|r4|{r4||r4}] x2 cur2) = v1)))})
+                   (λ(v1:a10) ->{r4}  param(ref(r4,a10),{r4 |})
+                   {(λ(old2:<{r4 |}>) ->
+                    (λ(cur2:<{r4 |}>) ->
+                    (λ(x2:ref(r4,a10)) -> (!! [a10|r4|{r4|}] x2 cur2) = v1)))})
      in
      let combine [||e1 e2]= logic <{|e1 }> -> <{|e2 }> -> <{|e1 e2 }> in
      let restrict [||e11 e21]= logic <{|e11 }> -> <{|e21 }> in
@@ -67,7 +66,7 @@ section basiclogic Coq
                    (λ(inv:int -> <{|e1 }> -> Prop) ->
                    (λ(start:int) ->
                    (λ(end_:int) ->
-                   (λ(f:int ->{|e1 } unit) -->
+                   (λ(f:int ->{|e1 }{{}} unit) ->{}
                    {(λ(cur3:<{|e1 }>) ->
                     (inv start cur3) /\
                     (forall (i:int),
@@ -91,7 +90,7 @@ section basiclogic Coq
                        (λ(inv1:int -> <{|e2 }> -> Prop) ->
                        (λ(start1:int) ->
                        (λ(end_1:int) ->
-                       (λ(f1:int ->{|e2 } unit) -->
+                       (λ(f1:int ->{|e2 }{{}} unit) ->{}
                        {(λ(cur5:<{|e2 }>) ->
                         (inv1 start1 cur5) /\
                         (forall (i1:int),
@@ -172,10 +171,10 @@ section basiclogic Coq
        let is_nil [a29||]= logic (list[a29||]) -> bool in
        let l_in [a30||]= logic a30 -> (list[a30||]) -> Prop in end
         let apply [a31
-        b5||e3]= (λ(f2:a31 ->{|e3 } b5) -> (λ(x5:a31) -->  f2 x5 )) in
+        b5||e3]= (λ(f2:a31 ->{|e3 }{{}} b5) -> (λ(x5:a31) ->{}  f2 x5 )) in
         let
         h [|r6|]=
-                 (λ(x6:ref(r6,int)) --> 
-                 apply [int,int||{|{r6|} 1739 1742}]
-                 (λ(z3:int) -->  ! [int|r6|] x6 ) 5 )
+                 (λ(x6:ref(r6,int)) ->{} 
+                 apply [int,int||{|{r6|} 1736 1739}]
+                 (λ(z3:int) ->{}  ! [int|r6|] x6 ) 5 )
         in tt     

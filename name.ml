@@ -99,3 +99,7 @@ let print_set fmt s =
   S.iter (fun x -> print fmt x ; space fmt ()) s
 
 
+let list_to_set l = List.fold_left (fun acc x -> S.add x acc) S.empty l
+let set_to_list s = S.fold (fun x acc -> x::acc) s []
+let remove_list_from_set l s = List.fold_left (fun acc x -> S.remove x acc) s l
+

@@ -20,8 +20,8 @@ val cprint : t Myformat.fmt
 val is_compound : ('a,'b,'c) t' -> bool
 val var : Name.t -> t
 val const : Const.ty -> t
-val arrow : t -> t -> NEffect.t -> Name.t list -> t
-(* val caparrow : t -> t -> NEffect.t -> Name.t list -> t *)
+val arrow : t -> t -> NEffect.t -> t
+val caparrow : t -> t -> NEffect.t -> Name.t list -> t
 val parr : t -> t -> t
 val tuple : t -> t -> t
 val ref_ : Name.t -> t -> t
@@ -46,7 +46,6 @@ val rsubst : Name.t list -> Name.t list -> Name.t -> Name.t
 val app : Name.t -> (t,Name.t,NEffect.t) Inst.t -> t
 
 val equal : t -> t -> bool
-val sequal : t -> t -> bool
 
 module Generalize : sig
   type t = Name.t list * Name.t list * Name.t list

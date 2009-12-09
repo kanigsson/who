@@ -25,8 +25,8 @@ let rec lift_value v =
       app ~kind (lift_value v1) (lift_value v2) l
   | PureFun (t,(_,x,e)) -> 
       plam x (ty t) (lift_value e) l
-  | Lam (x,t,p,e,q) ->
-      let t = ty t and eff = NEffect.clean e.e in
+  | Lam (x,t,_,p,e,q) ->
+      let t = ty t and eff = e.e in
       let _,p = p and _,_,q = q in
       let p = 
         match p with 
@@ -59,8 +59,8 @@ let rec correct v =
   match v.v with
   | Var _ | Const _ | Axiom _ | Logic _ | Quant _ -> ptrue_ l
   | App (v1,v2,_,_) -> and_ (correct v1) (correct v2) l
-  | Lam (x,t,p,e,q) -> 
-      let lt = ty t and eff = NEffect.clean e.e in
+  | Lam (x,t,_,p,e,q) -> 
+      let lt = ty t and eff = e.e in
       effFA eff (fun r ->
         let p = match p with 
                 | _,None -> ptrue_ l
@@ -90,17 +90,14 @@ and wp m q e =
   else 
     match e.v with
     | LetReg (rl,se) -> 
-        let ef = List.fold_right NEffect.radd rl NEffect.empty in 
-        let eff = NEffect.clean se.e in
-        let resteff = NEffect.clean e.e in
+        let ef = NEffect.from_lists rl [] in
         rgen rl 
         (effFA ef (fun cur ->
           wp_node (combine m cur l)
-            (efflamho (NEffect.union eff ef) (fun s -> 
-              app q (restrict resteff s l) l) l) se) l) l
+            (efflamho (NEffect.union se.e ef) (fun s -> 
+              app q (restrict e.e s l) l) l) se) l) l
     | App (v1,v2,_,_) -> 
-        let lv1 = lift_value v1 and lv2 = lift_value v2
-        and eff = NEffect.clean e.e in
+        let lv1 = lift_value v1 and lv2 = lift_value v2 in
 (*         Format.printf "app; v1 of type %a; effect : %a@." *)
 (*         Ty.print v1.t NEffect.print eff; *)
 (*         Format.printf "app: %a; %a : %a@." print e print lv1 Ty.print lv1.t;
@@ -108,7 +105,7 @@ and wp m q e =
         andlist 
         [ correct v1; correct v2;
           applist [pre lv1 l; lv2; m ] l;
-          effFA eff (fun m2 -> 
+          effFA e.e (fun m2 -> 
             forall ft (fun x ->
               impl (applist [post lv1 l; lv2; m; m2; x] l)
                 (applist [q;m2; x] l) l) l) l ] l 
@@ -146,7 +143,7 @@ and wp m q e =
     | EndSec e -> endsec (wp_node m q e) l
     | _ -> assert false
 and wp_node m q e = 
-  if NEffect.sequal (domain m) e.e then wp m q e
+  if NEffect.equal (domain m) e.e then wp m q e
   else begin
 (*     Format.printf "q: %a; effects: %a <= %a@."  *)
 (*       print q NEffect.print e.e NEffect.print (domain m); *)
@@ -158,6 +155,5 @@ and wp_node m q e =
 
 let main e = 
   let l = e.loc in
-  let eff = NEffect.clean e.e in
-  let q = efflamho eff  (fun _ -> plamho e.t (fun _ -> ptrue_ l) l) l in
-    effFA eff (fun m -> (wp_node m q e)) l
+  let q = efflamho e.e (fun _ -> plamho e.t (fun _ -> ptrue_ l) l) l in
+    effFA e.e (fun m -> (wp_node m q e)) l

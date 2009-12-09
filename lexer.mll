@@ -48,6 +48,7 @@ let id_or_keyword =
         ("rec", fun _ -> REC );
         ("section", fun i -> SECTION (create_info i) );
         ("coq", fun _ -> COQ );
+        ("cap", fun _ -> CAP );
         ("predefined", fun _ -> PREDEFINED );
         ("end", fun i -> END (create_info i) );
         ("fun", fun i -> FUN (create_info i) );

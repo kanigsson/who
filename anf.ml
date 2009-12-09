@@ -9,7 +9,7 @@ and normalize e k =
   match e.v with
   | (Const _ | Ast.Var _ | Axiom _ | Logic _ | Quant _ | Param _ ) -> k e
   | For _ | Gen _ -> assert false
-  | Lam (x,t,p,e,q) -> k (lam x t p (normalize_term e) q loc)
+  | Lam (x,t,cap,p,e,q) -> k (caplam x t cap p (normalize_term e) q loc)
   | PureFun (t,(_,x,e))-> k (plam x t (normalize_term e) loc)
   | Let (p,g,e1,(_,x,e2),r) -> 
 (*       Myformat.printf "normalizing let: %a@." Name.print x; *)
