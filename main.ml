@@ -44,11 +44,11 @@ let _ =
     Typing.typing p;
     let p = Wp2.main p in
     maybe_abort Options.wp_only Ast.Recon.print p;
-    p
-(*
     Typing.formtyping p;
     let p = Simplify.allsimplify p in
     maybe_abort Options.simplify_only Ast.Recon.print p;
+    p
+(*
     Typing.formtyping p;
     let s = Sectionize.section p in
 (*     maybe_abort Options.sectionize_only Sectionize.print s; *)

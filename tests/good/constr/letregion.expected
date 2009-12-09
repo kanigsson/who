@@ -173,6 +173,7 @@ section basiclogic Coq
         let
         main =
               (λ(z3:unit) ->{} 
-              letregion rho in let x5 = ref [int|rho|] 5 in ! [int|rho|] x5
+              letregion rho in
+              let x5 = ref [int|rho|]{rho} 5 in ! [int|rho|] x5
               {(λ(old5:<{|}>) -> (λ(cur7:<{|}>) -> (λ(r6:int) -> r6 = 5)))})
         in tt     

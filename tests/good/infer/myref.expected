@@ -170,4 +170,4 @@ section basiclogic Coq
        let cons [a28||]= logic a28 -> (list[a28||]) -> list[a28||] in
        let is_nil [a29||]= logic (list[a29||]) -> bool in
        let l_in [a30||]= logic a30 -> (list[a30||]) -> Prop in end
-        let myref [a31|r6|]= (λ(x5:a31) ->{}  ref [a31|r6|]{r6} x5 ) in tt     
+        let myref [a31|r6|]= (λ(x5:a31) ->{r6}  ref [a31|r6|]{r6} x5 ) in tt     

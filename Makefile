@@ -1,4 +1,4 @@
-OCAMLBUILD := ocamlbuild -classic-display -X papers
+OCAMLBUILD := ocamlbuild -classic-display -X papers -tag debug
 COQVO := WhoMap.vo WhoArith.vo WhoArray.vo WhoList.vo
 COQV := $(COQVO:.vo=.v)
 COQTARGETS := $(addprefix coq_files/, $(COQVO))

@@ -88,6 +88,12 @@ let build_var r v env =
   let nv = getname r v env in
   svar nv (rtype env r) env.l
 
+(* for effect var [e] and state [v], build the term variable using the fresh name
+ * corresponding to (r,v) - an effect variable is its own type *)
+let build_evar e v env = 
+  let nv = getname e v env in
+  svar nv (Ty.var e) env.l
+
 (* a simplification either does nothing, a simple top-level change, or a deeper
  *  change requiring all simplifications to rerun *)
 type simpl = 
@@ -258,7 +264,7 @@ let distrib_app env x =
       let f = Effrec.rfold (fun r s acc -> 
         app acc (build_var r s env) l) er t1 in
       let f = Effrec.efold (fun e s acc -> 
-        app acc (build_var e s env) l) er f in
+        app acc (build_evar e s env) l) er f in
       Simple_change f
   | _ -> Nochange
 
@@ -354,11 +360,13 @@ let simplify ~genbind
           var_i v (Inst.map (tyfun env) Misc.id Misc.id i) (tyfun env f.t) l
       | App (f1,f2,k,c) -> 
           app ~kind:k ~cap:c (aux env f1) (aux env f2) l
-      | Gen (g,t) -> gen g (genbind g env t) env.l
+      | Gen (g,t) -> 
+          let g,t = genbind g env t in
+          gen g t env.l
       | Let (p, g ,e1,b,r) ->
           let x,e2 = if p then sopen b else vopen b in
 (*           Myformat.printf "let %b: %a@." p Name.print x; *)
-          let e1 = genbind g env e1 in
+          let g,e1 = genbind g env e1 in
           let_ ~prelude:p g e1 x (aux env e2) r l
       | PureFun (t,b) ->
           let x,e = vopen b in
@@ -400,7 +408,7 @@ let simplify ~genbind
 
 let logic_simplify f = 
   let rec aux env f =
-    simplify ~genbind:(fun _ env e -> aux env e) 
+    simplify ~genbind:(fun g env e -> g, aux env e) 
              ~varbind:(fun env k x t e l -> aquant k x t (aux env e) l)
              ~tyfun:(fun _ -> Misc.id) [] simplifiers env f in
   aux empty f
@@ -408,7 +416,7 @@ let logic_simplify f =
 let map_simplify f = 
   let rec aux env f =
     simplify 
-      ~genbind:(fun (_,rl,_) env t -> 
+      ~genbind:(fun (tvl,rl,el) env t -> 
 (*
         Myformat.printf "treating gen %a for expression %a@." 
           Ty.Generalize.print g print t;
@@ -416,14 +424,16 @@ let map_simplify f =
         let env = List.fold_left (fun env r -> 
           rtype_add r (find_type r t) env) env rl in
         let t = aux env t in
-        if Ty.equal t.t Ty.prop then 
-          List.fold_left (fun acc r -> 
-            aquant `FA r (Ty.spredef_var "key") acc env.l) t rl
-        else t
-          )
+        let t = 
+          if Ty.equal t.t Ty.prop then 
+            List.fold_left (fun acc r -> 
+              aquant `FA r (Ty.spredef_var "key") acc env.l) t rl
+        else t in
+        (* effect variables become type variables *)
+        (tvl@el,[],[]), t )
       ~varbind:(fun env k x t e l ->
 (*
-        Myformat.printf "varbind: %a : %a. %a@." Name.print x Ty.print t print
+        Myformat.printf "varbind: %a : %a. %a" Name.print x Ty.print t print
         e;
 *)
         if Ty.is_map t then
@@ -433,24 +443,27 @@ let map_simplify f =
           List.fold_left (fun acc e -> 
             aquant k e (Ty.spredef_var "kmap") acc l) f el
         else aquant k x (Ty.selim_map (rtype env) t) (aux env e) l)
-      ~tyfun:(fun env -> Ty.selim_map (rtype env)) simplify_maps [] env f in
+      ~tyfun:(fun env t -> Ty.selim_map (rtype env) t) 
+      simplify_maps [] env f in
   aux empty f
 
 let eq_simplify f = 
   let rec aux env f = 
-    simplify ~genbind:(fun _ env e -> aux env e)
+    simplify ~genbind:(fun g env e -> g, aux env e)
              ~varbind:(fun env k x t e l -> aquant k x t (aux env e) l)
              ~tyfun:(fun _ -> Misc.id) [] elim_eqs env f in
   aux empty f
 
 let allsimplify f =
   let f = logic_simplify f in
-  Myformat.printf "firstsimpl@.";
+(*   Myformat.printf "firstsimpl@."; *)
   Typing.formtyping f;
-(*   Myformat.printf "=============@.%a@.=================@." print f; *)
+  Myformat.printf "=============@.%a@.=================@." print f;
   let f = map_simplify f in
+(*
   Myformat.printf "secondsimpl@.";
-(*   Myformat.printf ">>>>>>>>>>>>>@.%a@.>>>>>>>>>>>>>>>>>@." print f; *)
+  Myformat.printf ">>>>>>>>>>>>>@.%a@.>>>>>>>>>>>>>>>>>@." print f;
+*)
   Typing.formtyping f;
   let f = eq_simplify f in
 (*   Myformat.printf "third simpl@."; *)
