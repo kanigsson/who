@@ -189,6 +189,7 @@ let boolean_prop env x =
              | {name = Some "==" } -> "=="
              | {name = Some "!=" } -> "!="
              | _ -> raise No_Match in
+           (* TODO some variables should not be built with spredef_var *)
            let f = appi (spredef_var op l) arg1 arg2 l in
            if n = Const Btrue then Simple_change f 
            else Simple_change (neg f l)
@@ -337,7 +338,7 @@ let add_effect env x d =
   let env, el = 
     NEffect.efold (fun e (env,el) -> 
       let n = Name.new_name e in
-      name_add e x n env, n::el) (env,[]) d in
+      name_add e x n env, (e,n)::el) (env,[]) d in
   env, rl,el
 
 let simplify ~genbind 
@@ -423,6 +424,8 @@ let map_simplify f =
 *)
         let env = List.fold_left (fun env r -> 
           rtype_add r (find_type r t) env) env rl in
+        let env = List.fold_left (fun env e ->
+          rtype_add e (Ty.var e) env) env el in
         let t = aux env t in
         let t = 
           if Ty.equal t.t Ty.prop then 
@@ -437,11 +440,11 @@ let map_simplify f =
         e;
 *)
         if Ty.is_map t then
-          let env, rl,el = add_effect env x (Ty.domain t) in
+          let env, rl, el = add_effect env x (Ty.domain t) in
           let e = aux env e in
           let f = List.fold_left (fun acc (x,t) -> aquant k x t acc l) e rl in
-          List.fold_left (fun acc e -> 
-            aquant k e (Ty.spredef_var "kmap") acc l) f el
+          List.fold_left (fun acc (old,new_) -> 
+            aquant k new_ (rtype env old) acc l) f el
         else aquant k x (Ty.selim_map (rtype env) t) (aux env e) l)
       ~tyfun:(fun env t -> Ty.selim_map (rtype env) t) 
       simplify_maps [] env f in
@@ -456,12 +459,12 @@ let eq_simplify f =
 
 let allsimplify f =
   let f = logic_simplify f in
-(*   Myformat.printf "firstsimpl@."; *)
+  Myformat.printf "firstsimpl@.";
   Typing.formtyping f;
-  Myformat.printf "=============@.%a@.=================@." print f;
+(*   Myformat.printf "=============@.%a@.=================@." print f; *)
   let f = map_simplify f in
+(*   Myformat.printf "secondsimpl@."; *)
 (*
-  Myformat.printf "secondsimpl@.";
   Myformat.printf ">>>>>>>>>>>>>@.%a@.>>>>>>>>>>>>>>>>>@." print f;
 *)
   Typing.formtyping f;

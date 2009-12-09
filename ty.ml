@@ -310,7 +310,7 @@ let selim_map get_rtype t =
     | Map _ -> spredef_var "kmap"
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
     | PureArr (C (Map e), t) ->
-        let t = NEffect.efold (fun e acc -> parr (var e) acc) (aux t) e in
+        let t = NEffect.efold (fun e acc -> parr (get_rtype e) acc) (aux t) e in
         NEffect.rfold (fun r acc -> parr (get_rtype r) acc) t e
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)    
     | Arrow (t1,t2,e,cap) -> caparrow (aux t1) (aux t2) e cap

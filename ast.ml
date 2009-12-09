@@ -106,8 +106,9 @@ let print tyapp pra prb prc open_ fmt t =
     | Var (v,i) -> 
         if Inst.is_empty i || not tyapp then Name.print fmt v
         else fprintf fmt "%a %a" Name.print v (Inst.print pra prb prc) i
-    | App ({v = App ({ v = Var(v,_)},t1,_,_)},t2,`Infix,_) -> 
-        fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 Name.print v with_paren t2
+    | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) -> 
+        fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 Name.print v 
+          (Inst.print pra prb prc) i with_paren t2
     | App (t1,t2,_,cap) ->
           fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
     | Lam (x,t,cap,p,e,q) -> 
@@ -228,10 +229,8 @@ module Recon = struct
   let appi t t1 t2 loc = app ~kind:`Infix (app t t1 loc) t2 loc
   let allapp t1 t2 kind cap loc = app ~kind ~cap t1 t2 loc
   let var s inst (g,t) = 
-(*
     Format.printf "%a : (%a,%a) -> %a@." Name.print s Ty.Generalize.print g Ty.print
     t (Inst.print Ty.print Name.print NEffect.print) inst;
-*)
     mk_val (Var (s,inst)) (Ty.allsubst g inst t) 
 
   let var_i s inst t =
