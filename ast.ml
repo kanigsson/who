@@ -229,8 +229,10 @@ module Recon = struct
   let appi t t1 t2 loc = app ~kind:`Infix (app t t1 loc) t2 loc
   let allapp t1 t2 kind cap loc = app ~kind ~cap t1 t2 loc
   let var s inst (g,t) = 
+(*
     Format.printf "%a : (%a,%a) -> %a@." Name.print s Ty.Generalize.print g Ty.print
     t (Inst.print Ty.print Name.print NEffect.print) inst;
+*)
     mk_val (Var (s,inst)) (Ty.allsubst g inst t) 
 
   let var_i s inst t =

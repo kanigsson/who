@@ -5,6 +5,12 @@
 
   let void = const (Const.Void) Loc.dummy
 
+  let partition_effect l = 
+    List.fold_right (fun x (rl,el) ->
+      match x with
+      | `Rvar r -> r ::rl, el
+      | `Effvar e -> rl, e::el) l ([],[])
+
   (* Syntactically, a program is a list of declarations; 
     In the parser, this is represented by two different forms:
       * Once indeed as an [ast list]
@@ -143,12 +149,20 @@ stype:
   | LPAREN t = ty COMMA l = separated_list(COMMA,ty) RPAREN v = IDENT
     { TApp(v.c,(t::l,[],[])) }
 
-effect:
-  | lr = list(IDENT) MID le =  list(IDENT) 
-    { strip_info lr, strip_info le}
+
+rvar_or_effectvar:
+  | x = IDENT { `Rvar x.c }
+  | e = TYVAR { `Effvar e }
+
+effect: 
+    | l = list(rvar_or_effectvar) {partition_effect l }
 
 sepeffect:
   | LCURL e = effect RCURL { e }
+
+maycap:
+  | { [] }
+  | MID l = list(IDENT) { strip_info l }
 
 createeffect:
   | e = effect cl = maycap 
@@ -172,10 +186,6 @@ inst:
   LBRACKET tl = separated_list(COMMA,ty) MID rl = list(IDENT) 
   MID el = list(sepeffect) RBRACKET
   { tl, strip_info rl, el }
-
-maycap:
-  | { [] }
-  | MID l = list(IDENT) { strip_info l }
 
 constant:
   | n = INT    { n.info, Const.Int n.c }
@@ -317,8 +327,8 @@ precond:
 optgen: 
   | { [],[], [] }
   | LBRACKET tl = list(TYVAR) MID rl=list(IDENT) MID el =
-    list(IDENT) RBRACKET 
-    { tl, strip_info rl, strip_info el }
+    list(TYVAR) RBRACKET 
+    { tl, strip_info rl, el }
 
 opt_filename:
   | fn = STRING { Some fn}

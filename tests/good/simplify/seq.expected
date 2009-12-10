@@ -45,7 +45,7 @@ section basiclogic Coq
                             axiom forall (t:array[a15||]),
                                   forall (i:int),
                                   forall (z:a15),
-                                  (len [a15||] t) =
+                                  (len [a15||] t) =[int||]
                                   (len [a15||] (set [a15||] i z t))
       in
       let
@@ -54,7 +54,8 @@ section basiclogic Coq
                                forall (i1:int),
                                forall (z1:a16),
                                (i1 < (len [a16||] t1)) ->
-                               ((get [a16||] i1 (set [a16||] i1 z1 t1)) = z1)
+                               ((get [a16||] i1 (set [a16||] i1 z1 t1))
+                                =[a16||] z1)
       in
       let
       get_set_neq [a17||]=
@@ -64,9 +65,9 @@ section basiclogic Coq
                                 forall (z2:a17),
                                 (i2 < (len [a17||] t2)) ->
                                 ((j < (len [a17||] t2)) ->
-                                 ((i2 <> j) ->
-                                  ((get [a17||] i2 (set [a17||] j z2 t2)) =
-                                   (get [a17||] i2 t2))))
+                                 ((i2 <>[int||] j) ->
+                                  ((get [a17||] i2 (set [a17||] j z2 t2))
+                                   =[a17||] (get [a17||] i2 t2))))
       in
       let
       length_nonnegative [a18||]=
@@ -78,7 +79,8 @@ section basiclogic Coq
                             axiom forall (l:int),
                                   forall (v:a19),
                                   (0 <= l) ->
-                                  ((len [a19||] (create [a19||] l v)) = l)
+                                  ((len [a19||] (create [a19||] l v))
+                                   =[int||] l)
       in
       let
       length_access [a20||]=
@@ -87,8 +89,8 @@ section basiclogic Coq
                                   forall (v1:a20),
                                   (0 <= i3) ->
                                   ((i3 <= l1) ->
-                                   ((get [a20||] i3 (create [a20||] l1 v1)) =
-                                    v1))
+                                   ((get [a20||] i3 (create [a20||] l1 v1))
+                                    =[a20||] v1))
       in end
        section List Coq WhoList type list[a21||] =  in
        let nil [a22||]= logic list[a22||] in

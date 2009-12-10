@@ -36,27 +36,27 @@ logic != ['a||] : 'a -> 'a -> bool
 
 section Whoref
   coq \"WhoMap\"
-  logic !! ['a|r|e] : ref(r,'a) -> <|e> -> 'a
-  parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r|} =
+  logic !! ['a|r|'e] : ref(r,'a) -> <'e> -> 'a
+  parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
     {}
     {r : !!x = r /\\ !!x|old = !!x}
 
-  parameter := ['a|r|] (x : ref(r,'a)) (v : 'a) : unit, {r|} =
+  parameter := ['a|r|] (x : ref(r,'a)) (v : 'a) : unit, {r} =
     {}
     { !!x = v}
 
-  parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r|} = cap r
+  parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r} = cap r
     {}
     { x : !!x = v }
 
-  logic combine [||e1 e2] : <|e1> -> <|e2> -> <|e1 e2>
-  logic restrict [||e1 e2] : <|e1> -> <|e2>
-  logic empty : <|>
+  logic combine [||'e1 'e2] : <'e1> -> <'e2> -> <'e1 'e2>
+  logic restrict [||'e1 'e2] : <'e1> -> <'e2>
+  logic empty : < >
 
   type kmap
   type key
-  logic kcombine [||e1 e2] : kmap -> kmap -> kmap
-  logic krestrict [||e1 e2] : kmap -> kmap
+  logic kcombine [||'e1 'e2] : kmap -> kmap -> kmap
+  logic krestrict [||'e1 'e2] : kmap -> kmap
   logic kset ['a||] : key -> 'a -> kmap -> kmap
   logic kget ['a|r|] : ref(r,'a) -> kmap -> 'a
   logic kempty : kmap 
@@ -64,22 +64,22 @@ section Whoref
   let post ['a 'b||] (x : 'a * 'b) = snd x
 end
 
-parameter forto [||e] (inv : int -> <|e> -> prop) (start end_ : int) 
-  (f : int ->{|e} unit) : unit, {|e} =
+parameter forto [||'e] (inv : int -> <'e> -> prop) (start end_ : int) 
+  (f : int ->{'e} unit) : unit, {'e} =
     { inv start cur /\\
           forall (i : int). start <= i /\\ i <= end_ ->
-          forall (m : <|e>) . inv i m -> pre f i m /\\
-          forall (n : <|e>). post f i m n () -> inv (i+1) n
+          forall (m : <'e>) . inv i m -> pre f i m /\\
+          forall (n : <'e>). post f i m n () -> inv (i+1) n
     }
     { inv (max start (end_ + 1)) cur} 
 
 
-parameter fordownto [||e] (inv :  int -> <|e> -> prop) (start end_ : int) 
-  (f : int ->{|e} unit) : unit, {|e} =
+parameter fordownto [||'e] (inv :  int -> <'e> -> prop) (start end_ : int) 
+  (f : int ->{'e} unit) : unit, {'e} =
     { inv start cur /\\
           forall (i : int). end_ <= i /\\ i <= start ->
-          forall (m : <|e>) . inv i m -> pre f i m /\\
-          forall (n : <|e>). post f i m n () -> inv (i-1) n
+          forall (m : <'e>) . inv i m -> pre f i m /\\
+          forall (n : <'e>). post f i m n () -> inv (i-1) n
     }
     { inv (min start (end_ - 1)) cur }
 

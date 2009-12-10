@@ -1,10 +1,8 @@
 IMPORTANT FEATURES
-change the handling of creation effects; 
-  I think it's much better to handle it like an additional, obligatory (type)
-  argument
+Effect variables are with a '
+Pretty printer for Pangoline
 Syntax for lifted types
 Syntax for Hoare triples
-Effect variables are with a '
 
 MINOR ISSUES
 error messages for unknown variables in internalize

@@ -1,4 +1,4 @@
-let apply ['a 'b ||e] (f : 'a ->{|e} 'b) (x : 'a) = 
+let apply ['a 'b ||'e] (f : 'a ->{'e} 'b) (x : 'a) = 
   {} 
   f x 
   {}

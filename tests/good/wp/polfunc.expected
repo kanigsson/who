@@ -30,30 +30,36 @@ section basiclogic Coq
      let !! [a7|r|e]= logic ref(r,a7) -> <{|e }> -> a7 in
      let
      ! [a8|r1|]=
-                (λ(x:ref(r1,a8)) -> (λ(s1:<{r1 |}>) -> True)) ,
+                (λ(x:ref(r1,a8)) -> (λ(s1:<{r1 |}>) -> True))
+                ,[ref(r1,a8) -> <{r1 |}> -> Prop,ref(r1,a8) -> <{r1 |}> ->
+                <{r1 |}> -> a8 -> Prop||]
                 (λ(x:ref(r1,a8)) ->
                 (λ(old:<{r1 |}>) ->
                 (λ(cur:<{r1 |}>) ->
                 (λ(r2:a8) ->
-                ((!! [a8|r1|{r1 |}] x cur) = r2) /\
-                ((!! [a8|r1|{r1 |}] x old) = (!! [a8|r1|{r1 |}] x cur))))))
+                ((!! [a8|r1|{r1 |}] x cur) =[a8||] r2) /\
+                ((!! [a8|r1|{r1 |}] x old) =[a8||] (!! [a8|r1|{r1 |}] x cur))))))
      in
      let
      := [a9|r3|]=
                  (λ(x1:ref(r3,a9)) ->
-                 (λ(v:a9) -> (λ(s2:<{r3 |}>) -> True)) ,
+                 (λ(v:a9) -> (λ(s2:<{r3 |}>) -> True)) ,[a9 -> <{r3 |}> ->
+                 Prop,a9 -> <{r3 |}> -> <{r3 |}> -> unit -> Prop||]
                  (λ(v:a9) ->
                  (λ(old1:<{r3 |}>) ->
                  (λ(cur1:<{r3 |}>) ->
-                 (λ(anon:unit) -> (!! [a9|r3|{r3 |}] x1 cur1) = v)))))
+                 (λ(anon:unit) -> (!! [a9|r3|{r3 |}] x1 cur1) =[a9||] v)))))
      in
      let
      ref [a10|r4|]=
-                   (λ(v1:a10) -> (λ(s3:<{r4 |}>) -> True)) ,
+                   (λ(v1:a10) -> (λ(s3:<{r4 |}>) -> True)) ,[a10 -> <{r4
+                   |}> -> Prop,a10 -> <{r4 |}> -> <{r4 |}> -> ref(r4,a10) ->
+                   Prop||]
                    (λ(v1:a10) ->
                    (λ(old2:<{r4 |}>) ->
                    (λ(cur2:<{r4 |}>) ->
-                   (λ(x2:ref(r4,a10)) -> (!! [a10|r4|{r4 |}] x2 cur2) = v1))))
+                   (λ(x2:ref(r4,a10)) ->
+                   (!! [a10|r4|{r4 |}] x2 cur2) =[a10||] v1))))
      in
      let combine [||e1 e2]= logic <{|e1 }> -> <{|e2 }> -> <{|e1 e2 }> in
      let restrict [||e11 e21]= logic <{|e11 }> -> <{|e21 }> in
@@ -85,7 +91,10 @@ section basiclogic Coq
                        (post [int -> <{|e1 }> -> Prop,int -> <{|e1 }> ->
                         <{|e1 }> -> unit -> Prop||] f i m n tt)
                        -> (inv (i + 1) n)))))))
-                   ,
+                   ,[((int -> <{|e1 }> -> Prop) * (int -> <{|e1 }> -> <{|e1
+                   }> -> unit -> Prop)) -> <{|e1 }> -> Prop,((int -> <{|e1
+                   }> -> Prop) * (int -> <{|e1 }> -> <{|e1 }> -> unit ->
+                   Prop)) -> <{|e1 }> -> <{|e1 }> -> unit -> Prop||]
                    (λ(f:(int -> <{|e1 }> -> Prop) * (int -> <{|e1 }> ->
                    <{|e1 }> -> unit -> Prop)) ->
                    (λ(old3:<{|e1 }>) ->
@@ -112,7 +121,11 @@ section basiclogic Coq
                            (post [int -> <{|e2 }> -> Prop,int -> <{|e2 }> ->
                             <{|e2 }> -> unit -> Prop||] f1 i1 m1 n1 tt)
                            -> (inv1 (i1 - 1) n1)))))))
-                       ,
+                       ,[((int -> <{|e2 }> -> Prop) * (int -> <{|e2 }> ->
+                       <{|e2 }> -> unit -> Prop)) -> <{|e2 }> ->
+                       Prop,((int -> <{|e2 }> -> Prop) * (int -> <{|e2 }> ->
+                       <{|e2 }> -> unit -> Prop)) -> <{|e2 }> -> <{|e2 }> ->
+                       unit -> Prop||]
                        (λ(f1:(int -> <{|e2 }> -> Prop) * (int -> <{|e2 }> ->
                        <{|e2 }> -> unit -> Prop)) ->
                        (λ(old4:<{|e2 }>) ->
@@ -129,7 +142,7 @@ section basiclogic Coq
                             axiom forall (t:array[a20||]),
                                   forall (i2:int),
                                   forall (z:a20),
-                                  (len [a20||] t) =
+                                  (len [a20||] t) =[int||]
                                   (len [a20||] (set [a20||] i2 z t))
       in
       let
@@ -138,7 +151,8 @@ section basiclogic Coq
                                forall (i3:int),
                                forall (z1:a21),
                                (i3 < (len [a21||] t1)) ->
-                               ((get [a21||] i3 (set [a21||] i3 z1 t1)) = z1)
+                               ((get [a21||] i3 (set [a21||] i3 z1 t1))
+                                =[a21||] z1)
       in
       let
       get_set_neq [a22||]=
@@ -148,9 +162,9 @@ section basiclogic Coq
                                 forall (z2:a22),
                                 (i4 < (len [a22||] t2)) ->
                                 ((j < (len [a22||] t2)) ->
-                                 ((i4 <> j) ->
-                                  ((get [a22||] i4 (set [a22||] j z2 t2)) =
-                                   (get [a22||] i4 t2))))
+                                 ((i4 <>[int||] j) ->
+                                  ((get [a22||] i4 (set [a22||] j z2 t2))
+                                   =[a22||] (get [a22||] i4 t2))))
       in
       let
       length_nonnegative [a23||]=
@@ -162,7 +176,8 @@ section basiclogic Coq
                             axiom forall (l:int),
                                   forall (v2:a24),
                                   (0 <= l) ->
-                                  ((len [a24||] (create [a24||] l v2)) = l)
+                                  ((len [a24||] (create [a24||] l v2))
+                                   =[int||] l)
       in
       let
       length_access [a25||]=
@@ -171,8 +186,8 @@ section basiclogic Coq
                                   forall (v3:a25),
                                   (0 <= i5) ->
                                   ((i5 <= l1) ->
-                                   ((get [a25||] i5 (create [a25||] l1 v3)) =
-                                    v3))
+                                   ((get [a25||] i5 (create [a25||] l1 v3))
+                                    =[a25||] v3))
       in end
        section List Coq WhoList type list[a26||] =  in
        let nil [a27||]= logic list[a27||] in
@@ -207,7 +222,11 @@ section basiclogic Coq
                    <{|e3 }> -> int -> Prop)) ->
                    (λ(cur7:<{|e3 }>) ->
                    fst [int -> <{|e3 }> -> Prop,int -> <{|e3 }> -> <{|e3
-                   }> -> int -> Prop||] g 5 cur7)) ,
+                   }> -> int -> Prop||] g 5 cur7)) ,[((int -> <{|e3 }> ->
+                   Prop) * (int -> <{|e3 }> -> <{|e3 }> -> int -> Prop)) ->
+                   <{|e3 }> -> Prop,((int -> <{|e3 }> -> Prop) * (int ->
+                   <{|e3 }> -> <{|e3 }> -> int -> Prop)) -> <{|e3 }> -> <{|e3
+                   }> -> int -> Prop||]
                    (λ(g:(int -> <{|e3 }> -> Prop) * (int -> <{|e3 }> ->
                    <{|e3 }> -> int -> Prop)) ->
                    (λ(old5:<{|e3 }>) ->

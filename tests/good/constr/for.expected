@@ -33,8 +33,8 @@ section basiclogic Coq
                 {(λ(old:<{r1 |}>) ->
                  (λ(cur:<{r1 |}>) ->
                  (λ(r2:a8) ->
-                 ((!! [a8|r1|{r1 |}] x cur) = r2) /\
-                 ((!! [a8|r1|{r1 |}] x old) = (!! [a8|r1|{r1 |}] x cur)))))})
+                 ((!! [a8|r1|{r1 |}] x cur) =[a8||] r2) /\
+                 ((!! [a8|r1|{r1 |}] x old) =[a8||] (!! [a8|r1|{r1 |}] x cur)))))})
      in
      let
      := [a9|r3|]=
@@ -42,14 +42,15 @@ section basiclogic Coq
                  (λ(v:a9) ->{}  param(unit,{r3 |})
                  {(λ(old1:<{r3 |}>) ->
                   (λ(cur1:<{r3 |}>) ->
-                  (λ(anon:unit) -> (!! [a9|r3|{r3 |}] x1 cur1) = v)))}))
+                  (λ(anon:unit) -> (!! [a9|r3|{r3 |}] x1 cur1) =[a9||] v)))}))
      in
      let
      ref [a10|r4|]=
                    (λ(v1:a10) ->{r4}  param(ref(r4,a10),{r4 |})
                    {(λ(old2:<{r4 |}>) ->
                     (λ(cur2:<{r4 |}>) ->
-                    (λ(x2:ref(r4,a10)) -> (!! [a10|r4|{r4 |}] x2 cur2) = v1)))})
+                    (λ(x2:ref(r4,a10)) ->
+                    (!! [a10|r4|{r4 |}] x2 cur2) =[a10||] v1)))})
      in
      let combine [||e1 e2]= logic <{|e1 }> -> <{|e2 }> -> <{|e1 e2 }> in
      let restrict [||e11 e21]= logic <{|e11 }> -> <{|e21 }> in
@@ -120,7 +121,7 @@ section basiclogic Coq
                             axiom forall (t:array[a20||]),
                                   forall (i2:int),
                                   forall (z:a20),
-                                  (len [a20||] t) =
+                                  (len [a20||] t) =[int||]
                                   (len [a20||] (set [a20||] i2 z t))
       in
       let
@@ -129,7 +130,8 @@ section basiclogic Coq
                                forall (i3:int),
                                forall (z1:a21),
                                (i3 < (len [a21||] t1)) ->
-                               ((get [a21||] i3 (set [a21||] i3 z1 t1)) = z1)
+                               ((get [a21||] i3 (set [a21||] i3 z1 t1))
+                                =[a21||] z1)
       in
       let
       get_set_neq [a22||]=
@@ -139,9 +141,9 @@ section basiclogic Coq
                                 forall (z2:a22),
                                 (i4 < (len [a22||] t2)) ->
                                 ((j < (len [a22||] t2)) ->
-                                 ((i4 <> j) ->
-                                  ((get [a22||] i4 (set [a22||] j z2 t2)) =
-                                   (get [a22||] i4 t2))))
+                                 ((i4 <>[int||] j) ->
+                                  ((get [a22||] i4 (set [a22||] j z2 t2))
+                                   =[a22||] (get [a22||] i4 t2))))
       in
       let
       length_nonnegative [a23||]=
@@ -153,7 +155,8 @@ section basiclogic Coq
                             axiom forall (l:int),
                                   forall (v2:a24),
                                   (0 <= l) ->
-                                  ((len [a24||] (create [a24||] l v2)) = l)
+                                  ((len [a24||] (create [a24||] l v2))
+                                   =[int||] l)
       in
       let
       length_access [a25||]=
@@ -162,8 +165,8 @@ section basiclogic Coq
                                   forall (v3:a25),
                                   (0 <= i5) ->
                                   ((i5 <= l1) ->
-                                   ((get [a25||] i5 (create [a25||] l1 v3)) =
-                                    v3))
+                                   ((get [a25||] i5 (create [a25||] l1 v3))
+                                    =[a25||] v3))
       in end
        section List Coq WhoList type list[a26||] =  in
        let nil [a27||]= logic list[a27||] in
@@ -185,7 +188,7 @@ section basiclogic Coq
                    ((-start <= i6) /\ (i6 <= -end)) /\
                    ((λ(cur7:<{r6 |}>) ->
                     (!! [int|r6|{r6 |}] x5 cur7) < (i6 * 10)) cur7))}
-                  x5 := ((! [int|r6|] x5) + i6)
+                  x5 :=[int|r6|] ((! [int|r6|] x5) + i6)
                   {(λ(anon3:<{r6 |}>) ->
                    (λ(cur7:<{r6 |}>) ->
                    (λ(anon4:unit) ->

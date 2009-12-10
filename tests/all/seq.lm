@@ -1,4 +1,4 @@
-let seq ['a 'b 'c||e1 e2] (f : 'a ->{|e1} 'b) (g : 'b ->{|e2} 'c) (x : 'a) =
+let seq ['a 'b 'c||'e1 'e2] (f : 'a ->{'e1} 'b) (g : 'b ->{'e2} 'c) (x : 'a) =
 {} 
 g (f x) 
 {}

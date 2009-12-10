@@ -179,18 +179,17 @@ let boolean_prop env x =
   try match destruct_app2_var' x with
   | Some ({name = Some "="},_,t1,{v = (Const Btrue | Const Bfalse as n)}) ->
       begin match destruct_app2_var t1 with
-       | Some (op, _,arg1, arg2) ->
+       | Some (op, g,arg1, arg2) ->
            let op = 
              match op with 
              | {name = Some "<<=" } -> "<="
              | {name = Some "<<" } -> "<"
              | {name = Some ">>" } -> ">"
-             | {name = Some ">>=" } -> ">>="
-             | {name = Some "==" } -> "=="
-             | {name = Some "!=" } -> "!="
+             | {name = Some ">>=" } -> ">="
+             | {name = Some "==" } -> "="
+             | {name = Some "!=" } -> "<>"
              | _ -> raise No_Match in
-           (* TODO some variables should not be built with spredef_var *)
-           let f = appi (spredef_var op l) arg1 arg2 l in
+           let f = appi (pre_defvar op g l) arg1 arg2 l in
            if n = Const Btrue then Simple_change f 
            else Simple_change (neg f l)
        | _ -> Nochange
@@ -459,7 +458,7 @@ let eq_simplify f =
 
 let allsimplify f =
   let f = logic_simplify f in
-  Myformat.printf "firstsimpl@.";
+(*   Myformat.printf "firstsimpl@."; *)
   Typing.formtyping f;
 (*   Myformat.printf "=============@.%a@.=================@." print f; *)
   let f = map_simplify f in
