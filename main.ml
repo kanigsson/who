@@ -49,8 +49,9 @@ let _ =
     maybe_abort Options.simplify_only Ast.Recon.print p;
     Typing.formtyping p;
     let s = Sectionize.section p in
-(*     maybe_abort Options.sectionize_only Sectionize.print s; *)
-    Regen2.main (Sectionize.Flatten.main s)
+    let s = Sectionize.Flatten.main s in
+    maybe_abort Options.sectionize_only Sectionize.Flatten.print_all s;
+    Regen2.main s
   with
   | Sys_error e -> Error.bad e
   | Infer.Error (s,loc) 

@@ -198,7 +198,8 @@ module Flatten = struct
     List.map (fun s -> FCoqDecl (s, name_of_string s))
       [ "Set Implicit Arguments"; ]
   let main s = 
-    coqdecls @ section s []
+    let s = section s [] in
+    if s = [] then [] else coqdecls @ s
 
   let print fmt = function
     | FNop _ -> ()
@@ -245,6 +246,8 @@ module Flatten = struct
     | FBeginSec _ -> "begin" ^ s
     | FEndSec _ -> "end" ^ s
     | _ -> s
+
+  let print_all fmt l = print_list newline print fmt l
 
 end
         
