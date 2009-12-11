@@ -42,27 +42,27 @@ section basiclogic Coq
       let create [a14||]= logic int -> a14 -> array[a14||] in
       let
       update_length [a15||]=
-                            axiom forall (t:array[a15||]),
-                                  forall (i:int),
-                                  forall (z:a15),
+                            axiom forall (t:array[a15||]).
+                                  forall (i:int).
+                                  forall (z:a15).
                                   (len [a15||] t) =[int||]
                                   (len [a15||] (set [a15||] i z t))
       in
       let
       get_set_eq [a16||]=
-                         axiom forall (t1:array[a16||]),
-                               forall (i1:int),
-                               forall (z1:a16),
+                         axiom forall (t1:array[a16||]).
+                               forall (i1:int).
+                               forall (z1:a16).
                                (i1 < (len [a16||] t1)) ->
                                ((get [a16||] i1 (set [a16||] i1 z1 t1))
                                 =[a16||] z1)
       in
       let
       get_set_neq [a17||]=
-                          axiom forall (t2:array[a17||]),
-                                forall (i2:int),
-                                forall (j:int),
-                                forall (z2:a17),
+                          axiom forall (t2:array[a17||]).
+                                forall (i2:int).
+                                forall (j:int).
+                                forall (z2:a17).
                                 (i2 < (len [a17||] t2)) ->
                                 ((j < (len [a17||] t2)) ->
                                  ((i2 <>[int||] j) ->
@@ -71,22 +71,22 @@ section basiclogic Coq
       in
       let
       length_nonnegative [a18||]=
-                                 axiom forall (t3:array[a18||]),
+                                 axiom forall (t3:array[a18||]).
                                        0 <= (len [a18||] t3)
       in
       let
       length_create [a19||]=
-                            axiom forall (l:int),
-                                  forall (v:a19),
+                            axiom forall (l:int).
+                                  forall (v:a19).
                                   (0 <= l) ->
                                   ((len [a19||] (create [a19||] l v))
                                    =[int||] l)
       in
       let
       length_access [a20||]=
-                            axiom forall (i3:int),
-                                  forall (l1:int),
-                                  forall (v1:a20),
+                            axiom forall (i3:int).
+                                  forall (l1:int).
+                                  forall (v1:a20).
                                   (0 <= i3) ->
                                   ((i3 <= l1) ->
                                    ((get [a20||] i3 (create [a20||] l1 v1))
@@ -97,8 +97,8 @@ section basiclogic Coq
        let cons [a23||]= logic a23 -> (list[a23||]) -> list[a23||] in
        let is_nil [a24||]= logic (list[a24||]) -> bool in
        let l_in [a25||]= logic a25 -> (list[a25||]) -> Prop in end
-        forall , forall , forall (rho:key),
-                          forall (rho1:int),
-                          forall (rho2:int),
-                          forall (anon:ref(rho3,int)),
+        forall . forall . forall (rho:key).
+                          forall (rho1:int).
+                          forall (rho2:int).
+                          forall (anon:ref(rho3,int)).
                           (rho2 =[int||] 5) -> (rho2 =[int||] 5)     

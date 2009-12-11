@@ -48,7 +48,7 @@ let _ =
     let p = Simplify.allsimplify p in
     maybe_abort Options.simplify_only Ast.Recon.print p;
     Typing.formtyping p;
-    let s = Sectionize.section p in
+    let s = Sectionize.section `Coq p in
     let s = Sectionize.Flatten.main s in
     maybe_abort Options.sectionize_only Sectionize.Flatten.print_all s;
     Regen2.main s

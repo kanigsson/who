@@ -6,18 +6,18 @@ Section sec.
   Require Import WhoArray.
   Require Import WhoList.
   Definition fact: int -> int. 
-  Axiom fact_zero:  (fact 0) =[int||] 1. 
+  Axiom fact_zero:  (fact 0) = int 1. 
   Axiom fact_step:  forall (n:int),
-                    (0 <= n) -> ((fact (n + 1)) =[int||] (n * (fact n))). 
+                    (0 <= n) -> ((fact (n + 1)) = int (n * (fact n))). 
   Variable x: int. 
   Hypothesis H: 0 <= x. 
   Section sec1.
-    Hypothesis H1: x =[int||] 0. 
-    Lemma goal: 1 =[int||] (fact x).
+    Hypothesis H1: x = int 0. 
+    Lemma goal: 1 = int (fact x).
     End sec1.
   Section sec2.
-    Hypothesis H2: ~ (x =[int||] 0). 
+    Hypothesis H2: ~ (x = int 0). 
     Lemma goal1: 0 <= (x - 1).
-    Lemma goal2: (x * (fact (x - 1))) =[int||] (fact x).
+    Lemma goal2: (x * (fact (x - 1))) = int (fact x).
     End sec2.
   End sec.

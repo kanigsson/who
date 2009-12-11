@@ -1,4 +1,4 @@
-section basiclogic Coq 
+section basiclogic Coq predefined
  let /\ = logic Prop -> Prop -> Prop in
  let \/ = logic Prop -> Prop -> Prop in
  let -> = logic Prop -> Prop -> Prop in
@@ -26,20 +26,20 @@ section basiclogic Coq
     let == [a5||]= logic a5 -> a5 -> bool in
     let != [a6||]= logic a6 -> a6 -> bool in
     section Whoref Coq WhoMap
-     let !! [a7|r|e]= logic ref a7 r -> <{|e }> -> a7 in
+     let !! [a7|r|e]= logic ref(r,a7) -> <{|e }> -> a7 in
      let
      ! [a8|r1|]=
-                (λ(x:ref a8 r1) ->{}  param(a8,{r1 |})
+                (λ(x:ref(r1,a8)) ->{}  param(a8,{r1 |})
                 { r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))})
      in
      let
      := [a9|r3|]=
-                 (λ(x1:ref a9 r3) ->
+                 (fun (x1:ref(r3,a9)) ->
                  (λ(v:a9) ->{}  param(unit,{r3 |}) {(!! x1 cur1) = v}))
      in
      let
      ref [a10|r4|]=
-                   (λ(v1:a10) ->{r4}  param(ref a10 r4,{r4 |})
+                   (λ(v1:a10) ->{r4}  param(ref(r4,a10),{r4 |})
                    { x2 : (!! x2 cur2) = v1})
      in
      let combine [||e1 e2]= logic <{|e1 }> -> <{|e2 }> -> <{|e1 e2 }> in
@@ -48,95 +48,97 @@ section basiclogic Coq
      let kcombine [||e12 e22]= logic (kmap) -> (kmap) -> kmap in
      let krestrict [||e13 e23]= logic (kmap) -> kmap in
      let kset [a11||]= logic (key) -> a11 -> (kmap) -> kmap in
-     let kget [a12|r5|]= logic ref a12 r5 -> (kmap) -> a12 in
+     let kget [a12|r5|]= logic ref(r5,a12) -> (kmap) -> a12 in
      let kempty = logic kmap in
-     let pre [a13 b3||]= (λ(x3:a13 * b3) -> fst x3) in
-     let post [a14 b4||]= (λ(x4:a14 * b4) -> snd x4) in end
+     let pre [a13 b3||]= (fun (x3:a13 * b3) -> fst x3) in
+     let post [a14 b4||]= (fun (x4:a14 * b4) -> snd x4) in end
       let
       forto [||e1]=
-                   (λ(inv:int -> <{|e1 }> -> Prop) ->
-                   (λ(start:int) ->
-                   (λ(end_:int) ->
-                   (λ(f:int --> unit) ->{}
+                   (fun (inv:int -> <{|e1 }> -> Prop) ->
+                   (fun (start:int) ->
+                   (fun (end_:int) ->
+                   (λ(f:int ->{|e1 }{{}} unit) ->{}
                    {(inv start cur3) /\
-                    (forall (i:int),
+                    (forall (i:int).
                      ((start <= i) /\ (i <= end_)) ->
-                     (forall (m:<{|e1 }>),
+                     (forall (m:<{|e1 }>).
                       (inv i m) ->
                       ((pre f i m) /\
-                       (forall (n:<{|e1 }>),
+                       (forall (n:<{|e1 }>).
                         (post f i m n tt) -> (inv (i + 1) n)))))}
                    param(unit,{|e1 }) {inv (max start (end_ + 1)) cur4}))))
       in
       let
       fordownto [||e2]=
-                       (λ(inv1:int -> <{|e2 }> -> Prop) ->
-                       (λ(start1:int) ->
-                       (λ(end_1:int) ->
-                       (λ(f1:int --> unit) ->{}
+                       (fun (inv1:int -> <{|e2 }> -> Prop) ->
+                       (fun (start1:int) ->
+                       (fun (end_1:int) ->
+                       (λ(f1:int ->{|e2 }{{}} unit) ->{}
                        {(inv1 start1 cur5) /\
-                        (forall (i1:int),
+                        (forall (i1:int).
                          ((end_1 <= i1) /\ (i1 <= start1)) ->
-                         (forall (m1:<{|e2 }>),
+                         (forall (m1:<{|e2 }>).
                           (inv1 i1 m1) ->
                           ((pre f1 i1 m1) /\
-                           (forall (n1:<{|e2 }>),
+                           (forall (n1:<{|e2 }>).
                             (post f1 i1 m1 n1 tt) -> (inv1 (i1 - 1) n1)))))}
                        param(unit,{|e2 })
                        {inv1 (min start1 (end_1 - 1)) cur6}))))
       in
       section Array Coq WhoArray type array[a15||] =  in
-      let get [a16||]= logic int -> (array a16) -> a16 in
-      let set [a17||]= logic int -> a17 -> (array a17) -> array a17 in
-      let len [a18||]= logic (array a18) -> int in
-      let create [a19||]= logic int -> a19 -> array a19 in
+      let get [a16||]= logic int -> (array[a16||]) -> a16 in
+      let set [a17||]= logic int -> a17 -> (array[a17||]) -> array[a17||] in
+      let len [a18||]= logic (array[a18||]) -> int in
+      let create [a19||]= logic int -> a19 -> array[a19||] in
       let
       update_length [a20||]=
-                            axiom forall (t:array a20),
-                                  forall (i2:int),
-                                  forall (z:a20),
+                            axiom forall (t:array[a20||]).
+                                  forall (i2:int).
+                                  forall (z:a20).
                                   (len t) = (len (set i2 z t))
       in
       let
       get_set_eq [a21||]=
-                         axiom forall (t1:array a21),
-                               forall (i3:int),
-                               forall (z1:a21),
+                         axiom forall (t1:array[a21||]).
+                               forall (i3:int).
+                               forall (z1:a21).
                                (i3 < (len t1)) ->
                                ((get i3 (set i3 z1 t1)) = z1)
       in
       let
       get_set_neq [a22||]=
-                          axiom forall (t2:array a22),
-                                forall (i4:int),
-                                forall (j:int),
-                                forall (z2:a22),
+                          axiom forall (t2:array[a22||]).
+                                forall (i4:int).
+                                forall (j:int).
+                                forall (z2:a22).
                                 (i4 < (len t2)) ->
                                 ((j < (len t2)) ->
                                  ((i4 <> j) ->
                                   ((get i4 (set j z2 t2)) = (get i4 t2))))
       in
       let
-      length_nonnegative [a23||]= axiom forall (t3:array a23), 0 <= (len t3)
+      length_nonnegative [a23||]=
+                                 axiom forall (t3:array[a23||]).
+                                       0 <= (len t3)
       in
       let
       length_create [a24||]=
-                            axiom forall (l:int),
-                                  forall (v2:a24),
+                            axiom forall (l:int).
+                                  forall (v2:a24).
                                   (0 <= l) -> ((len (create l v2)) = l)
       in
       let
       length_access [a25||]=
-                            axiom forall (i5:int),
-                                  forall (l1:int),
-                                  forall (v3:a25),
+                            axiom forall (i5:int).
+                                  forall (l1:int).
+                                  forall (v3:a25).
                                   (0 <= i5) ->
                                   ((i5 <= l1) ->
                                    ((get i5 (create l1 v3)) = v3))
       in end
        section List Coq WhoList type list[a26||] =  in
-       let nil [a27||]= logic list a27 in
-       let cons [a28||]= logic a28 -> (list a28) -> list a28 in
-       let is_nil [a29||]= logic (list a29) -> bool in
-       let l_in [a30||]= logic a30 -> (list a30) -> Prop in end
-        let a31 = axiom forall (x5:int), x5 = 0 in tt     
+       let nil [a27||]= logic list[a27||] in
+       let cons [a28||]= logic a28 -> (list[a28||]) -> list[a28||] in
+       let is_nil [a29||]= logic (list[a29||]) -> bool in
+       let l_in [a30||]= logic a30 -> (list[a30||]) -> Prop in end
+        let a31 = axiom forall (x5:int). x5 = 0 in tt     

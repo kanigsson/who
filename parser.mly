@@ -99,7 +99,7 @@
 %token LBRACKET RBRACKET RCURL DLCURL DRCURL PREDEFINED DLBRACKET DRBRACKET
 %token <string Loc.t> IDENT
 %token <string> TYVAR STRING
-%token IN SEMICOLON COQ CAP
+%token IN SEMICOLON COQ CAP TAKEOVER PANGOLINE
 %token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND OR
 %token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION TILDE REGION
 %token <Loc.loc> BLE BLT BGT BGE
@@ -330,9 +330,17 @@ optgen:
     list(TYVAR) RBRACKET 
     { tl, strip_info rl, el }
 
-opt_filename:
-  | fn = STRING { Some fn}
-  | PREDEFINED { None }
+takeover:
+  | PREDEFINED { Predefined }
+  | TAKEOVER { TakeOver }
+  | fn = STRING { Include fn }
+
+prover:
+  | COQ { `Coq }
+  | PANGOLINE { `Pangoline }
+
+takeoverdecl:
+  | p = prover t = takeover { p, t }
 
 (* a declaration is either
   - a let
@@ -361,7 +369,7 @@ decl:
     { typedef l (Some t) x.c void p }
   | p = REGION l = list(IDENT)
     { mk (LetReg (strip_info l, void)) p  }
-  | p1 = SECTION x = IDENT COQ fn = opt_filename l = nonempty_list(decl) p2 = END
+  | p1 = SECTION x = IDENT fn = list(takeoverdecl) l = nonempty_list(decl) p2 = END
     { mk (Section (x.c, fn, to_abst_ast l)) (embrace p1 p2) }
 
 (* a program is simply a list of declarations; we call [to_abst_ast] to

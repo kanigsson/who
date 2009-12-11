@@ -42,27 +42,27 @@ section basiclogic Coq
       let create [a14||]= logic int -> a14 -> array[a14||] in
       let
       update_length [a15||]=
-                            axiom forall (t:array[a15||]),
-                                  forall (i:int),
-                                  forall (z:a15),
+                            axiom forall (t:array[a15||]).
+                                  forall (i:int).
+                                  forall (z:a15).
                                   (len [a15||] t) =[int||]
                                   (len [a15||] (set [a15||] i z t))
       in
       let
       get_set_eq [a16||]=
-                         axiom forall (t1:array[a16||]),
-                               forall (i1:int),
-                               forall (z1:a16),
+                         axiom forall (t1:array[a16||]).
+                               forall (i1:int).
+                               forall (z1:a16).
                                (i1 < (len [a16||] t1)) ->
                                ((get [a16||] i1 (set [a16||] i1 z1 t1))
                                 =[a16||] z1)
       in
       let
       get_set_neq [a17||]=
-                          axiom forall (t2:array[a17||]),
-                                forall (i2:int),
-                                forall (j:int),
-                                forall (z2:a17),
+                          axiom forall (t2:array[a17||]).
+                                forall (i2:int).
+                                forall (j:int).
+                                forall (z2:a17).
                                 (i2 < (len [a17||] t2)) ->
                                 ((j < (len [a17||] t2)) ->
                                  ((i2 <>[int||] j) ->
@@ -71,22 +71,22 @@ section basiclogic Coq
       in
       let
       length_nonnegative [a18||]=
-                                 axiom forall (t3:array[a18||]),
+                                 axiom forall (t3:array[a18||]).
                                        0 <= (len [a18||] t3)
       in
       let
       length_create [a19||]=
-                            axiom forall (l:int),
-                                  forall (v:a19),
+                            axiom forall (l:int).
+                                  forall (v:a19).
                                   (0 <= l) ->
                                   ((len [a19||] (create [a19||] l v))
                                    =[int||] l)
       in
       let
       length_access [a20||]=
-                            axiom forall (i3:int),
-                                  forall (l1:int),
-                                  forall (v1:a20),
+                            axiom forall (i3:int).
+                                  forall (l1:int).
+                                  forall (v1:a20).
                                   (0 <= i3) ->
                                   ((i3 <= l1) ->
                                    ((get [a20||] i3 (create [a20||] l1 v1))
@@ -97,15 +97,15 @@ section basiclogic Coq
        let cons [a23||]= logic a23 -> (list[a23||]) -> list[a23||] in
        let is_nil [a24||]= logic (list[a24||]) -> bool in
        let l_in [a25||]= logic a25 -> (list[a25||]) -> Prop in end
-        (forall [e1||], forall (f:(unit -> e1 -> Prop) * (unit -> e1 -> e1 ->
-                        unit -> Prop)),
-                        forall (e2:e1),
+        (forall [e1||]. forall (f:(unit -> e1 -> Prop) * (unit -> e1 -> e1 ->
+                        unit -> Prop)).
+                        forall (e2:e1).
                         forall (g:(unit -> e1 -> Prop) * (unit -> e1 -> e1 ->
-                        unit -> Prop)),
+                        unit -> Prop)).
                         (fst [unit -> e1 -> Prop,unit -> e1 -> e1 -> unit ->
                          Prop||] f tt e2)
                         ->
-                        ((forall (e3:e1),
+                        ((forall (e3:e1).
                           (snd [unit -> e1 -> Prop,unit -> e1 -> e1 ->
                            unit -> Prop||] f tt e2 e3 tt)
                           ->
@@ -115,27 +115,27 @@ section basiclogic Coq
                          ((fst [unit -> e1 -> Prop,unit -> e1 -> e1 ->
                            unit -> Prop||] f tt e2)
                           /\
-                          (forall (e4:e1),
+                          (forall (e4:e1).
                            (snd [unit -> e1 -> Prop,unit -> e1 -> e1 ->
                             unit -> Prop||] f tt e2 e4 tt)
                            ->
                            ((fst [unit -> e1 -> Prop,unit -> e1 -> e1 ->
                              unit -> Prop||] g tt e4)
                             /\
-                            (forall (e5:e1),
+                            (forall (e5:e1).
                              (snd [unit -> e1 -> Prop,unit -> e1 -> e1 ->
                               unit -> Prop||] g tt e4 e5 tt)
                              ->
-                             (exists e6:e1,
+                             (exists e6:e1.
                               (snd [unit -> e1 -> Prop,unit -> e1 -> e1 ->
                                unit -> Prop||] f tt e2 e6 tt)
                               /\
                               (snd [unit -> e1 -> Prop,unit -> e1 -> e1 ->
                                unit -> Prop||] g tt e6 e5 tt))))))))
         /\
-        (forall , forall (r2:key),
-                  forall (r3:int),
-                  forall (x:ref(r4,int)),
-                  forall (r5:int),
-                  (exists r6:int, (r6 =[int||] 0) /\ (r5 =[int||] 1)) ->
+        (forall . forall (r2:key).
+                  forall (r3:int).
+                  forall (x:ref(r4,int)).
+                  forall (r5:int).
+                  (exists r6:int. (r6 =[int||] 0) /\ (r5 =[int||] 1)) ->
                   (r5 =[int||] 1))     

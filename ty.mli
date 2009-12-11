@@ -12,10 +12,12 @@ type t = C of (t,Name.t,NEffect.t) t'
 val print : t Myformat.fmt
 val print_list : 
   unit Myformat.fmt -> t list Myformat.fmt
-val print' : bool -> 'a Myformat.fmt -> 
+val print' : ?kind:[`Coq | `Who | `Pangoline ] -> 'a Myformat.fmt -> 
   'b Myformat.fmt -> 'c Myformat.fmt -> ('a -> bool) -> (('a ,'b,'c) t') Myformat.fmt
 
-val cprint : t Myformat.fmt
+val coq_print : t Myformat.fmt
+
+val gen_print : ?kind:[`Coq | `Who | `Pangoline ] -> t Myformat.fmt
 
 val is_compound : ('a,'b,'c) t' -> bool
 val var : Name.t -> t

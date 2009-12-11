@@ -37,7 +37,7 @@ type t' =
   | Param of ty * effect
   | For of var * t option * var * var * var * t
   | LetReg of rvar list * t
-  | Section of var * string option * t
+  | Section of var * Const.takeover list * t
   | EndSec of t
 and t = { v : t' ; loc : Loc.loc }
 and post = 

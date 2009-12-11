@@ -23,7 +23,7 @@ type ('a,'b,'c) t'' =
   | Gen of G.t *  ('a,'b,'c) t'
   | For of Name.t * ('a,'b,'c) pre * Name.t * Name.t * Name.t * ('a,'b,'c) t'
   | LetReg of Name.t list * ('a,'b,'c) t'
-  | Section of string * string option * ('a,'b,'c) t'
+  | Section of string * Const.takeover list * ('a,'b,'c) t'
   | EndSec of ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
 and ('a,'b,'c) post' = 
@@ -99,61 +99,65 @@ let is_compound_node t = is_compound t.v
 
 let maycaplist fmt l = print_list space Name.print fmt l
 
-let print tyapp pra prb prc open_ fmt t = 
-  let typrint = if tyapp then Ty.print else Ty.cprint in
+(* TODO factorize the different branches *)
+let print ?(kind=`Who) pra prb prc open_ fmt t = 
+  let typrint = Ty.gen_print ~kind in
   let rec print' fmt = function
     | Const c -> Const.print fmt c
-    | Var (v,i) -> 
-        if Inst.is_empty i || not tyapp then Name.print fmt v
-        else fprintf fmt "%a %a" Name.print v (Inst.print pra prb prc) i
     | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) -> 
         fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 Name.print v 
-          (Inst.print pra prb prc) i with_paren t2
+          (Inst.print ~kind pra prb prc) i with_paren t2
     | App (t1,t2,_,cap) ->
           fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
-    | Lam (x,t,cap,p,e,q) -> 
-        fprintf fmt "@[(λ%a@ ->{%a}@ %a@ %a@ %a)@]" 
-          binder (x,t) maycaplist cap pre p print e post q
+    | Ite (e1,e2,e3) ->
+        fprintf fmt "@[if %a then@ %a else@ %a@]" print e1 print e2 print e3
     | PureFun (t,b) ->
         let x,e = open_ b in
-        fprintf fmt "@[(λ%a@ ->@ %a)@]" binder (x,t) print e
+        fprintf fmt "@[(fun %a@ %a@ %a)@]" binder (x,t) 
+          Const.funsep kind print e
     | Let (_,g,e1,b,r) -> 
         let x,e2 = open_ b in
         fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]" 
           prrec r Name.print x G.print g print e1 print e2
-    | Ite (e1,e2,e3) ->
-        fprintf fmt "@[if %a then@ %a else@ %a@]" print e1 print e2 print e3
-    | Axiom e -> fprintf fmt "axiom %a" print e
-    | Logic t -> fprintf fmt "logic %a" typrint t
-    | TypeDef (g,t,x,e) -> 
-        fprintf fmt "type %a%a =@ %a in@ %a" 
-          Name.print x G.print g (opt_print typrint) t 
-          print e
+    | Var (v,i) -> 
+        begin match kind with
+        | `Who | `Pangoline ->
+            if Inst.is_empty i then Name.print fmt v 
+            else fprintf fmt "%a %a" Name.print v 
+              (Inst.print ~kind pra prb prc) i
+        | `Coq -> Name.print fmt v
+        end
+    | Annot (e,t) -> fprintf fmt "(%a : %a)" print e typrint t
     | Quant (k,t,b) ->
         let x,e = open_ b in
         let bind = if k = `FA then binder else binder' false in
-        fprintf fmt "@[%a %a,@ %a@]" C.quant k bind (x,t) print e
+        fprintf fmt "@[%a %a%a@ %a@]" C.quant k bind (x,t) 
+          Const.quantsep kind print e
+    | Gen (g,t) -> 
+        fprintf fmt "forall %a%a %a" G.print g Const.quantsep kind print t
+    (* specific to Who, will not be printed in backends *)
     | Param (t,e) -> 
         fprintf fmt "param(%a,%a)" 
           typrint t NEffect.print e
     | For (dir,inv,_,st,en,t) ->
         fprintf fmt "%a (%a) %a %a (%a)" 
           Name.print dir pre inv Name.print st Name.print en print t
-    | Annot (e,t) -> 
-        fprintf fmt "(%a : %a)" print e typrint t
-    | Gen (g,t) -> 
-        fprintf fmt "forall %a, %a" G.print g print t
     | LetReg (v,t) -> 
         fprintf fmt "@[letregion %a in@ %a@]" 
           (print_list space Name.print) v print t
+    | Lam (x,t,cap,p,e,q) -> 
+        fprintf fmt "@[(λ%a@ ->{%a}@ %a@ %a@ %a)@]" 
+          binder (x,t) maycaplist cap pre p print e post q
     | Section (n,f,e) -> 
-        if tyapp then 
-          fprintf fmt "@[section %s@, Coq %a@, %a " n 
-            (opt_print pp_print_string) f print e
-        else 
-          fprintf fmt "@[section %s@, Coq %a@, %a " n 
-            (opt_print pp_print_string) f print e
+          fprintf fmt "@[section %s@, %a@, %a " n 
+            (print_list newline Const.takeover) f print e
     | EndSec e -> fprintf fmt "end@]@, %a" print e
+    | Axiom e -> fprintf fmt "axiom %a" print e
+    | Logic t -> fprintf fmt "logic %a" typrint t
+    | TypeDef (g,t,x,e) -> 
+        fprintf fmt "type %a%a =@ %a in@ %a" 
+          Name.print x G.print g (opt_print typrint) t 
+          print e
       
   and print fmt t = print' fmt t.v
   and binder' par = 
@@ -195,18 +199,18 @@ module Infer = struct
 (*   let plam x t e = mk_val (PureFun (x,t,e)) (U.parr t e.t) *)
   let lam_anon t e p = lam (Name.new_anon ()) t e p
 
-  let print fmt t = print true U.print_node U.prvar U.preff (fun (_,x,e) -> x,e) fmt t
+  let print fmt t = 
+    print ~kind:`Who U.print_node U.prvar U.preff (fun (_,x,e) -> x,e) fmt t
 
 end
 
 module Recon = struct
   type t = (Ty.t, Name.t, NEffect.t) t'
 
-  let cprint fmt t =
-    print false Ty.cprint Name.print NEffect.print sopen fmt t
-
-  let print fmt t = 
-    print true Ty.print Name.print NEffect.print sopen fmt t
+  let gen_print ?(kind=`Who) fmt t = 
+    print ~kind (Ty.gen_print ~kind) Name.print NEffect.print sopen fmt t
+  let coq_print fmt t = gen_print ~kind:`Coq fmt t
+  let print fmt t = gen_print ~kind:`Who fmt t
 
   let print' fmt t = 
     print fmt {v = t; t = Ty.unit; e = NEffect.empty; loc = Loc.dummy }
@@ -431,7 +435,7 @@ end
 module ParseT = struct
   type t = (unit,unit,unit) t'
   let nothing _ () = ()
-  let print fmt t = print false nothing nothing nothing (fun (_,x,e) -> x,e) fmt t
+  let print fmt t = print nothing nothing nothing (fun (_,x,e) -> x,e) fmt t
   let mk v loc = { v = v; t = (); e = (); loc = loc }
   let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
   let annot e t = mk (Annot (e,t)) 

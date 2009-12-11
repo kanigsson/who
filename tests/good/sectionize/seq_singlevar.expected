@@ -29,7 +29,7 @@ Section sec.
     Variable r1: int. 
     Variable x: ref int r2. 
     Variable r3: int. 
-    Hypothesis H4: exists r4:int, (r4 =[int||] 0) /\ (r3 =[int||] 1). 
-    Lemma goal2: r3 =[int||] 1.
+    Hypothesis H4: exists r4:int, (r4 = int 0) /\ (r3 = int 1). 
+    Lemma goal2: r3 = int 1.
     End sec4.
   End sec.

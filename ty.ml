@@ -19,33 +19,36 @@ let maycap pr fmt = function
   | [] -> ()
   | l -> print_list space pr fmt l
 
-let print' print_map pt pr pe is_c fmt x = 
+let print' ?(kind=`Who) pt pr pe is_c fmt x = 
   let mayp fmt t = if is_c t then paren pt fmt t else pt fmt t in
   match x with 
   | Var x -> Name.print fmt x
   | Arrow (t1,t2,eff,cap) -> 
-      if print_map then fprintf fmt "%a ->%a{{%a}} %a" 
-        mayp t1 pe eff (maycap pr) cap pt t2
-      else fprintf fmt "%a --> %a" mayp t1 mayp t2
-  | PureArr (t1,t2) -> 
-      fprintf fmt "%a ->@ %a" mayp t1 pt t2
-  | Tuple (t1,t2) -> 
-      fprintf fmt "%a *@ %a" mayp t1 mayp t2
+      (* there are no impure arrow types in Coq or Pangoline, so simply print it
+      as you wish *)
+      fprintf fmt "%a ->%a{{%a}} %a" mayp t1 pe eff (maycap pr) cap pt t2
+  | Map e -> fprintf fmt "<%a>" pe e
+  | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 pt t2
+  | Tuple (t1,t2) -> fprintf fmt "%a *@ %a" mayp t1 mayp t2
   | Const c -> Const.print_ty fmt c
   | Ref (r,t) -> 
-      if print_map then fprintf fmt "ref(%a,%a)" pr r pt t
-      else fprintf fmt "ref@ %a@ %a" mayp t pr r
-  | Map e -> fprintf fmt "<%a>" pe e
+      (* in Who, this is a special type constructor, in Coq its a simple
+      application, in Pangoline its a type instantiation *)
+      begin match kind with
+      | `Who -> fprintf fmt "ref(%a,%a)" pr r pt t
+      | `Coq -> fprintf fmt "ref@ %a@ %a" mayp t pr r
+      | `Pangoline -> fprintf fmt "%a ref@" mayp t
+      end
   | App (v,i) -> 
-      fprintf fmt "%a%a" Name.print v (Inst.print ~whoapp:print_map mayp pr pe) i
+      fprintf fmt "%a%a" Name.print v (Inst.print ~kind mayp pr pe) i
 
-let rec print fmt (C x) = 
-  print' true print Name.print NEffect.print 
+let rec gen_print ?(kind=`Who) fmt (C x) = 
+  print' ~kind (gen_print ~kind) Name.print NEffect.print
     (function C x -> is_compound x) fmt x
 
-let rec cprint fmt (C x) = 
-  print' false cprint Name.print NEffect.print 
-    (function C x -> is_compound x) fmt x
+let print fmt x = gen_print ~kind:`Who fmt x
+
+let coq_print fmt x = gen_print ~kind:`Coq fmt x
 
 let print_list sep fmt t = 
   print_list sep print fmt t
@@ -234,10 +237,6 @@ let rec equal' eff t1 t2 =
 and equal eff (C a) (C b) = equal' eff a b
 
 let equal = equal NEffect.equal
-(*
-  Format.printf "equal: %a and %a: %b@." print t1 print t2 r;
-  r
-*)
 
 let forty = 
   let e = Name.from_string "e" in
@@ -262,16 +261,6 @@ let get_predef_tyvar s =
   with Not_found -> failwith ("predef_tyvar: " ^ s)
 
 let iter_vars f = Hashtbl.iter f h
-
-(*
-let map ~tyvarfun ~effectfun ~rvarfun t =
-  let rec aux' = function
-  | (Const _ as t) -> t
-  | `Tuple (t1,t2) -> `Tuple (aux t1, aux t2)
-  | `Arr (t1,t2) -> `Arr (aux t1, aux t2)
-  | `Var v -> tyvarfun v
-  | `App (v,tl) -> `App (v, List.map r tl)
-*)
 
 exception Found of t option
 

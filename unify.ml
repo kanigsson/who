@@ -70,7 +70,7 @@ let rec print_node fmt x =
   match Uf.desc x with
   | U -> fprintf fmt "%d" (Uf.tag x)
   | T t -> 
-      Ty.print' true (fun fmt t -> print_node fmt t) prvar preff is_c fmt t
+      Ty.print' ~kind:`Who (fun fmt t -> print_node fmt t) prvar preff is_c fmt t
 and is_c x = 
   match Uf.desc x with
   | U -> false
