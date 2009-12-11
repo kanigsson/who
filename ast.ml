@@ -101,7 +101,7 @@ let maycaplist fmt l = print_list space Name.print fmt l
 
 (* TODO factorize the different branches *)
 let print ?(kind=`Who) pra prb prc open_ fmt t = 
-  let typrint = Ty.gen_print ~kind in
+  let typrint = Ty.gen_print kind in
   let rec print' fmt = function
     | Const c -> Const.print fmt c
     | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) -> 
@@ -151,7 +151,8 @@ let print ?(kind=`Who) pra prb prc open_ fmt t =
     | Section (n,f,e) -> 
           fprintf fmt "@[section %s@, %a@, %a " n 
             (print_list newline Const.takeover) f print e
-    | EndSec e -> fprintf fmt "end@]@, %a" print e
+    | EndSec e -> 
+        if kind = `Who then fprintf fmt "end@]@, %a" print e
     | Axiom e -> fprintf fmt "axiom %a" print e
     | Logic t -> fprintf fmt "logic %a" typrint t
     | TypeDef (g,t,x,e) -> 
@@ -207,10 +208,10 @@ end
 module Recon = struct
   type t = (Ty.t, Name.t, NEffect.t) t'
 
-  let gen_print ?(kind=`Who) fmt t = 
-    print ~kind (Ty.gen_print ~kind) Name.print NEffect.print sopen fmt t
-  let coq_print fmt t = gen_print ~kind:`Coq fmt t
-  let print fmt t = gen_print ~kind:`Who fmt t
+  let gen_print kind fmt t = 
+    print ~kind (Ty.gen_print kind) Name.print NEffect.print sopen fmt t
+  let coq_print fmt t = gen_print `Coq fmt t
+  let print fmt t = gen_print `Who fmt t
 
   let print' fmt t = 
     print fmt {v = t; t = Ty.unit; e = NEffect.empty; loc = Loc.dummy }

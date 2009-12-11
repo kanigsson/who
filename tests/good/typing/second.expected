@@ -1,0 +1,2 @@
+cp second_who.v.orig second_who.v
+chmod a-w second_who.v.orig

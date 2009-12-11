@@ -1,6 +1,7 @@
 let prelude = "
 section basiclogic
   coq predefined
+  pangoline predefined
   logic /\\ : prop -> prop -> prop
   logic \\/ : prop -> prop -> prop
   logic -> : prop -> prop -> prop
@@ -14,6 +15,7 @@ end
 
 section arith
   coq \"WhoArith\"
+  pangoline predefined
   logic + : int -> int -> int
   logic - : int -> int -> int
   logic * : int -> int -> int
@@ -36,6 +38,8 @@ logic != ['a||] : 'a -> 'a -> bool
 
 section Whoref
   coq \"WhoMap\"
+  pangoline predefined
+
   logic !! ['a|r|'e] : ref(r,'a) -> <'e> -> 'a
   parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
     {}
@@ -85,6 +89,7 @@ parameter fordownto [||'e] (inv :  int -> <'e> -> prop) (start end_ : int)
 
 section Array
   coq \"WhoArray\"
+  pangoline takeover
   type array ['a||]
 
   logic get ['a||] : int -> 'a array -> 'a
@@ -116,6 +121,7 @@ end
 
 section List
   coq \"WhoList\"
+  pangoline takeover
   type list ['a||]
 
   logic nil ['a||] : 'a list

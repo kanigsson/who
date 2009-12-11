@@ -17,7 +17,7 @@ val print' : ?kind:[`Coq | `Who | `Pangoline ] -> 'a Myformat.fmt ->
 
 val coq_print : t Myformat.fmt
 
-val gen_print : ?kind:[`Coq | `Who | `Pangoline ] -> t Myformat.fmt
+val gen_print : [`Coq | `Who | `Pangoline ] -> t Myformat.fmt
 
 val is_compound : ('a,'b,'c) t' -> bool
 val var : Name.t -> t

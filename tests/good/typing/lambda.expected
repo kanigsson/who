@@ -1,0 +1,2 @@
+cp lambda_who.v.orig lambda_who.v
+chmod a-w lambda_who.v.orig

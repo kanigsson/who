@@ -1,0 +1,2 @@
+cp for_who.v.orig for_who.v
+chmod a-w for_who.v.orig

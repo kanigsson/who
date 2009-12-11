@@ -1,0 +1,2 @@
+cp array_who.v.orig array_who.v
+chmod a-w array_who.v.orig

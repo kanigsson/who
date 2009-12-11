@@ -14,7 +14,8 @@ let print ?(kind=`Who) pra prb prc fmt ((tl,rl,el) as g) =
     match kind with
     | `Who -> fprintf fmt "[%a|%a|%a]" (prl pra) tl (prl prb) rl (prl prc) el
     | `Coq -> fprintf fmt "%a%a%a" (prsl pra) tl (prsl prb) rl (prsl prc) el
-    | `Pangoline -> prsl pra fmt tl
+    | `Pangoline -> 
+        if tl = [] then () else fprintf fmt "[%a]" (prl pra) tl
 
 
 let map fa fb fc (tl,rl,el) =

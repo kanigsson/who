@@ -1,5 +1,6 @@
 forall (s:<{|}>).
-section basiclogic Coq 
+section basiclogic Coq predefined
+Pangoline predefined
  let /\ = logic Prop -> Prop -> Prop in
  let \/ = logic Prop -> Prop -> Prop in
  let -> = logic Prop -> Prop -> Prop in
@@ -10,6 +11,7 @@ section basiclogic Coq
  let snd [a3 b1||]= logic (a3 * b1) -> b1 in
  let , [a4 b2||]= logic a4 -> b2 -> a4 * b2 in end
   section arith Coq WhoArith
+  Pangoline predefined
    let + = logic int -> int -> int in
    let - = logic int -> int -> int in
    let * = logic int -> int -> int in
@@ -27,6 +29,7 @@ section basiclogic Coq
     let == [a5||]= logic a5 -> a5 -> bool in
     let != [a6||]= logic a6 -> a6 -> bool in
     section Whoref Coq WhoMap
+    Pangoline predefined
      let !! [a7|r|e]= logic ref(r,a7) -> <{|e }> -> a7 in
      let
      ! [a8|r1|]=
@@ -133,7 +136,8 @@ section basiclogic Coq
                        (fun (anon2:unit) ->
                        inv1 (min start1 (end_1 - 1)) cur6)))))))
       in
-      section Array Coq WhoArray type array[a15||] =  in
+      section Array Coq WhoArray
+      Pangoline takeover type array[a15||] =  in
       let get [a16||]= logic int -> (array[a16||]) -> a16 in
       let set [a17||]= logic int -> a17 -> (array[a17||]) -> array[a17||] in
       let len [a18||]= logic (array[a18||]) -> int in
@@ -190,7 +194,8 @@ section basiclogic Coq
                                    ((get [a25||] i5 (create [a25||] l1 v3))
                                     =[a25||] v3))
       in end
-       section List Coq WhoList type list[a26||] =  in
+       section List Coq WhoList
+       Pangoline takeover type list[a26||] =  in
        let nil [a27||]= logic list[a27||] in
        let cons [a28||]= logic a28 -> (list[a28||]) -> list[a28||] in
        let is_nil [a29||]= logic (list[a29||]) -> bool in

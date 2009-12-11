@@ -20,7 +20,7 @@ let type_of_constant = function
   | Btrue | Bfalse -> TBool
   | Ptrue | Pfalse -> TProp
 
-type takeover = [ `Coq | `Pangoline ] * choice
+type takeover = [`Coq | `Pangoline ] * choice
 and choice = 
   | Include of string
   | TakeOver 

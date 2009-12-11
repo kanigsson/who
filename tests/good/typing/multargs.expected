@@ -1,0 +1,2 @@
+cp multargs_who.v.orig multargs_who.v
+chmod a-w multargs_who.v.orig

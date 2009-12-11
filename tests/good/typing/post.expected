@@ -1,0 +1,2 @@
+cp post_who.v.orig post_who.v
+chmod a-w post_who.v.orig

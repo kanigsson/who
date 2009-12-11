@@ -1,0 +1,2 @@
+cp aff_who.v.orig aff_who.v
+chmod a-w aff_who.v.orig

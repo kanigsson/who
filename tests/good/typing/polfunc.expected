@@ -1,0 +1,2 @@
+cp polfunc_who.v.orig polfunc_who.v
+chmod a-w polfunc_who.v.orig

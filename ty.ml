@@ -42,13 +42,13 @@ let print' ?(kind=`Who) pt pr pe is_c fmt x =
   | App (v,i) -> 
       fprintf fmt "%a%a" Name.print v (Inst.print ~kind mayp pr pe) i
 
-let rec gen_print ?(kind=`Who) fmt (C x) = 
-  print' ~kind (gen_print ~kind) Name.print NEffect.print
+let rec gen_print kind fmt (C x) = 
+  print' ~kind (gen_print kind) Name.print NEffect.print
     (function C x -> is_compound x) fmt x
 
-let print fmt x = gen_print ~kind:`Who fmt x
+let print fmt x = gen_print `Who fmt x
 
-let coq_print fmt x = gen_print ~kind:`Coq fmt x
+let coq_print fmt x = gen_print `Coq fmt x
 
 let print_list sep fmt t = 
   print_list sep print fmt t

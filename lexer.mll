@@ -51,7 +51,7 @@ let id_or_keyword =
         ("cap", fun _ -> CAP );
         ("predefined", fun _ -> PREDEFINED );
         ("takeover", fun _ -> TAKEOVER );
-        ("PANGOLINE", fun _ -> PANGOLINE );
+        ("pangoline", fun _ -> PANGOLINE );
         ("end", fun i -> END (create_info i) );
         ("fun", fun i -> FUN (create_info i) );
       ];

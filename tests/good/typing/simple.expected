@@ -1,0 +1,2 @@
+cp simple_who.v.orig simple_who.v
+chmod a-w simple_who.v.orig

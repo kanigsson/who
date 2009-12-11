@@ -48,10 +48,12 @@ let _ =
     let p = Simplify.allsimplify p in
     maybe_abort Options.simplify_only Ast.Recon.print p;
     Typing.formtyping p;
-    let s = Sectionize.section `Coq p in
-    let s = Sectionize.Flatten.main s in
-    maybe_abort Options.sectionize_only Sectionize.Flatten.print_all s;
-    Regen2.main s
+    let kind = !Options.backend in
+    let s = Sectionize.section kind p in
+    let s = Sectionize.Flatten.main kind s in
+    maybe_abort Options.sectionize_only (Sectionize.Flatten.print_all kind) s;
+    if !Options.backend = `Coq then Regen2.main s else
+      Pangoline.out s
   with
   | Sys_error e -> Error.bad e
   | Infer.Error (s,loc) 

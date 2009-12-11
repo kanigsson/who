@@ -112,11 +112,16 @@ let intro_name s fmt l =
   if l = [] then () else
   fprintf fmt "Variables %a :@ %s.@ " (print_list space Name.print) l s
 
-let pr_generalize fmt ((tl,rl,el) as g) = 
+let pr_generalize in_term kind fmt ((tl,rl,el) as g) = 
   if Ty.Generalize.is_empty g then ()
   else
-    fprintf fmt "forall@ %a@ %a@ %a,@ "
-    (lname "Type") tl (lname "key") rl (lname "kmap") el
+    let in_term fmt = if in_term then pp_print_string fmt "type" else () in
+    match kind with
+    | `Coq -> 
+        fprintf fmt "forall@ %a@ %a@ %a,@ "
+        (lname "Type") tl (lname "key") rl (lname "kmap") el
+    | `Pangoline -> 
+        fprintf fmt "forall %t %a" in_term (print_list space Name.print) tl
 
 (*
 let pr_intro fmt = function
@@ -168,12 +173,10 @@ let print_all fmt s =
 module Flatten = struct
 
   type t = 
-    | FNop of Name.t
     | FCoqDecl of string * Name.t
     | FGen of Ty.Generalize.t
     | FVariable of Name.t * Ty.Generalize.t * Ty.t * [`Logic | `Quant]
     | FType of Name.t * Ty.Generalize.t
-    | FHypo of Name.t * Ast.Recon.t
     | FAxiom of Name.t * Ty.Generalize.t *  Ast.Recon.t
     | FPO of Name.t * Ast.Recon.t
     | FBeginSec of Name.t
@@ -188,7 +191,7 @@ module Flatten = struct
     | Gen g -> FGen g
     | Variable (n,g,t,k) -> FVariable (n,g,t,k)
     | Type (n,t) -> FType (n,t)
-    | Hypo (n,e) -> FHypo (n,e)
+    | Hypo (n,e) -> FAxiom (n,([],[],[]),e)
     | Axiom (n,g,e) -> FAxiom (n,g,e)
     | Import f -> 
         FCoqDecl (sprintf "Require Import %s" f, name_of_string f)
@@ -206,57 +209,64 @@ module Flatten = struct
   let coqdecls = 
     List.map (fun s -> FCoqDecl (s, name_of_string s))
       [ "Set Implicit Arguments"; ]
-  let main s = 
-    let s = section s [] in
-    if s = [] then [] else coqdecls @ s
 
-  let print fmt = function
-    | FNop _ -> ()
+  let main kind s = 
+    let s = section s [] in
+    if s = [] then [] else 
+      if kind = `Coq then coqdecls @ s else s
+
+  let def kind fmt x = 
+    match kind, x with
+    | `Coq, `Quant -> pp_print_string fmt "Variable"
+    | `Coq, `Logic -> pp_print_string fmt "Definition"
+    | `Pangoline, _ -> pp_print_string fmt "logic"
+
+  let hypo fmt = function
+    | `Pangoline -> pp_print_string fmt "hypothesis"
+    | `Coq -> pp_print_string fmt "Hypothesis"
+  let lemma fmt = function
+    | `Pangoline -> pp_print_string fmt "lemma"
+    | `Coq -> pp_print_string fmt "Lemma"
+
+  let print_stop fmt = function
+    | `Pangoline -> ()
+    | `Coq -> pp_print_string fmt "."
+
+  type sup = [`Coq | `Pangoline | `Who ]
+  let print kind fmt = function
     | FCoqDecl (s,_) -> fprintf fmt "%s." s
     | FGen (tl,rl,el) -> 
-        fprintf fmt "%a%a%a"
-        (intro_name "Type") tl (intro_name "key") rl (intro_name "kmap") el
-    | FVariable (x,g,t,`Quant) -> 
-        fprintf fmt "@[<hov 2>Variable %a:@ %a%a. @]" 
-        Name.print x pr_generalize g Ty.coq_print t
-    | FVariable (x,g,t,`Logic) -> 
-        fprintf fmt "@[<hov 2>Definition %a:@ %a%a. @]" 
-        Name.print x pr_generalize g Ty.coq_print t
-    | FHypo (h,e) -> 
-        fprintf fmt "@[Hypothesis %a:@ %a. @]" 
-          Name.print h Ast.Recon.coq_print e
-    | FAxiom (x,g,t) -> 
-        fprintf fmt "@[Axiom %a: %a %a. @]" Name.print x 
-          pr_generalize g Ast.Recon.coq_print t
-    | FType (x,g) -> 
-        fprintf fmt "@[Definition %a :@ %a%s. @]" Name.print x pr_generalize g
-        "Type"
+        begin match kind with
+        | `Coq ->
+            fprintf fmt "%a%a%a"
+            (intro_name "Type") tl (intro_name "key") rl (intro_name "kmap") el
+        | `Pangoline ->
+            print_list newline (fun fmt s -> 
+              fprintf fmt "type (0) %a" Name.print s) fmt tl
+        end
+    | FVariable (x,g,t,k) -> 
+        fprintf fmt "@[<hov 2>%a %a:@ %a. %a%a @]" (def kind) k Name.print x
+          (pr_generalize false kind) g (Ty.gen_print (kind :> sup)) t print_stop kind
+    | FAxiom (h,g,e) -> 
+        fprintf fmt "@[<hov 2>%a %a:@ %a. %a%a @]" hypo kind Name.print h 
+          (pr_generalize true kind) g (Ast.Recon.gen_print (kind :> sup)) e print_stop kind
     | FPO (x,e) -> 
-        fprintf fmt "@[Lemma %a:@ %a.@]" Name.print x 
-          Ast.Recon.coq_print e
-    | FBeginSec n -> fprintf fmt "@[<hov 2>Section %a." Name.print n
-    | FEndSec n -> fprintf fmt "@]End %a." Name.print n
+        fprintf fmt "@[<hov 2>%a %a:@ %a%a@]" lemma kind Name.print x 
+          (Ast.Recon.gen_print (kind :> sup)) e print_stop kind
+    | FType (x,((tl,_,_) as g)) -> 
+        begin match kind with
+        | `Coq ->
+            fprintf fmt "@[<hov 2>Definition %a :@ %a%s. @]" Name.print x 
+              (pr_generalize true `Coq) g "Type"
+        | `Pangoline ->
+            fprintf fmt "@[<hov 2> type (%d) %a @]" (List.length tl) Name.print x
+        end
+    | FBeginSec n -> 
+        if kind = `Coq then fprintf fmt "@[<hov 2>Section %a." Name.print n
+    | FEndSec n -> 
+        if kind = `Coq then fprintf fmt "@]End %a." Name.print n
 
-  let force_newline = function
-    | FBeginSec _ | FEndSec _ -> true
-    | _ -> false
-
-  let id x = 
-    let n = 
-      match x with
-      | FAxiom (n,_,_) | FPO (n,_) | FType (n,_) 
-      | FHypo (n,_) | FVariable (n,_,_,_) | FEndSec n | FBeginSec n
-      | FCoqDecl (_,n) -> n
-      | FGen g -> Ty.Generalize.get_first g
-      | FNop n -> n
-  in
-    let s = sprintf "%a" Name.print n in
-    match x with
-    | FBeginSec _ -> "begin" ^ s
-    | FEndSec _ -> "end" ^ s
-    | _ -> s
-
-  let print_all fmt l = print_list newline print fmt l
+  let print_all kind fmt l = print_list newline (print kind) fmt l
 
 end
         

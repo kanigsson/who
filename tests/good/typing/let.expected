@@ -1,0 +1,2 @@
+cp let_who.v.orig let_who.v
+chmod a-w let_who.v.orig
