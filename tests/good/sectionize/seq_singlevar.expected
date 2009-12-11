@@ -1,6 +1,5 @@
 Set Implicit Arguments.
 Section sec.
-  
   Require Import WhoArith.
   Require Import WhoMap.
   Require Import WhoArray.
