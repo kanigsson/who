@@ -41,29 +41,34 @@ let rtype env n =
       Name.print n)
 
 (* [find_type] searches for a [tau ref(r)] in the given term *)
-let rec find_type rname x =
+let find_type rname x =
 (*   Myformat.printf "find_type: %a in %a@." Name.print rname print x; *)
-  match Ty.find_type_of_r rname x.t with
-  | Some x -> x
-  | None -> 
-      match x.v with
-      | Quant (_,t,b)
-      | PureFun (t,b) ->
-          begin match Ty.find_type_of_r rname t with
-          | Some x -> x
-          | None -> 
-              let _,e = sopen b in
-              find_type rname e
-          end
-      | Let (_,_,{ v = Logic t} ,b,_) ->
-          begin match Ty.find_type_of_r rname t with
-          | Some x -> x
-          | None -> let _,e = sopen b in find_type rname e
-          end
-      | Gen (_,t) -> find_type rname t
-      | _ -> 
-          Myformat.printf "finding no type for %a in %a@." Name.print rname print x;
-          assert false
+  let rec aux x =
+    match Ty.find_type_of_r rname x.t with
+    | Some x -> x
+    | None -> 
+        match x.v with
+        | Quant (_,t,b)
+        | PureFun (t,b) ->
+            begin match Ty.find_type_of_r rname t with
+            | Some x -> x
+            | None -> 
+                let _,e = sopen b in
+                aux e
+            end
+        | Let (_,_,{ v = Logic t} ,b,_) ->
+            begin match Ty.find_type_of_r rname t with
+            | Some x -> x
+            | None -> let _,e = sopen b in aux e
+            end
+        | Gen (_,t) -> aux t
+        | App (t1,t2,_,_) -> 
+            begin try aux t1 
+            with _ -> aux t2 end
+        | _ -> assert false in
+  try aux x with e ->
+    Myformat.printf "finding no type for %a in %a@." Name.print rname print x;
+    raise e
 
 (* add the mapping (n1,n2) -> n3 to the environment for names
  * n1: region

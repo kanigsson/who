@@ -209,8 +209,7 @@ Pangoline predefined
        let cons [a30||]= logic a30 -> (list[a30||]) -> list[a30||] in
        let is_nil [a31||]= logic (list[a31||]) -> bool in
        let l_in [a32||]= logic a32 -> (list[a32||]) -> Prop in end
-        (forall [|r6|]. forall (b5:unit).
-                        forall (s4:<{r6 |}>).
+        (forall [|r6|]. forall (s4:<{r6 |}>).
                         forall (x5:ref(r6,int)).
                         let -start = 1 in
                         let -end = 5 in
@@ -239,18 +238,17 @@ Pangoline predefined
                               (anf + i6) s7)
                              /\
                              (forall (s8:<{r6 |}>).
-                              forall (anon4:unit).
                               (snd [int -> <{r6 |}> -> Prop,int -> <{r6
                                |}> -> <{r6 |}> -> unit -> Prop||]
-                               (:= [int|r6|] x5) (anf + i6) s7 s8 anon4)
+                               (:= [int|r6|] x5) (anf + i6) s7 s8 tt)
                               ->
-                              ((fun (anon5:<{r6 |}>) ->
+                              ((fun (anon4:<{r6 |}>) ->
                                (fun (cur7:<{r6 |}>) ->
-                               (fun (anon6:unit) ->
+                               (fun (anon5:unit) ->
                                (fun (i6:int) ->
                                (fun (cur7:<{r6 |}>) ->
                                (!! [int|r6|{r6 |}] x5 cur7) < (i6 * 10)))
-                               (i6 + 1) cur7))) s5 s8 anon4))))
+                               (i6 + 1) cur7))) s5 s8 tt))))
                              s6 anon3))))
                          /\
                          (fst [((int -> <{r6 |}> -> Prop) * (int -> <{r6
@@ -271,9 +269,9 @@ Pangoline predefined
                            ,[int -> <{r6 |}> -> Prop,int -> <{r6 |}> -> <{r6
                            |}> -> unit -> Prop||]
                            (fun (i6:int) ->
-                           (fun (anon5:<{r6 |}>) ->
+                           (fun (anon4:<{r6 |}>) ->
                            (fun (cur7:<{r6 |}>) ->
-                           (fun (anon6:unit) ->
+                           (fun (anon5:unit) ->
                            (fun (i6:int) ->
                            (fun (cur7:<{r6 |}>) ->
                            (!! [int|r6|{r6 |}] x5 cur7) < (i6 * 10)))
@@ -281,7 +279,6 @@ Pangoline predefined
                           s4))
                         /\
                         (forall (s9:<{r6 |}>).
-                         forall (anon7:unit).
                          (snd [((int -> <{r6 |}> -> Prop) * (int -> <{r6
                           |}> -> <{r6 |}> -> unit -> Prop)) -> <{r6 |}> ->
                           Prop,((int -> <{r6 |}> -> Prop) * (int -> <{r6
@@ -300,17 +297,17 @@ Pangoline predefined
                            ,[int -> <{r6 |}> -> Prop,int -> <{r6 |}> -> <{r6
                            |}> -> unit -> Prop||]
                            (fun (i6:int) ->
-                           (fun (anon5:<{r6 |}>) ->
+                           (fun (anon4:<{r6 |}>) ->
                            (fun (cur7:<{r6 |}>) ->
-                           (fun (anon6:unit) ->
+                           (fun (anon5:unit) ->
                            (fun (i6:int) ->
                            (fun (cur7:<{r6 |}>) ->
                            (!! [int|r6|{r6 |}] x5 cur7) < (i6 * 10)))
                            (i6 + 1) cur7)))))
-                          s4 s9 anon7)
+                          s4 s9 tt)
                          ->
                          ((fun (s10:<{r6 |}>) -> (fun (r7:unit) -> True)) s9
-                          anon7)))
+                          tt)))
         /\
         (let
          f2 [|r6|]=

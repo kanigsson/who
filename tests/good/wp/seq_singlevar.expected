@@ -231,9 +231,8 @@ Pangoline predefined
                           <{|e3 }> -> unit -> Prop||] f2 tt s4)
                          /\
                          (forall (s5:<{|e3 }>).
-                          forall (anon3:unit).
                           (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> ->
-                           <{|e3 }> -> unit -> Prop||] f2 tt s4 s5 anon3)
+                           <{|e3 }> -> unit -> Prop||] f2 tt s4 s5 tt)
                           ->
                           ((fun (s6:<{|e3 }>) ->
                            (fun (x5:unit) ->
@@ -241,14 +240,12 @@ Pangoline predefined
                             <{|e3 }> -> unit -> Prop||] g tt s6)
                            /\
                            (forall (s7:<{|e3 }>).
-                            forall (anon4:unit).
                             (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3
-                             }> -> <{|e3 }> -> unit -> Prop||] g tt s6 s7
-                             anon4)
+                             }> -> <{|e3 }> -> unit -> Prop||] g tt s6 s7 tt)
                             ->
                             ((fun (old5:<{|e3 }>) ->
                              (fun (cur8:<{|e3 }>) ->
-                             (fun (anon5:unit) ->
+                             (fun (anon3:unit) ->
                              exists i7:<{|e3 }>.
                              (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3
                               }> -> <{|e3 }> -> unit -> Prop||] f2 tt old5 i7
@@ -257,8 +254,8 @@ Pangoline predefined
                              (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3
                               }> -> <{|e3 }> -> unit -> Prop||] g tt i7 cur8
                               tt))))
-                             s4 s7 anon4))))
-                           s5 anon3))))
+                             s4 s7 tt))))
+                           s5 tt))))
         /\
         (let
          seq [||e3]=
@@ -285,7 +282,7 @@ Pangoline predefined
                     <{|e3 }> -> unit -> Prop)) ->
                     (fun (old5:<{|e3 }>) ->
                     (fun (cur8:<{|e3 }>) ->
-                    (fun (anon5:unit) ->
+                    (fun (anon3:unit) ->
                     exists i7:<{|e3 }>.
                     (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> -> <{|e3
                      }> -> unit -> Prop||] f2 tt old5 i7 tt)
@@ -296,40 +293,36 @@ Pangoline predefined
          (forall [|r6|]. forall (s8:<{r6 |}>).
                          forall (x6:ref(r6,int)).
                          (((forall (s9:<{r6 |}>).
-                            forall (z3:unit).
                             (fst [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
                              <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x6) 0
                              s9)
                             /\
                             (forall (s10:<{r6 |}>).
-                             forall (anon6:unit).
                              (snd [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
                               <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x6) 0
-                              s9 s10 anon6)
+                              s9 s10 tt)
                              ->
                              ((fun (old6:<{r6 |}>) ->
                               (fun (cur9:<{r6 |}>) ->
-                              (fun (anon7:unit) ->
+                              (fun (anon4:unit) ->
                               (!! [int|r6|{r6 |}] x6 cur9) =[int||] 0))) s9
-                              s10 anon6)))
+                              s10 tt)))
                            /\
                            (forall (s11:<{r6 |}>).
-                            forall (z4:unit).
                             (fst [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
                              <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x6) 1
                              s11)
                             /\
                             (forall (s12:<{r6 |}>).
-                             forall (anon8:unit).
                              (snd [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
                               <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x6) 1
-                              s11 s12 anon8)
+                              s11 s12 tt)
                              ->
                              ((fun (old7:<{r6 |}>) ->
                               (fun (cur10:<{r6 |}>) ->
-                              (fun (anon9:unit) ->
+                              (fun (anon5:unit) ->
                               (!! [int|r6|{r6 |}] x6 cur10) =[int||] 1))) s11
-                              s12 anon8))))
+                              s12 tt))))
                           /\
                           (fst [((unit -> <{r6 |}> -> Prop) * (unit -> <{r6
                            |}> -> <{r6 |}> -> unit -> Prop)) -> <{r6 |}> ->
@@ -343,7 +336,7 @@ Pangoline predefined
                              (fun (z3:unit) ->
                              (fun (old6:<{r6 |}>) ->
                              (fun (cur9:<{r6 |}>) ->
-                             (fun (anon7:unit) ->
+                             (fun (anon4:unit) ->
                              (!! [int|r6|{r6 |}] x6 cur9) =[int||] 0))))))
                            ((fun (z4:unit) -> (fun (s14:<{r6 |}>) -> True))
                             ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
@@ -351,12 +344,11 @@ Pangoline predefined
                             (fun (z4:unit) ->
                             (fun (old7:<{r6 |}>) ->
                             (fun (cur10:<{r6 |}>) ->
-                            (fun (anon9:unit) ->
+                            (fun (anon5:unit) ->
                             (!! [int|r6|{r6 |}] x6 cur10) =[int||] 1)))))
                            s8))
                          /\
                          (forall (s15:<{r6 |}>).
-                          forall (anon10:unit).
                           (snd [((unit -> <{r6 |}> -> Prop) * (unit -> <{r6
                            |}> -> <{r6 |}> -> unit -> Prop)) -> <{r6 |}> ->
                            Prop,((unit -> <{r6 |}> -> Prop) * (unit -> <{r6
@@ -369,7 +361,7 @@ Pangoline predefined
                              (fun (z3:unit) ->
                              (fun (old6:<{r6 |}>) ->
                              (fun (cur9:<{r6 |}>) ->
-                             (fun (anon7:unit) ->
+                             (fun (anon4:unit) ->
                              (!! [int|r6|{r6 |}] x6 cur9) =[int||] 0))))))
                            ((fun (z4:unit) -> (fun (s14:<{r6 |}>) -> True))
                             ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
@@ -377,15 +369,15 @@ Pangoline predefined
                             (fun (z4:unit) ->
                             (fun (old7:<{r6 |}>) ->
                             (fun (cur10:<{r6 |}>) ->
-                            (fun (anon9:unit) ->
+                            (fun (anon5:unit) ->
                             (!! [int|r6|{r6 |}] x6 cur10) =[int||] 1)))))
-                           s8 s15 anon10)
+                           s8 s15 tt)
                           ->
                           ((fun (old8:<{r6 |}>) ->
                            (fun (cur11:<{r6 |}>) ->
-                           (fun (anon11:unit) ->
+                           (fun (anon6:unit) ->
                            (!! [int|r6|{r6 |}] x6 cur11) =[int||] 1))) s8 s15
-                           anon10)))
+                           tt)))
          /\
          (let
           z5 [|r6|]=
@@ -395,6 +387,6 @@ Pangoline predefined
                     (fun (x6:ref(r6,int)) ->
                     (fun (old8:<{r6 |}>) ->
                     (fun (cur11:<{r6 |}>) ->
-                    (fun (anon11:unit) ->
+                    (fun (anon6:unit) ->
                     (!! [int|r6|{r6 |}] x6 cur11) =[int||] 1))))
           in (fun (s17:<{|}>) -> (fun (r7:unit) -> True)) s tt))     

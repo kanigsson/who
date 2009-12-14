@@ -215,13 +215,12 @@ Pangoline predefined
                          |}> -> unit -> Prop||] (:= [int|r6|] x5) 0 s4)
                         /\
                         (forall (s5:<{r6 |}>).
-                         forall (anon3:unit).
                          (snd [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
                           <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x5) 0 s4
-                          s5 anon3)
+                          s5 tt)
                          ->
                          ((fun (s6:<{r6 |}>) -> (fun (r7:unit) -> True)) s5
-                          anon3)))
+                          tt)))
         /\
         (let
          f2 [|r6|]=

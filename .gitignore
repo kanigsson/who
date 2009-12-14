@@ -1,6 +1,7 @@
 tests/*/*/*output
 tests/*/*/*counter
 tests/*/*/Makefile
+tests/*/*/*.pge
 tests/*counter
 _build
 *.native

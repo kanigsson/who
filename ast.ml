@@ -89,6 +89,37 @@ let close = Name.close_bind
 let sopen = Name.sopen refresh
 let vopen_with x = Name.open_with refresh x
 
+
+let rec equal' a b =
+  match a, b with
+  | Const c1, Const c2 -> Const.compare c1 c2 = 0
+  | Var (v1,i1), Var (v2,i2) ->
+      Name.equal v1 v2 && 
+      Inst.equal Ty.equal Name.equal NEffect.equal i1 i2
+  | App (a1,b1,_,_), App (a2,b2,_,_) -> equal a1 a2 && equal b1 b2
+  | Gen (g1,t1), Gen (g2,t2) ->
+      G.equal g1 g2 && equal t1 t2
+  | Ite (a1,b1,c1), Ite (a2,b2,c2) -> equal a1 a2 && equal b1 b2 && equal c1 c2
+  | Axiom e1, Axiom e2 -> equal e1 e2
+  | Logic t1, Logic t2 -> Ty.equal t1 t2
+
+  | Let (_,g1,ea1,b1,_), Let (_,g2,ea2,b2,_) ->
+      G.equal g1 g2 && equal ea1 ea2 && bind_equal b1 b2
+  | PureFun (t1,b1), PureFun (t2,b2) -> Ty.equal t1 t2 && bind_equal b1 b2
+  | Quant (k1,t1,b1), Quant (k2,t2,b2) ->
+      k1 = k2 && Ty.equal t1 t2 && bind_equal b1 b2
+  | TypeDef (g1,t1,x1,e1), TypeDef (g2,t2,x2,e2) ->
+      G.equal g1 g2 && Misc.opt_equal Ty.equal t1 t2 && Name.equal x1 x2
+      && equal e1 e2
+  | For _, _ | LetReg _, _ | Annot _, _ | Param _, _  
+  | Lam _, _ -> assert false
+  | _, _ -> false
+and bind_equal b1 b2 = 
+  (let x,eb1 = vopen b1 in
+   let eb2 = vopen_with x b2 in
+   equal eb1 eb2)
+
+and equal a b = equal' a.v b.v
 open Myformat
 
 let is_compound = function
@@ -205,6 +236,71 @@ module Infer = struct
 
 end
 
+module N = Name
+
+let destruct_app' = function
+  | App (f1,f2,_,_) -> Some (f1,f2)
+  | _ -> None
+
+let destruct_app2 = function
+  | App ({v = App (f1,f2,_,_)},f3,_,_) -> Some (f1,f2,f3)
+  | _ -> None
+
+let destruct_app2_var' x = 
+  match destruct_app2 x with
+  | Some ({v = Var (v,g)},f1,f2) -> Some (v,g,f1,f2)
+  | _ -> None
+
+let destruct_get' x = 
+  match destruct_app2_var' x with
+  | Some ({Name.name = Some "!!"}, ([t],[reg],[e]), r,map) -> 
+      Some (t,r,reg,e,map)
+  | _ -> None
+
+let destruct_kget' x = 
+  match destruct_app2_var' x with
+  | Some ({Name.name = Some "kget"}, ([t],[reg],[]), ref,map) -> 
+      Some (t,ref,reg,map)
+  | _ -> None
+
+let destruct_restrict' x = 
+  match destruct_app' x with
+  | Some ({v = Var ({Name.name = Some "restrict"},([],[],[e1;e2]))}, map) ->
+      Some (map,e1,e2)
+  | _ -> None
+
+let destruct_krestrict' x = 
+  match destruct_app' x with
+  | Some ({v = Var ({Name.name = Some "krestrict"},([],[],[e1;e2]))}, map) ->
+      Some (map,e1,e2)
+  | _ -> None
+
+let destruct_combine' x = 
+  match destruct_app2_var' x with
+  | Some ({Name.name = Some "combine"},([],[],[e1;e2]), m1,m2) ->
+      Some (m1,e1,m2,e2)
+  | _ -> None
+
+let destruct_kcombine' x = 
+  match destruct_app2_var' x with
+  | Some ({Name.name = Some "kcombine"},([],[],[e1;e2]), m1,m2) ->
+      Some (m1,e1,m2,e2)
+  | _ -> None
+
+let destruct_app2_var x = destruct_app2_var' x.v
+let destruct_app x = destruct_app' x.v
+let destruct_get x = destruct_get' x.v
+let destruct_kget x = destruct_kget' x.v
+let destruct_restrict x = destruct_restrict' x.v
+let destruct_combine x = destruct_combine' x.v
+let destruct_krestrict x = destruct_krestrict' x.v
+let destruct_kcombine x = destruct_kcombine' x.v
+
+let destruct_varname x = 
+  match x.v with
+  | Var ({ Name.name = Some v}, tl) -> Some (v,tl)
+  | _ -> None
+
 module Recon = struct
   type t = (Ty.t, Name.t, NEffect.t) t'
 
@@ -219,7 +315,13 @@ module Recon = struct
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
   let mk_val v t loc = { v = v; t = t; e = NEffect.empty; loc = loc }
 
-  let app ?(kind=`Prefix) ?(cap=[]) t1 t2 loc = 
+  let ptrue_ loc = mk_val (Const Const.Ptrue) Ty.prop loc
+  let pfalse_ loc = mk_val (Const Const.Pfalse) Ty.prop loc
+  let btrue_ loc = mk_val (Const Const.Btrue) Ty.bool loc
+  let bfalse_ loc = mk_val (Const Const.Bfalse) Ty.bool loc
+  let void loc = mk_val (Const Const.Void) Ty.unit loc
+
+  let rec app ?(kind=`Prefix) ?(cap=[]) t1 t2 loc = 
 (*     Format.printf "termapp: %a and %a@." print t1 print t2; *)
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
     if not (Ty.equal (Ty.arg t1.t) t2.t) then begin
@@ -227,100 +329,132 @@ module Recon = struct
       and argument %a has type %a@." print t1 Ty.print t1.t 
       print t2 Ty.print t2.t ; invalid_arg "app" end
     else
-    mk (App (t1,t2,kind,cap)) t (NEffect.union t1.e (NEffect.union t2.e e)) loc
+      try match destruct_varname t1 with
+      | Some ("~",_) -> 
+          begin match t2.v with
+          | Const Const.Ptrue -> pfalse_ loc
+          | Const Const.Pfalse -> ptrue_ loc
+          | _ -> raise Exit
+          end
+      | Some (("fst" | "pre" | "post" | "snd" as n),_) ->
+          begin match destruct_app2_var t2 with
+          | Some ({Name.name = Some "," },_,a,b) ->
+              if n = "fst" || n = "pre" then a 
+              else b
+          | _ -> raise Exit
+          end
+      | _ -> raise Exit
+      with Exit -> 
+        mk (App (t1,t2,kind,cap)) t 
+          (NEffect.union t1.e (NEffect.union t2.e e)) loc
 
 
-  let app2 t t1 t2 loc = app (app t t1 loc) t2 loc
-  let appi t t1 t2 loc = app ~kind:`Infix (app t t1 loc) t2 loc
-  let allapp t1 t2 kind cap loc = app ~kind ~cap t1 t2 loc
-  let var s inst (g,t) = 
+  and app2 ?kind t t1 t2 loc = 
+    try match destruct_varname t with
+    | Some ("/\\",_) ->
+        begin match t1.v,t2.v with
+        | Const Const.Ptrue, _ -> t2
+        | _, Const Const.Ptrue -> t1
+        | Const Const.Pfalse, _ -> t1
+        | _, Const Const.Pfalse -> t2
+        | _ -> raise Exit
+        end
+    | Some ("->",_) ->
+        begin match t1.v,t2.v with
+        | Const Const.Ptrue, _ -> t2
+        | _, Const Const.Ptrue -> t2
+        | Const Const.Pfalse, _ -> ptrue_ loc
+        | _, _ when equal t1 t2 -> ptrue_ loc
+        | _ -> raise Exit
+        end
+    | Some ("=",_) ->
+        if equal t1 t2 then ptrue_ loc 
+        else
+          begin match t2.v with
+          | (Const Const.Btrue | Const Const.Bfalse) as n ->
+              let f = reduce_bool t1 loc in
+              if n = Const Const.Btrue then f else neg f loc
+          | _ -> raise Exit
+          end
+    | _ -> raise Exit 
+    with Exit -> app ?kind (app t t1 loc) t2 loc
+  and appi t t1 t2 loc = app2 ~kind:`Infix t t1 t2 loc
+  and allapp t1 t2 kind cap loc = app ~kind ~cap t1 t2 loc
+  and var s inst (g,t) = 
 (*
     Format.printf "%a : (%a,%a) -> %a@." Name.print s Ty.Generalize.print g Ty.print
     t (Inst.print Ty.print Name.print NEffect.print) inst;
 *)
-    mk_val (Var (s,inst)) (Ty.allsubst g inst t) 
+    let nt = (Ty.allsubst g inst t) in
+    if nt = Ty.unit then void else mk_val (Var (s,inst)) nt
 
-  let var_i s inst t =
+  and var_i s inst t =
     mk_val (Var (s,inst)) t
 
-  module T = Ty
-  let v = T.var
-
-  let pre_defvar s inst = 
+  and pre_defvar s inst = 
     let v,g,t = Ty.get_predef_var s in
     var v inst (g,t) 
 
-  let spredef_var s  = pre_defvar s Inst.empty
+  and spredef_var s  = pre_defvar s Inst.empty
+  and neg f l = app (spredef_var "~" l) f l
 
-  open Const
+  and reduce_bool t loc = 
+    let rec aux t =
+      match destruct_app2_var t with
+      | Some (op, g, arg1, arg2) ->
+          let op' = 
+            match op.Name.name with
+            | Some "<<=" -> "<="
+            | Some "<<" -> "<"
+            | Some ">>" -> ">"
+            | Some ">>=" -> ">="
+            | Some "==" -> "="
+            | Some "!=" -> "<>"
+            | Some "band" -> "/\\"
+            | Some "bor" -> "\\/"
+            | _ -> raise Exit
+          in
+          let f arg = if op' = "/\\" || op' = "\\/" then aux arg else arg in
+          appi (pre_defvar op' g loc) (f arg1) (f arg2) loc
+      | None -> raise Exit in
+    aux t
 
-  let ptrue_ loc = mk_val (Const Ptrue) T.prop loc
-  let pfalse_ loc = mk_val (Const Pfalse) T.prop loc
-  let btrue_ loc = mk_val (Const Btrue) T.bool loc
-  let bfalse_ loc = mk_val (Const Bfalse) T.bool loc
-  let void loc = mk_val (Const Void) T.unit loc
 
   let svar s t = var s Inst.empty (G.empty,t) 
-  let le t1 t2 loc = appi (spredef_var "<=" loc) t1 t2 loc
-  let and_ t1 t2 loc = 
-    match t1.v,t2.v with
-    | Const Ptrue, _ -> t2
-    | _, Const Ptrue -> t1
-    | Const Pfalse, _ -> t1
-    | _, Const Pfalse -> t2
-    | _ -> appi (spredef_var "/\\" loc) t1 t2 loc
-
   let mempty l = spredef_var "empty" l 
-
-  let impl t1 t2 loc = 
-    match t1.v,t2.v with
-    | Const Ptrue, _ -> t2
-    | _, Const Ptrue -> t2
-    | Const Pfalse, _ -> ptrue_ loc
-    | _ -> appi (spredef_var "->" loc) t1 t2 loc
-
-  let eq t1 t2 loc = 
-    appi (pre_defvar "=" ([t1.t],[],[]) loc) t1 t2 loc
-
+  let le t1 t2 loc = appi (spredef_var "<=" loc) t1 t2 loc
+  let eq t1 t2 loc = appi (pre_defvar "=" ([t1.t],[],[]) loc) t1 t2 loc
+  let and_ t1 t2 loc = appi (spredef_var "/\\" loc) t1 t2 loc
+  let impl t1 t2 loc = appi (spredef_var "->" loc) t1 t2 loc
   let pre t loc = 
     match t.t with
-(*
-    | T.C (T.Arrow (t1,t2,e)) -> 
-        app (pre_defvar "pre" ([t1;t2],[],[e]) loc) t loc
-*)
-    | T.C (T.Tuple (t1,t2)) -> 
-        app (pre_defvar "fst" ([t1;t2],[],[]) loc) t loc
+    | Ty.C(Ty.Tuple (t1,t2)) -> app (pre_defvar "fst" ([t1;t2],[],[]) loc) t loc
     | _ -> assert false
 
-  let neg f l = app (spredef_var "~" l) f l
   let post t loc = 
     match t.t with
-(*
-    | T.C (T.Arrow (t1,t2,e)) -> 
-        app (pre_defvar "post" ([t1;t2],[],[e]) loc) t loc
-*)
-    | T.C (T.Tuple (t1,t2)) -> 
+    | Ty.C (Ty.Tuple (t1,t2)) -> 
         app (pre_defvar "snd" ([t1;t2],[],[]) loc) t loc
     | _ -> assert false
 
   let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
   let plam x t e loc = 
-    mk_val (PureFun (t,Name.close_bind x e)) (T.parr t e.t) loc
-  let efflam x eff e = plam x (T.map eff) e
+    mk_val (PureFun (t,Name.close_bind x e)) (Ty.parr t e.t) loc
+  let efflam x eff e = plam x (Ty.map eff) e
   let lam x t p e q = 
-    mk_val (Lam (x,t,[],p,e,q)) (T.arrow t e.t e.e)
+    mk_val (Lam (x,t,[],p,e,q)) (Ty.arrow t e.t e.e)
   let caplam x t cap p e q = 
-    mk_val (Lam (x,t,cap,p,e,q)) (T.caparrow t e.t e.e cap)
+    mk_val (Lam (x,t,cap,p,e,q)) (Ty.caparrow t e.t e.e cap)
   let plus t1 t2 loc = appi (spredef_var "+" loc) t1 t2 loc
   let minus t1 t2 loc = appi (spredef_var "-" loc) t1 t2 loc
-  let one = mk_val (Const (Int Big_int.unit_big_int)) T.int 
+  let one = mk_val (Const (Const.Int Big_int.unit_big_int)) Ty.int 
   let succ t loc = plus t (one loc) loc
   let prev t loc = minus t (one loc) loc
   let let_ ?(prelude=false) g e1 x e2 r = 
     mk (Let (prelude, g, e1,Name.close_bind x e2,r)) 
       e2.t (NEffect.union e1.e e2.e)
 
-  let axiom e = mk (Axiom e) T.prop e.e
+  let axiom e = mk (Axiom e) Ty.prop e.e
   let logic t = mk (Logic t) t NEffect.empty
   let param t e = mk (Param (t,e)) t e
 
@@ -351,14 +485,17 @@ module Recon = struct
     | Annot _ | Gen _ | Section _ | EndSec _ -> false
     | App (t1,_,_,_) -> 
         match t1.t with
-        | T.C (T.PureArr _) -> true
+        | Ty.C (Ty.PureArr _) -> true
         | _ -> false
   and is_value_node x = is_value x.v
 
   let squant k x t f loc = 
     match f.v with
-    | Const Ptrue -> f
-    | _ -> mk (Quant (k,t,Name.close_bind x f)) f.t f.e loc
+    | Const Const.Ptrue -> f
+    | _ -> 
+        if Ty.equal t Ty.unit then f
+        else
+          mk (Quant (k,t,Name.close_bind x f)) f.t f.e loc
 
   let aquant k x t f loc = 
     match k with
@@ -367,7 +504,7 @@ module Recon = struct
 
   let gen g e l = 
     match e.v with
-    | Const Ptrue -> e
+    | Const Const.Ptrue -> e
     | _ -> mk (Gen (g, e)) e.t e.e l
 
   let rgen rl e = gen ([],rl,[]) e
@@ -451,37 +588,6 @@ let concat t1 t2 =
   and aux t = { t with v = aux' t.v } in
   aux t1
 
-let rec equal' a b =
-  match a, b with
-  | Const c1, Const c2 -> Const.compare c1 c2 = 0
-  | Var (v1,i1), Var (v2,i2) ->
-      Name.equal v1 v2 && 
-      Inst.equal Ty.equal Name.equal NEffect.equal i1 i2
-  | App (a1,b1,_,_), App (a2,b2,_,_) -> equal a1 a2 && equal b1 b2
-  | Gen (g1,t1), Gen (g2,t2) ->
-      G.equal g1 g2 && equal t1 t2
-  | Ite (a1,b1,c1), Ite (a2,b2,c2) -> equal a1 a2 && equal b1 b2 && equal c1 c2
-  | Axiom e1, Axiom e2 -> equal e1 e2
-  | Logic t1, Logic t2 -> Ty.equal t1 t2
-
-  | Let (_,g1,ea1,b1,_), Let (_,g2,ea2,b2,_) ->
-      G.equal g1 g2 && equal ea1 ea2 && bind_equal b1 b2
-  | PureFun (t1,b1), PureFun (t2,b2) -> Ty.equal t1 t2 && bind_equal b1 b2
-  | Quant (k1,t1,b1), Quant (k2,t2,b2) ->
-      k1 = k2 && Ty.equal t1 t2 && bind_equal b1 b2
-  | TypeDef (g1,t1,x1,e1), TypeDef (g2,t2,x2,e2) ->
-      G.equal g1 g2 && Misc.opt_equal Ty.equal t1 t2 && Name.equal x1 x2
-      && equal e1 e2
-  | For _, _ | LetReg _, _ | Annot _, _ | Param _, _  
-  | Lam _, _ -> assert false
-  | _, _ -> false
-and bind_equal b1 b2 = 
-  (let x,eb1 = vopen b1 in
-   let eb2 = vopen_with x b2 in
-   equal eb1 eb2)
-
-and equal a b = equal' a.v b.v
-
 
 let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
   let rec aux t = 
@@ -526,66 +632,6 @@ let subst x v e =
 let polsubst (tvl,rvl,evl) x v e =
   let builder (tl,rl,el)= (esubst evl el (rsubst rvl rl (tsubst tvl tl v))).v in
   subst x builder e
-
-open Name
-
-let destruct_app' = function
-  | App (f1,f2,_,_) -> Some (f1,f2)
-  | _ -> None
-
-let destruct_app2 = function
-  | App ({v = App (f1,f2,_,_)},f3,_,_) -> Some (f1,f2,f3)
-  | _ -> None
-
-let destruct_app2_var' x = 
-  match destruct_app2 x with
-  | Some ({v = Var (v,g)},f1,f2) -> Some (v,g,f1,f2)
-  | _ -> None
-
-let destruct_get' x = 
-  match destruct_app2_var' x with
-  | Some ({name = Some "!!"}, ([t],[reg],[e]), r,map) -> 
-      Some (t,r,reg,e,map)
-  | _ -> None
-
-let destruct_kget' x = 
-  match destruct_app2_var' x with
-  | Some ({name = Some "kget"}, ([t],[reg],[]), ref,map) -> 
-      Some (t,ref,reg,map)
-  | _ -> None
-
-let destruct_restrict' x = 
-  match destruct_app' x with
-  | Some ({v = Var ({name = Some "restrict"},([],[],[e1;e2]))}, map) ->
-      Some (map,e1,e2)
-  | _ -> None
-
-let destruct_krestrict' x = 
-  match destruct_app' x with
-  | Some ({v = Var ({name = Some "krestrict"},([],[],[e1;e2]))}, map) ->
-      Some (map,e1,e2)
-  | _ -> None
-
-let destruct_combine' x = 
-  match destruct_app2_var' x with
-  | Some ({name = Some "combine"},([],[],[e1;e2]), m1,m2) ->
-      Some (m1,e1,m2,e2)
-  | _ -> None
-
-let destruct_kcombine' x = 
-  match destruct_app2_var' x with
-  | Some ({name = Some "kcombine"},([],[],[e1;e2]), m1,m2) ->
-      Some (m1,e1,m2,e2)
-  | _ -> None
-
-let destruct_app2_var x = destruct_app2_var' x.v
-let destruct_app x = destruct_app' x.v
-let destruct_get x = destruct_get' x.v
-let destruct_kget x = destruct_kget' x.v
-let destruct_restrict x = destruct_restrict' x.v
-let destruct_combine x = destruct_combine' x.v
-let destruct_krestrict x = destruct_krestrict' x.v
-let destruct_kcombine x = destruct_kcombine' x.v
 
 
 

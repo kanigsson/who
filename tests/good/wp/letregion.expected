@@ -210,7 +210,6 @@ Pangoline predefined
        let is_nil [a31||]= logic (list[a31||]) -> bool in
        let l_in [a32||]= logic a32 -> (list[a32||]) -> Prop in end
         (forall . forall (s4:<{|}>).
-                  forall (z3:unit).
                   forall [|rho|]. forall (s5:<{rho |}>).
                                   (fst [int -> <{rho |}> -> Prop,int -> <{rho
                                    |}> -> <{rho |}> -> ref(rho,int) ->

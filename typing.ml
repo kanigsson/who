@@ -207,7 +207,9 @@ and typing' env loc = function
         let t3, eff3, cap3 = typing env e3 in
         if Ty.equal t2 t3 then 
           t2, NEffect.union eff1 (NEffect.union eff2 eff3),
-          disj_union3 loc cap1 cap2 cap3
+          (* we have the right to create the same ref on both sides of the
+            branch *)
+          disjoint_union loc cap1 (RS.union cap2 cap3)
         else error loc "mismatch on if branches"
       else error loc "condition is not of boolean type"
   | LetReg (vl,e) ->

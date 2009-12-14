@@ -228,7 +228,7 @@ Pangoline predefined
         (forall . forall (s4:<{|}>).
                   forall (x5:int).
                   ((fun (cur7:<{|}>) -> 0 <= x5) s4) ->
-                  (if (x5 ==[int||] 0) =[bool||] true then
+                  (if x5 =[int||] 0 then
                    (fun (old5:<{|}>) ->
                    (fun (cur8:<{|}>) ->
                    (fun (r6:int) -> r6 =[int||] (fact x5)))) s4 s4 1 else
