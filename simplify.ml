@@ -222,9 +222,9 @@ let elim_eq_intro _ = function
       | Some ({name = Some "->"}, _, t1,f)  ->
           begin match destruct_app2_var t1 with
           | Some ({name= Some "="}, _,{v= Var(y,_)}, def) when Name.equal x y ->
-              Change_rerun (subst x (fun _ -> def.v) f)
+              Change_rerun (subst x (fun _ -> def) f)
           | Some ({name= Some "=" }, _,def,{v = Var (y,_)}) when Name.equal x y ->
-              Change_rerun (subst x (fun _ -> def.v) f)
+              Change_rerun (subst x (fun _ -> def) f)
           | _ -> Nochange
           end
       | _ -> Nochange
@@ -250,7 +250,7 @@ let quant_over_true env x =
 let beta_reduce _ = function
   | App ({v = PureFun (_, l)} ,f2,_,_) ->
       let x,body = vopen l in
-      Change_rerun (subst x (fun _ -> f2.v) body)
+      Change_rerun (subst x (fun _ -> f2) body)
   | Let (_,_,{v = Axiom _ | Logic _ },_,_) ->
       Nochange
   | Let (_,g,v,l,_) -> 
@@ -304,13 +304,7 @@ let swap_impl env x =
 let simplifiers =
   [
     beta_reduce;
-    logic_simpl;
-    tuple_reduce;
     elim_eq_intro;
-    unit_void;
-    quant_over_true;
-    boolean_prop;
-(*     remove_pre_post; *)
   ]
 
 let simplify_maps = 
@@ -320,7 +314,10 @@ let simplify_maps =
   ]
 
 let elim_eqs =
-  [ swap_impl; elim_eq_intro; logic_simpl ]
+  [ swap_impl; 
+    elim_eq_intro; 
+    logic_simpl 
+  ]
 
 let exhaust simplifiers env f = 
   let rec aux b f = function
@@ -386,12 +383,7 @@ let simplify ~genbind
       | Section (n,f,e) -> 
           section n f (aux env e) l
       | EndSec e -> endsec (aux env e) l 
-      | Param (t,e) -> param (tyfun env t) e l
-(*
-      | Lam (x,t,p,e,q) -> 
-          lam x t (pre env p) (aux env e) (post env q) l
-*)
-      | Lam _ | Annot _ | For _ | LetReg _ -> assert false in
+      | Lam _ | Annot _ | For _ | LetReg _ | Param _ -> assert false in
     let f =
       match exhaust after env f with
       | Nochange -> f
@@ -464,15 +456,12 @@ let eq_simplify f =
 
 let allsimplify f =
   let f = logic_simplify f in
-(*   Myformat.printf "firstsimpl@."; *)
-  Typing.formtyping f;
 (*   Myformat.printf "=============@.%a@.=================@." print f; *)
+  Typing.formtyping f;
   let f = map_simplify f in
-(*   Myformat.printf "secondsimpl@."; *)
 (*
   Myformat.printf ">>>>>>>>>>>>>@.%a@.>>>>>>>>>>>>>>>>>@." print f;
 *)
   Typing.formtyping f;
   let f = eq_simplify f in
-(*   Myformat.printf "third simpl@."; *)
   f

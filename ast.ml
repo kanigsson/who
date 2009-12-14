@@ -321,6 +321,34 @@ module Recon = struct
   let bfalse_ loc = mk_val (Const Const.Bfalse) Ty.bool loc
   let void loc = mk_val (Const Const.Void) Ty.unit loc
 
+  let true_or e v = 
+    match e.v with
+    | Const Const.Ptrue -> e
+    | _ -> v
+
+  let annot e t = true_or e (mk (Annot (e,t)) t e.e e.loc)
+
+  let let_ ?(prelude=false) g e1 x e2 r l = 
+    true_or e2 
+      (mk (Let (prelude, g, e1,Name.close_bind x e2,r)) e2.t 
+        (NEffect.union e1.e e2.e) l)
+
+  let plam x t e loc = 
+    mk_val (PureFun (t,Name.close_bind x e)) (Ty.parr t e.t) loc
+
+  let squant k x t f loc = 
+    if Ty.equal t Ty.unit then f 
+    else true_or f (mk (Quant (k,t,Name.close_bind x f)) f.t f.e loc)
+
+  let axiom e = mk (Axiom e) Ty.prop e.e
+  let logic t = mk (Logic t) t NEffect.empty
+  let typedef g t v e l = 
+    true_or e (mk (TypeDef (g,t,v,e)) e.t e.e l)
+  let gen g e l = true_or e (mk (Gen (g, e)) e.t e.e l)
+  let section n f e l = true_or e (mk (Section (n,f,e)) e.t e.e l)
+  let endsec e l = true_or e (mk (EndSec e) e.t e.e l)
+
+
   let rec app ?(kind=`Prefix) ?(cap=[]) t1 t2 loc = 
 (*     Format.printf "termapp: %a and %a@." print t1 print t2; *)
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
@@ -418,14 +446,44 @@ module Recon = struct
           appi (pre_defvar op' g loc) (f arg1) (f arg2) loc
       | None -> raise Exit in
     aux t
+  and rebuild_map ~varfun t =
+    (* this function is intended to be used with logic functions only *)
+    let l = t.loc in
+    let rec aux t = match t.v with
+    | Const _ | Logic _ -> t
+    | Var (v,i) -> varfun v i t
+    | App (t1,t2,p,cap) -> allapp (aux t1) (aux t2) p cap l
+    | Annot (e,t) -> annot (aux e) t
+    | Let (p,g,e1,b,r) -> 
+        let x,f = if p then sopen b else vopen b in 
+        let_ ~prelude:p g (aux e1) x (aux f) r l
+    | PureFun (t,b) -> 
+        let x,f = vopen b in 
+        plam x t (aux f) l
+    | Quant (k,t,b) -> 
+        let x,f = vopen b in 
+        squant k x t (aux f) l
+    | Ite (e1,e2,e3) -> ite ~logic:false (aux e1) (aux e2) (aux e3) l
+    | Axiom e -> axiom (aux e) l
+    | TypeDef (g,t,x,e) -> typedef g t x (aux e) l
+    | Gen (g,e) -> gen g (aux e) l
+    | Section (n,f,e) -> section n f (aux e) l
+    | EndSec e -> endsec (aux e) l 
+    | _ -> assert false in
+    aux t
+  and impl t1 t2 loc = appi (spredef_var "->" loc) t1 t2 loc
+  and ite ?(logic=true) e1 e2 e3 l = 
+    let im b c = impl (eq e1 (b l) l) c l in
+    if logic then and_ (im btrue_ e2) (im bfalse_ e3) l
+    else
+      mk (Ite (e1,e2,e3)) e2.t (NEffect.union e1.e (NEffect.union e2.e e3.e)) l
+  and eq t1 t2 loc = appi (pre_defvar "=" ([t1.t],[],[]) loc) t1 t2 loc
+  and and_ t1 t2 loc = appi (spredef_var "/\\" loc) t1 t2 loc
 
-
+    
   let svar s t = var s Inst.empty (G.empty,t) 
   let mempty l = spredef_var "empty" l 
   let le t1 t2 loc = appi (spredef_var "<=" loc) t1 t2 loc
-  let eq t1 t2 loc = appi (pre_defvar "=" ([t1.t],[],[]) loc) t1 t2 loc
-  let and_ t1 t2 loc = appi (spredef_var "/\\" loc) t1 t2 loc
-  let impl t1 t2 loc = appi (spredef_var "->" loc) t1 t2 loc
   let pre t loc = 
     match t.t with
     | Ty.C(Ty.Tuple (t1,t2)) -> app (pre_defvar "fst" ([t1;t2],[],[]) loc) t loc
@@ -438,8 +496,6 @@ module Recon = struct
     | _ -> assert false
 
   let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
-  let plam x t e loc = 
-    mk_val (PureFun (t,Name.close_bind x e)) (Ty.parr t e.t) loc
   let efflam x eff e = plam x (Ty.map eff) e
   let lam x t p e q = 
     mk_val (Lam (x,t,[],p,e,q)) (Ty.arrow t e.t e.e)
@@ -450,12 +506,7 @@ module Recon = struct
   let one = mk_val (Const (Const.Int Big_int.unit_big_int)) Ty.int 
   let succ t loc = plus t (one loc) loc
   let prev t loc = minus t (one loc) loc
-  let let_ ?(prelude=false) g e1 x e2 r = 
-    mk (Let (prelude, g, e1,Name.close_bind x e2,r)) 
-      e2.t (NEffect.union e1.e e2.e)
 
-  let axiom e = mk (Axiom e) Ty.prop e.e
-  let logic t = mk (Logic t) t NEffect.empty
   let param t e = mk (Param (t,e)) t e
 
   let mk_tuple t1 t2 loc = 
@@ -463,13 +514,6 @@ module Recon = struct
 
 
   let letreg l e = mk (LetReg (l,e)) e.t (NEffect.rremove e.e l)
-  let ite ?(logic=true) e1 e2 e3 l = 
-    let im b c = impl (eq e1 (b l) l) c l in
-    if logic then and_ (im btrue_ e2) (im bfalse_ e3) l
-    else
-      mk (Ite (e1,e2,e3)) e2.t (NEffect.union e1.e (NEffect.union e2.e e3.e)) l
-
-  let typedef g t v e = mk (TypeDef (g,t,v,e)) e.t e.e
 
   let applist l loc = 
     match l with
@@ -492,28 +536,12 @@ module Recon = struct
         | _ -> false
   and is_value_node x = is_value x.v
 
-  let squant k x t f loc = 
-    match f.v with
-    | Const Const.Ptrue -> f
-    | _ -> 
-        if Ty.equal t Ty.unit then f
-        else
-          mk (Quant (k,t,Name.close_bind x f)) f.t f.e loc
-
   let aquant k x t f loc = 
     match k with
     | `LAM -> plam x t f loc
     | (`FA | `EX) as k -> squant k x t f loc
 
-  let gen g e l = 
-    match e.v with
-    | Const Const.Ptrue -> e
-    | _ -> mk (Gen (g, e)) e.t e.e l
-
   let rgen rl e = gen ([],rl,[]) e
-
-  let section n f e = mk (Section (n,f,e)) e.t e.e
-  let endsec e = mk (EndSec e) e.t e.e
 
 
   let sforall x = squant `FA x
@@ -626,14 +654,11 @@ let esubst evl el e =
     ~effectfun:(NEffect.lsubst evl el) e
 
 let subst x v e =
-  open_close_map
-    ~varfun:(fun z i -> 
-        if Name.equal z x then v i else Var (z,i))
-    ~tyfun:Misc.id ~rvarfun:Misc.id ~effectfun:Misc.id
-    e
+  Recon.rebuild_map
+    ~varfun:(fun z i def -> if Name.equal z x then v i else def) e
 
 let polsubst (tvl,rvl,evl) x v e =
-  let builder (tl,rl,el)= (esubst evl el (rsubst rvl rl (tsubst tvl tl v))).v in
+  let builder (tl,rl,el)= esubst evl el (rsubst rvl rl (tsubst tvl tl v)) in
   subst x builder e
 
 
