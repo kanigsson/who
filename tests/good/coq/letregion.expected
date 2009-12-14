@@ -1,0 +1,7 @@
+cp letregion_who.v.orig letregion_who.v
+chmod a-w letregion_who.v.orig
+coqc letregion_who.v
+rm -f letregion_who.v.orig
+rm -f letregion_who.v
+rm -f letregion_who.glob
+rm -f letregion_who.vo

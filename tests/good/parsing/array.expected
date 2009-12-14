@@ -24,7 +24,9 @@ Pangoline predefined
    let >>= = logic int -> int -> bool in
    let max = logic int -> int -> int in
    let min = logic int -> int -> int in
-   let mod = logic int -> int -> int in end
+   let mod = logic int -> int -> int in
+   let band = logic bool -> bool -> bool in
+   let bor = logic bool -> bool -> bool in end
     let == [a5||]= logic a5 -> a5 -> bool in
     let != [a6||]= logic a6 -> a6 -> bool in
     section Whoref Coq WhoMap
@@ -90,70 +92,72 @@ Pangoline predefined
       in
       section Array Coq WhoArray
       Pangoline takeover type array[a15||] =  in
-      let get [a16||]= logic int -> (array[a16||]) -> a16 in
-      let set [a17||]= logic int -> a17 -> (array[a17||]) -> array[a17||] in
-      let len [a18||]= logic (array[a18||]) -> int in
-      let create [a19||]= logic int -> a19 -> array[a19||] in
+      let ar_empty [a16||]= logic array[a16||] in
+      let get [a17||]= logic int -> (array[a17||]) -> a17 in
+      let set [a18||]= logic int -> a18 -> (array[a18||]) -> array[a18||] in
+      let len [a19||]= logic (array[a19||]) -> int in
+      let create [a20||]= logic int -> a20 -> array[a20||] in
       let
-      update_length [a20||]=
-                            axiom forall (t:array[a20||]).
+      update_length [a21||]=
+                            axiom forall (t:array[a21||]).
                                   forall (i2:int).
-                                  forall (z:a20).
+                                  forall (z:a21).
                                   (len t) = (len (set i2 z t))
       in
       let
-      get_set_eq [a21||]=
-                         axiom forall (t1:array[a21||]).
+      get_set_eq [a22||]=
+                         axiom forall (t1:array[a22||]).
                                forall (i3:int).
-                               forall (z1:a21).
+                               forall (z1:a22).
                                (i3 < (len t1)) ->
                                ((get i3 (set i3 z1 t1)) = z1)
       in
+      let length_empty [a23||]= axiom (len (ar_empty : array[a23||])) = 0 in
       let
-      get_set_neq [a22||]=
-                          axiom forall (t2:array[a22||]).
+      get_set_neq [a24||]=
+                          axiom forall (t2:array[a24||]).
                                 forall (i4:int).
                                 forall (j:int).
-                                forall (z2:a22).
+                                forall (z2:a24).
                                 (i4 < (len t2)) ->
                                 ((j < (len t2)) ->
                                  ((i4 <> j) ->
                                   ((get i4 (set j z2 t2)) = (get i4 t2))))
       in
       let
-      length_nonnegative [a23||]=
-                                 axiom forall (t3:array[a23||]).
+      length_nonnegative [a25||]=
+                                 axiom forall (t3:array[a25||]).
                                        0 <= (len t3)
       in
       let
-      length_create [a24||]=
+      length_create [a26||]=
                             axiom forall (l:int).
-                                  forall (v2:a24).
+                                  forall (v2:a26).
                                   (0 <= l) -> ((len (create l v2)) = l)
       in
       let
-      length_access [a25||]=
+      length_access [a27||]=
                             axiom forall (i5:int).
                                   forall (l1:int).
-                                  forall (v3:a25).
+                                  forall (v3:a27).
                                   (0 <= i5) ->
                                   ((i5 <= l1) ->
                                    ((get i5 (create l1 v3)) = v3))
       in end
        section List Coq WhoList
-       Pangoline takeover type list[a26||] =  in
-       let nil [a27||]= logic list[a27||] in
-       let cons [a28||]= logic a28 -> (list[a28||]) -> list[a28||] in
-       let is_nil [a29||]= logic (list[a29||]) -> bool in
-       let l_in [a30||]= logic a30 -> (list[a30||]) -> Prop in end
-        type array1[a31||] =  in
-       let get1 [a32||]= logic int -> (array1[a32||]) -> a32 in
-       let set1 [a33||]= logic int -> a33 -> (array1[a33||]) -> array1[a33||]
+       Pangoline takeover type list[a28||] =  in
+       let nil [a29||]= logic list[a29||] in
+       let cons [a30||]= logic a30 -> (list[a30||]) -> list[a30||] in
+       let is_nil [a31||]= logic (list[a31||]) -> bool in
+       let l_in [a32||]= logic a32 -> (list[a32||]) -> Prop in end
+        type array1[a33||] =  in
+       let get1 [a34||]= logic int -> (array1[a34||]) -> a34 in
+       let set1 [a35||]= logic int -> a35 -> (array1[a35||]) -> array1[a35||]
        in
        let
-       get_set_eq1 [a34||]=
-                           axiom forall (t4:array1[a34||]).
+       get_set_eq1 [a36||]=
+                           axiom forall (t4:array1[a36||]).
                                  forall (i6:int).
-                                 forall (z3:a34).
+                                 forall (z3:a36).
                                  (get1 i6 (set1 i6 z3 t4)) = z3
        in tt     

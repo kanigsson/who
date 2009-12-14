@@ -1,0 +1,7 @@
+cp simple_who.v.orig simple_who.v
+chmod a-w simple_who.v.orig
+coqc simple_who.v
+rm -f simple_who.v.orig
+rm -f simple_who.v
+rm -f simple_who.glob
+rm -f simple_who.vo

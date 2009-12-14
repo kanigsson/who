@@ -1,2 +1,0 @@
-cp postapply_who.v.orig postapply_who.v
-chmod a-w postapply_who.v.orig

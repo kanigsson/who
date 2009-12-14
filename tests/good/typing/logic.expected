@@ -1,2 +1,0 @@
-cp logic_who.v.orig logic_who.v
-chmod a-w logic_who.v.orig

@@ -1,0 +1,7 @@
+cp lambda_who.v.orig lambda_who.v
+chmod a-w lambda_who.v.orig
+coqc lambda_who.v
+rm -f lambda_who.v.orig
+rm -f lambda_who.v
+rm -f lambda_who.glob
+rm -f lambda_who.vo

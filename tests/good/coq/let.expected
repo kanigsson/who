@@ -1,0 +1,7 @@
+cp let_who.v.orig let_who.v
+chmod a-w let_who.v.orig
+coqc let_who.v
+rm -f let_who.v.orig
+rm -f let_who.v
+rm -f let_who.glob
+rm -f let_who.vo

@@ -1,1 +1,11 @@
-
+Set Implicit Arguments.
+Section sec.
+  Require Import WhoArith.
+  Require Import WhoMap.
+  Require Import WhoArray.
+  Require Import WhoList.
+  Lemma goal: True.
+    Proof.
+    Admitted.
+    
+  End sec.

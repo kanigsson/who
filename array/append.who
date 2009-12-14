@@ -6,24 +6,27 @@ let append ['a|x y z|] (ar : ref(x,'a array)) (ar2 : ref(y,'a array)) =
   {}
   let l1 = len (!ar) in
   let l2 = len (!ar2) in
-  let res = ref {{z}} ((create (l1 + l2) : 'a array))  in
-  let arold = !ar in
-  let arold2 = !ar2 in
-  let anon = 
-    for i = 0 to l1 -1 do 
-      {arold = !!ar /\ id_bet (!!ar) (!!res) 0 0 i /\ len (!!res) = l1 + l2}
-      res := set i (get i (!ar)) (!res)
-    done in
-  let ari = !ar in
-  let anon = 
-    for j = 0 to l2 -1 do 
-      { id_bet ari (!!res) 0 0 (len ari) /\ 
-        arold2 = !!ar2 /\ id_bet (!!ar2) (!!res) 0 l1 j /\ len (!!res) = l1 + l2}
-      res := set (l1 + j) (get j (!ar2)) (!res)
-    done in
-    res
-  { r: 
-    let l1 = len (!!ar) in
-    let l2 = len (!!ar2) in
-    id_bet (!!ar) (!!r) 0 0 l1 /\ id_bet (!!ar2) (!!r) 0 l1 l2
-     /\ !!ar|old = !!ar /\ !!ar2|old = !!ar2 /\ len (!!r) = l1 + l2 }
+  if l1 == 0 then ref{{z}} ar_empty
+  else
+    let baseelt = get 0 (if l1 = 0 then !ar else !ar2) in
+    let res = ref {{z}} ((create (l1 + l2) : 'a array))  in
+    let arold = !ar in
+    let arold2 = !ar2 in
+    let anon = 
+      for i = 0 to l1 -1 do 
+        {arold = !!ar /\ id_bet (!!ar) (!!res) 0 0 i /\ len (!!res) = l1 + l2}
+        res := set i (get i (!ar)) (!res)
+      done in
+    let ari = !ar in
+    let anon = 
+      for j = 0 to l2 -1 do 
+        { id_bet ari (!!res) 0 0 (len ari) /\ 
+          arold2 = !!ar2 /\ id_bet (!!ar2) (!!res) 0 l1 j /\ len (!!res) = l1 + l2}
+        res := set (l1 + j) (get j (!ar2)) (!res)
+      done in
+      res
+    { r: 
+      let l1 = len (!!ar) in
+      let l2 = len (!!ar2) in
+      id_bet (!!ar) (!!r) 0 0 l1 /\ id_bet (!!ar2) (!!r) 0 l1 l2
+       /\ !!ar|old = !!ar /\ !!ar2|old = !!ar2 /\ len (!!r) = l1 + l2 }

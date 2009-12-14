@@ -1,2 +1,0 @@
-cp seq_who.v.orig seq_who.v
-chmod a-w seq_who.v.orig

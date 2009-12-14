@@ -6,16 +6,22 @@ Section sec.
   Require Import WhoList.
   Variables a b c e1 e2 : Type.
   
-  Variable f: (a -> e1 -> Prop) * (a -> e1 -> e1 -> b -> Prop). 
-  Variable g: (b -> e2 -> Prop) * (b -> e2 -> e2 -> c -> Prop). 
-  Variable e11: e1. 
-  Variable e21: e2. 
-  Variable x: a. 
+  Variable f:  (a -> e1 -> Prop) * (a -> e1 -> e1 -> b -> Prop). 
+  Variable g:  (b -> e2 -> Prop) * (b -> e2 -> e2 -> c -> Prop). 
+  Variable e11:  e1. 
+  Variable e21:  e2. 
+  Variable x:  a. 
   Lemma goal: fst f x e11.
+    Proof.
+    Admitted.
+    
   Section sec1.
-    Variable e12: e1. 
-    Variable anon: b. 
-    Hypothesis H: snd f x e11 e12 anon. 
+    Variable e12:  e1. 
+    Variable anon:  b. 
+    Hypothesis H:  snd f x e11 e12 anon. 
     Lemma goal1: fst g anon e21.
+      Proof.
+      Admitted.
+      
     End sec1.
   End sec.

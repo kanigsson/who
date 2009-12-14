@@ -1,0 +1,7 @@
+cp logic_who.v.orig logic_who.v
+chmod a-w logic_who.v.orig
+coqc logic_who.v
+rm -f logic_who.v.orig
+rm -f logic_who.v
+rm -f logic_who.glob
+rm -f logic_who.vo

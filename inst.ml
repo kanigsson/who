@@ -9,11 +9,13 @@ let prsl pr fmt l =
   if l = [] then () else 
     fprintf fmt "@ %a" (print_list space pr) l
 
-let print ?(kind=`Who) pra prb prc fmt ((tl,rl,el) as g) =
+let print ?(kind=`Who) ~intype pra prb prc fmt ((tl,rl,el) as g) =
   if is_empty g then () else
     match kind with
     | `Who -> fprintf fmt "[%a|%a|%a]" (prl pra) tl (prl prb) rl (prl prc) el
-    | `Coq -> fprintf fmt "%a%a%a" (prsl pra) tl (prsl prb) rl (prsl prc) el
+    | `Coq -> 
+        if intype then
+          fprintf fmt "%a%a%a" (prsl pra) tl (prsl prb) rl (prsl prc) el
     | `Pangoline -> 
         if tl = [] then () else fprintf fmt "[%a]" (prl pra) tl
 

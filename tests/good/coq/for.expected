@@ -1,0 +1,7 @@
+cp for_who.v.orig for_who.v
+chmod a-w for_who.v.orig
+coqc for_who.v
+rm -f for_who.v.orig
+rm -f for_who.v
+rm -f for_who.glob
+rm -f for_who.vo

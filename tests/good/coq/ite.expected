@@ -1,0 +1,7 @@
+cp ite_who.v.orig ite_who.v
+chmod a-w ite_who.v.orig
+coqc ite_who.v
+rm -f ite_who.v.orig
+rm -f ite_who.v
+rm -f ite_who.glob
+rm -f ite_who.vo

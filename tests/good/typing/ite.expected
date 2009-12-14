@@ -1,2 +1,0 @@
-cp ite_who.v.orig ite_who.v
-chmod a-w ite_who.v.orig

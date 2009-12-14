@@ -38,6 +38,7 @@ val result : t -> t
 val latent_effect : t -> NEffect.t
 val domain : t -> NEffect.t
 val is_map : t -> bool
+val is_ref : t -> bool
 
 val to_logic_type : t -> t
 

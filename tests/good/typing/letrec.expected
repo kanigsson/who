@@ -1,2 +1,0 @@
-cp letrec_who.v.orig letrec_who.v
-chmod a-w letrec_who.v.orig

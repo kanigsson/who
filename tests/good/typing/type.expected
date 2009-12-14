@@ -1,2 +1,0 @@
-cp type_who.v.orig type_who.v
-chmod a-w type_who.v.orig

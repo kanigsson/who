@@ -30,6 +30,8 @@ section arith
   logic max : int -> int -> int
   logic min : int -> int -> int
   logic mod : int -> int -> int
+  logic band : bool -> bool -> bool
+  logic bor : bool -> bool -> bool
 end
 
 
@@ -92,6 +94,7 @@ section Array
   pangoline takeover
   type array ['a||]
 
+  logic ar_empty ['a||] : 'a array
   logic get ['a||] : int -> 'a array -> 'a
   logic set ['a||]: int -> 'a -> 'a array -> 'a array 
   logic len ['a||] :  'a array -> int
@@ -104,6 +107,8 @@ section Array
   axiom get_set_eq ['a||] : 
     forall (t : 'a array) (i : int) (z : 'a).
       i < len t -> get i (set i z t) = z
+
+  axiom length_empty ['a||] : len (ar_empty : 'a array) = 0
 
   axiom get_set_neq ['a||] : 
     forall (t : 'a array ) (i : int) (j : int) (z : 'a).

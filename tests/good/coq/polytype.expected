@@ -1,0 +1,7 @@
+cp polytype_who.v.orig polytype_who.v
+chmod a-w polytype_who.v.orig
+coqc polytype_who.v
+rm -f polytype_who.v.orig
+rm -f polytype_who.v
+rm -f polytype_who.glob
+rm -f polytype_who.vo

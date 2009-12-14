@@ -1,0 +1,7 @@
+cp letrec_who.v.orig letrec_who.v
+chmod a-w letrec_who.v.orig
+coqc letrec_who.v
+rm -f letrec_who.v.orig
+rm -f letrec_who.v
+rm -f letrec_who.glob
+rm -f letrec_who.vo

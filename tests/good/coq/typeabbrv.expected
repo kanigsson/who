@@ -1,0 +1,7 @@
+cp typeabbrv_who.v.orig typeabbrv_who.v
+chmod a-w typeabbrv_who.v.orig
+coqc typeabbrv_who.v
+rm -f typeabbrv_who.v.orig
+rm -f typeabbrv_who.v
+rm -f typeabbrv_who.glob
+rm -f typeabbrv_who.vo

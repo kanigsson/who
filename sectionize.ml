@@ -121,7 +121,7 @@ let pr_generalize in_term kind fmt ((tl,rl,el) as g) =
         fprintf fmt "forall@ %a@ %a@ %a,@ "
         (lname "Type") tl (lname "key") rl (lname "kmap") el
     | `Pangoline -> 
-        fprintf fmt "forall %t %a" in_term (print_list space Name.print) tl
+        fprintf fmt "forall %t %a." in_term (print_list space Name.print) tl
 
 (*
 let pr_intro fmt = function
@@ -232,6 +232,15 @@ module Flatten = struct
     | `Pangoline -> ()
     | `Coq -> pp_print_string fmt "."
 
+  let print_proof fmt = function
+    | `Pangoline -> ()
+    | `Coq -> fprintf fmt "@\nProof.@\nAdmitted.@\n"
+
+  let print_def_end kind fmt x = 
+    match x with
+    | `Quant -> ()
+    | `Logic -> print_proof fmt kind
+
   type sup = [`Coq | `Pangoline | `Who ]
   let print kind fmt = function
     | FCoqDecl (s,_) -> fprintf fmt "%s." s
@@ -245,14 +254,15 @@ module Flatten = struct
               fprintf fmt "type (0) %a" Name.print s) fmt tl
         end
     | FVariable (x,g,t,k) -> 
-        fprintf fmt "@[<hov 2>%a %a:@ %a. %a%a @]" (def kind) k Name.print x
+        fprintf fmt "@[<hov 2>%a %a:@ %a %a%a%a @]" (def kind) k Name.print x
           (pr_generalize false kind) g (Ty.gen_print (kind :> sup)) t print_stop kind
+          (print_def_end kind) k
     | FAxiom (h,g,e) -> 
-        fprintf fmt "@[<hov 2>%a %a:@ %a. %a%a @]" hypo kind Name.print h 
+        fprintf fmt "@[<hov 2>%a %a:@ %a %a%a @]" hypo kind Name.print h 
           (pr_generalize true kind) g (Ast.Recon.gen_print (kind :> sup)) e print_stop kind
     | FPO (x,e) -> 
-        fprintf fmt "@[<hov 2>%a %a:@ %a%a@]" lemma kind Name.print x 
-          (Ast.Recon.gen_print (kind :> sup)) e print_stop kind
+        fprintf fmt "@[<hov 2>%a %a:@ %a%a%a@]" lemma kind Name.print x 
+          (Ast.Recon.gen_print (kind :> sup)) e print_stop kind print_proof kind
     | FType (x,((tl,_,_) as g)) -> 
         begin match kind with
         | `Coq ->

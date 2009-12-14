@@ -40,7 +40,8 @@ let print' ?(kind=`Who) pt pr pe is_c fmt x =
       | `Pangoline -> fprintf fmt "%a ref@" mayp t
       end
   | App (v,i) -> 
-      fprintf fmt "%a%a" Name.print v (Inst.print ~kind mayp pr pe) i
+      fprintf fmt "%a%a" Name.print v 
+        (Inst.print ~kind ~intype:true mayp pr pe) i
 
 let rec gen_print kind fmt (C x) = 
   print' ~kind (gen_print kind) Name.print NEffect.print
@@ -89,6 +90,10 @@ let domain = function
 
 let is_map = function
   | C (Map _) -> true
+  | _ -> false
+
+let is_ref = function
+  | C (Ref _) -> true
   | _ -> false
 
 let pretype a e = parr a (parr (map e) prop)

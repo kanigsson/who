@@ -1,2 +1,0 @@
-cp fact_who.v.orig fact_who.v
-chmod a-w fact_who.v.orig

@@ -1,0 +1,7 @@
+cp lookup_who.v.orig lookup_who.v
+chmod a-w lookup_who.v.orig
+coqc lookup_who.v
+rm -f lookup_who.v.orig
+rm -f lookup_who.v
+rm -f lookup_who.glob
+rm -f lookup_who.vo

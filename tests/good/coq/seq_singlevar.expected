@@ -1,0 +1,7 @@
+cp seq_singlevar_who.v.orig seq_singlevar_who.v
+chmod a-w seq_singlevar_who.v.orig
+coqc seq_singlevar_who.v
+rm -f seq_singlevar_who.v.orig
+rm -f seq_singlevar_who.v
+rm -f seq_singlevar_who.glob
+rm -f seq_singlevar_who.vo

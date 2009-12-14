@@ -7,28 +7,37 @@ Section sec.
   Section sec1.
     Variables e : Type.
     
-    Variable f: (unit -> e -> Prop) * (unit -> e -> e -> unit -> Prop). 
-    Variable e1: e. 
-    Variable g: (unit -> e -> Prop) * (unit -> e -> e -> unit -> Prop). 
-    Hypothesis H: fst f tt e1. 
-    Hypothesis H1: forall (e2:e), (snd f tt e1 e2 tt) -> (fst g tt e2). 
+    Variable f:  (unit -> e -> Prop) * (unit -> e -> e -> unit -> Prop). 
+    Variable e1:  e. 
+    Variable g:  (unit -> e -> Prop) * (unit -> e -> e -> unit -> Prop). 
+    Hypothesis H:  fst f tt e1. 
+    Hypothesis H1:  forall (e2:e), (snd f tt e1 e2 tt) -> (fst g tt e2). 
     Section sec2.
-      Variable e3: e. 
-      Hypothesis H2: snd f tt e1 e3 tt. 
+      Variable e3:  e. 
+      Hypothesis H2:  snd f tt e1 e3 tt. 
       Lemma goal: fst g tt e3.
+        Proof.
+        Admitted.
+        
       Section sec3.
-        Variable e4: e. 
-        Hypothesis H3: snd g tt e3 e4 tt. 
-        Lemma goal1: exists e5:e, (snd f tt e1 e5 tt) /\ (snd g tt e5 e4 tt).
+        Variable e4:  e. 
+        Hypothesis H3:  snd g tt e3 e4 tt. 
+        Lemma goal1:
+          exists e5:e, (snd f tt e1 e5 tt) /\ (snd g tt e5 e4 tt).
+          Proof.
+          Admitted.
+          
         End sec3.
       End sec2.
     End sec1.
   Section sec4.
-    Variable r: key. 
-    Variable r1: int. 
-    Variable x: ref int r2. 
-    Variable r3: int. 
-    Hypothesis H4: exists r4:int, (r4 = int 0) /\ (r3 = int 1). 
-    Lemma goal2: r3 = int 1.
+    Variable r:  key. 
+    Variable r1:  int. 
+    Variable r2:  int. 
+    Hypothesis H4:  exists r3:int, (r3 = 0) /\ (r2 = 1). 
+    Lemma goal2: r2 = 1.
+      Proof.
+      Admitted.
+      
     End sec4.
   End sec.

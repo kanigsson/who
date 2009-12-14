@@ -6,8 +6,11 @@ Section sec.
   Require Import WhoList.
   Variables a b e : Type.
   
-  Variable f: (a -> e -> Prop) * (a -> e -> e -> b -> Prop). 
-  Variable e1: e. 
-  Variable x: a. 
+  Variable f:  (a -> e -> Prop) * (a -> e -> e -> b -> Prop). 
+  Variable e1:  e. 
+  Variable x:  a. 
   Lemma goal: fst f x e1.
+    Proof.
+    Admitted.
+    
   End sec.

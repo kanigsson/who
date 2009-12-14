@@ -315,7 +315,7 @@ let simplify_maps =
   ]
 
 let elim_eqs =
-  [ swap_impl; elim_eq_intro; ]
+  [ swap_impl; elim_eq_intro; logic_simpl ]
 
 let exhaust simplifiers env f = 
   let rec aux b f = function
@@ -444,7 +444,8 @@ let map_simplify f =
           let f = List.fold_left (fun acc (x,t) -> aquant k x t acc l) e rl in
           List.fold_left (fun acc (old,new_) -> 
             aquant k new_ (rtype env old) acc l) f el
-        else aquant k x (Ty.selim_map (rtype env) t) (aux env e) l)
+        else if Ty.is_ref t then aux env e
+        else aquant k x (Ty.selim_map (rtype env) t) (aux env e)  l)
       ~tyfun:(fun env t -> Ty.selim_map (rtype env) t) 
       simplify_maps [] env f in
   aux empty f

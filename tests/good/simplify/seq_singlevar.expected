@@ -24,7 +24,9 @@ Pangoline predefined
    let >>= = logic int -> int -> bool in
    let max = logic int -> int -> int in
    let min = logic int -> int -> int in
-   let mod = logic int -> int -> int in end
+   let mod = logic int -> int -> int in
+   let band = logic bool -> bool -> bool in
+   let bor = logic bool -> bool -> bool in end
     let == [a5||]= logic a5 -> a5 -> bool in
     let != [a6||]= logic a6 -> a6 -> bool in
     section Whoref Coq WhoMap
@@ -40,68 +42,75 @@ Pangoline predefined
      let kempty = logic kmap in end
       section Array Coq WhoArray
       Pangoline takeover type array[a10||] =  in
-      let get [a11||]= logic int -> (array[a11||]) -> a11 in
-      let set [a12||]= logic int -> a12 -> (array[a12||]) -> array[a12||] in
-      let len [a13||]= logic (array[a13||]) -> int in
-      let create [a14||]= logic int -> a14 -> array[a14||] in
+      let ar_empty [a11||]= logic array[a11||] in
+      let get [a12||]= logic int -> (array[a12||]) -> a12 in
+      let set [a13||]= logic int -> a13 -> (array[a13||]) -> array[a13||] in
+      let len [a14||]= logic (array[a14||]) -> int in
+      let create [a15||]= logic int -> a15 -> array[a15||] in
       let
-      update_length [a15||]=
-                            axiom forall (t:array[a15||]).
+      update_length [a16||]=
+                            axiom forall (t:array[a16||]).
                                   forall (i:int).
-                                  forall (z:a15).
-                                  (len [a15||] t) =[int||]
-                                  (len [a15||] (set [a15||] i z t))
+                                  forall (z:a16).
+                                  (len [a16||] t) =[int||]
+                                  (len [a16||] (set [a16||] i z t))
       in
       let
-      get_set_eq [a16||]=
-                         axiom forall (t1:array[a16||]).
+      get_set_eq [a17||]=
+                         axiom forall (t1:array[a17||]).
                                forall (i1:int).
-                               forall (z1:a16).
-                               (i1 < (len [a16||] t1)) ->
-                               ((get [a16||] i1 (set [a16||] i1 z1 t1))
-                                =[a16||] z1)
+                               forall (z1:a17).
+                               (i1 < (len [a17||] t1)) ->
+                               ((get [a17||] i1 (set [a17||] i1 z1 t1))
+                                =[a17||] z1)
       in
       let
-      get_set_neq [a17||]=
-                          axiom forall (t2:array[a17||]).
+      length_empty [a18||]=
+                           axiom (len [a18||]
+                                  (ar_empty [a18||] : array[a18||]))
+                                 =[int||] 0
+      in
+      let
+      get_set_neq [a19||]=
+                          axiom forall (t2:array[a19||]).
                                 forall (i2:int).
                                 forall (j:int).
-                                forall (z2:a17).
-                                (i2 < (len [a17||] t2)) ->
-                                ((j < (len [a17||] t2)) ->
+                                forall (z2:a19).
+                                (i2 < (len [a19||] t2)) ->
+                                ((j < (len [a19||] t2)) ->
                                  ((i2 <>[int||] j) ->
-                                  ((get [a17||] i2 (set [a17||] j z2 t2))
-                                   =[a17||] (get [a17||] i2 t2))))
+                                  ((get [a19||] i2 (set [a19||] j z2 t2))
+                                   =[a19||] (get [a19||] i2 t2))))
       in
       let
-      length_nonnegative [a18||]=
-                                 axiom forall (t3:array[a18||]).
-                                       0 <= (len [a18||] t3)
+      length_nonnegative [a20||]=
+                                 axiom forall (t3:array[a20||]).
+                                       0 <= (len [a20||] t3)
       in
       let
-      length_create [a19||]=
+      length_create [a21||]=
                             axiom forall (l:int).
-                                  forall (v:a19).
+                                  forall (v:a21).
                                   (0 <= l) ->
-                                  ((len [a19||] (create [a19||] l v))
+                                  ((len [a21||] (create [a21||] l v))
                                    =[int||] l)
       in
       let
-      length_access [a20||]=
+      length_access [a22||]=
                             axiom forall (i3:int).
                                   forall (l1:int).
-                                  forall (v1:a20).
+                                  forall (v1:a22).
                                   (0 <= i3) ->
                                   ((i3 <= l1) ->
-                                   ((get [a20||] i3 (create [a20||] l1 v1))
-                                    =[a20||] v1))
+                                   ((get [a22||] i3 (create [a22||] l1 v1))
+                                    =[a22||] v1))
       in end
        section List Coq WhoList
-       Pangoline takeover type list[a21||] =  in
-       let nil [a22||]= logic list[a22||] in
-       let cons [a23||]= logic a23 -> (list[a23||]) -> list[a23||] in
-       let is_nil [a24||]= logic (list[a24||]) -> bool in
-       let l_in [a25||]= logic a25 -> (list[a25||]) -> Prop in end
+       Pangoline takeover type list[a23||] =  in
+       let nil [a24||]= logic list[a24||] in
+       let cons [a25||]= logic a25 -> (list[a25||]) -> list[a25||] in
+       let is_nil [a26||]= logic (list[a26||]) -> bool in
+       let l_in [a27||]= logic a27 -> (list[a27||]) -> Prop in end
         (forall [e1||]. forall (f:(unit -> e1 -> Prop) * (unit -> e1 -> e1 ->
                         unit -> Prop)).
                         forall (e2:e1).
@@ -140,7 +149,6 @@ Pangoline predefined
         /\
         (forall . forall (r2:key).
                   forall (r3:int).
-                  forall (x:ref(r4,int)).
-                  forall (r5:int).
-                  (exists r6:int. (r6 =[int||] 0) /\ (r5 =[int||] 1)) ->
-                  (r5 =[int||] 1))     
+                  forall (r4:int).
+                  (exists r5:int. (r5 =[int||] 0) /\ (r4 =[int||] 1)) ->
+                  (r4 =[int||] 1))     

@@ -106,7 +106,7 @@ let print ?(kind=`Who) pra prb prc open_ fmt t =
     | Const c -> Const.print fmt c
     | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) -> 
         fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 Name.print v 
-          (Inst.print ~kind pra prb prc) i with_paren t2
+          (Inst.print ~kind ~intype:false pra prb prc) i with_paren t2
     | App (t1,t2,_,cap) ->
           fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
     | Ite (e1,e2,e3) ->
@@ -124,7 +124,7 @@ let print ?(kind=`Who) pra prb prc open_ fmt t =
         | `Who | `Pangoline ->
             if Inst.is_empty i then Name.print fmt v 
             else fprintf fmt "%a %a" Name.print v 
-              (Inst.print ~kind pra prb prc) i
+              (Inst.print ~kind ~intype:false pra prb prc) i
         | `Coq -> Name.print fmt v
         end
     | Annot (e,t) -> fprintf fmt "(%a : %a)" print e typrint t

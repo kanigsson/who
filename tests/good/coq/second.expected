@@ -1,0 +1,7 @@
+cp second_who.v.orig second_who.v
+chmod a-w second_who.v.orig
+coqc second_who.v
+rm -f second_who.v.orig
+rm -f second_who.v
+rm -f second_who.glob
+rm -f second_who.vo
