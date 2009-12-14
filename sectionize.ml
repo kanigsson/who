@@ -70,7 +70,7 @@ let section kind f =
           end
       | f' -> 
           match destruct_app2_var' f' with
-          | Some ({name = Some "->"},_,f1,f2) -> 
+          | Some (Some "->",_,f1,f2) -> 
               aux (Hypo (Name.from_string "H", f1)::acc) f2
           | _ -> List.rev acc, f in
     aux [] f
@@ -88,12 +88,12 @@ let section kind f =
           end
       | f' ->
           match destruct_app2_var' f' with
-          | Some ({name = Some "->"},_,_,_) ->
+          | Some (Some "->",_,_,_) ->
               begin match section f with
               | Empty -> acc
               | s -> s::acc
               end
-          | Some ({name = Some "/\\"},_,f1,f2) -> aux (aux acc f2) f1
+          | Some (Some "/\\",_,f1,f2) -> aux (aux acc f2) f1
           | _ -> 
               if List.exists (intro_eq f) ctx then acc
               else PO (Name.from_string "goal", f) :: acc

@@ -209,29 +209,8 @@ Pangoline predefined
        let cons [a30||]= logic a30 -> (list[a30||]) -> list[a30||] in
        let is_nil [a31||]= logic (list[a31||]) -> bool in
        let l_in [a32||]= logic a32 -> (list[a32||]) -> Prop in end
-        (forall [a33|toto|]. forall (s4:<{toto |}>).
-                             forall (x5:ref(toto,a33)).
-                             (fst [ref(toto,a33) -> <{toto |}> ->
-                              Prop,ref(toto,a33) -> <{toto |}> -> <{toto
-                              |}> -> a33 -> Prop||] ! [a33|toto|] x5 s4)
-                             /\
-                             (forall (s5:<{toto |}>).
-                              forall (anon3:a33).
-                              (snd [ref(toto,a33) -> <{toto |}> ->
-                               Prop,ref(toto,a33) -> <{toto |}> -> <{toto
-                               |}> -> a33 -> Prop||] ! [a33|toto|] x5 s4 s5
-                               anon3)
-                              ->
-                              ((fun (s6:<{toto |}>) ->
-                               (fun (r6:a33) -> True)) s5 anon3)))
-        /\
-        (let
-         f2 [a33|toto|]=
-                        (fun (x5:ref(toto,a33)) ->
-                        (fun (s7:<{toto |}>) -> True)) ,[ref(toto,a33) ->
-                        <{toto |}> -> Prop,ref(toto,a33) -> <{toto |}> ->
-                        <{toto |}> -> a33 -> Prop||]
-                        (fun (x5:ref(toto,a33)) ->
-                        (fun (s8:<{toto |}>) ->
-                        (fun (s9:<{toto |}>) -> (fun (r7:a33) -> True))))
-         in (fun (s10:<{|}>) -> (fun (r8:unit) -> True)) s tt)     
+        forall [a33|toto|]. forall (s4:<{toto |}>).
+                            forall (x5:ref(toto,a33)).
+                            fst [ref(toto,a33) -> <{toto |}> ->
+                            Prop,ref(toto,a33) -> <{toto |}> -> <{toto |}> ->
+                            a33 -> Prop||] ! [a33|toto|] x5 s4     

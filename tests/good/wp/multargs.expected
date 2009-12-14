@@ -209,19 +209,6 @@ Pangoline predefined
        let cons [a30||]= logic a30 -> (list[a30||]) -> list[a30||] in
        let is_nil [a31||]= logic (list[a31||]) -> bool in
        let l_in [a32||]= logic a32 -> (list[a32||]) -> Prop in end
-        (forall . forall (x5:int).
-                  forall (s4:<{|}>).
-                  forall (y:int).
-                  (fun (old5:<{|}>) ->
-                  (fun (cur7:<{|}>) ->
-                  (fun (r6:int) -> (x5 + y) =[int||] r6))) s4 s4 (x5 + y))
-        /\
-        (let
-         f2 =
-             (fun (x5:int) ->
-             (fun (y:int) -> (fun (s5:<{|}>) -> True)) ,[int -> <{|}> ->
-             Prop,int -> <{|}> -> <{|}> -> int -> Prop||]
-             (fun (y:int) ->
-             (fun (old5:<{|}>) ->
-             (fun (cur7:<{|}>) -> (fun (r6:int) -> (x5 + y) =[int||] r6)))))
-         in (fun (s6:<{|}>) -> (fun (r7:unit) -> True)) s tt)     
+        forall . forall (x5:int).
+                 forall (s4:<{|}>).
+                 forall (y:int). (x5 + y) =[int||] (x5 + y)     

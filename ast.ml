@@ -248,18 +248,18 @@ let destruct_app2 = function
 
 let destruct_app2_var' x = 
   match destruct_app2 x with
-  | Some ({v = Var (v,g)},f1,f2) -> Some (v,g,f1,f2)
+  | Some ({v = Var ({Name.name = v},g)},f1,f2) -> Some (v,g,f1,f2)
   | _ -> None
 
 let destruct_get' x = 
   match destruct_app2_var' x with
-  | Some ({Name.name = Some "!!"}, ([t],[reg],[e]), r,map) -> 
+  | Some (Some "!!", ([t],[reg],[e]), r,map) -> 
       Some (t,r,reg,e,map)
   | _ -> None
 
 let destruct_kget' x = 
   match destruct_app2_var' x with
-  | Some ({Name.name = Some "kget"}, ([t],[reg],[]), ref,map) -> 
+  | Some (Some "kget", ([t],[reg],[]), ref,map) -> 
       Some (t,ref,reg,map)
   | _ -> None
 
@@ -277,13 +277,13 @@ let destruct_krestrict' x =
 
 let destruct_combine' x = 
   match destruct_app2_var' x with
-  | Some ({Name.name = Some "combine"},([],[],[e1;e2]), m1,m2) ->
+  | Some (Some "combine",([],[],[e1;e2]), m1,m2) ->
       Some (m1,e1,m2,e2)
   | _ -> None
 
 let destruct_kcombine' x = 
   match destruct_app2_var' x with
-  | Some ({Name.name = Some "kcombine"},([],[],[e1;e2]), m1,m2) ->
+  | Some (Some "kcombine",([],[],[e1;e2]), m1,m2) ->
       Some (m1,e1,m2,e2)
   | _ -> None
 
@@ -300,6 +300,39 @@ let destruct_varname x =
   match x.v with
   | Var ({ Name.name = Some v}, tl) -> Some (v,tl)
   | _ -> None
+
+let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
+  let rec aux t = 
+    map ~varfun 
+      ~varbindfun:(fun p b -> 
+        let x,f = if p then sopen b else vopen b in close x (aux f))
+      ~tyfun ~rvarfun ~effectfun t
+  in
+  aux t
+
+let tsubst tvl tl e =
+  open_close_map ~varfun:(fun v i -> Var (v,i)) 
+                 ~tyfun:(Ty.tlsubst tvl tl) 
+                 ~rvarfun:Misc.id
+                 ~effectfun:Misc.id
+                 e
+
+let rsubst rvl rl e = 
+(*
+  Myformat.printf "rsubsting: [%a|->%a]@." Name.print_list rvl Name.print_list
+  rl;
+*)
+  open_close_map ~varfun:(fun v i -> Var (v,i)) 
+                 ~tyfun:(Ty.rlsubst rvl rl) 
+                 ~rvarfun:(Ty.rsubst rvl rl)
+                 ~effectfun:(NEffect.rmap (Ty.rsubst rvl rl))
+                 e
+
+let esubst evl el e =
+  open_close_map ~varfun:(fun v i -> Var (v,i))
+    ~tyfun:(Ty.elsubst evl el)
+    ~rvarfun:Misc.id
+    ~effectfun:(NEffect.lsubst evl el) e
 
 module Recon = struct
   type t = (Ty.t, Name.t, NEffect.t) t'
@@ -336,10 +369,6 @@ module Recon = struct
   let plam x t e loc = 
     mk_val (PureFun (t,Name.close_bind x e)) (Ty.parr t e.t) loc
 
-  let squant k x t f loc = 
-    if Ty.equal t Ty.unit then f 
-    else true_or f (mk (Quant (k,t,Name.close_bind x f)) f.t f.e loc)
-
   let axiom e = mk (Axiom e) Ty.prop e.e
   let logic t = mk (Logic t) t NEffect.empty
   let typedef g t v e l = 
@@ -357,25 +386,29 @@ module Recon = struct
       and argument %a has type %a@." print t1 Ty.print t1.t 
       print t2 Ty.print t2.t ; invalid_arg "app" end
     else
-      try match destruct_varname t1 with
-      | Some ("~",_) -> 
-          begin match t2.v with
-          | Const Const.Ptrue -> pfalse_ loc
-          | Const Const.Pfalse -> ptrue_ loc
+      match t1.v with
+      | PureFun (_,l) ->
+          let x, body = vopen l in
+          subst x (fun _ -> t2) body
+      | _ ->
+          try match destruct_varname t1 with
+          | Some ("~",_) -> 
+              begin match t2.v with
+              | Const Const.Ptrue -> pfalse_ loc
+              | Const Const.Pfalse -> ptrue_ loc
+              | _ -> raise Exit
+              end
+          | Some (("fst" | "pre" | "post" | "snd" as n),_) ->
+              begin match destruct_app2_var t2 with
+              | Some (Some ",",_,a,b) ->
+                  if n = "fst" || n = "pre" then a 
+                  else b
+              | _ -> raise Exit
+              end
           | _ -> raise Exit
-          end
-      | Some (("fst" | "pre" | "post" | "snd" as n),_) ->
-          begin match destruct_app2_var t2 with
-          | Some ({Name.name = Some "," },_,a,b) ->
-              if n = "fst" || n = "pre" then a 
-              else b
-          | _ -> raise Exit
-          end
-      | _ -> raise Exit
-      with Exit -> 
-        mk (App (t1,t2,kind,cap)) t 
-          (NEffect.union t1.e (NEffect.union t2.e e)) loc
-
+          with Exit -> 
+            mk (App (t1,t2,kind,cap)) t 
+              (NEffect.union t1.e (NEffect.union t2.e e)) loc
 
   and app2 ?kind t t1 t2 loc = 
     try match destruct_varname t with
@@ -414,7 +447,9 @@ module Recon = struct
     t (Inst.print Ty.print Name.print NEffect.print) inst;
 *)
     let nt = (Ty.allsubst g inst t) in
-    if nt = Ty.unit then void else mk_val (Var (s,inst)) nt
+    if Ty.equal nt Ty.unit then void 
+    else if Ty.equal nt Ty.emptymap then mempty
+    else mk_val (Var (s,inst)) nt
 
   and var_i s inst t =
     mk_val (Var (s,inst)) t
@@ -424,6 +459,10 @@ module Recon = struct
     var v inst (g,t) 
 
   and spredef_var s  = pre_defvar s Inst.empty
+  and mempty l = 
+    let v,_,_ = Ty.get_predef_var "empty" in
+    mk_val (Var (v,Inst.empty)) Ty.emptymap l
+
   and neg f l = app (spredef_var "~" l) f l
 
   and reduce_bool t loc = 
@@ -431,7 +470,7 @@ module Recon = struct
       match destruct_app2_var t with
       | Some (op, g, arg1, arg2) ->
           let op' = 
-            match op.Name.name with
+            match op with
             | Some "<<=" -> "<="
             | Some "<<" -> "<"
             | Some ">>" -> ">"
@@ -477,12 +516,36 @@ module Recon = struct
     if logic then and_ (im btrue_ e2) (im bfalse_ e3) l
     else
       mk (Ite (e1,e2,e3)) e2.t (NEffect.union e1.e (NEffect.union e2.e e3.e)) l
-  and eq t1 t2 loc = appi (pre_defvar "=" ([t1.t],[],[]) loc) t1 t2 loc
+  and eq t1 t2 loc = 
+    appi (pre_defvar "=" ([t1.t],[],[]) loc) t1 t2 loc
   and and_ t1 t2 loc = appi (spredef_var "/\\" loc) t1 t2 loc
+  and subst x v e =
+    rebuild_map
+      ~varfun:(fun z i def -> if Name.equal z x then v i else def) e
+
+  and polsubst (tvl,rvl,evl) x v e =
+    let builder (tl,rl,el)= esubst evl el (rsubst rvl rl (tsubst tvl tl v)) in
+    subst x builder e
+  and squant k x t f loc = 
+    if Ty.equal t Ty.unit || Ty.equal t Ty.emptymap then f 
+    else 
+      try match destruct_app2_var f with
+      | Some (Some "->", _, t1,f)  ->
+          begin match destruct_app2_var t1 with
+          | Some (Some "=", _,{v= Var(y,_)}, def) when Name.equal x y ->
+              subst x (fun _ -> def) f
+          | Some (Some "=", _,def,{v = Var (y,_)}) when Name.equal x y ->
+              subst x (fun _ -> def) f
+          | _ -> raise Exit
+          end
+      | _ -> raise Exit
+      with Exit -> 
+        true_or f (mk (Quant (k,t,Name.close_bind x f)) f.t f.e loc)
+
+
 
     
   let svar s t = var s Inst.empty (G.empty,t) 
-  let mempty l = spredef_var "empty" l 
   let le t1 t2 loc = appi (spredef_var "<=" loc) t1 t2 loc
   let pre t loc = 
     match t.t with
@@ -618,48 +681,4 @@ let concat t1 t2 =
     | _ -> assert false 
   and aux t = { t with v = aux' t.v } in
   aux t1
-
-
-let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
-  let rec aux t = 
-    map ~varfun 
-      ~varbindfun:(fun p b -> 
-        let x,f = if p then sopen b else vopen b in close x (aux f))
-      ~tyfun ~rvarfun ~effectfun t
-  in
-  aux t
-
-let tsubst tvl tl e =
-  open_close_map ~varfun:(fun v i -> Var (v,i)) 
-                 ~tyfun:(Ty.tlsubst tvl tl) 
-                 ~rvarfun:Misc.id
-                 ~effectfun:Misc.id
-                 e
-
-let rsubst rvl rl e = 
-(*
-  Myformat.printf "rsubsting: [%a|->%a]@." Name.print_list rvl Name.print_list
-  rl;
-*)
-  open_close_map ~varfun:(fun v i -> Var (v,i)) 
-                 ~tyfun:(Ty.rlsubst rvl rl) 
-                 ~rvarfun:(Ty.rsubst rvl rl)
-                 ~effectfun:(NEffect.rmap (Ty.rsubst rvl rl))
-                 e
-
-let esubst evl el e =
-  open_close_map ~varfun:(fun v i -> Var (v,i))
-    ~tyfun:(Ty.elsubst evl el)
-    ~rvarfun:Misc.id
-    ~effectfun:(NEffect.lsubst evl el) e
-
-let subst x v e =
-  Recon.rebuild_map
-    ~varfun:(fun z i def -> if Name.equal z x then v i else def) e
-
-let polsubst (tvl,rvl,evl) x v e =
-  let builder (tl,rl,el)= esubst evl el (rsubst rvl rl (tsubst tvl tl v)) in
-  subst x builder e
-
-
 

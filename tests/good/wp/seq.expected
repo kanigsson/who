@@ -225,22 +225,10 @@ Pangoline predefined
                 }> -> b5 -> Prop||] f2 x5
                 (restrict [||{|e14 e24 },{|e14 }] s4) s5 anon3)
                ->
-               ((fun (s6:<{|e14 }>) ->
-                (fun (s7:<{|e14 e24 }>) ->
-                (fun (anf:b5) ->
-                (fst [b5 -> <{|e24 }> -> Prop,b5 -> <{|e24 }> -> <{|e24 }> ->
-                 c -> Prop||] g anf (restrict [||{|e14 e24 },{|e24 }] s7))
-                /\
-                (forall (s8:<{|e24 }>).
-                 forall (anon4:c).
-                 (snd [b5 -> <{|e24 }> -> Prop,b5 -> <{|e24 }> -> <{|e24
-                  }> -> c -> Prop||] g anf
-                  (restrict [||{|e14 e24 },{|e24 }] s7) s8 anon4)
-                 ->
-                 ((fun (s9:<{|e24 }>) ->
-                  (fun (s10:<{|e14 e24 }>) -> (fun (r6:c) -> True))
-                  (combine [||{|e14 e24 },{|e24 }] s7 s9)) s8 anon4))))
-                (combine [||{|e14 e24 },{|e14 }] s4 s6)) s5 anon3)))
+               (fst [b5 -> <{|e24 }> -> Prop,b5 -> <{|e24 }> -> <{|e24 }> ->
+                c -> Prop||] g anon3
+                (restrict [||{|e14 e24 },{|e24 }]
+                 (combine [||{|e14 e24 },{|e14 }] s4 s5)))))
         /\
         (let seq [a33 b5 c||e14
          e24]=
@@ -248,70 +236,22 @@ Pangoline predefined
               <{|e14 }> -> b5 -> Prop)) ->
               (fun (g:(b5 -> <{|e24 }> -> Prop) * (b5 -> <{|e24 }> -> <{|e24
               }> -> c -> Prop)) ->
-              (fun (x5:a33) -> (fun (s11:<{|e14 e24 }>) -> True)) ,[a33 ->
+              (fun (x5:a33) -> (fun (s6:<{|e14 e24 }>) -> True)) ,[a33 ->
               <{|e14 e24 }> -> Prop,a33 -> <{|e14 e24 }> -> <{|e14 e24 }> ->
               c -> Prop||]
               (fun (x5:a33) ->
-              (fun (s12:<{|e14 e24 }>) ->
-              (fun (s13:<{|e14 e24 }>) -> (fun (r7:c) -> True))))))
-         in
-         (forall [|r1
+              (fun (s7:<{|e14 e24 }>) ->
+              (fun (s8:<{|e14 e24 }>) -> (fun (r6:c) -> True))))))
+         in forall [|r1
          r2|]. forall (x6:ref(r1,int)).
-               forall (s14:<{|}>).
+               forall (s9:<{|}>).
                forall (y:ref(r2,int)).
-               ((fun (s15:<{|}>) ->
-                (fun (r8:(int -> <{r1 r2 |}> -> Prop) * (int -> <{r1 r2
-                |}> -> <{r1 r2 |}> -> int -> Prop)) -> True)) s14
-                (seq [int,int,int||{r1 |},{r2 |}]
-                 ((fun (z3:int) -> (fun (s16:<{r1 |}>) -> True)) ,[int ->
-                  <{r1 |}> -> Prop,int -> <{r1 |}> -> <{r1 |}> -> int ->
-                  Prop||]
-                  (fun (z3:int) ->
-                  (fun (s17:<{r1 |}>) ->
-                  (fun (s18:<{r1 |}>) -> (fun (r9:int) -> True)))))
-                 ((fun (z4:int) -> (fun (s19:<{r2 |}>) -> True)) ,[int ->
-                  <{r2 |}> -> Prop,int -> <{r2 |}> -> <{r2 |}> -> int ->
-                  Prop||]
-                  (fun (z4:int) ->
-                  (fun (s20:<{r2 |}>) ->
-                  (fun (s21:<{r2 |}>) -> (fun (r10:int) -> True)))))))
+               (forall (s10:<{r1 |}>).
+                forall (z3:int).
+                fst [ref(r1,int) -> <{r1 |}> -> Prop,ref(r1,int) -> <{r1
+                |}> -> <{r1 |}> -> int -> Prop||] ! [int|r1|] x6 s10)
                /\
-               ((forall (s22:<{r1 |}>).
-                 forall (z3:int).
-                 (fst [ref(r1,int) -> <{r1 |}> -> Prop,ref(r1,int) -> <{r1
-                  |}> -> <{r1 |}> -> int -> Prop||] ! [int|r1|] x6 s22)
-                 /\
-                 (forall (s23:<{r1 |}>).
-                  forall (anon5:int).
-                  (snd [ref(r1,int) -> <{r1 |}> -> Prop,ref(r1,int) -> <{r1
-                   |}> -> <{r1 |}> -> int -> Prop||] ! [int|r1|] x6 s22 s23
-                   anon5)
-                  ->
-                  ((fun (s24:<{r1 |}>) -> (fun (r11:int) -> True)) s23 anon5)))
-                /\
-                (forall (s25:<{r2 |}>).
-                 forall (z4:int).
-                 (fst [ref(r2,int) -> <{r2 |}> -> Prop,ref(r2,int) -> <{r2
-                  |}> -> <{r2 |}> -> int -> Prop||] ! [int|r2|] y s25)
-                 /\
-                 (forall (s26:<{r2 |}>).
-                  forall (anon6:int).
-                  (snd [ref(r2,int) -> <{r2 |}> -> Prop,ref(r2,int) -> <{r2
-                   |}> -> <{r2 |}> -> int -> Prop||] ! [int|r2|] y s25 s26
-                   anon6)
-                  ->
-                  ((fun (s27:<{r2 |}>) -> (fun (r12:int) -> True)) s26 anon6)))))
-         /\
-         (let h [|r1
-          r2|]=
-               (fun (x6:ref(r1,int)) ->
-               (fun (y:ref(r2,int)) -> (fun (s28:<{|}>) -> True))
-               ,[ref(r2,int) -> <{|}> -> Prop,ref(r2,int) -> <{|}> ->
-               <{|}> -> ((int -> <{r1 r2 |}> -> Prop) * (int -> <{r1 r2
-               |}> -> <{r1 r2 |}> -> int -> Prop)) -> Prop||]
-               (fun (y:ref(r2,int)) ->
-               (fun (s29:<{|}>) ->
-               (fun (s30:<{|}>) ->
-               (fun (r13:(int -> <{r1 r2 |}> -> Prop) * (int -> <{r1 r2
-               |}> -> <{r1 r2 |}> -> int -> Prop)) -> True)))))
-          in (fun (s31:<{|}>) -> (fun (r14:unit) -> True)) s tt))     
+               (forall (s11:<{r2 |}>).
+                forall (z4:int).
+                fst [ref(r2,int) -> <{r2 |}> -> Prop,ref(r2,int) -> <{r2
+                |}> -> <{r2 |}> -> int -> Prop||] ! [int|r2|] y s11))     

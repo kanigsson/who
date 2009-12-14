@@ -209,54 +209,30 @@ Pangoline predefined
        let cons [a30||]= logic a30 -> (list[a30||]) -> list[a30||] in
        let is_nil [a31||]= logic (list[a31||]) -> bool in
        let l_in [a32||]= logic a32 -> (list[a32||]) -> Prop in end
-        (forall [a33||]. forall (x5:a33).
-                         forall (s4:<{|}>).
-                         forall (y:a33).
-                         (fun (s5:<{|}>) -> (fun (r6:bool) -> True)) s4
-                         (x5 ==[a33||] y))
+        let
+        f2 [a33||]=
+                   (fun (x5:a33) ->
+                   (fun (y:a33) -> (fun (s4:<{|}>) -> True)) ,[a33 ->
+                   <{|}> -> Prop,a33 -> <{|}> -> <{|}> -> bool -> Prop||]
+                   (fun (y:a33) ->
+                   (fun (s5:<{|}>) ->
+                   (fun (s6:<{|}>) -> (fun (r6:bool) -> True)))))
+        in
+        let
+        f3 [a34||]=
+                   (fun (x6:a34) -> (fun (s7:<{|}>) -> True)) ,[a34 ->
+                   <{|}> -> Prop,a34 -> <{|}> -> <{|}> -> bool -> Prop||]
+                   (fun (x6:a34) ->
+                   (fun (s8:<{|}>) ->
+                   (fun (s9:<{|}>) -> (fun (r7:bool) -> True))))
+        in
+        (fst [bool -> <{|}> -> Prop,bool -> <{|}> -> <{|}> -> bool -> Prop||]
+         f3 [bool||] true s)
         /\
-        (let
-         f2 [a33||]=
-                    (fun (x5:a33) ->
-                    (fun (y:a33) -> (fun (s6:<{|}>) -> True)) ,[a33 ->
-                    <{|}> -> Prop,a33 -> <{|}> -> <{|}> -> bool -> Prop||]
-                    (fun (y:a33) ->
-                    (fun (s7:<{|}>) ->
-                    (fun (s8:<{|}>) -> (fun (r7:bool) -> True)))))
-         in
-         (forall [a34||]. forall (s9:<{|}>).
-                          forall (x6:a34).
-                          (fun (s10:<{|}>) -> (fun (r8:bool) -> True)) s9
-                          true)
-         /\
-         (let
-          f3 [a34||]=
-                     (fun (x6:a34) -> (fun (s11:<{|}>) -> True)) ,[a34 ->
-                     <{|}> -> Prop,a34 -> <{|}> -> <{|}> -> bool -> Prop||]
-                     (fun (x6:a34) ->
-                     (fun (s12:<{|}>) ->
-                     (fun (s13:<{|}>) -> (fun (r9:bool) -> True))))
-          in
-          (fst [bool -> <{|}> -> Prop,bool -> <{|}> -> <{|}> -> bool ->
-           Prop||] f3 [bool||] true s)
-          /\
-          (forall (s14:<{|}>).
-           forall (anon3:bool).
-           (snd [bool -> <{|}> -> Prop,bool -> <{|}> -> <{|}> -> bool ->
-            Prop||] f3 [bool||] true s s14 anon3)
-           ->
-           ((fun (s15:<{|}>) ->
-            (fun (g:bool) ->
-            (fst [int -> <{|}> -> Prop,int -> <{|}> -> <{|}> -> bool ->
-             Prop||] f3 [int||] 5 s15)
-            /\
-            (forall (s16:<{|}>).
-             forall (anon4:bool).
-             (snd [int -> <{|}> -> Prop,int -> <{|}> -> <{|}> -> bool ->
-              Prop||] f3 [int||] 5 s15 s16 anon4)
-             ->
-             ((fun (s17:<{|}>) ->
-              (fun (h:bool) ->
-              (fun (s18:<{|}>) -> (fun (r10:unit) -> True)) s17 tt)) s16
-              anon4))))
-            s14 anon3))))     
+        (forall (s10:<{|}>).
+         forall (anon3:bool).
+         (snd [bool -> <{|}> -> Prop,bool -> <{|}> -> <{|}> -> bool ->
+          Prop||] f3 [bool||] true s s10 anon3)
+         ->
+         (fst [int -> <{|}> -> Prop,int -> <{|}> -> <{|}> -> bool -> Prop||]
+          f3 [int||] 5 s10))     

@@ -209,45 +209,29 @@ Pangoline predefined
        let cons [a30||]= logic a30 -> (list[a30||]) -> list[a30||] in
        let is_nil [a31||]= logic (list[a31||]) -> bool in
        let l_in [a32||]= logic a32 -> (list[a32||]) -> Prop in end
-        (forall . forall (s4:<{|}>).
-                  forall [|rho|]. forall (s5:<{rho |}>).
-                                  (fst [int -> <{rho |}> -> Prop,int -> <{rho
+        forall . forall (s4:<{|}>).
+                 forall [|rho|]. forall (s5:<{rho |}>).
+                                 (fst [int -> <{rho |}> -> Prop,int -> <{rho
+                                  |}> -> <{rho |}> -> ref(rho,int) -> Prop||]
+                                  ref [int|rho|] 5
+                                  (combine [||{|},{rho |}] s4 s5))
+                                 /\
+                                 (forall (s6:<{rho |}>).
+                                  forall (anon3:ref(rho,int)).
+                                  (snd [int -> <{rho |}> -> Prop,int -> <{rho
                                    |}> -> <{rho |}> -> ref(rho,int) ->
                                    Prop||] ref [int|rho|] 5
-                                   (combine [||{|},{rho |}] s4 s5))
-                                  /\
-                                  (forall (s6:<{rho |}>).
-                                   forall (anon3:ref(rho,int)).
-                                   (snd [int -> <{rho |}> -> Prop,int ->
-                                    <{rho |}> -> <{rho |}> -> ref(rho,int) ->
-                                    Prop||] ref [int|rho|] 5
-                                    (combine [||{|},{rho |}] s4 s5) s6 anon3)
-                                   ->
-                                   ((fun (s7:<{rho |}>) ->
-                                    (fun (x5:ref(rho,int)) ->
-                                    (fst [ref(rho,int) -> <{rho |}> ->
+                                   (combine [||{|},{rho |}] s4 s5) s6 anon3)
+                                  ->
+                                  ((fst [ref(rho,int) -> <{rho |}> ->
+                                    Prop,ref(rho,int) -> <{rho |}> -> <{rho
+                                    |}> -> int -> Prop||] ! [int|rho|] anon3
+                                    s6)
+                                   /\
+                                   (forall (s7:<{rho |}>).
+                                    forall (anon4:int).
+                                    (snd [ref(rho,int) -> <{rho |}> ->
                                      Prop,ref(rho,int) -> <{rho |}> -> <{rho
-                                     |}> -> int -> Prop||] ! [int|rho|] x5 s7)
-                                    /\
-                                    (forall (s8:<{rho |}>).
-                                     forall (anon4:int).
-                                     (snd [ref(rho,int) -> <{rho |}> ->
-                                      Prop,ref(rho,int) -> <{rho |}> -> <{rho
-                                      |}> -> int -> Prop||] ! [int|rho|] x5
-                                      s7 s8 anon4)
-                                     ->
-                                     ((fun (s9:<{rho |}>) ->
-                                      (fun (old5:<{|}>) ->
-                                      (fun (cur7:<{|}>) ->
-                                      (fun (r6:int) -> r6 =[int||] 5))) s4
-                                      (restrict [||{rho |},{|}] s9)) s8 anon4))))
-                                    s6 anon3)))
-        /\
-        (let
-         main =
-               (fun (z3:unit) -> (fun (s10:<{|}>) -> True)) ,[unit ->
-               <{|}> -> Prop,unit -> <{|}> -> <{|}> -> int -> Prop||]
-               (fun (z3:unit) ->
-               (fun (old5:<{|}>) ->
-               (fun (cur7:<{|}>) -> (fun (r6:int) -> r6 =[int||] 5))))
-         in (fun (s11:<{|}>) -> (fun (r7:unit) -> True)) s tt)     
+                                     |}> -> int -> Prop||] ! [int|rho|] anon3
+                                     s6 s7 anon4)
+                                    -> (anon4 =[int||] 5))))     

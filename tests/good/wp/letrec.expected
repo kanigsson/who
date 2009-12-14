@@ -225,26 +225,20 @@ Pangoline predefined
                         post [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> ->
                         <{|e3 }> -> a33 -> Prop||] g x5 old5 cur8 r6)))))
         in
-        (forall [a33||e3]. forall (g:(a33 -> <{|e3 }> -> Prop) * (a33 ->
-                           <{|e3 }> -> <{|e3 }> -> a33 -> Prop)).
-                           forall (s4:<{|e3 }>).
-                           forall (x5:a33).
-                           ((fun (cur7:<{|e3 }>) ->
-                            pre [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> ->
-                            <{|e3 }> -> a33 -> Prop||] g x5 cur7) s4)
-                           ->
-                           ((fst [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> ->
-                             <{|e3 }> -> a33 -> Prop||] g x5 s4)
-                            /\
-                            (forall (s5:<{|e3 }>).
-                             forall (anon3:a33).
-                             (snd [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> ->
-                              <{|e3 }> -> a33 -> Prop||] g x5 s4 s5 anon3)
-                             ->
-                             ((fun (old5:<{|e3 }>) ->
-                              (fun (cur8:<{|e3 }>) ->
-                              (fun (r6:a33) ->
-                              post [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3
-                              }> -> <{|e3 }> -> a33 -> Prop||] g x5 old5 cur8
-                              r6))) s4 s5 anon3))))
-        /\ ((fun (s6:<{|}>) -> (fun (r7:unit) -> True)) s tt)     
+        forall [a33||e3]. forall (g:(a33 -> <{|e3 }> -> Prop) * (a33 -> <{|e3
+                          }> -> <{|e3 }> -> a33 -> Prop)).
+                          forall (s4:<{|e3 }>).
+                          forall (x5:a33).
+                          (pre [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> ->
+                           <{|e3 }> -> a33 -> Prop||] g x5 s4)
+                          ->
+                          ((fst [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> ->
+                            <{|e3 }> -> a33 -> Prop||] g x5 s4)
+                           /\
+                           (forall (s5:<{|e3 }>).
+                            forall (anon3:a33).
+                            (snd [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> ->
+                             <{|e3 }> -> a33 -> Prop||] g x5 s4 s5 anon3)
+                            ->
+                            (post [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> ->
+                             <{|e3 }> -> a33 -> Prop||] g x5 s4 s5 anon3)))     

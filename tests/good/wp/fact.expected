@@ -225,27 +225,16 @@ Pangoline predefined
             (fun (old5:<{|}>) ->
             (fun (cur8:<{|}>) -> (fun (r6:int) -> r6 =[int||] (fact x5)))))
         in
-        (forall . forall (s4:<{|}>).
-                  forall (x5:int).
-                  ((fun (cur7:<{|}>) -> 0 <= x5) s4) ->
-                  (((x5 =[int||] 0) ->
-                    ((fun (old5:<{|}>) ->
-                     (fun (cur8:<{|}>) ->
-                     (fun (r6:int) -> r6 =[int||] (fact x5)))) s4 s4 1))
-                   /\
-                   ((~ (x5 =[int||] 0)) ->
-                    ((fst [int -> <{|}> -> Prop,int -> <{|}> -> <{|}> ->
-                      int -> Prop||] f2 (x5 - 1) s4)
-                     /\
-                     (forall (s5:<{|}>).
-                      forall (anon3:int).
-                      (snd [int -> <{|}> -> Prop,int -> <{|}> -> <{|}> ->
-                       int -> Prop||] f2 (x5 - 1) s4 s5 anon3)
-                      ->
-                      ((fun (s6:<{|}>) ->
-                       (fun (anf:int) ->
-                       (fun (old5:<{|}>) ->
-                       (fun (cur8:<{|}>) ->
-                       (fun (r6:int) -> r6 =[int||] (fact x5)))) s4 s6
-                       (x5 * anf))) s5 anon3))))))
-        /\ ((fun (s7:<{|}>) -> (fun (r7:unit) -> True)) s tt)     
+        forall . forall (s4:<{|}>).
+                 forall (x5:int).
+                 (0 <= x5) ->
+                 (((x5 =[int||] 0) -> (1 =[int||] (fact x5))) /\
+                  ((~ (x5 =[int||] 0)) ->
+                   ((fst [int -> <{|}> -> Prop,int -> <{|}> -> <{|}> ->
+                     int -> Prop||] f2 (x5 - 1) s4)
+                    /\
+                    (forall (s5:<{|}>).
+                     forall (anon3:int).
+                     (snd [int -> <{|}> -> Prop,int -> <{|}> -> <{|}> ->
+                      int -> Prop||] f2 (x5 - 1) s4 s5 anon3)
+                     -> ((x5 * anon3) =[int||] (fact x5))))))     

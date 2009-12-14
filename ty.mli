@@ -32,6 +32,7 @@ val unit : t
 val prop : t
 val bool : t
 val int : t
+val emptymap : t
 
 val arg : t -> t
 val result : t -> t

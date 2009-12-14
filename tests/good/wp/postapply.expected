@@ -209,104 +209,58 @@ Pangoline predefined
        let cons [a30||]= logic a30 -> (list[a30||]) -> list[a30||] in
        let is_nil [a31||]= logic (list[a31||]) -> bool in
        let l_in [a32||]= logic a32 -> (list[a32||]) -> Prop in end
-        (forall [a33
-        b5||e3]. forall (f2:(a33 -> <{|e3 }> -> Prop) * (a33 -> <{|e3 }> ->
-                 <{|e3 }> -> b5 -> Prop)).
-                 forall (s4:<{|e3 }>).
-                 forall (x5:a33).
-                 ((fun (cur7:<{|e3 }>) ->
-                  fst [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> -> <{|e3 }> ->
-                  b5 -> Prop||] f2 x5 cur7) s4)
-                 ->
-                 ((fst [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> -> <{|e3
-                   }> -> b5 -> Prop||] f2 x5 s4)
-                  /\
-                  (forall (s5:<{|e3 }>).
-                   forall (anon3:b5).
-                   (snd [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> -> <{|e3
-                    }> -> b5 -> Prop||] f2 x5 s4 s5 anon3)
-                   ->
-                   ((fun (old5:<{|e3 }>) ->
-                    (fun (cur8:<{|e3 }>) ->
-                    (fun (k:b5) ->
-                    snd [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> -> <{|e3
-                    }> -> b5 -> Prop||] f2 x5 old5 cur8 k))) s4 s5 anon3))))
-        /\
-        (let apply [a33
-         b5||e3]=
-                 (fun (f2:(a33 -> <{|e3 }> -> Prop) * (a33 -> <{|e3 }> ->
-                 <{|e3 }> -> b5 -> Prop)) ->
-                 (fun (x5:a33) ->
-                 (fun (cur7:<{|e3 }>) ->
-                 fst [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> -> <{|e3 }> ->
-                 b5 -> Prop||] f2 x5 cur7)) ,[a33 -> <{|e3 }> -> Prop,a33 ->
-                 <{|e3 }> -> <{|e3 }> -> b5 -> Prop||]
-                 (fun (x5:a33) ->
-                 (fun (old5:<{|e3 }>) ->
-                 (fun (cur8:<{|e3 }>) ->
-                 (fun (k:b5) ->
-                 snd [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> -> <{|e3 }> ->
-                 b5 -> Prop||] f2 x5 old5 cur8 k)))))
-         in
-         (forall [|r6|]. forall (s6:<{r6 |}>).
-                         forall (x6:ref(r6,int)).
-                         ((forall (s7:<{r6 |}>).
-                           (fst [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
-                            <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x6) 0
-                            s7)
-                           /\
-                           (forall (s8:<{r6 |}>).
-                            (snd [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
-                             <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x6) 0
-                             s7 s8 tt)
-                            ->
-                            ((fun (old6:<{r6 |}>) ->
-                             (fun (cur9:<{r6 |}>) ->
-                             (fun (anon4:unit) ->
-                             (!! [int|r6|{r6 |}] x6 cur9) =[int||] 0))) s7 s8
-                             tt)))
-                          /\
-                          (fst [unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
-                           <{r6 |}> -> unit -> Prop||]
-                           (apply [unit,unit||{r6 |}]
-                            ((fun (z3:unit) -> (fun (s9:<{r6 |}>) -> True))
-                             ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
-                             <{r6 |}> -> unit -> Prop||]
-                             (fun (z3:unit) ->
-                             (fun (old6:<{r6 |}>) ->
-                             (fun (cur9:<{r6 |}>) ->
-                             (fun (anon4:unit) ->
-                             (!! [int|r6|{r6 |}] x6 cur9) =[int||] 0))))))
-                           tt s6))
+        let apply [a33
+        b5||e3]=
+                (fun (f2:(a33 -> <{|e3 }> -> Prop) * (a33 -> <{|e3 }> ->
+                <{|e3 }> -> b5 -> Prop)) ->
+                (fun (x5:a33) ->
+                (fun (cur7:<{|e3 }>) ->
+                fst [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> -> <{|e3 }> ->
+                b5 -> Prop||] f2 x5 cur7)) ,[a33 -> <{|e3 }> -> Prop,a33 ->
+                <{|e3 }> -> <{|e3 }> -> b5 -> Prop||]
+                (fun (x5:a33) ->
+                (fun (old5:<{|e3 }>) ->
+                (fun (cur8:<{|e3 }>) ->
+                (fun (k:b5) ->
+                snd [a33 -> <{|e3 }> -> Prop,a33 -> <{|e3 }> -> <{|e3 }> ->
+                b5 -> Prop||] f2 x5 old5 cur8 k)))))
+        in
+        forall [|r6|]. forall (s4:<{r6 |}>).
+                       forall (x6:ref(r6,int)).
+                       ((forall (s5:<{r6 |}>).
+                         (fst [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
+                          <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x6) 0 s5)
                          /\
-                         (forall (s10:<{r6 |}>).
-                          (snd [unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
+                         (forall (s6:<{r6 |}>).
+                          (snd [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
+                           <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x6) 0 s5
+                           s6 tt)
+                          -> ((!! [int|r6|{r6 |}] x6 s6) =[int||] 0)))
+                        /\
+                        (fst [unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
+                         <{r6 |}> -> unit -> Prop||]
+                         (apply [unit,unit||{r6 |}]
+                          ((fun (z3:unit) -> (fun (s7:<{r6 |}>) -> True))
+                           ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
                            <{r6 |}> -> unit -> Prop||]
-                           (apply [unit,unit||{r6 |}]
-                            ((fun (z3:unit) -> (fun (s9:<{r6 |}>) -> True))
-                             ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
-                             <{r6 |}> -> unit -> Prop||]
-                             (fun (z3:unit) ->
-                             (fun (old6:<{r6 |}>) ->
-                             (fun (cur9:<{r6 |}>) ->
-                             (fun (anon4:unit) ->
-                             (!! [int|r6|{r6 |}] x6 cur9) =[int||] 0))))))
-                           tt s6 s10 tt)
-                          ->
-                          ((fun (old7:<{r6 |}>) ->
-                           (fun (cur10:<{r6 |}>) ->
-                           (fun (anon5:unit) ->
-                           (!! [int|r6|{r6 |}] x6 cur10) =[int||] 0))) s6 s10
-                           tt)))
-         /\
-         (let
-          main [|r6|]=
-                      (fun (x6:ref(r6,int)) -> (fun (s11:<{r6 |}>) -> True))
-                      ,[ref(r6,int) -> <{r6 |}> -> Prop,ref(r6,int) -> <{r6
-                      |}> -> <{r6 |}> -> unit -> Prop||]
-                      (fun (x6:ref(r6,int)) ->
-                      (fun (old7:<{r6 |}>) ->
-                      (fun (cur10:<{r6 |}>) ->
-                      (fun (anon5:unit) ->
-                      (!! [int|r6|{r6 |}] x6 cur10) =[int||] 0))))
-          in (fun (s12:<{|}>) -> (fun (r7:unit) -> True)) s tt))     
+                           (fun (z3:unit) ->
+                           (fun (old6:<{r6 |}>) ->
+                           (fun (cur9:<{r6 |}>) ->
+                           (fun (anon3:unit) ->
+                           (!! [int|r6|{r6 |}] x6 cur9) =[int||] 0))))))
+                         tt s4))
+                       /\
+                       (forall (s8:<{r6 |}>).
+                        (snd [unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
+                         <{r6 |}> -> unit -> Prop||]
+                         (apply [unit,unit||{r6 |}]
+                          ((fun (z3:unit) -> (fun (s7:<{r6 |}>) -> True))
+                           ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
+                           <{r6 |}> -> unit -> Prop||]
+                           (fun (z3:unit) ->
+                           (fun (old6:<{r6 |}>) ->
+                           (fun (cur9:<{r6 |}>) ->
+                           (fun (anon3:unit) ->
+                           (!! [int|r6|{r6 |}] x6 cur9) =[int||] 0))))))
+                         tt s4 s8 tt)
+                        -> ((!! [int|r6|{r6 |}] x6 s8) =[int||] 0))     

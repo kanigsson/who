@@ -128,102 +128,39 @@ let logic_simpl env x =
         | Const Pfalse -> Simple_change (ptrue_ l)
         | _ -> Nochange
         end
-    | Ite ({v = Const Btrue}, th, _) -> Simple_change th
-    | Ite ({v = Const Bfalse}, _, el) -> Simple_change el
-    | Ite (_, a, b) when equal a b -> Simple_change a
-    | Ite (test,th,el) -> 
-        Simple_change (and_ (impl test th l) (impl (neg test l) el l) l)
     | x ->
         match destruct_app2_var' x with
-        | Some ({name = Some "/\\" },_, t1, t2) ->
+        | Some (Some "/\\",_, t1, t2) ->
             begin match t1.v, t2.v with
             | Const Ptrue, _ -> Simple_change t2
             | _, Const Ptrue -> Simple_change t1
             | Const Pfalse, _ | _, Const Pfalse -> Simple_change (pfalse_ l)
             | _, _ -> Nochange end
-        | Some ({name = Some "->" },_, t1, t2) ->
+        | Some (Some "->",_, t1, t2) ->
             begin match t1.v, t2.v with
             | Const Ptrue, _ -> Simple_change t2
             | Const Pfalse, _ | _, Const Ptrue -> Simple_change (ptrue_ l)
             | t1,t2 when equal' t1 t2 -> Simple_change (ptrue_ l)
             | t1,_ ->
                 begin match destruct_app2_var' t1 with
-                | Some ({name = Some "/\\"},_,h1,h2) ->
+                | Some (Some "/\\",_,h1,h2) ->
                     Simple_change (impl h1 (impl h2 t2 l) l)
                 | _ -> Nochange end end
-        | Some ({name = Some "=" },_, t1, t2) when equal t1 t2 ->
+        | Some (Some "=",_, t1, t2) when equal t1 t2 ->
             Simple_change (ptrue_ l)
         | _ -> Nochange 
   else Nochange
-
-(* 
- * x : unit -> ()
- * m : <> -> empty
- * ∀x:unit.f -> f
- * ∀m:<>.f -> f *)
-let unit_void env x =
-  let l = env.l and t = env.et in
-  match x with
-  | Var _ when Ty.equal t Ty.unit -> Simple_change (void l)
-  | Var ({name = Some "empty"},_) -> Nochange
-  | Var _ ->
-      begin match t with
-      | Ty.C (Ty.Map e) when NEffect.is_empty e -> Simple_change (mempty l)
-      | _ -> Nochange
-      end
-  | Quant (_, Ty.C (Ty.Const TUnit),b) -> 
-      let _,f = vopen b in Simple_change f
-  | Quant (_, Ty.C (Ty.Map e),b) when NEffect.is_empty e -> 
-      let _,f = vopen b in Simple_change f
-  | _ -> Nochange
-
-(* t1 <<= t2 = true => t1 <= t2
- * etc *)
-let boolean_prop env x = 
-  let l = env.l in
-  try match destruct_app2_var' x with
-  | Some ({name = Some "="},_,t1,{v = (Const Btrue | Const Bfalse as n)}) ->
-      begin match destruct_app2_var t1 with
-       | Some (op, g,arg1, arg2) ->
-           let op = 
-             match op with 
-             | {name = Some "<<=" } -> "<="
-             | {name = Some "<<" } -> "<"
-             | {name = Some ">>" } -> ">"
-             | {name = Some ">>=" } -> ">="
-             | {name = Some "==" } -> "="
-             | {name = Some "!=" } -> "<>"
-             | _ -> raise No_Match in
-           let f = appi (pre_defvar op g l) arg1 arg2 l in
-           if n = Const Btrue then Simple_change f 
-           else Simple_change (neg f l)
-       | _ -> Nochange
-       end
-  | _ -> Nochange
-  with No_Match -> Nochange
-
-(* fst (t1,t2) -> t1
- * snd (t1,t2) -> t2 *)
-let tuple_reduce _ = function
-  | App ({ v = Var ({name=Some ("fst" | "pre" | "snd" | "post" as n) },_)},t,_,_) 
-  ->
-      begin match destruct_app2_var t with
-      | Some ({name = Some "," },_,a,b) ->
-          if n = "fst" || n = "pre" then Simple_change a else Simple_change b
-      | _ -> Nochange
-      end
-  | _ -> Nochange
 
 (* ∀x. x = d -> f => f[x->d] *)
 let elim_eq_intro _ = function
   | Quant (`FA,_,b) ->
       let x,f = vopen b in
       begin match destruct_app2_var f with
-      | Some ({name = Some "->"}, _, t1,f)  ->
+      | Some (Some "->", _, t1,f)  ->
           begin match destruct_app2_var t1 with
-          | Some ({name= Some "="}, _,{v= Var(y,_)}, def) when Name.equal x y ->
+          | Some (Some "=", _,{v= Var(y,_)}, def) when Name.equal x y ->
               Change_rerun (subst x (fun _ -> def) f)
-          | Some ({name= Some "=" }, _,def,{v = Var (y,_)}) when Name.equal x y ->
+          | Some (Some "=", _,def,{v = Var (y,_)}) when Name.equal x y ->
               Change_rerun (subst x (fun _ -> def) f)
           | _ -> Nochange
           end
@@ -231,26 +168,8 @@ let elim_eq_intro _ = function
       end
   | _ -> Nochange
 
-(* ∀x.True => True etc for all introduction constructions *)
-let quant_over_true env x =
-  let l = env.l in
-  let s = Simple_change (ptrue_ l) in
-  match x with
-  (* we can directly access the value here, because constants are not subject to
-   * substitutions *)
-  | Quant (_,_,(_,_,{v = Const Ptrue})) -> s
-  | Gen (_,{v = Const Ptrue}) -> s
-  | Let (_,_,_,(_,_,{v = Const Ptrue}), _) -> s
-  | EndSec {v = Const Ptrue} -> s
-  | Section (_,_,{ v = Const Ptrue }) -> s
-  | TypeDef (_,_,_,{v = Const Ptrue}) -> s
-  | _ -> Nochange
-
 (* beta-reduction: (λx:f) d => f[x|-> d] *)
 let beta_reduce _ = function
-  | App ({v = PureFun (_, l)} ,f2,_,_) ->
-      let x,body = vopen l in
-      Change_rerun (subst x (fun _ -> f2) body)
   | Let (_,_,{v = Axiom _ | Logic _ },_,_) ->
       Nochange
   | Let (_,g,v,l,_) -> 
@@ -288,12 +207,12 @@ let get_map env x =
 let swap_impl env x = 
   let l = env.l in
   match destruct_app2_var' x with
-  | Some ({name = Some "->"}, _, h1,goal)  ->
+  | Some (Some "->", _, h1,goal)  ->
       begin match destruct_app2_var goal with
-      | Some ({name = Some "->"}, _, h2,goal)  ->
+      | Some ( Some "->", _, h2,goal)  ->
           begin match destruct_app2_var h1, destruct_app2_var h2 with
-          | Some ({name= Some "="}, _,_, _), _ -> Nochange
-          | _, Some ({name= Some "="}, _,_, _) -> 
+          | Some ( Some "=", _,_, _), _ -> Nochange
+          | _, Some (Some "=", _,_, _) -> 
               Simple_change (impl h2 (impl h1 goal l) l)
           | _ -> Nochange
       end
@@ -304,7 +223,6 @@ let swap_impl env x =
 let simplifiers =
   [
     beta_reduce;
-    elim_eq_intro;
   ]
 
 let simplify_maps = 
@@ -315,7 +233,6 @@ let simplify_maps =
 
 let elim_eqs =
   [ swap_impl; 
-    elim_eq_intro; 
     logic_simpl 
   ]
 

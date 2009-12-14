@@ -209,25 +209,7 @@ Pangoline predefined
        let cons [a30||]= logic a30 -> (list[a30||]) -> list[a30||] in
        let is_nil [a31||]= logic (list[a31||]) -> bool in
        let l_in [a32||]= logic a32 -> (list[a32||]) -> Prop in end
-        (forall [|r6|]. forall (s4:<{r6 |}>).
-                        forall (x5:ref(r6,int)).
-                        (fst [int -> <{r6 |}> -> Prop,int -> <{r6 |}> -> <{r6
-                         |}> -> unit -> Prop||] (:= [int|r6|] x5) 0 s4)
-                        /\
-                        (forall (s5:<{r6 |}>).
-                         (snd [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
-                          <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x5) 0 s4
-                          s5 tt)
-                         ->
-                         ((fun (s6:<{r6 |}>) -> (fun (r7:unit) -> True)) s5
-                          tt)))
-        /\
-        (let
-         f2 [|r6|]=
-                   (fun (x5:ref(r6,int)) -> (fun (s7:<{r6 |}>) -> True))
-                   ,[ref(r6,int) -> <{r6 |}> -> Prop,ref(r6,int) -> <{r6
-                   |}> -> <{r6 |}> -> unit -> Prop||]
-                   (fun (x5:ref(r6,int)) ->
-                   (fun (s8:<{r6 |}>) ->
-                   (fun (s9:<{r6 |}>) -> (fun (r8:unit) -> True))))
-         in (fun (s10:<{|}>) -> (fun (r9:unit) -> True)) s tt)     
+        forall [|r6|]. forall (s4:<{r6 |}>).
+                       forall (x5:ref(r6,int)).
+                       fst [int -> <{r6 |}> -> Prop,int -> <{r6 |}> -> <{r6
+                       |}> -> unit -> Prop||] (:= [int|r6|] x5) 0 s4     

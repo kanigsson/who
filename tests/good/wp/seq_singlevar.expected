@@ -214,18 +214,16 @@ Pangoline predefined
                         forall (s4:<{|e3 }>).
                         forall (g:(unit -> <{|e3 }> -> Prop) * (unit -> <{|e3
                         }> -> <{|e3 }> -> unit -> Prop)).
-                        ((fun (cur7:<{|e3 }>) ->
-                         (fst [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> ->
-                          <{|e3 }> -> unit -> Prop||] f2 tt cur7)
+                        ((fst [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> ->
+                          <{|e3 }> -> unit -> Prop||] f2 tt s4)
                          /\
                          (forall (i6:<{|e3 }>).
                           (True /\
                            (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> ->
-                            <{|e3 }> -> unit -> Prop||] f2 tt cur7 i6 tt))
+                            <{|e3 }> -> unit -> Prop||] f2 tt s4 i6 tt))
                           ->
                           (fst [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> ->
                            <{|e3 }> -> unit -> Prop||] g tt i6)))
-                         s4)
                         ->
                         ((fst [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> ->
                           <{|e3 }> -> unit -> Prop||] f2 tt s4)
@@ -234,28 +232,20 @@ Pangoline predefined
                           (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> ->
                            <{|e3 }> -> unit -> Prop||] f2 tt s4 s5 tt)
                           ->
-                          ((fun (s6:<{|e3 }>) ->
-                           (fun (x5:unit) ->
-                           (fst [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> ->
-                            <{|e3 }> -> unit -> Prop||] g tt s6)
+                          ((fst [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> ->
+                            <{|e3 }> -> unit -> Prop||] g tt s5)
                            /\
-                           (forall (s7:<{|e3 }>).
+                           (forall (s6:<{|e3 }>).
                             (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3
-                             }> -> <{|e3 }> -> unit -> Prop||] g tt s6 s7 tt)
+                             }> -> <{|e3 }> -> unit -> Prop||] g tt s5 s6 tt)
                             ->
-                            ((fun (old5:<{|e3 }>) ->
-                             (fun (cur8:<{|e3 }>) ->
-                             (fun (anon3:unit) ->
-                             exists i7:<{|e3 }>.
+                            (exists i7:<{|e3 }>.
                              (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3
-                              }> -> <{|e3 }> -> unit -> Prop||] f2 tt old5 i7
+                              }> -> <{|e3 }> -> unit -> Prop||] f2 tt s4 i7
                               tt)
                              /\
                              (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3
-                              }> -> <{|e3 }> -> unit -> Prop||] g tt i7 cur8
-                              tt))))
-                             s4 s7 tt))))
-                           s5 tt))))
+                              }> -> <{|e3 }> -> unit -> Prop||] g tt i7 s6 tt)))))))
         /\
         (let
          seq [||e3]=
@@ -267,13 +257,13 @@ Pangoline predefined
                     (fst [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> -> <{|e3
                      }> -> unit -> Prop||] f2 tt cur7)
                     /\
-                    (forall (i6:<{|e3 }>).
+                    (forall (i8:<{|e3 }>).
                      (True /\
                       (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> ->
-                       <{|e3 }> -> unit -> Prop||] f2 tt cur7 i6 tt))
+                       <{|e3 }> -> unit -> Prop||] f2 tt cur7 i8 tt))
                      ->
                      (fst [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> -> <{|e3
-                      }> -> unit -> Prop||] g tt i6))))
+                      }> -> unit -> Prop||] g tt i8))))
                     ,[((unit -> <{|e3 }> -> Prop) * (unit -> <{|e3 }> ->
                     <{|e3 }> -> unit -> Prop)) -> <{|e3 }> -> Prop,((unit ->
                     <{|e3 }> -> Prop) * (unit -> <{|e3 }> -> <{|e3 }> ->
@@ -283,110 +273,83 @@ Pangoline predefined
                     (fun (old5:<{|e3 }>) ->
                     (fun (cur8:<{|e3 }>) ->
                     (fun (anon3:unit) ->
-                    exists i7:<{|e3 }>.
+                    exists i9:<{|e3 }>.
                     (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> -> <{|e3
-                     }> -> unit -> Prop||] f2 tt old5 i7 tt)
+                     }> -> unit -> Prop||] f2 tt old5 i9 tt)
                     /\
                     (snd [unit -> <{|e3 }> -> Prop,unit -> <{|e3 }> -> <{|e3
-                     }> -> unit -> Prop||] g tt i7 cur8 tt))))))
+                     }> -> unit -> Prop||] g tt i9 cur8 tt))))))
          in
-         (forall [|r6|]. forall (s8:<{r6 |}>).
-                         forall (x6:ref(r6,int)).
-                         (((forall (s9:<{r6 |}>).
-                            (fst [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
-                             <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x6) 0
-                             s9)
-                            /\
-                            (forall (s10:<{r6 |}>).
-                             (snd [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
-                              <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x6) 0
-                              s9 s10 tt)
-                             ->
-                             ((fun (old6:<{r6 |}>) ->
-                              (fun (cur9:<{r6 |}>) ->
-                              (fun (anon4:unit) ->
-                              (!! [int|r6|{r6 |}] x6 cur9) =[int||] 0))) s9
-                              s10 tt)))
+         forall [|r6|]. forall (s7:<{r6 |}>).
+                        forall (x5:ref(r6,int)).
+                        (((forall (s8:<{r6 |}>).
+                           (fst [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
+                            <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x5) 0
+                            s8)
+                           /\
+                           (forall (s9:<{r6 |}>).
+                            (snd [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
+                             <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x5) 0
+                             s8 s9 tt)
+                            -> ((!! [int|r6|{r6 |}] x5 s9) =[int||] 0)))
+                          /\
+                          (forall (s10:<{r6 |}>).
+                           (fst [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
+                            <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x5) 1
+                            s10)
                            /\
                            (forall (s11:<{r6 |}>).
-                            (fst [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
-                             <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x6) 1
-                             s11)
-                            /\
-                            (forall (s12:<{r6 |}>).
-                             (snd [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
-                              <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x6) 1
-                              s11 s12 tt)
-                             ->
-                             ((fun (old7:<{r6 |}>) ->
-                              (fun (cur10:<{r6 |}>) ->
-                              (fun (anon5:unit) ->
-                              (!! [int|r6|{r6 |}] x6 cur10) =[int||] 1))) s11
-                              s12 tt))))
-                          /\
-                          (fst [((unit -> <{r6 |}> -> Prop) * (unit -> <{r6
-                           |}> -> <{r6 |}> -> unit -> Prop)) -> <{r6 |}> ->
-                           Prop,((unit -> <{r6 |}> -> Prop) * (unit -> <{r6
-                           |}> -> <{r6 |}> -> unit -> Prop)) -> <{r6 |}> ->
-                           <{r6 |}> -> unit -> Prop||]
-                           (seq [||{r6 |}]
-                            ((fun (z3:unit) -> (fun (s13:<{r6 |}>) -> True))
-                             ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
-                             <{r6 |}> -> unit -> Prop||]
-                             (fun (z3:unit) ->
-                             (fun (old6:<{r6 |}>) ->
-                             (fun (cur9:<{r6 |}>) ->
-                             (fun (anon4:unit) ->
-                             (!! [int|r6|{r6 |}] x6 cur9) =[int||] 0))))))
-                           ((fun (z4:unit) -> (fun (s14:<{r6 |}>) -> True))
-                            ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
-                            <{r6 |}> -> unit -> Prop||]
-                            (fun (z4:unit) ->
-                            (fun (old7:<{r6 |}>) ->
-                            (fun (cur10:<{r6 |}>) ->
-                            (fun (anon5:unit) ->
-                            (!! [int|r6|{r6 |}] x6 cur10) =[int||] 1)))))
-                           s8))
+                            (snd [int -> <{r6 |}> -> Prop,int -> <{r6 |}> ->
+                             <{r6 |}> -> unit -> Prop||] (:= [int|r6|] x5) 1
+                             s10 s11 tt)
+                            -> ((!! [int|r6|{r6 |}] x5 s11) =[int||] 1))))
                          /\
-                         (forall (s15:<{r6 |}>).
-                          (snd [((unit -> <{r6 |}> -> Prop) * (unit -> <{r6
-                           |}> -> <{r6 |}> -> unit -> Prop)) -> <{r6 |}> ->
-                           Prop,((unit -> <{r6 |}> -> Prop) * (unit -> <{r6
-                           |}> -> <{r6 |}> -> unit -> Prop)) -> <{r6 |}> ->
-                           <{r6 |}> -> unit -> Prop||]
-                           (seq [||{r6 |}]
-                            ((fun (z3:unit) -> (fun (s13:<{r6 |}>) -> True))
-                             ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
-                             <{r6 |}> -> unit -> Prop||]
-                             (fun (z3:unit) ->
-                             (fun (old6:<{r6 |}>) ->
-                             (fun (cur9:<{r6 |}>) ->
-                             (fun (anon4:unit) ->
-                             (!! [int|r6|{r6 |}] x6 cur9) =[int||] 0))))))
-                           ((fun (z4:unit) -> (fun (s14:<{r6 |}>) -> True))
+                         (fst [((unit -> <{r6 |}> -> Prop) * (unit -> <{r6
+                          |}> -> <{r6 |}> -> unit -> Prop)) -> <{r6 |}> ->
+                          Prop,((unit -> <{r6 |}> -> Prop) * (unit -> <{r6
+                          |}> -> <{r6 |}> -> unit -> Prop)) -> <{r6 |}> ->
+                          <{r6 |}> -> unit -> Prop||]
+                          (seq [||{r6 |}]
+                           ((fun (z3:unit) -> (fun (s12:<{r6 |}>) -> True))
                             ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
                             <{r6 |}> -> unit -> Prop||]
-                            (fun (z4:unit) ->
-                            (fun (old7:<{r6 |}>) ->
-                            (fun (cur10:<{r6 |}>) ->
-                            (fun (anon5:unit) ->
-                            (!! [int|r6|{r6 |}] x6 cur10) =[int||] 1)))))
-                           s8 s15 tt)
-                          ->
-                          ((fun (old8:<{r6 |}>) ->
-                           (fun (cur11:<{r6 |}>) ->
-                           (fun (anon6:unit) ->
-                           (!! [int|r6|{r6 |}] x6 cur11) =[int||] 1))) s8 s15
-                           tt)))
-         /\
-         (let
-          z5 [|r6|]=
-                    (fun (x6:ref(r6,int)) -> (fun (s16:<{r6 |}>) -> True))
-                    ,[ref(r6,int) -> <{r6 |}> -> Prop,ref(r6,int) -> <{r6
-                    |}> -> <{r6 |}> -> unit -> Prop||]
-                    (fun (x6:ref(r6,int)) ->
-                    (fun (old8:<{r6 |}>) ->
-                    (fun (cur11:<{r6 |}>) ->
-                    (fun (anon6:unit) ->
-                    (!! [int|r6|{r6 |}] x6 cur11) =[int||] 1))))
-          in (fun (s17:<{|}>) -> (fun (r7:unit) -> True)) s tt))     
+                            (fun (z3:unit) ->
+                            (fun (old6:<{r6 |}>) ->
+                            (fun (cur9:<{r6 |}>) ->
+                            (fun (anon4:unit) ->
+                            (!! [int|r6|{r6 |}] x5 cur9) =[int||] 0))))))
+                          ((fun (z4:unit) -> (fun (s13:<{r6 |}>) -> True))
+                           ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
+                           <{r6 |}> -> unit -> Prop||]
+                           (fun (z4:unit) ->
+                           (fun (old7:<{r6 |}>) ->
+                           (fun (cur10:<{r6 |}>) ->
+                           (fun (anon5:unit) ->
+                           (!! [int|r6|{r6 |}] x5 cur10) =[int||] 1)))))
+                          s7))
+                        /\
+                        (forall (s14:<{r6 |}>).
+                         (snd [((unit -> <{r6 |}> -> Prop) * (unit -> <{r6
+                          |}> -> <{r6 |}> -> unit -> Prop)) -> <{r6 |}> ->
+                          Prop,((unit -> <{r6 |}> -> Prop) * (unit -> <{r6
+                          |}> -> <{r6 |}> -> unit -> Prop)) -> <{r6 |}> ->
+                          <{r6 |}> -> unit -> Prop||]
+                          (seq [||{r6 |}]
+                           ((fun (z3:unit) -> (fun (s12:<{r6 |}>) -> True))
+                            ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
+                            <{r6 |}> -> unit -> Prop||]
+                            (fun (z3:unit) ->
+                            (fun (old6:<{r6 |}>) ->
+                            (fun (cur9:<{r6 |}>) ->
+                            (fun (anon4:unit) ->
+                            (!! [int|r6|{r6 |}] x5 cur9) =[int||] 0))))))
+                          ((fun (z4:unit) -> (fun (s13:<{r6 |}>) -> True))
+                           ,[unit -> <{r6 |}> -> Prop,unit -> <{r6 |}> ->
+                           <{r6 |}> -> unit -> Prop||]
+                           (fun (z4:unit) ->
+                           (fun (old7:<{r6 |}>) ->
+                           (fun (cur10:<{r6 |}>) ->
+                           (fun (anon5:unit) ->
+                           (!! [int|r6|{r6 |}] x5 cur10) =[int||] 1)))))
+                          s7 s14 tt)
+                         -> ((!! [int|r6|{r6 |}] x5 s14) =[int||] 1)))     
