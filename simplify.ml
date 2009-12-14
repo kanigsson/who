@@ -106,78 +106,6 @@ type simpl =
   | Simple_change of Recon.t
   | Change_rerun of Recon.t
 
-(* simplify the logical structure of the formula 
- * ~ True => False
- * ~ False => True
- * if True then e1 else e2 => e1
- * if False then e1 else e2 => e2
- * True /\ f, f /\ True => f
- * True -> f => f
- * f -> True => True
- * False -> f => True
- * f -> f => True
- * f = f => True
- *)
-let logic_simpl env x =
-  let t = env.et and l = env.l in
-  if Ty.equal t Ty.prop then
-    match x with
-    | App ({v = Var ({name = Some "~"},_)},t,_,_) ->
-        begin match t.v with
-        | Const Ptrue -> Simple_change (pfalse_ l)
-        | Const Pfalse -> Simple_change (ptrue_ l)
-        | _ -> Nochange
-        end
-    | x ->
-        match destruct_app2_var' x with
-        | Some (Some "/\\",_, t1, t2) ->
-            begin match t1.v, t2.v with
-            | Const Ptrue, _ -> Simple_change t2
-            | _, Const Ptrue -> Simple_change t1
-            | Const Pfalse, _ | _, Const Pfalse -> Simple_change (pfalse_ l)
-            | _, _ -> Nochange end
-        | Some (Some "->",_, t1, t2) ->
-            begin match t1.v, t2.v with
-            | Const Ptrue, _ -> Simple_change t2
-            | Const Pfalse, _ | _, Const Ptrue -> Simple_change (ptrue_ l)
-            | t1,t2 when equal' t1 t2 -> Simple_change (ptrue_ l)
-            | t1,_ ->
-                begin match destruct_app2_var' t1 with
-                | Some (Some "/\\",_,h1,h2) ->
-                    Simple_change (impl h1 (impl h2 t2 l) l)
-                | _ -> Nochange end end
-        | Some (Some "=",_, t1, t2) when equal t1 t2 ->
-            Simple_change (ptrue_ l)
-        | _ -> Nochange 
-  else Nochange
-
-(* ∀x. x = d -> f => f[x->d] *)
-let elim_eq_intro _ = function
-  | Quant (`FA,_,b) ->
-      let x,f = vopen b in
-      begin match destruct_app2_var f with
-      | Some (Some "->", _, t1,f)  ->
-          begin match destruct_app2_var t1 with
-          | Some (Some "=", _,{v= Var(y,_)}, def) when Name.equal x y ->
-              Change_rerun (subst x (fun _ -> def) f)
-          | Some (Some "=", _,def,{v = Var (y,_)}) when Name.equal x y ->
-              Change_rerun (subst x (fun _ -> def) f)
-          | _ -> Nochange
-          end
-      | _ -> Nochange
-      end
-  | _ -> Nochange
-
-(* beta-reduction: (λx:f) d => f[x|-> d] *)
-let beta_reduce _ = function
-  | Let (_,_,{v = Axiom _ | Logic _ },_,_) ->
-      Nochange
-  | Let (_,g,v,l,_) -> 
-      let x,e = vopen l in
-      Change_rerun (polsubst g x v e)
-  | _ -> Nochange
-
-
 (* transform f (m : <r1 r2| e>) into f r1m r2m em *)
 let distrib_app env x =
   let l = env.l in
@@ -204,36 +132,10 @@ let get_map env x =
 (*       Myformat.printf "get_form: %a@." print' x; *)
       Nochange
 
-let swap_impl env x = 
-  let l = env.l in
-  match destruct_app2_var' x with
-  | Some (Some "->", _, h1,goal)  ->
-      begin match destruct_app2_var goal with
-      | Some ( Some "->", _, h2,goal)  ->
-          begin match destruct_app2_var h1, destruct_app2_var h2 with
-          | Some ( Some "=", _,_, _), _ -> Nochange
-          | _, Some (Some "=", _,_, _) -> 
-              Simple_change (impl h2 (impl h1 goal l) l)
-          | _ -> Nochange
-      end
-      | _ -> Nochange 
-      end
-  | _ -> Nochange
-
-let simplifiers =
-  [
-    beta_reduce;
-  ]
-
 let simplify_maps = 
   [ 
     get_map; 
     distrib_app;
-  ]
-
-let elim_eqs =
-  [ swap_impl; 
-    logic_simpl 
   ]
 
 let exhaust simplifiers env f = 
@@ -320,13 +222,6 @@ let simplify ~genbind
   in
   aux env f
 
-let logic_simplify f = 
-  let rec aux env f =
-    simplify ~genbind:(fun g env e -> g, aux env e) 
-             ~varbind:(fun env k x t e l -> aquant k x t (aux env e) l)
-             ~tyfun:(fun _ -> Misc.id) [] simplifiers env f in
-  aux empty f
-
 let map_simplify f = 
   let rec aux env f =
     simplify 
@@ -364,21 +259,39 @@ let map_simplify f =
       simplify_maps [] env f in
   aux empty f
 
-let eq_simplify f = 
-  let rec aux env f = 
-    simplify ~genbind:(fun g env e -> g, aux env e)
-             ~varbind:(fun env k x t e l -> aquant k x t (aux env e) l)
-             ~tyfun:(fun _ -> Misc.id) [] elim_eqs env f in
-  aux empty f
+let logic_simplify f =
+  let l = f.loc in
+  let rec aux f = match f.v with
+  | (Const _  | Logic _ | Var _ ) -> f
+  | Axiom e -> axiom (aux e) l
+  | App (f1,f2,k,c) -> app ~kind:k ~cap:c (aux f1) (aux f2) l
+  | Gen (g,t) -> gen g (aux t) l
+  | Let (p,g,e1,b,r) ->
+      let x,e2 = if p then sopen b else vopen b in
+      let e2 = aux e2 in
+      begin match e1.v with
+      | Axiom _ | Logic _ -> let_ ~prelude:p g e1 x e2 r l
+      | _ -> polsubst g x (aux e1) e2
+      end
+  | PureFun (t,b) ->
+      let x,e = vopen b in
+      aquant `LAM x t (aux e) l
+  | Quant (k,t,b) -> 
+      let x,e = vopen b in
+      squant k x t (aux e) l
+  | Ite (e1,e2,e3) -> 
+      ite (aux e1) (aux e2) (aux e3) l
+  | TypeDef (g,t,x,e) -> typedef g t x (aux e) l
+  | Section (n,f,e) -> section n f (aux e) l
+  | EndSec e -> endsec (aux e) l 
+  | Lam _ | Annot _ | For _ | LetReg _ | Param _ -> assert false in
+  aux f
 
 let allsimplify f =
   let f = logic_simplify f in
 (*   Myformat.printf "=============@.%a@.=================@." print f; *)
   Typing.formtyping f;
   let f = map_simplify f in
-(*
-  Myformat.printf ">>>>>>>>>>>>>@.%a@.>>>>>>>>>>>>>>>>>@." print f;
-*)
+(*   Myformat.printf ">>>>>>>>>>>>>@.%a@.>>>>>>>>>>>>>>>>>@." print f; *)
   Typing.formtyping f;
-  let f = eq_simplify f in
   f
