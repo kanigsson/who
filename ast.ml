@@ -463,8 +463,11 @@ module Recon = struct
 
 
   let letreg l e = mk (LetReg (l,e)) e.t (NEffect.rremove e.e l)
-  let ite e1 e2 e3 = 
-    mk (Ite (e1,e2,e3)) e2.t (NEffect.union e1.e (NEffect.union e2.e e3.e))
+  let ite ?(logic=true) e1 e2 e3 l = 
+    let im b c = impl (eq e1 (b l) l) c l in
+    if logic then and_ (im btrue_ e2) (im bfalse_ e3) l
+    else
+      mk (Ite (e1,e2,e3)) e2.t (NEffect.union e1.e (NEffect.union e2.e e3.e)) l
 
   let typedef g t v e = mk (TypeDef (g,t,v,e)) e.t e.e
 

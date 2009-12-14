@@ -78,7 +78,7 @@ let rec formtyping' env loc = function
       fis_oftype (add_svar env x t) prop e;
       prop
   | Ite (e1,e2,e3) ->
-      fis_oftype env prop e1;
+      fis_oftype env bool e1;
       let t = formtyping env e2 in
       fis_oftype env t e3;
       t

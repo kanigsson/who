@@ -126,14 +126,7 @@ and wp m q e =
           let f = efflamho eff (fun m2 ->
             plam x t (wp_node (combine m m2 l) q e2) l) l in
           wp_node m f e1
-    | Ite (c,th,el) ->
-        ite (eq (lift_value c) (btrue_ l) l) 
-          (wp_node m q th) (wp_node m q el) l
-(*
-        let lc = lift_value c in
-        let branch boolean e = impl (eq lc (boolean l) l) (wp_node m q e) l in
-        and_ (branch btrue_ th) (branch bfalse_ el) l
-*)
+    | Ite (c,th,el) -> ite (lift_value c) (wp_node m q th) (wp_node m q el) l
     | Param _ -> ptrue_ l
     | TypeDef (g,k,x,e) -> typedef g k x (wp_node m q e) l
     | Section (n,f,e) -> 

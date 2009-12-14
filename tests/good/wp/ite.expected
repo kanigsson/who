@@ -211,9 +211,11 @@ Pangoline predefined
        let l_in [a32||]= logic a32 -> (list[a32||]) -> Prop in end
         (forall . forall (s4:<{|}>).
                   forall (b5:bool).
-                  if b5 =[bool||] true then
-                  (fun (s5:<{|}>) -> (fun (r6:int) -> True)) s4 5 else
-                  (fun (s5:<{|}>) -> (fun (r6:int) -> True)) s4 3)
+                  ((b5 =[bool||] true) ->
+                   ((fun (s5:<{|}>) -> (fun (r6:int) -> True)) s4 5))
+                  /\
+                  ((b5 =[bool||] false) ->
+                   ((fun (s5:<{|}>) -> (fun (r6:int) -> True)) s4 3)))
         /\
         (let
          f2 =

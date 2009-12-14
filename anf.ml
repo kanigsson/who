@@ -20,7 +20,7 @@ and normalize e k =
   | TypeDef (g,t,v,e) -> k (typedef g t v (normalize_term e) loc)
   | Ite (e1,e2,e3) ->
       normalize_name e1
-        (fun v -> k (ite v (normalize_term e2) (normalize_term e3) loc))
+        (fun v -> k (ite ~logic:false v (normalize_term e2) (normalize_term e3) loc))
   | Annot (e,_) -> normalize e k
   | App (e1,e2,f,c) ->
       normalize_name e1

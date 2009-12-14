@@ -128,8 +128,8 @@ let logic_simpl env x =
         | Const Pfalse -> Simple_change (ptrue_ l)
         | _ -> Nochange
         end
-    | Ite ({v = Const Ptrue}, th, _) -> Simple_change th
-    | Ite ({v = Const Pfalse}, _, el) -> Simple_change el
+    | Ite ({v = Const Btrue}, th, _) -> Simple_change th
+    | Ite ({v = Const Bfalse}, _, el) -> Simple_change el
     | Ite (_, a, b) when equal a b -> Simple_change a
     | Ite (test,th,el) -> 
         Simple_change (and_ (impl test th l) (impl (neg test l) el l) l)
