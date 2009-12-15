@@ -129,6 +129,7 @@ defprogvar:
   | x = IDENT { x }
   | x = infix { { c = snd x; info = fst x } }
   | x = prefix { { c = snd x; info = fst x } }
+  | p = REF { Loc.mk p "ref" }
   | p = DEXCLAM { Loc.mk p "!!" }
   
 defprogvar_no_pos : x = defprogvar { x.c }
@@ -221,19 +222,22 @@ constant:
 (* prefix operators - can be used in definitions *)
 prefix:
   | p = EXCLAM { p, "!" }
-  | p = REF { p, "ref" }
   | p = TILDE { p, "~" }
 
 (* basic terms *)
 aterm:
+  | p = REF { var "ref" p}
+  | p = prefix x = IDENT
+    { app (var (snd p) (fst p)) (var x.c x.info) (embrace (fst p) x.info) }
   | p = DEXCLAM x = IDENT 
     { app2 "!!" (var x.c x.info) (var "cur" p) (embrace p x.info) }
   | p = DEXCLAM x = IDENT MID t = aterm 
     { app2 "!!" (var x.c x.info) t (embrace p t.loc)  }
   | x = IDENT { var x.c x.info }
-  | x = prefix { var (snd x) (fst x) }
+  | l = LPAREN x = prefix r = RPAREN 
+    { var (snd x) (embrace l r) }
   | c = constant { let p,c = c in const c p }
-(*   | l = LPAREN x = infix e = RPAREN { var (snd x) (embrace l e) } *)
+  | l = LPAREN x = infix e = RPAREN { var (snd x) (embrace l e) }
   | l = LPAREN t = nterm e = RPAREN { mk t.v (embrace l e) }
   | l = LPAREN e = nterm COLON t = ty r = RPAREN { mk (Annot (e,t)) (embrace l r) }
 
@@ -353,6 +357,8 @@ takeoverdecl:
   *)
 decl:
   | f = alllet {(f : t -> t) void }
+  | p = PARAMETER x = defprogvar_no_pos l = optgen COLON rt = ty
+    { let_wconst l (mk (Param (rt,([],[]))) p) x NoRec p}
   | p = PARAMETER x = defprogvar_no_pos l = optgen args = arglist 
     COLON rt = ty COMMA e = sepeffect EQUAL 
       cap = maycapdef pre = precond post = postcond

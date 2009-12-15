@@ -3,6 +3,13 @@ Pretty printer for Pangoline
 Syntax for lifted types
 Syntax for Hoare triples
 
+repair inference: 
+  * sometimes the current implementation needs a concrete type
+    which hasn't been determined yet (for example to build formulas)
+  * effect vars which appear only in connection with other vars are never
+    instantiated
+
+
 MINOR ISSUES
 error messages for unknown variables in internalize
 

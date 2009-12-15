@@ -94,7 +94,8 @@ let postf eff t old cur res (p : ParseT.t) =
   let lameff s = lam s et in
   lameff old (lameff cur (lam res (U.to_ty t) p p.loc ) p.loc) p.loc
 
-let rec infer' env t loc = function
+let rec infer' env t loc x = 
+  match x with
   | App (e1,e2,k,cap) ->
       let nt = U.new_ty () and e = U.new_e () in
       let e1 = infer env (U.arrow nt t e (List.map to_uf_rnode cap)) e1 in
@@ -130,11 +131,16 @@ let rec infer' env t loc = function
       unify U.prop t loc;
       Quant (k,xt,Name.close_bind x e), U.new_e ()
   | Lam (x,xt,cap,p,e,q) ->
+(*       Myformat.printf "treating lambda of %a@." Name.print x; *)
       let nt = sto_uf_node xt in
       let nt' = U.new_ty () in
       let env = add_svar env x xt in
       let e = infer {env with pm = false} nt' e in
+(*       Myformat.printf "nt' and e.e: %a and %a@." U.print_node nt' U.preff
+ *       e.e; *)
       unify (U.arrow nt nt' e.e (List.map to_uf_rnode cap)) t loc;
+(*       Myformat.printf "nt' and e.e: %a and %a@." U.print_node nt' U.preff
+ *       e.e; *)
       let p = pre env e.e p in
       let q = post env e.e nt' q in
       Lam (x,xt,cap,p,e,q), U.new_e ()
@@ -152,7 +158,6 @@ let rec infer' env t loc = function
       let e = infer env t e in
       EndSec e, e.e
   | Let (p,g,e1,(_,x,e2),r) ->
-(*       Myformat.printf "infer-let: %a@." Name.print x; *)
       let nt = U.new_ty () in
       let env' = 
         match r with
@@ -205,8 +210,10 @@ and post env eff t (old,cur,x) =
   | PNone -> PNone
   | PPlain f -> 
       let t = to_logic_ty t in
-      PPlain (infer {env with pm = true} (base_post_ty eff t) 
-        (postf eff t old cur (Name.new_anon ()) f))
+      let bp = base_post_ty eff t in
+      let pf = postf eff t old cur (Name.new_anon ()) f in
+      let r = PPlain (infer {env with pm = true} bp pf) in
+      r
   | PResult (r,f) ->
       let t = to_logic_ty t in
       PPlain (infer {env with pm = true} (base_post_ty eff t) 
