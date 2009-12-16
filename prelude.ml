@@ -55,7 +55,7 @@ section Whoref
     {}
     { x : !!x = v }
 
-  logic combine [||'e1 'e2] : <'e1> -> <'e2> -> <'e1 'e2>
+  logic combine [||'e] : <'e> -> <'e> -> <'e>
   logic restrict [||'e1 'e2] : <'e1> -> <'e2>
   logic empty : < >
 

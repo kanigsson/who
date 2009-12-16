@@ -1,11 +1,11 @@
-let iter ['a|r|'e] 
-  (inv : <r 'e> -> int ->  prop) 
-  (ar : ref(r, 'a array)) (f : 'a ->{r 'e} unit)  =
+let iter ['a|t|'e] 
+  (inv : <t 'e> -> int ->  prop) 
+  (ar : ref(t, 'a array)) (f : 'a ->{t 'e} unit)  =
   { inv cur 0 /\ 
     forall (i:int). 0 <= i /\ i < len (!!ar) ->
-    forall (m : <r 'e>). 
+    forall (m : <t 'e>). 
       inv m i -> pre f (get i !!ar|m) m /\
-    forall (n : <r 'e>).  
+    forall (n : <t 'e>).  
       post f (get i !!ar|m) m n () -> inv n (i+1)
   }
   for i = 0 to len !ar - 1 do 
@@ -27,14 +27,13 @@ parameter arr : ref(ar,int array)
 
 let main (z : unit) =
   {}
-  letregion r in
-  let sum = ref{{r}} 0 in
+  letregion s in
+  let sum = ref{{s}} 0 in
   let arrcur = !arr in
   iter 
-    (fun (s : <ar r>) (k : int) -> 
+    (fun (s : <ar s>) (k : int) -> 
         !!sum|s = sum_array k !!arr|s /\ !!arr|s = arrcur)
     arr
-    (fun (z : int) -> {} sum := !sum + z { !!sum = !!sum|old + z})
-    ;
+    (fun (z : int) -> {} sum := !sum + z { !!sum = !!sum|old + z});
   !sum
   {r : r = sum_array (len !!arr) !!arr /\ !!arr = !!arr|old  }

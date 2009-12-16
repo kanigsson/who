@@ -70,4 +70,10 @@ let opt_map f = function
   | None -> None
   | Some x -> Some (f x)
 
-
+let find_first p iter t def =
+  let x = ref def in
+  begin try 
+    iter (fun z -> 
+      if p z then begin x := z; raise Exit end else ()) t
+  with Exit -> () end;
+  !x

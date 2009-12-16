@@ -49,6 +49,8 @@ let prety t eff = U.parr t (base_pre_ty eff)
 let postty t eff t2 = U.parr t (base_post_ty eff t2)
 let prepost_type t1 t2 e = U.tuple (prety t1 e) (postty t1 e t2)
 
+exception FindFirst of Name.t * U.enode
+
 let to_uf_node (tl,rl,el) x = 
   let tn,th = bh U.new_ty tl and rn,rh = bh U.new_r rl 
   and en,eh = bh U.new_e el in
@@ -67,10 +69,28 @@ let to_uf_node (tl,rl,el) x =
   and auxr r = try HT.find rh r with Not_found -> U.mkr r
   and auxe e = try HT.find eh e with Not_found -> U.mke e 
   and eff eff = 
+    (* We need a single effect variable here *)
+      (* We are lucky, the effect is in fact a single effect var *)
     if NEffect.is_esingleton eff then auxe (NEffect.e_choose eff)
-    else 
-      let rl, el = NEffect.to_lists eff in
-      U.effect (List.map auxr rl) (List.map auxe el) in
+    (* or in fact there is no effect var, also ok *)
+    else if NEffect.no_effvar eff then 
+      let rl = NEffect.to_rlist eff in
+      U.effect (List.map auxr rl) []
+    else
+      (* try to find a quantified effect var *)
+      try NEffect.eiter (fun z -> 
+        try raise (FindFirst (z, HT.find eh z)) with Not_found -> ()) eff;
+        (* we have not found one *)
+        (* We simply choose one and add the others as constraints *)
+        let e = NEffect.e_choose eff in
+        let eff = NEffect.eremove eff e in
+        let rl, el = NEffect.to_lists eff in
+        U.effect ~name:e (List.map auxr rl) (List.map auxe el)
+      with FindFirst (e,en) ->
+        let eff = NEffect.eremove eff e in
+        let rl, el = NEffect.to_lists eff in
+        let en' = U.effect ~name:e (List.map auxr rl) (List.map auxe el) in
+        U.eunion en en'; en in
   real x, (tn,rn,en)
 
 let to_uf_rnode r = U.mkr r

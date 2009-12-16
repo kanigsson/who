@@ -12,7 +12,7 @@ and r =
 and e = 
   | EU
   | EV of Name.t
-  | ET of rnode list * enode list
+  | ET of Name.t option * rnode list * enode list
 
 let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh (T t)
@@ -29,7 +29,7 @@ let parr t1 t2 = mkt (Ty.PureArr (t1,t2))
 let new_e () = Uf.fresh EU
 let mke e = Uf.fresh (EV e)
 
-let effect rl el = Uf.fresh (ET (rl,el))
+let effect ?name rl el = Uf.fresh (ET (name,rl,el))
 
 open Const
 let const =
@@ -61,7 +61,12 @@ let eunion a b =
   | (EV a, ET (rl, el,cl)) 
   | ET (rl,el,cl), EV a ->  ET (rl, (mke a)::el,cl)
 *)
-  | ET (rl1,el1), ET (rl2,el2) -> ET (rl1@rl2, el1 @ el2)
+  | ET (n1,rl1,el1), ET (n2,rl2,el2) -> 
+      let r = rl1@rl2 and e = el1 @ el2 in
+      match n1,n2 with
+      | None, (None as n) | None, n | n, None -> ET (n, r, e )
+      | Some n1, Some n2 when Name.equal n1 n2 -> ET (Some n1, r, e)
+      | _ -> assert false
 
 let eunion a b = Uf.union eunion a b
 
@@ -83,9 +88,13 @@ and preff fmt x =
   match Uf.desc x with
   | EU -> fprintf fmt "%d" (Uf.tag x)
   | EV x -> Name.print fmt x
-  | ET (rl,el) -> 
-      fprintf fmt "{%a|%a}" (print_list space prvar) rl 
+  | ET (n,rl,el) -> 
+      fprintf fmt "%a{%a|%a}" optname n (print_list space prvar) rl 
         (print_list space preff) el
+and optname fmt n  =
+  match n with
+  | None -> ()
+  | Some n -> fprintf fmt "%a:" Name.print n
 
 exception CannotUnify
 
@@ -183,7 +192,8 @@ let to_ty, to_eff, to_r =
       match Uf.desc x with
       | EU -> acc
       | EV x -> NEffect.eadd acc x
-      | ET (rl,el) -> 
+      | ET (n, rl,el) -> 
+          let acc = match n with None -> acc | Some n -> NEffect.eadd acc n in
           let acc = 
             List.fold_left (fun acc r -> NEffect.radd acc (rv r)) acc rl in
           List.fold_left aux acc el in
