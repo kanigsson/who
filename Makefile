@@ -33,3 +33,6 @@ uninstall:
 	rm -f /usr/local/bin/pwho
 	rm -f /usr/local/lib/coq/user-contrib/WhoMap.v*
 
+
+tags:
+	ctags -o TAGS *.ml
