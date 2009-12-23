@@ -49,7 +49,7 @@ let prety t eff = U.parr t (base_pre_ty eff)
 let postty t eff t2 = U.parr t (base_post_ty eff t2)
 let prepost_type t1 t2 e = U.tuple (prety t1 e) (postty t1 e t2)
 
-exception FindFirst of Name.t * U.enode
+exception FindFirst of Name.t
 
 let to_uf_node (tl,rl,el) x = 
   let tn,th = bh U.new_ty tl and rn,rh = bh U.new_r rl 
@@ -77,20 +77,22 @@ let to_uf_node (tl,rl,el) x =
       let rl = NEffect.to_rlist eff in
       U.effect (List.map auxr rl) []
     else
-      (* try to find a quantified effect var *)
-      try NEffect.eiter (fun z -> 
-        try raise (FindFirst (z, HT.find eh z)) with Not_found -> ()) eff;
+      (* try to find an unquantified effect var *)
+      try 
+        NEffect.eiter (fun z -> 
+          try ignore (HT.find eh z);() with Not_found -> raise (FindFirst z)) eff;
         (* we have not found one *)
         (* We simply choose one and add the others as constraints *)
         let e = NEffect.e_choose eff in
+        let en = HT.find eh e in
         let eff = NEffect.eremove eff e in
         let rl, el = NEffect.to_lists eff in
-        U.effect ~name:e (List.map auxr rl) (List.map auxe el)
-      with FindFirst (e,en) ->
+        let en' = U.effect (List.map auxr rl) (List.map auxe el) in
+        U.eunify en en'; en
+      with FindFirst e ->
         let eff = NEffect.eremove eff e in
         let rl, el = NEffect.to_lists eff in
-        let en' = U.effect ~name:e (List.map auxr rl) (List.map auxe el) in
-        U.eunion en en'; en in
+        U.effect ~name:e (List.map auxr rl) (List.map auxe el) in
   real x, (tn,rn,en)
 
 let to_uf_rnode r = U.mkr r
@@ -126,13 +128,14 @@ let rec infer' env t loc x =
       let e = infer env t e in
       Annot (e,xt), e.e
   | Var (x,_) -> 
-(*       Myformat.printf "var %a@." Vars.var x; *)
+(*       Myformat.printf "var %a@." Name.print x; *)
         let m,xt = 
           try Name.M.find x env.vars
           with Not_found -> 
             error (Myformat.sprintf "variable %a not found" Name.print x) loc in
         let xt = if env.pm then Ty.to_logic_type xt else xt in
         let nt,i = to_uf_node m xt in
+(*         Format.printf "computed %a : %a@." Name.print x U.print_node nt; *)
         unify nt t loc;
         Var (x, i), U.new_e ()
   | Const c -> 

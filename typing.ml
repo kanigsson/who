@@ -228,8 +228,8 @@ and fis_oftype env t e =
   let t' = formtyping env e in
   if Ty.equal t t' then () 
   else 
-    error e.loc "typing mismatch on %a: expected %a but is %a" 
-      Ast.Recon.print e Ty.print t Ty.print t' 
+    error e.loc "term %a is of type %a, but I expected %a@."
+      Ast.Recon.print e Ty.print t' Ty.print t
 
 let typing t = ignore (typing { types = Name.M.empty} t)
 

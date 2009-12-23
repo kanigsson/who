@@ -35,4 +35,4 @@ uninstall:
 
 
 tags:
-	ctags -o TAGS *.ml
+	otags -o TAGS *.ml
