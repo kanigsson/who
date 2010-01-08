@@ -3,18 +3,10 @@ type var = string
 type rvar = string
 type effvar = string
 
-type effect = rvar list * effvar list
 type generalize = tyvar list * rvar list * effvar list
 
-type ty = 
-  | Var of tyvar
-  | Const of Const.ty
-  | Tuple of ty * ty
-  | Arrow of ty * ty * effect * rvar list
-  | PureArr of ty * ty
-  | App of tyvar * (tyvar,rvar,effect) Inst.t
-  | Ref of rvar * ty
-  | Map of effect
+type effect = ParseTypes.effect
+type ty = ParseTypes.t
 
 type t' =
   | Const of Const.t
@@ -40,7 +32,7 @@ type decl =
   | Axiom of string * t
   | Logic of var *  generalize * ty
   | Section of string * Const.takeover list * decl list
-  | TypeDef of generalize * ty option * tyvar *  t
+  | TypeDef of generalize * ty option * tyvar
   | Program of var * generalize * t
   | LetReg of rvar list 
 

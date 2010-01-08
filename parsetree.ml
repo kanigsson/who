@@ -6,19 +6,8 @@ type rvar = string
 type effvar = string
 type tvar = string
 
-type effect = rvar list * effvar list 
-
-type ty = 
-  | TVar of tvar
-  | TConst of Const.ty
-  | Tuple of ty * ty
-  | Arrow of ty * ty * effect * rvar list
-  | PureArr of ty * ty
-  | TApp of tvar * inst
-  | Ref of rvar * ty
-  | Map of effect
-  | ToLogic of ty
-and inst = (ty, rvar, effect) Inst.t
+type effect = ParseTypes.effect
+type ty = ParseTypes.t
 
 type t' =
   | Const of Const.t
@@ -74,17 +63,3 @@ let concat t1 t2 =
   and aux t = { t with v = aux' t.v } in
   aux t1
 
-open Myformat
-
-let print_ty fmt t = 
-  let rec pt fmt = function
-  | TVar v -> pp_print_string fmt v
-  | TConst c -> Const.print_ty fmt c
-  | Tuple (t1,t2) -> fprintf fmt "(%a * %a)" pt t1 pt t2
-  | PureArr (t1,t2) -> fprintf fmt "(%a -> %a)" pt t1 pt t2
-  | Arrow (t1,t2,_,_) -> fprintf fmt "(%a ->{...} %a)" pt t1 pt t2
-  | Ref _ -> pp_print_string fmt "ref(...)"
-  | Map _ -> pp_print_string fmt "<...>"
-  | TApp (v,_) -> fprintf fmt "app(%s)" v
-  | ToLogic t -> fprintf fmt "[[ %a ]]" pt t in
-  pt fmt t

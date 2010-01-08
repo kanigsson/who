@@ -5,12 +5,6 @@
 
   let void = const (Const.Void) Loc.dummy
 
-  let partition_effect l = 
-    List.fold_right (fun x (rl,el) ->
-      match x with
-      | `Rvar r -> r ::rl, el
-      | `Effvar e -> rl, e::el) l ([],[])
-
   (* Syntactically, a program is a list of declarations; 
     In the parser, this is represented by two different forms:
       * Once indeed as an [ast list]
@@ -94,55 +88,6 @@
 
 %start <Parsetree.t> main
 %%
-
-(* basic types *)
-stype:
-  | x = tconstant { TConst x }
-  | v = TYVAR { TVar v }
-  | LPAREN t = ty RPAREN { t }
-  | v = IDENT i = inst { TApp (v.c,i)  }
-  | v = IDENT { TApp (v.c,([],[],[])) }
-  | t = stype v = IDENT {TApp (v.c,([t],[],[])) }
-  | LPAREN t = ty COMMA l = separated_list(COMMA,ty) RPAREN v = IDENT
-    { TApp(v.c,(t::l,[],[])) }
-
-
-rvar_or_effectvar:
-  | x = IDENT { `Rvar x.c }
-  | e = TYVAR { `Effvar e }
-
-effect: 
-    | l = list(rvar_or_effectvar) {partition_effect l }
-
-sepeffect:
-  | LCURL e = effect RCURL { e }
-
-maycap:
-  | { [] }
-  | MID l = list(IDENT) { strip_info l }
-
-createeffect:
-  | e = effect cl = maycap 
-    { let rl, el = e in rl, el, cl }
-
-sepcreateeffect:
-  | LCURL e = createeffect RCURL { e }
-
-(* more complex types *)
-ty:
-  | t = stype { t }
-  | t1 = ty ARROW t2 = ty { PureArr (t1, t2) }
-  | t1 = ty ARROW e = sepcreateeffect t2 = ty %prec ARROW 
-    { let rl,el,cl = e in Arrow (t1,t2,(rl,el),cl) }
-  | t1 = ty STAR t2 = ty { Tuple (t1, t2) }
-  | LT e = effect GT { Map e }
-  | DLBRACKET t = ty DRBRACKET { ToLogic t }
-  | REF LPAREN id = IDENT COMMA t = ty  RPAREN { Ref (id.c,t) }
-
-inst:
-  LBRACKET tl = separated_list(COMMA,ty) MID rl = list(IDENT) 
-  MID el = list(sepeffect) RBRACKET
-  { tl, strip_info rl, el }
 
 (* basic terms *)
 aterm:
@@ -251,18 +196,6 @@ precond:
 optgen: 
   | { [],[], [] }
   | g = gen { g }
-
-takeover:
-  | PREDEFINED { Predefined }
-  | TAKEOVER { TakeOver }
-  | fn = STRING { Include fn }
-
-prover:
-  | COQ { `Coq }
-  | PANGOLINE { `Pangoline }
-
-takeoverdecl:
-  | p = prover t = takeover { p, t }
 
 (* a declaration is either
   - a let

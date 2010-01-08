@@ -9,6 +9,7 @@
    *)
 
 module I = Parsetree
+module IT = ParseTypes
 open Ast
 
 
@@ -86,22 +87,22 @@ let effect env (rl,el) =
 
 let ty env t = 
   let rec aux = function
-    | I.TVar v -> Ty.var (tyvar env v)
-    | I.TConst c -> Ty.const c
-    | I.Tuple (t1,t2) -> Ty.tuple (aux t1) (aux t2)
-    | I.Arrow (t1,t2,e,cap) -> 
+    | IT.TVar v -> Ty.var (tyvar env v)
+    | IT.TConst c -> Ty.const c
+    | IT.Tuple (t1,t2) -> Ty.tuple (aux t1) (aux t2)
+    | IT.Arrow (t1,t2,e,cap) -> 
         Ty.caparrow (aux t1) (aux t2) (effect env e) (List.map (rvar env) cap)
-    | I.PureArr (t1,t2) -> Ty.parr (aux t1) (aux t2)
-    | I.TApp (v,i) -> 
+    | IT.PureArr (t1,t2) -> Ty.parr (aux t1) (aux t2)
+    | IT.TApp (v,i) -> 
         let v = tyvar env v in
         let i = inst i in
         begin try 
           let g,t = NM.find v env.tyrepl in
           Ty.allsubst g i t
         with Not_found -> Ty.app v i end
-    | I.Ref (r,t) -> Ty.ref_ (rvar env r) (aux t)
-    | I.Map e -> Ty.map (effect env e)
-    | I.ToLogic t -> Ty.to_logic_type (aux t)
+    | IT.Ref (r,t) -> Ty.ref_ (rvar env r) (aux t)
+    | IT.Map e -> Ty.map (effect env e)
+    | IT.ToLogic t -> Ty.to_logic_type (aux t)
   and inst i = Inst.map aux (rvar env) (effect env) i in
   aux t
 

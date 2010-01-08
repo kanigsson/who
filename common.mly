@@ -1,6 +1,14 @@
 %{
   open Loc
   open Const
+  open ParseTypes
+
+  let partition_effect l = 
+    List.fold_right (fun x (rl,el) ->
+      match x with
+      | `Rvar r -> r ::rl, el
+      | `Effvar e -> rl, e::el) l ([],[])
+
 %}
 %%
 
@@ -20,8 +28,7 @@
   | PROP { Const.TProp }
 
 %public gen:
-  | LBRACKET tl = list(TYVAR) MID rl=list(IDENT) MID el =
-    list(TYVAR) RBRACKET 
+  | LBRACKET tl = TYVAR* MID rl=IDENT* MID el = TYVAR* RBRACKET
     { tl, strip_info rl, el }
 
 (* infix operators - can be used in definitions *)
@@ -59,4 +66,64 @@
   | p = PTRUE  { p, Const.Ptrue }
   | p = PFALSE { p, Const.Pfalse }
   | p = VOID   { p, Const.Void }
+
+takeover:
+  | PREDEFINED { Predefined }
+  | TAKEOVER { TakeOver }
+  | fn = STRING { Include fn }
+
+prover:
+  | COQ { `Coq }
+  | PANGOLINE { `Pangoline }
+
+%public takeoverdecl:
+  | p = prover t = takeover { p, t }
+
+inst:
+  LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
+  MID el = sepeffect* RBRACKET
+  { tl, strip_info rl, el }
+
+(* basic types *)
+stype:
+  | x = tconstant { TConst x }
+  | v = TYVAR { TVar v }
+  | LPAREN t = ty RPAREN { t }
+  | v = IDENT i = inst { TApp (v.c,i)  }
+  | v = IDENT { TApp (v.c,([],[],[])) }
+  | t = stype v = IDENT {TApp (v.c,([t],[],[])) }
+  | LPAREN t = ty COMMA l = separated_list(COMMA,ty) RPAREN v = IDENT
+    { TApp(v.c,(t::l,[],[])) }
+
+rvar_or_effectvar:
+  | x = IDENT { `Rvar x.c }
+  | e = TYVAR { `Effvar e }
+
+sepcreateeffect:
+  | LCURL e = createeffect RCURL { e }
+
+createeffect:
+  | e = effect cl = maycap 
+    { let rl, el = e in rl, el, cl }
+
+maycap:
+  | { [] }
+  | MID l = IDENT* { strip_info l }
+
+effect: | l = rvar_or_effectvar* {partition_effect l }
+
+%public sepeffect:
+  | LCURL e = effect RCURL { e }
+
+
+(* more complex types *)
+%public ty:
+  | t = stype { t }
+  | t1 = ty ARROW t2 = ty { PureArr (t1, t2) }
+  | t1 = ty ARROW e = sepcreateeffect t2 = ty %prec ARROW 
+    { let rl,el,cl = e in Arrow (t1,t2,(rl,el),cl) }
+  | t1 = ty STAR t2 = ty { Tuple (t1, t2) }
+  | LT e = effect GT { Map e }
+  | DLBRACKET t = ty DRBRACKET { ToLogic t }
+  | REF LPAREN id = IDENT COMMA t = ty  RPAREN { Ref (id.c,t) }
 
