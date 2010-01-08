@@ -39,7 +39,7 @@ let _ =
     let p = Infer.recon p in
     maybe_abort Options.constr_only Ast.Recon.print p;
     Typing.typing p;
-    let p = Anf.normalize_term p in
+    let p = Anf.term p in
     maybe_abort Options.anf_only Ast.Recon.print p;
     Typing.typing p;
     let p = Wp.main p in
