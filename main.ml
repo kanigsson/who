@@ -1,3 +1,5 @@
+open AnnotParser
+
 let parse ?(prelude=false) buf close fn = 
   if prelude then Options.prelude := true else Options.prelude := false;
   let abort () = close (); exit 1 in

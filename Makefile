@@ -11,6 +11,9 @@ all: main.native
 
 %.native: $(ALLML)
 	$(OCAMLBUILD) $@
+
+%.cmo: $(ALLML)
+	$(OCAMLBUILD) $@
 debug:
 	$(OCAMLBUILD) -tag debug main.byte
 
@@ -36,3 +39,6 @@ uninstall:
 
 tags:
 	otags -o TAGS *.ml
+
+documentation:
+	$(OCAMLBUILD) -documentation

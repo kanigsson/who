@@ -80,8 +80,6 @@
     let_ ~prelude:(!Options.prelude) l t x void r p
 
   (* remove location information from a list of annotated values *)
-  let strip_info l = List.map (fun x -> x.c) l
-
   (* build a for loop *)
   let forfunction dir i start end_ inv body pos =
     let s = "-start" and e = "-end" in
@@ -94,50 +92,8 @@
 
 %}
 
-%token <Big_int.big_int Loc.t> INT
-%token <Loc.loc> LPAREN RPAREN LCURL SECTION END
-%token LBRACKET RBRACKET RCURL DLCURL DRCURL PREDEFINED DLBRACKET DRBRACKET
-%token <string Loc.t> IDENT
-%token <string> TYVAR STRING
-%token IN SEMICOLON COQ CAP TAKEOVER PANGOLINE
-%token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND OR
-%token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION TILDE REGION
-%token <Loc.loc> BLE BLT BGT BGE
-%token EOF
-%token REC
-%token <Loc.loc> EXCLAM DEXCLAM IF FUN TRUE FALSE PTRUE PFALSE VOID LET AXIOM
-%token <Loc.loc> LOGIC TYPE FORALL EXISTS PARAMETER TO DOWNTO FOR DONE
-%token COLON MID THEN ELSE   BOOL TINT UNIT PROP DOT DO
-
-%nonassoc forall
-%nonassoc let_
-%right ARROW
-%nonassoc ifprec
-%left AND OR
-%nonassoc LE LT GE GT BLE BLT BGT BGE
-%nonassoc ASSIGN
-%right EQUAL NEQ BEQUAL BNEQ
-%right COMMA
-%left PLUS MINUS
-%right STAR
-
 %start <Parsetree.t> main
 %%
-
-(* a program variable which can be used in declarations *)
-defprogvar:
-  | x = IDENT { x }
-  | x = infix { { c = snd x; info = fst x } }
-  | x = prefix { { c = snd x; info = fst x } }
-  | p = REF { Loc.mk p "ref" }
-  | p = DEXCLAM { Loc.mk p "!!" }
-  
-defprogvar_no_pos : x = defprogvar { x.c }
-tconstant:
-  | BOOL { Const.TBool }
-  | TINT { Const.TInt }
-  | UNIT { Const.TUnit }
-  | PROP { Const.TProp }
 
 (* basic types *)
 stype:
@@ -187,42 +143,6 @@ inst:
   LBRACKET tl = separated_list(COMMA,ty) MID rl = list(IDENT) 
   MID el = list(sepeffect) RBRACKET
   { tl, strip_info rl, el }
-
-constant:
-  | n = INT    { n.info, Const.Int n.c }
-  | p = TRUE   { p, Const.Btrue }
-  | p = FALSE  { p, Const.Bfalse }
-  | p = PTRUE  { p, Const.Ptrue }
-  | p = PFALSE { p, Const.Pfalse }
-  | p = VOID   { p, Const.Void }
-
-(* infix operators - can be used in definitions *)
-%inline infix:
-  | p = GT         { p,">" }
-  | p = LT         { p,"<" }
-  | p = MINUS      { p,"-" }
-  | p = PLUS       { p,"+" }
-  | p = STAR       { p,"*" }
-  | p = ASSIGN     { p,":=" }
-  | p = LE         { p,"<=" }
-  | p = GE         { p,">=" }
-  | p = EQUAL      { p,"=" }
-  | p = BEQUAL     { p,"==" }
-  | p = BNEQ       { p,"!=" }
-  | p = NEQ        { p,"<>" }
-  | p = AND        { p,"/\\" }
-  | p = OR        { p,"\\/" }
-  | p = COMMA      { p,"," }
-  | p = ARROW      { p,"->" }
-  | p = BLE         { p,"<<=" }
-  | p = BGE         { p,">>=" }
-  | p = BGT         { p,">>" }
-  | p = BLT         { p,"<<" }
-
-(* prefix operators - can be used in definitions *)
-prefix:
-  | p = EXCLAM { p, "!" }
-  | p = TILDE { p, "~" }
 
 (* basic terms *)
 aterm:
@@ -330,9 +250,7 @@ precond:
 
 optgen: 
   | { [],[], [] }
-  | LBRACKET tl = list(TYVAR) MID rl=list(IDENT) MID el =
-    list(TYVAR) RBRACKET 
-    { tl, strip_info rl, el }
+  | g = gen { g }
 
 takeover:
   | PREDEFINED { Predefined }

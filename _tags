@@ -1,2 +1,4 @@
 <*.ml> : warn_Z
+<tokens.mly> : only_tokens
+<parser.mly> or <annotParser.mly> or <common.mly> : use_tokens
 <main.*> : pkg_unix, pkg_num

@@ -7,3 +7,6 @@ let with_dummy v = { c = v; info = dummy }
 let mk i v = { c = v; info =i }
 
 let with_loc f v = { c = f v.c; info = v.info }
+
+let strip_info l = List.map (fun x -> x.c) l
+
