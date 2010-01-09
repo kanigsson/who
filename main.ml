@@ -1,13 +1,40 @@
-open AnnotParser
-
-let parse ?(prelude=false) buf close fn = 
+let parse ?(prelude=false) parser buf close fn = 
   if prelude then Options.prelude := true else Options.prelude := false;
   let abort () = close (); exit 1 in
   Lexer.reset buf;
-  try 
-    let prog = Parser.main Lexer.token buf in
-    prog
-  with 
+  let prog = parser abort fn Lexer.token buf in
+  prog
+
+let maybe_abort r print f = 
+  if !r then begin Myformat.printf "%a@." print f; exit 0; end
+  
+let parse_file ?prelude parser fn = 
+  let ch, close =
+    match fn with
+    | None -> stdin, fun () -> ()
+    | Some s -> 
+        let ch = open_in s in
+        ch, fun () -> close_in ch in
+  let buf = Lexing.from_channel ch in
+  parse ?prelude parser buf close fn
+
+let parse_string ?prelude parser ?(string="prelude") s = 
+  let buf = Lexing.from_string s in
+  parse ?prelude parser buf (fun () -> ()) (Some string)
+
+let annotparser abort fn token buf =
+  try AnnotParser.main token buf
+  with
+  | AnnotParser.Error -> 
+      Error.print_pos_error fn buf "Parse error"; abort ()
+  | Lexer.Error msg -> 
+        Error.print_pos_error fn buf 
+          (Myformat.sprintf "Unexpected character: %s" msg);
+        abort ()
+
+let infer_parser abort fn token buf =
+  try Parser.main token buf
+  with
   | Parser.Error -> 
       Error.print_pos_error fn buf "Parse error"; abort ()
   | Lexer.Error msg -> 
@@ -15,31 +42,27 @@ let parse ?(prelude=false) buf close fn =
           (Myformat.sprintf "Unexpected character: %s" msg);
         abort ()
 
-let maybe_abort r print f = 
-  if !r then begin Myformat.printf "%a@." print f; exit 0; end
-  
-let parse_file ?prelude fn = 
-  let ch = open_in fn in
-  let close () = close_in ch in
-  let buf = Lexing.from_channel ch in
-  parse ?prelude buf close fn
-
-let parse_string ?prelude ?(string="prelude") s = 
-  let buf = Lexing.from_string s in
-  parse ?prelude buf (fun () -> ()) string
-
 let _ = 
   Options.update ();
   try
-    let prelude = parse_string ~prelude:true Prelude.prelude in
-    let ast = parse_file !Options.filename in
-    let p = Parsetree.concat prelude ast in
-    let p = Internalize.main p in
-    maybe_abort Options.parse_only Ast.ParseT.print p;
-    let p = Infer.infer p in
-    maybe_abort Options.infer_only Ast.Infer.print p;
-    let p = Infer.recon p in
-    maybe_abort Options.constr_only Ast.Recon.print p;
+    let p = 
+      if !Options.input_annot then
+        let p = parse_file annotparser !Options.filename in
+        AnnotInternalize.theory p
+      else
+        let prelude = parse_string ~prelude:true infer_parser Prelude.prelude in
+        let ast = parse_file infer_parser !Options.filename in
+        let p = Parsetree.concat prelude ast in
+        let p = Internalize.main p in
+        maybe_abort Options.parse_only Ast.ParseT.print p;
+        let p = Infer.infer p in
+        maybe_abort Options.infer_only Ast.Infer.print p;
+        let p = Infer.recon p in
+        maybe_abort Options.constr_only Ast.Recon.print p;
+        p
+    in
+    p 
+(*
     Typing.typing p;
     let p = Anf.term p in
     maybe_abort Options.anf_only Ast.Recon.print p;
@@ -56,9 +79,13 @@ let _ =
     maybe_abort Options.sectionize_only (Sectionize.Flatten.print_all kind) s;
     if !Options.backend = `Coq then Regen2.main s else
       Pangoline.out s
+*)
   with
   | Sys_error e -> Error.bad e
   | Infer.Error (s,loc) 
+      -> Error.with_loc s loc 
+(*
   | Typing.Error (s,loc) 
       -> Error.with_loc s loc 
+*)
 

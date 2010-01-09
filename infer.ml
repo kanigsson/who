@@ -257,7 +257,8 @@ let rec recon' = function
   | PureFun (t,(s,x,e)) -> PureFun (t,(s,x, recon e))
   | Quant (k,t,(s,x,e)) -> Quant (k,t,(s,x, recon e))
   | Lam (x,ot,cap,p,e,q) -> 
-      Lam (x,ot, cap, pre p, recon e, post q)
+      let e = recon e in
+      Lam (x,ot, cap, pre e.e p e.loc, e, post e.e e.t q e.loc)
   | Param (t,e) -> Param (t,e)
   | Let (p,g,e1,(_,x,e2),r) -> 
       Let (p,g, recon e1, Name.close_bind x (recon e2),r)
@@ -267,8 +268,9 @@ let rec recon' = function
   | TypeDef (g,t,x,e) -> TypeDef (g,t,x,recon e)
   | For (dir,inv,i,st,en,body) ->
       let bdir = match dir with {Name.name = Some "forto"} -> true|_ -> false in
-      let cur,inv = pre inv and body = recon body in
+      let body = recon body in 
       let e = body.e and l = body.loc in
+      let cur,inv = pre e inv l in
       let inv = match inv with | None -> ptrue_ l | Some f -> f in
       let inv' = plam i Ty.int inv l in
       let intvar s = svar s Ty.int l in
@@ -298,14 +300,19 @@ let rec recon' = function
   | Section (n,f,e) -> Section (n,f,recon e)
   | EndSec e -> EndSec (recon e)
   | Gen _ -> assert false
-and pre (cur,x) = cur, Misc.opt_map recon x
+and pre eff (cur,x) loc = 
+  match x with
+  | None -> cur, Some (efflamho eff (fun _ -> ptrue_ loc) loc)
+  | Some x -> cur, Some (recon x)
 and recon (t : Ast.Infer.t) : Ast.Recon.t = 
   { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e; loc = t.loc }
 and inst (th,rh,eh) =
     List.map U.to_ty th, List.map U.to_r rh, List.map U.to_eff eh
-and post (old,cur,x) =
+and post eff t (old,cur,x) loc =
   let p = match x with
-  | PNone -> PNone
+  | PNone -> 
+      PPlain (efflamho eff (fun _ -> efflamho eff (fun _ ->
+                plamho t (fun _ -> ptrue_ loc) loc) loc) loc)
   | PPlain f -> PPlain (recon f)
   | _ -> assert false in
   old, cur, p

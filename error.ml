@@ -4,6 +4,7 @@ open Lexing
 let bad s = eprintf "%s@." s; exit(1)
 
 let error fn l c s = 
+  let fn = Opt.get "stdin" fn in
   eprintf "%s: line %d char %d : %s @." fn l c s
 
 let print_pos_error fn buf s =

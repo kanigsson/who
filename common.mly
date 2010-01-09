@@ -30,6 +30,7 @@
 %public gen:
   | LBRACKET tl = TYVAR* MID rl=IDENT* MID el = TYVAR* RBRACKET
     { tl, strip_info rl, el }
+  | { [], [], [] }
 
 (* infix operators - can be used in definitions *)
 %public %inline infix:
@@ -79,7 +80,7 @@ prover:
 %public takeoverdecl:
   | p = prover t = takeover { p, t }
 
-inst:
+%public inst:
   LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
   MID el = sepeffect* RBRACKET
   { tl, strip_info rl, el }
@@ -126,4 +127,8 @@ effect: | l = rvar_or_effectvar* {partition_effect l }
   | LT e = effect GT { Map e }
   | DLBRACKET t = ty DRBRACKET { ToLogic t }
   | REF LPAREN id = IDENT COMMA t = ty  RPAREN { Ref (id.c,t) }
+
+%public maycapdef:
+  | {[] }
+  | CAP l = IDENT+ { (strip_info l) }
 

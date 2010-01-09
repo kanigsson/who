@@ -10,3 +10,8 @@ let with_loc f v = { c = f v.c; info = v.info }
 
 let strip_info l = List.map (fun x -> x.c) l
 
+let embrace inf1 inf2 = 
+  if inf1 = dummy then inf2 
+  else if inf2 = dummy then inf1 
+  else { st = inf1.st ; en = inf2.en }
+

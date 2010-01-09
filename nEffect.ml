@@ -59,8 +59,13 @@ let equal =
   fun (r1,e1) (r2, e2) -> cmp r1 r2 && cmp e1 e2
 
 open Myformat
-let print fmt (r,e) = 
-    fprintf fmt "{%a|%a}" Name.print_set r Name.print_set e
+let print_set fmt s = 
+  S.iter (fun x -> fprintf fmt "'%a" Name.print x ; space fmt ()) s
+
+let print_nosep fmt (r,e) = 
+    fprintf fmt "%a %a" Name.print_set r print_set e
+let print fmt e = fprintf fmt "{%a}" print_nosep e
+
 
 let print_list sep fmt l = print_list sep print fmt l
 

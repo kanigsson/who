@@ -34,11 +34,6 @@
 
   (* build a new location out of two old ones by forming the large region
   containing both *)
-  let embrace inf1 inf2 = 
-    if inf1 = Loc.dummy then inf2 else
-      if inf2 = Loc.dummy then inf1 else
-        { st = inf1.st ; en = inf2.en }
-
   (* take a nonempty list of variable bindings l and a function [f] and
   build [λv1:t1 ... λv(n-1):t(n-1).u], where [u] is the result of [f vn tn];
   all lambdas are pure. *)
@@ -109,7 +104,7 @@ aterm:
 (* applicative terms *)
 appterm:
   | t = aterm { t }
-  | t1 = appterm DLCURL l = list(IDENT) DRCURL t2 = aterm 
+  | t1 = appterm DLCURL l = IDENT* DRCURL t2 = aterm 
     {cap_app t1 t2 (strip_info l) (embrace t1.loc t2.loc) }
   | t1 = appterm t2 = aterm { app t1 t2 (embrace t1.loc t2.loc) }
 
@@ -128,7 +123,7 @@ nterm:
     { mk_quant `FA l e (embrace sp e.loc) }
   | sp = EXISTS l = arglist DOT e = nterm %prec forall
     { mk_quant `EX l e (embrace sp e.loc) }
-  | p = LETREGION l = list(IDENT) IN t = nterm %prec let_
+  | p = LETREGION l = IDENT* IN t = nterm %prec let_
     { mk (LetReg (strip_info l,t)) p }
   | st = IF it = nterm THEN tb = nterm ELSE eb = nterm %prec ifprec
     { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
@@ -145,21 +140,17 @@ todownto:
   | DOWNTO { "fordownto" }
 
 onetyarg:
-  LPAREN xl = nonempty_list(defprogvar_no_pos) COLON t = ty RPAREN
+  LPAREN xl = defprogvar_no_pos+ COLON t = ty RPAREN
     { List.map (fun x -> x,t) xl }
 
 
-arglist: l = nonempty_list(onetyarg) { List.flatten l }
-may_empty_arglist: l = list(onetyarg) { List.flatten l}
+arglist: l = onetyarg+ { List.flatten l }
+may_empty_arglist: l = onetyarg* { List.flatten l}
 
 (* the common part of every let binding *)
 letcommon:
-  | p = LET x = defprogvar_no_pos l = optgen args = may_empty_arglist EQUAL
+  | p = LET x = defprogvar_no_pos l = gen args = may_empty_arglist EQUAL
     { p, x ,l,args }
-
-maycapdef:
-  | {[] }
-  | CAP l = nonempty_list(IDENT) { (strip_info l) }
 
 alllet:
 (* the simplest case *)
@@ -175,7 +166,7 @@ alllet:
         let_ l (mk_efflam args cap (snd pre) e (snd q) p) x t2 NoRec 
           (embrace p t2.loc) }
 (* the recursive function definition case *)
-  | p = LET REC l = optgen LPAREN x = defprogvar_no_pos 
+  | p = LET REC l = gen LPAREN x = defprogvar_no_pos 
     COLON t = ty RPAREN args = arglist EQUAL b = funcbody
     { let cap, pre,e,q = b in
       (fun e2 -> let_ l (mk_efflam args cap (snd pre) e (snd q) p) x e2 (Rec t)
@@ -193,10 +184,6 @@ precond:
   | p = LCURL RCURL { p, None }
   | p = LCURL t = nterm RCURL { p, Some t}
 
-optgen: 
-  | { [],[], [] }
-  | g = gen { g }
-
 (* a declaration is either
   - a let
   - a parameter
@@ -208,27 +195,27 @@ optgen:
   *)
 decl:
   | f = alllet {(f : t -> t) void }
-  | p = PARAMETER x = defprogvar_no_pos l = optgen COLON rt = ty
+  | p = PARAMETER x = defprogvar_no_pos l = gen COLON rt = ty
     { let_wconst l (mk (Param (rt,([],[]))) p) x NoRec p}
-  | p = PARAMETER x = defprogvar_no_pos l = optgen args = arglist 
+  | p = PARAMETER x = defprogvar_no_pos l = gen args = arglist 
     COLON rt = ty COMMA e = sepeffect EQUAL 
       cap = maycapdef pre = precond post = postcond
   { 
     let par = mk_param args cap (snd pre) (snd post) rt e p in
     let_wconst l par x NoRec (embrace p (fst post))} 
-  | p = AXIOM x = defprogvar_no_pos l = optgen COLON t = nterm
+  | p = AXIOM x = defprogvar_no_pos l = gen COLON t = nterm
     { let_wconst l (mk (Axiom t) p) x NoRec (embrace p t.loc) }
-  | p = LOGIC x = defprogvar_no_pos l = optgen COLON t = ty
+  | p = LOGIC x = defprogvar_no_pos l = gen COLON t = ty
     { let_wconst l (mk (Logic t) p) x NoRec p }
-  | p = TYPE x = IDENT l = optgen
+  | p = TYPE x = IDENT l = gen
     { typedef l None x.c void p }
-  | p = TYPE x = IDENT l = optgen EQUAL t = ty
+  | p = TYPE x = IDENT l = gen EQUAL t = ty
     { typedef l (Some t) x.c void p }
-  | p = REGION l = list(IDENT)
+  | p = LETREGION l = IDENT*
     { mk (LetReg (strip_info l, void)) p  }
-  | p1 = SECTION x = IDENT fn = list(takeoverdecl) l = nonempty_list(decl) p2 = END
+  | p1 = SECTION x = IDENT fn = takeoverdecl* l = decl+ p2 = END
     { mk (Section (x.c, fn, to_abst_ast l)) (embrace p1 p2) }
 
 (* a program is simply a list of declarations; we call [to_abst_ast] to
   obtain a single AST *)
-main: l = nonempty_list(decl) EOF { to_abst_ast l }
+main: l = decl* EOF { to_abst_ast l }

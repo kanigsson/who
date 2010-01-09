@@ -128,12 +128,14 @@ let is_compound = function
   | Quant _ | Param _ | For _ | LetReg _ | Gen _ | Section _ | EndSec _ -> true
 let is_compound_node t = is_compound t.v
 
-let maycaplist fmt l = print_list space Name.print fmt l
+let maycaplist fmt l = 
+  if l = [] then ()
+  else fprintf fmt "cap %a" (print_list space Name.print) l
 
 (* TODO factorize the different branches *)
 let print ?(kind=`Who) pra prb prc open_ fmt t = 
   let typrint = Ty.gen_print kind in
-  let rec print' fmt = function
+  let rec print' ext fmt = function
     | Const c -> Const.print fmt c
     | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) -> 
         fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 Name.print v 
@@ -146,10 +148,24 @@ let print ?(kind=`Who) pra prb prc open_ fmt t =
         let x,e = open_ b in
         fprintf fmt "@[(fun %a@ %a@ %a)@]" binder (x,t) 
           Const.funsep kind print e
+    | Let (true,g, {v = Logic t},b,_) ->
+        let x, e2 = open_ b in
+        fprintf fmt "@[<hov 2>logic %a %a : %a@]@ @," Name.print x G.print g typrint t;
+        extprint ext fmt e2
+    | Let (true, g, { v = Axiom e },b, _) ->
+        let x, e2 = open_ b in
+        fprintf fmt "@[<hov 2>axiom %a %a : %a@]@ @," Name.print x G.print g
+          print e;
+        extprint ext fmt e2
+
     | Let (_,g,e1,b,r) -> 
         let x,e2 = open_ b in
+        if ext then
+          fprintf fmt "@[let@ %a%a %a=@[@ %a@]@]@ @,%a" 
+          prrec r Name.print x G.print g print e1 (extprint ext) e2
+        else
         fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]" 
-          prrec r Name.print x G.print g print e1 print e2
+          prrec r Name.print x G.print g print e1 (extprint ext) e2
     | Var (v,i) -> 
         begin match kind with
         | `Who | `Pangoline ->
@@ -168,7 +184,7 @@ let print ?(kind=`Who) pra prb prc open_ fmt t =
         fprintf fmt "forall %a%a %a" G.print g Const.quantsep kind print t
     (* specific to Who, will not be printed in backends *)
     | Param (t,e) -> 
-        fprintf fmt "param(%a,%a)" 
+        fprintf fmt "parameter(%a,%a)" 
           typrint t NEffect.print e
     | For (dir,inv,_,st,en,t) ->
         fprintf fmt "%a (%a) %a %a (%a)" 
@@ -177,21 +193,29 @@ let print ?(kind=`Who) pra prb prc open_ fmt t =
         fprintf fmt "@[letregion %a in@ %a@]" 
           (print_list space Name.print) v print t
     | Lam (x,t,cap,p,e,q) -> 
-        fprintf fmt "@[(λ%a@ ->{%a}@ %a@ %a@ %a)@]" 
+        fprintf fmt "@[(fun %a@ ->%a@ %a@ %a@ %a)@]" 
           binder (x,t) maycaplist cap pre p print e post q
     | Section (n,f,e) -> 
           fprintf fmt "@[section %s@, %a@, %a " n 
-            (print_list newline Const.takeover) f print e
+            (print_list newline Const.takeover) f (extprint ext) e
     | EndSec e -> 
-        if kind = `Who then fprintf fmt "end@]@, %a" print e
+        if kind = `Who then fprintf fmt "end@]@, %a" (extprint ext) e
     | Axiom e -> fprintf fmt "axiom %a" print e
     | Logic t -> fprintf fmt "logic %a" typrint t
     | TypeDef (g,t,x,e) -> 
-        fprintf fmt "type %a%a =@ %a in@ %a" 
-          Name.print x G.print g (opt_print typrint) t 
-          print e
+        match t with
+        | None -> 
+            fprintf fmt "type %a%a@ @,%a" Name.print x G.print g (extprint ext) e
+        | Some t -> 
+            fprintf fmt "type %a%a =@ %a@ @,%a" 
+              Name.print x G.print g typrint t (extprint ext) e
       
-  and print fmt t = print' fmt t.v
+  and print fmt t = print' false fmt t.v
+  and extprint ext fmt t = 
+    if ext then 
+      if t.v = Const Const.Void then () 
+      else print' true fmt t.v 
+    else print fmt t
   and binder' par = 
     let p fmt (x,t) = fprintf fmt "%a:%a" 
       Name.print x typrint t in
@@ -215,7 +239,7 @@ let print ?(kind=`Who) pra prb prc open_ fmt t =
     | l -> fprintf fmt "{%a}" (print_list space Name.print) l
   and with_paren fmt x = 
     if is_compound_node x then paren print fmt x else print fmt x in
-  print fmt t
+  extprint true fmt t
 
 module Infer = struct
   type t = (U.node, U.rnode, U.enode) t'

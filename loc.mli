@@ -5,4 +5,4 @@ val dummy : loc
 val mk : loc -> 'a -> 'a t
 
 val strip_info : 'a t list -> 'a list
-
+val embrace : loc -> loc -> loc

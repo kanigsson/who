@@ -21,6 +21,7 @@ val radd :  t -> Name.t -> t
 val rremove : t -> Name.t list -> t
 val eremove : t -> Name.t -> t
 val print : t Myformat.fmt
+val print_nosep: t Myformat.fmt
 val union : t -> t -> t
 val equal : t -> t -> bool
 val rmap : (Name.t -> Name.t) -> t -> t

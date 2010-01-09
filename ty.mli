@@ -15,6 +15,9 @@ val print_list :
 val print' : ?kind:[`Coq | `Who | `Pangoline ] -> 'a Myformat.fmt -> 
   'b Myformat.fmt -> 'c Myformat.fmt -> ('a -> bool) -> (('a ,'b,'c) t') Myformat.fmt
 
+val varprint : [`Coq | `Who | `Pangoline ] -> Name.t Myformat.fmt
+
+
 val coq_print : t Myformat.fmt
 
 val gen_print : [`Coq | `Who | `Pangoline ] -> t Myformat.fmt

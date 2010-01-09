@@ -56,11 +56,11 @@ let quantsep fmt kind =
   | `Coq -> pp_print_string fmt ","
 
 let prover fmt = function
-  | `Pangoline -> pp_print_string fmt "Pangoline"
-  | `Coq -> pp_print_string fmt "Coq"
+  | `Pangoline -> pp_print_string fmt "pangoline"
+  | `Coq -> pp_print_string fmt "coq"
 let choice fmt = function
   | Predefined -> pp_print_string fmt "predefined"
-  | Include s -> pp_print_string fmt s
+  | Include s -> printf "\"%s\"" s
   | TakeOver -> pp_print_string fmt "takeover"
 let takeover fmt (p,c) = fprintf fmt "%a %a" prover p choice c
 let compare a b = 

@@ -17,16 +17,21 @@ let is_compound = function
 
 let maycap pr fmt = function
   | [] -> ()
-  | l -> print_list space pr fmt l
+  | l -> fprintf fmt "|%a" (print_list space pr) l
 
+let varprint kind fmt x = 
+  match kind with
+  | `Who -> fprintf fmt "'%a" Name.print x
+  | `Coq | `Pangoline -> Name.print fmt x
+  
 let print' ?(kind=`Who) pt pr pe is_c fmt x = 
   let mayp fmt t = if is_c t then paren pt fmt t else pt fmt t in
   match x with 
-  | Var x -> Name.print fmt x
+  | Var x -> varprint kind fmt x
   | Arrow (t1,t2,eff,cap) -> 
       (* there are no impure arrow types in Coq or Pangoline, so simply print it
       as you wish *)
-      fprintf fmt "%a ->%a{{%a}} %a" mayp t1 pe eff (maycap pr) cap pt t2
+      fprintf fmt "%a ->{%a%a} %a" mayp t1 pe eff (maycap pr) cap pt t2
   | Map e -> fprintf fmt "<%a>" pe e
   | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 pt t2
   | Tuple (t1,t2) -> fprintf fmt "%a *@ %a" mayp t1 mayp t2
@@ -44,7 +49,7 @@ let print' ?(kind=`Who) pt pr pe is_c fmt x =
         (Inst.print ~kind ~intype:true mayp pr pe) i
 
 let rec gen_print kind fmt (C x) = 
-  print' ~kind (gen_print kind) Name.print NEffect.print
+  print' ~kind (gen_print kind) Name.print NEffect.print_nosep
     (function C x -> is_compound x) fmt x
 
 let print fmt x = gen_print `Who fmt x
@@ -195,10 +200,11 @@ module Generalize = struct
 
   open Myformat
 
+  let varlist = print_list space (varprint `Who)
   let print fmt ((tl,rl,el) as g) = 
     if is_empty g then ()
-    else fprintf fmt "[%a|%a|%a]" Name.print_list tl 
-          Name.print_list rl Name.print_list el
+    else fprintf fmt "[%a|%a|%a]" varlist tl 
+          Name.print_list rl varlist el
 
   let open_ r b = 
     let tl,b = Name.open_listbind Name.refresh_listbind b in
