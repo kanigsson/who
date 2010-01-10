@@ -80,6 +80,11 @@ let arg = function
   | C (PureArr (t1,_)) -> t1
   | _ -> assert false
 
+let destr_tuple (C t) = 
+  match t with
+  | Tuple (t1,t2) -> t1,t2
+  | _ -> assert false
+
 let latent_effect = function
   | C (Arrow (_,_,e,_)) -> e
   | C (PureArr _) -> NEffect.empty

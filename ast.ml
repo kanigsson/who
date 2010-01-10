@@ -395,14 +395,19 @@ module Recon = struct
 
   let gen g e l = true_or e (mk (Gen (g, e)) e.t e.e l)
 
-  let rec app ?(kind=`Prefix) ?(cap=[]) t1 t2 l = 
-(*     Format.printf "termapp: %a and %a@." print t1 print t2; *)
+  let simple_app ?(kind=`Prefix) ?(cap=[]) t1 t2 l =
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
     if not (Ty.equal (Ty.arg t1.t) t2.t) then begin
       Myformat.printf "type mismatch on application: function %a has type %a,
       and argument %a has type %a@." print t1 Ty.print t1.t 
       print t2 Ty.print t2.t ; invalid_arg "app" end
     else 
+      mk (App (t1,t2,kind,cap)) t (NEffect.union t1.e (NEffect.union t2.e e)) l
+  let simple_app2 ?kind t t1 t2 loc = 
+    simple_app ?kind (simple_app t t1 loc) t2 loc
+  let simple_appi t t1 t2 loc = simple_app2 ~kind:`Infix t t1 t2 loc
+
+  let rec app ?kind ?cap t1 t2 l = 
       try match t1.v with
       (* we are trying to build (λx.t) e, reduce to t[x|->e] *)
       | PureFun (_,l) ->
@@ -411,77 +416,23 @@ module Recon = struct
       (* double application, check if we are not in a simplification case *)
       | App (op,t1,_,_) ->
           begin match destruct_varname op with
-          (* simpl for /\ *)
-          | Some ("/\\",_) ->
-              begin match t1.v,t2.v with
-              | Const Const.Ptrue, _ -> t2
-              | _, Const Const.Ptrue -> t1
-              | Const Const.Pfalse, _ -> t1
-              | _, Const Const.Pfalse -> t2
-              | _ -> raise Exit
-              end
-          (* simpl for -> *)
-          | Some ("->",_) ->
-              (* (a /\b) -> c ====>    a -> b -> b *)
-              begin match destruct_app2_var t1 with
-              | Some (Some "/\\", _, ha, hb) ->
-                  impl ha (impl hb t2 l) l
-              | _ ->
-                  match destruct_app2_var t2 with
-                  | Some (Some "->", _, t2, goal) ->
-                      begin match destruct_app2_var t1,destruct_app2_var t2 with
-                      | Some ( Some "=", _,_, _), _ -> raise Exit
-                      | _, Some (Some "=", _,_, _) -> impl t2 (impl t1 goal l) l
-                      | _ -> raise Exit
-                      end
-                  | _ ->
-                      begin match t1.v,t2.v with
-                      | Const Const.Ptrue, _ -> t2
-                      | _, Const Const.Ptrue -> t2
-                      | Const Const.Pfalse, _ -> ptrue_ l
-                      | _, _ when equal t1 t2 -> ptrue_ l
-                      | _ -> raise Exit
-                      end
-              end
-          | Some ("=",_) ->
-              if equal t1 t2 then ptrue_ l 
-              else
-                begin match t2.v with
-                | (Const Const.Btrue | Const Const.Bfalse) as n ->
-                    let f = reduce_bool t1 l in
-                    if n = Const Const.Btrue then f else neg f l
-                | _ -> raise Exit
-                end
+          | Some ("/\\",_) -> and_ t1 t2 l
+          | Some ("->",_) -> impl t1 t2 l
+          | Some ("=",_) -> eq t1 t2 l
           | _ -> raise Exit
           end
       | _ ->
           match destruct_varname t1 with
-          | Some ("~",_) -> 
-              begin match t2.v with
-              | Const Const.Ptrue -> pfalse_ l
-              | Const Const.Pfalse -> ptrue_ l
-              | _ -> raise Exit
-              end
-          | Some (("fst" | "pre" | "post" | "snd" as n),_) ->
-              begin match destruct_app2_var t2 with
-              | Some (Some ",",_,a,b) ->
-                  if n = "fst" || n = "pre" then a 
-                  else b
-              | _ -> raise Exit
-              end
+          | Some ("~",_) -> neg t2 l
+          | Some (("fst" | "pre"), _) -> pre t2 l
+          | Some (("post" | "snd"), _) -> post t2 l
           | _ -> raise Exit
-      with Exit -> 
-        mk (App (t1,t2,kind,cap)) t 
-          (NEffect.union t1.e (NEffect.union t2.e e)) l
+      with Exit -> simple_app ?kind ?cap t1 t2 l
 
   and app2 ?kind t t1 t2 loc = app ?kind (app t t1 loc) t2 loc
   and appi t t1 t2 loc = app2 ~kind:`Infix t t1 t2 loc
   and allapp t1 t2 kind cap loc = app ~kind ~cap t1 t2 loc
   and var s inst (g,t) = 
-(*
-    Format.printf "%a : (%a,%a) -> %a@." Name.print s Ty.Generalize.print g Ty.print
-    t (Inst.print Ty.print Name.print NEffect.print) inst;
-*)
     let nt = (Ty.allsubst g inst t) in
     if Ty.equal nt Ty.unit then void 
     else if Ty.equal nt Ty.emptymap then mempty
@@ -499,7 +450,11 @@ module Recon = struct
     let v,_,_ = Ty.get_predef_var "empty" in
     mk_val (Var (v,Inst.empty)) Ty.emptymap l
 
-  and neg f l = app (spredef_var "~" l) f l
+  and neg f l = 
+    match f.v with
+    | Const Const.Ptrue -> pfalse_ l
+    | Const Const.Pfalse -> ptrue_ l
+    | _ -> simple_app (spredef_var "~" l) f l
 
   and reduce_bool t loc = 
     let rec aux t =
@@ -544,27 +499,44 @@ module Recon = struct
     aux t
   and impl h1 goal l = 
     try match destruct_app2_var h1 with
-    | Some (Some "/\\", _, ha, hb) ->
-        impl ha (impl hb goal l) l
-    | _ -> raise Exit
-    with Exit ->
-      try match destruct_app2_var goal with
-      | Some ( Some "->", _, h2,goal)  ->
-          begin match destruct_app2_var h1, destruct_app2_var h2 with
-          | Some ( Some "=", _,_, _), _ -> raise Exit
-          | _, Some (Some "=", _,_, _) -> impl h2 (impl h1 goal l) l
-          | _ -> raise Exit
-          end
-      | _ -> raise Exit
-      with Exit -> appi (spredef_var "->" l) h1 goal l
+    | Some (Some "/\\", _, ha, hb) -> impl ha (impl hb goal l) l
+    | _ ->
+        match destruct_app2_var goal with
+        | Some (Some "->", _, h2, goal) ->
+            begin match destruct_app2_var h1,destruct_app2_var h2 with
+            | Some ( Some "=", _,_, _), _ -> raise Exit
+            | _, Some (Some "=", _,_, _) -> impl h1 (impl h2 goal l) l
+            | _ -> raise Exit
+            end
+         | _ ->
+             begin match h1.v,goal.v with
+             | Const Const.Ptrue, _ -> goal
+             | _, Const Const.Ptrue -> goal
+             | Const Const.Pfalse, _ -> ptrue_ l
+             | _, _ when equal h1 goal -> ptrue_ l
+             | _ -> raise Exit
+            end
+    with Exit -> simple_appi (spredef_var "->" l) h1 goal l
   and ite ?(logic=true) e1 e2 e3 l = 
     let im b c = impl (eq e1 (b l) l) c l in
     if logic then and_ (im btrue_ e2) (im bfalse_ e3) l
     else
       mk (Ite (e1,e2,e3)) e2.t (NEffect.union e1.e (NEffect.union e2.e e3.e)) l
-  and eq t1 t2 loc = 
-    appi (pre_defvar "=" ([t1.t],[],[]) loc) t1 t2 loc
-  and and_ t1 t2 loc = appi (spredef_var "/\\" loc) t1 t2 loc
+  and eq t1 t2 l = 
+    if equal t1 t2 then ptrue_ l 
+    else
+      match t2.v with
+      | (Const Const.Btrue | Const Const.Bfalse) as n ->
+          let f = reduce_bool t1 l in
+          if n = Const Const.Btrue then f else neg f l
+      | _ -> simple_appi (pre_defvar "=" ([t1.t],[],[]) l) t1 t2 l
+  and and_ t1 t2 loc = 
+    match t1.v,t2.v with
+    | Const Const.Ptrue, _ -> t2
+    | _, Const Const.Ptrue -> t1
+    | Const Const.Pfalse, _ -> t1
+    | _, Const Const.Pfalse -> t2
+    | _ -> simple_appi (spredef_var "/\\" loc) t1 t2 loc
   and subst x v e =
     rebuild_map
       ~varfun:(fun z i def -> if Name.equal z x then v i else def) e
@@ -573,48 +545,42 @@ module Recon = struct
     let builder (tl,rl,el)= esubst evl el (rsubst rvl rl (tsubst tvl tl v)) in
     subst x builder e
   and squant k x t f loc = 
-(*     Myformat.printf "squant %a: %a@." Name.print x print f; *)
     if Ty.equal t Ty.unit || Ty.equal t Ty.emptymap then f 
     else (
-(*       Myformat.printf "-else-@."; *)
       try match destruct_app2_var f with
       | Some (Some "->", _, t1,f)  ->
-(*           Myformat.printf "-impl-@."; *)
           begin match destruct_app2_var t1 with
           | Some (Some "=", _,({v= Var(y,_)} as t1), ({v = Var (z,_)} as t2) )->
-(*               Myformat.printf "eq-sym@."; *)
               if Name.equal x y then subst x (fun _ -> t2) f
               else if Name.equal x z then subst z (fun _ -> t1) f
               else raise Exit
           | Some (Some "=", _,{v= Var(y,_)}, def)  ->
-(*               Myformat.printf "eq-left@."; *)
               if Name.equal x y then subst x (fun _ -> def) f else raise Exit
           | Some (Some "=", _,def,{v = Var (y,_)}) ->
-(*               Myformat.printf "eq-right@."; *)
               if Name.equal x y then subst x (fun _ -> def) f else raise Exit
           | _ -> 
-(*               Myformat.printf "not eq@.";  *)
               raise Exit
           end
       | _ -> raise Exit
       with Exit -> 
         true_or f (mk (Quant (k,t,Name.close_bind x f)) f.t f.e loc) )
 
+  and pre t loc = 
+    match destruct_app2_var t with
+    | Some (Some ",",_,a,_) -> a
+    | _ -> 
+        let t1, t2 = Ty.destr_tuple t.t in
+        simple_app (pre_defvar "fst" ([t1;t2],[],[]) loc) t loc
 
-
+  and post t loc = 
+    match destruct_app2_var t with
+    | Some (Some ",",_,_,b) -> b
+    | _ -> 
+        let t1, t2 = Ty.destr_tuple t.t in
+        simple_app (pre_defvar "snd" ([t1;t2],[],[]) loc) t loc
     
   let svar s t = var s Inst.empty (G.empty,t) 
   let le t1 t2 loc = appi (spredef_var "<=" loc) t1 t2 loc
-  let pre t loc = 
-    match t.t with
-    | Ty.C(Ty.Tuple (t1,t2)) -> app (pre_defvar "fst" ([t1;t2],[],[]) loc) t loc
-    | _ -> assert false
-
-  let post t loc = 
-    match t.t with
-    | Ty.C (Ty.Tuple (t1,t2)) -> 
-        app (pre_defvar "snd" ([t1;t2],[],[]) loc) t loc
-    | _ -> assert false
 
   let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
   let efflam x eff e = plam x (Ty.map eff) e
