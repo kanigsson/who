@@ -61,9 +61,9 @@ let _ =
         maybe_abort Options.constr_only Ast.Recon.print_theory p;
         p
     in
+    Typing.theory p;
     p 
 (*
-    Typing.typing p;
     let p = Anf.term p in
     maybe_abort Options.anf_only Ast.Recon.print p;
     Typing.typing p;

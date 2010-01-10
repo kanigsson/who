@@ -2,6 +2,7 @@ IMPORTANT FEATURES
 Pretty printer for Pangoline
 Syntax for lifted types
 Syntax for Hoare triples
+allow non-values at top-level
 
 repair inference: 
   * sometimes the current implementation needs a concrete type

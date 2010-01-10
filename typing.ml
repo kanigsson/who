@@ -67,12 +67,9 @@ let rec formtyping' env loc = function
             (Myformat.printf "here@."; error loc "%s" (Error.ty_app_mismatch t2 ta))
       | _ -> error loc "no function type" 
       end
-  | TypeDef (_,_,_,e) -> formtyping env e
   | PureFun (t,b) -> 
       let x,e = sopen b in
       parr t (formtyping (add_svar env x t) e)
-  | Logic t -> t
-  | Axiom f -> fis_oftype env prop f; prop
   | Quant (_,t,b) -> 
       let x,e = sopen b in
       fis_oftype (add_svar env x t) prop e;
@@ -91,7 +88,7 @@ let rec formtyping' env loc = function
       post env eff t' q;
       to_logic_type (caparrow t t' eff cap)
   | Gen (_,e)-> formtyping env e
-  | Let (_,g,e1,b,_) ->
+  | Let (g,e1,b,_) ->
       let x,e2 = sopen b in
 (*       Myformat.printf "let: %a@." Name.print x; *)
       let t = formtyping env e1 in
@@ -99,7 +96,6 @@ let rec formtyping' env loc = function
       let t = formtyping env e2 in
       t
   | Annot (e,t) -> fis_oftype env t e; t
-  | Section (_,_,e) | EndSec e -> formtyping env e
   | Param _ -> error loc "effectful parameter in logic"
   | For _ -> assert false
   | LetReg _ -> assert false
@@ -166,21 +162,13 @@ and typing' env loc = function
       pre env eff p;
       post env eff t' q;
       caparrow t t' eff cap, NEffect.empty, RS.empty
-  | Let (_,g,e1,b,r) ->
+  | Let (g,e1,b,r) ->
       let x, e2 = sopen b in
 (*       Myformat.printf "plet: %a@." Name.print x; *)
-      if not ( G.is_empty g || Recon.is_value_node e1) then 
-        error loc "generalization over non-value";
-      let env' =
-        match r with 
-        | NoRec -> env
-        | Rec t -> add_svar env x t in
-      let t,eff1, cap1 = typing env' e1 in
-      let env = add_var env x g t in
+      let env, eff1, cap1 = letgen env x g e1 r in
       let t, eff2, cap2 = typing env e2 in
       t, NEffect.union eff1 eff2, disjoint_union loc cap1 cap2
   | Param (t,e) -> t,e, RS.empty
-  | TypeDef (_,_,_,e) -> typing env e
   | PureFun (t,b) ->
       let x,e = sopen b in
       let env = add_svar env x t in
@@ -194,12 +182,9 @@ and typing' env loc = function
       if NEffect.is_empty eff && RS.is_empty cap && Ty.equal t' Ty.prop 
       then Ty.prop, eff, cap
       else error loc "not of type prop"
-  | Axiom e -> formtyping env e, NEffect.empty, RS.empty
-  | Logic t -> t, NEffect.empty, RS.empty
   | Annot (e,t) -> 
       let t', eff, cap = typing env e in
       if Ty.equal t t' then t, eff, cap else error loc "wrong type annotation"
-  | Section (_,_,e) | EndSec e -> typing env e
   | Ite (e1,e2,e3) ->
       let t1, eff1, cap1 = typing env e1 in
       if Ty.equal t1 Ty.bool then
@@ -231,6 +216,30 @@ and fis_oftype env t e =
     error e.loc "term %a is of type %a, but I expected %a@."
       Ast.Recon.print e Ty.print t' Ty.print t
 
-let typing t = ignore (typing { types = Name.M.empty} t)
+and letgen env x g e r =
+  if not ( G.is_empty g || Recon.is_value_node e) then 
+        error e.loc "generalization over non-value";
+  let env' =
+    match r with 
+    | NoRec -> env
+    | Rec t -> add_svar env x t in
+  let t, eff, cap = typing env' e in
+  let env = add_var env x g t in
+  env, eff, cap
 
+let rec decl env d = 
+  match d with
+  | Formula (_,f,_) -> fis_oftype env prop f; env
+  | Section (_,_,th) -> theory env th
+  | TypeDef _ 
+  | DLetReg _ -> env
+  | Logic (n,g,t) -> add_var env n g t
+  | Program (x,g,e,r) ->
+      let env,  _, _ = letgen env x g e r in
+      env
+
+and theory env th = List.fold_left decl env th
+
+let typing t = ignore (typing { types = Name.M.empty} t)
 let formtyping t = ignore (formtyping {types = Name.M.empty} t)
+let theory th = ignore (theory { types = Name.M.empty} th)

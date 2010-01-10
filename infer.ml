@@ -128,14 +128,12 @@ let rec infer' env t loc x =
       let e = infer env t e in
       Annot (e,xt), e.e
   | Var (x,_) -> 
-(*       Myformat.printf "var %a@." Name.print x; *)
         let m,xt = 
           try Name.M.find x env.vars
           with Not_found -> 
             error (Myformat.sprintf "variable %a not found" Name.print x) loc in
         let xt = if env.pm then Ty.to_logic_type xt else xt in
         let nt,i = to_uf_node m xt in
-(*         Format.printf "computed %a : %a@." Name.print x U.print_node nt; *)
         unify nt t loc;
         Var (x, i), U.new_e ()
   | Const c -> 
@@ -185,7 +183,9 @@ let rec infer' env t loc x =
       let e = infer env t e in
       let eff = NEffect.rremove (U.to_eff e.e) vl in
       LetReg (vl,e), to_uf_enode eff
-  | Gen _ -> assert false
+  | Gen (g,e) -> 
+      let e = infer env t e in
+      Gen (g,e), e.e
 
 and infer env t (e : ParseT.t) : Ast.Infer.t = 
   let e',eff = infer' {env with curloc = e.loc} t e.loc e.v in
@@ -293,7 +293,7 @@ let rec recon' = function
       (app2 (app2 (var dir ([],[],[e]) Ty.forty l) inv' sv l) ev bodyfun l).v
   | LetReg (vl,e) -> LetReg (vl,recon e)
   | Annot (e,t) -> Annot (recon e, t)
-  | Gen _ -> assert false
+  | Gen (g,e) -> Gen (g,recon e)
 and pre eff (cur,x) loc = 
   match x with
   | None -> cur, Some (efflamho eff (fun _ -> ptrue_ loc) loc)
