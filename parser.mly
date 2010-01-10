@@ -1,36 +1,11 @@
 %{
+  (** TODO compute the type of a recursive function by the given return type and
+   * the argument types *)
   open Loc
   open Const
   open Parsetree
 
   let void = const (Const.Void) Loc.dummy
-
-  (* Syntactically, a program is a list of declarations; 
-    In the parser, this is represented by two different forms:
-      * Once indeed as an [ast list]
-      * later as a nesting of the following constructs (referred to as abstract
-      programs):
-        - let ... in
-        - typedef ... in
-        - section ... end in 
-        - letreg ... in 
-        - Void as terminator
-  *)
-
-  (* takes an [ast list] and transforms it into an abstract program *)
-  let rec to_abst_ast = function
-    | [] -> void
-    | { v = Let (p,l,t,x,{ v = Const Const.Void },r); loc = loc }::xs -> 
-        let_ ~prelude:p l t x (to_abst_ast xs) r loc
-    | { v = TypeDef (l,t,x,{ v = Const Const.Void }); loc = loc }::xs -> 
-        typedef l t x (to_abst_ast xs) loc
-    | {v = Section (n,f,e) ; loc = loc } :: xs ->
-        let tail = to_abst_ast xs in
-        mk (Section (n,f, concat e (mk (EndSec tail) loc))) loc
-(*         append_ast (mk (EndSec tail) loc) e)) loc *)
-    | {v = LetReg (l,{v = Const Const.Void}); loc = loc} :: xs ->
-        mk (LetReg (l, to_abst_ast xs)) loc
-    | _ -> assert false
 
   (* build a new location out of two old ones by forming the large region
   containing both *)
@@ -56,17 +31,11 @@
   (* construct a sequence of pure lambdas on top of a parameter with type [rt] 
      and effect [eff]; the innermost lambda is effectful as in [mk_efflam] *)
   let mk_param l cap p q rt eff loc = 
-    (* TODO caps for params *)
     mk_efflam l cap p (mk (Param (rt,eff)) loc) q loc
 
   (* construct a sequence of quantifiers on top of [e] *)
   let mk_quant k l e loc = 
     List.fold_right (fun (x,t) acc -> quant k x t acc loc) l e
-
-  (* build a let-binding with the void terminator; detect if we are in prelude
-  mode or not *)
-  let let_wconst l t x r p = 
-    let_ ~prelude:(!Options.prelude) l t x void r p
 
   (* remove location information from a list of annotated values *)
   (* build a for loop *)
@@ -81,7 +50,7 @@
 
 %}
 
-%start <Parsetree.t> main
+%start <Parsetree.theory> main
 %%
 
 (* basic terms *)
@@ -128,7 +97,8 @@ nterm:
   | st = IF it = nterm THEN tb = nterm ELSE eb = nterm %prec ifprec
     { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
   (* a local let is like a global one, but with an IN following *)
-  | f = alllet IN e2 = nterm %prec let_ {(f : t -> t) e2 }
+  | f = alllet IN e2 = nterm %prec let_ 
+    { let g, e, x, r = f in let_ g e x e2 r e2.loc }
   | st = FOR i = IDENT EQUAL e1 = nterm dir = todownto e2 = nterm DO 
        p = precond
        e3 = nterm 
@@ -156,21 +126,19 @@ alllet:
 (* the simplest case *)
   | b = letcommon t = nterm 
     { let p,x,l,args = b in
-      fun t2 -> let_ l (mk_pure_lam args t p) x t2 NoRec (embrace p t2.loc) }
+      l, mk_pure_lam args t p, x, NoRec }
 (* the function definition case *)
   | b = letcommon body = funcbody 
     { let p,x,l,args = b in
       let cap, pre,e,q = body in
       if args = [] then $syntaxerror;
-      fun t2 -> 
-        let_ l (mk_efflam args cap (snd pre) e (snd q) p) x t2 NoRec 
-          (embrace p t2.loc) }
+      l, mk_efflam args cap (snd pre) e (snd q) p, x, NoRec
+    }
 (* the recursive function definition case *)
   | p = LET REC l = gen LPAREN x = defprogvar_no_pos 
     COLON t = ty RPAREN args = arglist EQUAL b = funcbody
     { let cap, pre,e,q = b in
-      (fun e2 -> let_ l (mk_efflam args cap (snd pre) e (snd q) p) x e2 (Rec t)
-        (embrace p e2.loc))
+      l, mk_efflam args cap (snd pre) e (snd q) p, x, Rec t
     }
     
 funcbody:
@@ -194,28 +162,30 @@ precond:
   - a section
   *)
 decl:
-  | f = alllet {(f : t -> t) void }
+  | g = alllet 
+    { let g, e, x, r = g in Program (x,g,e,r) }
   | p = PARAMETER x = defprogvar_no_pos l = gen COLON rt = ty
-    { let_wconst l (mk (Param (rt,([],[]))) p) x NoRec p}
+    { let par = mk (Param (rt,([],[]))) p in
+      Program (x,l,par,NoRec) }
   | p = PARAMETER x = defprogvar_no_pos l = gen args = arglist 
     COLON rt = ty COMMA e = sepeffect EQUAL 
       cap = maycapdef pre = precond post = postcond
   { 
     let par = mk_param args cap (snd pre) (snd post) rt e p in
-    let_wconst l par x NoRec (embrace p (fst post))} 
-  | p = AXIOM x = defprogvar_no_pos l = gen COLON t = nterm
-    { let_wconst l (mk (Axiom t) p) x NoRec (embrace p t.loc) }
-  | p = LOGIC x = defprogvar_no_pos l = gen COLON t = ty
-    { let_wconst l (mk (Logic t) p) x NoRec p }
-  | p = TYPE x = IDENT l = gen
-    { typedef l None x.c void p }
-  | p = TYPE x = IDENT l = gen EQUAL t = ty
-    { typedef l (Some t) x.c void p }
-  | p = LETREGION l = IDENT*
-    { mk (LetReg (strip_info l, void)) p  }
-  | p1 = SECTION x = IDENT fn = takeoverdecl* l = decl+ p2 = END
-    { mk (Section (x.c, fn, to_abst_ast l)) (embrace p1 p2) }
+    Program (x,l,par,NoRec)
+  }
+  | AXIOM x = defprogvar_no_pos l = gen COLON t = nterm
+    { Axiom (x, l, t) }
+  | LOGIC x = defprogvar_no_pos l = gen COLON t = ty
+    { Logic (x,l,t) }
+  | TYPE x = IDENT l = gen
+    { TypeDef (l,None, x.c) }
+  | TYPE x = IDENT l = gen EQUAL t = ty
+    { TypeDef (l,Some t, x.c) }
+  | LETREGION l = IDENT* { DLetReg (strip_info l) }
+  | SECTION x = IDENT fn = takeoverdecl* l = decl+ END
+    { Section (x.c, fn, l) }
 
 (* a program is simply a list of declarations; we call [to_abst_ast] to
   obtain a single AST *)
-main: l = decl* EOF { to_abst_ast l }
+main: l = decl* EOF { l }

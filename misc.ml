@@ -66,6 +66,16 @@ let fold_map f acc l =
   in
   aux acc l
         
+let list_fold_map f init l =
+  let rec flm acu l' = function
+    | [] ->
+        (acu, List.rev l')
+    | x :: xs ->
+        let (acu, y) = f acu x in
+          flm acu (y :: l') xs
+  in
+    flm init [] l
+
 let opt_map f = function
   | None -> None
   | Some x -> Some (f x)

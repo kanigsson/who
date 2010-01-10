@@ -11,20 +11,15 @@ type ('a,'b,'c) t'' =
   | Lam of 
       Name.t * Ty.t * Name.t list * ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post 
   (* boolean which describes if the let comes from the prelude or not *)  
-  | Let of bool * G.t * ('a,'b,'c) t' * ('a,'b,'c) t' Name.bind * isrec
+  | Let of G.t * ('a,'b,'c) t' * ('a,'b,'c) t' Name.bind * isrec
   | PureFun of Ty.t * ('a,'b,'c) t' Name.bind
   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
-  | Axiom of ('a,'b,'c) t'
-  | Logic of Ty.t
   | Annot of ('a,'b,'c) t' * Ty.t
-  | TypeDef of G.t * Ty.t option * Name.t * ('a,'b,'c) t'
   | Quant of [`FA | `EX ] * Ty.t * ('a,'b,'c) t' Name.bind
   | Param of Ty.t * NEffect.t
   | Gen of G.t *  ('a,'b,'c) t'
   | For of Name.t * ('a,'b,'c) pre * Name.t * Name.t * Name.t * ('a,'b,'c) t'
   | LetReg of Name.t list * ('a,'b,'c) t'
-  | Section of string * Const.takeover list * ('a,'b,'c) t'
-  | EndSec of ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
 and ('a,'b,'c) post' = 
   | PNone
@@ -34,39 +29,32 @@ and ('a,'b,'c) pre = Name.t * ('a,'b,'c) t' option
 and ('a,'b,'c) post = Name.t * Name.t * ('a,'b,'c) post'
 and isrec = Rec of Ty.t | NoRec
 
+type ('a,'b,'c) decl = 
+  | Logic of Name.t *  G.t * Ty.t
+  | Axiom of string * ('a,'b,'c) t'
+  | Section of string * Const.takeover list * ('a,'b,'c) decl list
+  | TypeDef of G.t * Ty.t option * Name.t
+  | Program of Name.t * G.t * ('a,'b,'c) t' * isrec
+  | DLetReg of Name.t list 
+
+type ('a,'b,'c) theory = ('a,'b,'c) decl list
+
 let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f = 
   let rec aux' = function
     | (Const _ ) as t -> t
     | Param (t,e) -> Param (tyfun t, effectfun e)
-    | Logic t -> 
-(*         Myformat.printf "var@."; *)
-        Logic (tyfun t)
-    | Var (v,i) -> 
-(*
-        Myformat.printf "var %a %a@." Name.print v (Inst.print Ty.print
-        Name.print NEffect.print) i;
-*)
-        varfun v (Inst.map tyfun rvarfun effectfun i)
+    | Var (v,i) -> varfun v (Inst.map tyfun rvarfun effectfun i)
     | App (t1,t2,p,cap) -> App (aux t1, aux t2, p, List.map rvarfun cap)
     | Annot (e,t) -> Annot (aux e, tyfun t)
     | Lam (x,t,cap,p,e,q) -> 
-(*         Myformat.printf "lam@."; *)
         Lam (x,tyfun t, List.map rvarfun cap, pre p, aux e, post q)
     | LetReg (l,e) -> LetReg (l,aux e)
     | For _ -> assert false
-    | Let (p,g,e1,b,r) -> Let (p,g,aux e1,varbindfun p b, r)
-    | PureFun (t,b) -> 
-(*         Myformat.printf "purefun@."; *)
-        PureFun (tyfun t, varbindfun false b)
+    | Let (g,e1,b,r) -> Let (g,aux e1,varbindfun b, r)
+    | PureFun (t,b) -> PureFun (tyfun t, varbindfun b)
     | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
-    | Axiom e -> Axiom (aux e)
-    | TypeDef (g,t,x,e) -> TypeDef (g,t,x,aux e)
-    | Quant (k,t,b) -> 
-(*         Myformat.printf "quant@."; *)
-        Quant (k,tyfun t,varbindfun false b)
+    | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
     | Gen (g,e) -> Gen (g,aux e)
-    | Section (n,f,e) -> Section (n,f,aux e)
-    | EndSec e -> EndSec (aux e)
   and pre (x,o) = (x, Misc.opt_map aux o)
   and post (x,y,f) = 
     let f = match f with
@@ -79,7 +67,7 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
 
 let refresh s t =
   map ~varfun:(fun x i -> Var (Name.refresh s x, i))
-    ~varbindfun:(fun _ -> Name.refresh_bind s) 
+    ~varbindfun:(Name.refresh_bind s) 
     ~tyfun:Misc.id 
     ~rvarfun:Misc.id
     ~effectfun:Misc.id t
@@ -100,17 +88,11 @@ let rec equal' a b =
   | Gen (g1,t1), Gen (g2,t2) ->
       G.equal g1 g2 && equal t1 t2
   | Ite (a1,b1,c1), Ite (a2,b2,c2) -> equal a1 a2 && equal b1 b2 && equal c1 c2
-  | Axiom e1, Axiom e2 -> equal e1 e2
-  | Logic t1, Logic t2 -> Ty.equal t1 t2
-
-  | Let (_,g1,ea1,b1,_), Let (_,g2,ea2,b2,_) ->
+  | Let (g1,ea1,b1,_), Let (g2,ea2,b2,_) ->
       G.equal g1 g2 && equal ea1 ea2 && bind_equal b1 b2
   | PureFun (t1,b1), PureFun (t2,b2) -> Ty.equal t1 t2 && bind_equal b1 b2
   | Quant (k1,t1,b1), Quant (k2,t2,b2) ->
       k1 = k2 && Ty.equal t1 t2 && bind_equal b1 b2
-  | TypeDef (g1,t1,x1,e1), TypeDef (g2,t2,x2,e2) ->
-      G.equal g1 g2 && Misc.opt_equal Ty.equal t1 t2 && Name.equal x1 x2
-      && equal e1 e2
   | For _, _ | LetReg _, _ | Annot _, _ | Param _, _  
   | Lam _, _ -> assert false
   | _, _ -> false
@@ -120,129 +102,139 @@ and bind_equal b1 b2 =
    equal eb1 eb2)
 
 and equal a b = equal' a.v b.v
-open Myformat
 
-let is_compound = function
-  | Const _ | Var _ | Lam _ | PureFun _ | Annot _-> false
-  | App _ | Let _ | Ite _ | Axiom _ | Logic _ | TypeDef _
-  | Quant _ | Param _ | For _ | LetReg _ | Gen _ | Section _ | EndSec _ -> true
-let is_compound_node t = is_compound t.v
+module Print = struct
+  open Myformat
 
-let maycaplist fmt l = 
-  if l = [] then ()
-  else fprintf fmt "cap %a" (print_list space Name.print) l
+  let is_compound = function
+    | Const _ | Var _ | Lam _ | PureFun _ | Annot _-> false
+    | App _ | Let _ | Ite _
+    | Quant _ | Param _ | For _ | LetReg _ | Gen _ -> true
+  let is_compound_node t = is_compound t.v
 
-(* TODO factorize the different branches *)
-let print ?(kind=`Who) pra prb prc open_ fmt t = 
-  let typrint = Ty.gen_print kind in
-  let rec print' ext fmt = function
-    | Const c -> Const.print fmt c
-    | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) -> 
-        fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 Name.print v 
-          (Inst.print ~kind ~intype:false pra prb prc) i with_paren t2
-    | App (t1,t2,_,cap) ->
-          fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
-    | Ite (e1,e2,e3) ->
-        fprintf fmt "@[if %a then@ %a else@ %a@]" print e1 print e2 print e3
-    | PureFun (t,b) ->
-        let x,e = open_ b in
-        fprintf fmt "@[(fun %a@ %a@ %a)@]" binder (x,t) 
-          Const.funsep kind print e
-    | Let (true,g, {v = Logic t},b,_) ->
-        let x, e2 = open_ b in
-        fprintf fmt "@[<hov 2>logic %a %a : %a@]@ @," Name.print x G.print g typrint t;
-        extprint ext fmt e2
-    | Let (true, g, { v = Axiom e },b, _) ->
-        let x, e2 = open_ b in
-        fprintf fmt "@[<hov 2>axiom %a %a : %a@]@ @," Name.print x G.print g
-          print e;
-        extprint ext fmt e2
+  let maycaplist fmt l = 
+    if l = [] then ()
+    else fprintf fmt "cap %a" (print_list space Name.print) l
 
-    | Let (_,g,e1,b,r) -> 
-        let x,e2 = open_ b in
-        if ext then
-          fprintf fmt "@[let@ %a%a %a=@[@ %a@]@]@ @,%a" 
-          prrec r Name.print x G.print g print e1 (extprint ext) e2
-        else
-        fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]" 
-          prrec r Name.print x G.print g print e1 (extprint ext) e2
-    | Var (v,i) -> 
-        begin match kind with
-        | `Who | `Pangoline ->
-            if Inst.is_empty i then Name.print fmt v 
-            else fprintf fmt "%a %a" Name.print v 
-              (Inst.print ~kind ~intype:false pra prb prc) i
-        | `Coq -> Name.print fmt v
-        end
-    | Annot (e,t) -> fprintf fmt "(%a : %a)" print e typrint t
-    | Quant (k,t,b) ->
-        let x,e = open_ b in
-        let bind = if k = `FA then binder else binder' false in
-        fprintf fmt "@[%a %a%a@ %a@]" C.quant k bind (x,t) 
-          Const.quantsep kind print e
-    | Gen (g,t) -> 
-        fprintf fmt "forall %a%a %a" G.print g Const.quantsep kind print t
-    (* specific to Who, will not be printed in backends *)
-    | Param (t,e) -> 
-        fprintf fmt "parameter(%a,%a)" 
-          typrint t NEffect.print e
-    | For (dir,inv,_,st,en,t) ->
-        fprintf fmt "%a (%a) %a %a (%a)" 
-          Name.print dir pre inv Name.print st Name.print en print t
-    | LetReg (v,t) -> 
-        fprintf fmt "@[letregion %a in@ %a@]" 
-          (print_list space Name.print) v print t
-    | Lam (x,t,cap,p,e,q) -> 
-        fprintf fmt "@[(fun %a@ ->%a@ %a@ %a@ %a)@]" 
-          binder (x,t) maycaplist cap pre p print e post q
-    | Section (n,f,e) -> 
-          fprintf fmt "@[section %s@, %a@, %a " n 
-            (print_list newline Const.takeover) f (extprint ext) e
-    | EndSec e -> 
-        if kind = `Who then fprintf fmt "end@]@, %a" (extprint ext) e
-    | Axiom e -> fprintf fmt "axiom %a" print e
-    | Logic t -> fprintf fmt "logic %a" typrint t
-    | TypeDef (g,t,x,e) -> 
-        match t with
-        | None -> 
-            fprintf fmt "type %a%a@ @,%a" Name.print x G.print g (extprint ext) e
-        | Some t -> 
-            fprintf fmt "type %a%a =@ %a@ @,%a" 
-              Name.print x G.print g typrint t (extprint ext) e
-      
-  and print fmt t = print' false fmt t.v
-  and extprint ext fmt t = 
-    if ext then 
-      if t.v = Const Const.Void then () 
-      else print' true fmt t.v 
-    else print fmt t
-  and binder' par = 
-    let p fmt (x,t) = fprintf fmt "%a:%a" 
-      Name.print x typrint t in
-    if par then paren p else p
-  and binder fmt b = binder' true fmt b
-  and pre fmt (_,x) = 
-    match x with
-    | None -> ()
-    | Some x -> fprintf fmt "{%a}" print x
-  and post fmt (_,_,x) = 
-    match x with
-    | PNone -> ()
-    | PPlain f -> fprintf fmt "{%a}" print f
-    | PResult (r,f) -> fprintf fmt "{ %a : %a}" Name.print r print f
-  and prrec fmt = function
+  let prrec fmt = function
     | NoRec -> ()
-    | Rec t -> 
-        fprintf fmt "rec(%a) " typrint t
-  and maycap fmt = function
-    | [] -> ()
-    | l -> fprintf fmt "{%a}" (print_list space Name.print) l
-  and with_paren fmt x = 
-    if is_compound_node x then paren print fmt x else print fmt x in
-  extprint true fmt t
+    | Rec t -> fprintf fmt "rec(%a) " Ty.print t
+  (* TODO factorize the different branches *)
+  let term ?(kind=`Who) pra prb prc open_ fmt t = 
+    let typrint = Ty.gen_print kind in
+    let rec print' ext fmt = function
+      | Const c -> Const.print fmt c
+      | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) -> 
+          fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 Name.print v 
+            (Inst.print ~kind ~intype:false pra prb prc) i with_paren t2
+      | App (t1,t2,_,cap) ->
+            fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
+      | Ite (e1,e2,e3) ->
+          fprintf fmt "@[if %a then@ %a else@ %a@]" print e1 print e2 print e3
+      | PureFun (t,b) ->
+          let x,e = open_ b in
+          fprintf fmt "@[(fun %a@ %a@ %a)@]" binder (x,t) 
+            Const.funsep kind print e
+      | Let (g,e1,b,r) -> 
+          let x,e2 = open_ b in
+          if ext then
+            fprintf fmt "@[let@ %a%a %a=@[@ %a@]@]@ @,%a" 
+            prrec r Name.print x G.print g print e1 (extprint ext) e2
+          else
+          fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]" 
+            prrec r Name.print x G.print g print e1 (extprint ext) e2
+      | Var (v,i) -> 
+          begin match kind with
+          | `Who | `Pangoline ->
+              if Inst.is_empty i then Name.print fmt v 
+              else fprintf fmt "%a %a" Name.print v 
+                (Inst.print ~kind ~intype:false pra prb prc) i
+          | `Coq -> Name.print fmt v
+          end
+      | Annot (e,t) -> fprintf fmt "(%a : %a)" print e typrint t
+      | Quant (k,t,b) ->
+          let x,e = open_ b in
+          let bind = if k = `FA then binder else binder' false in
+          fprintf fmt "@[%a %a%a@ %a@]" C.quant k bind (x,t) 
+            Const.quantsep kind print e
+      | Gen (g,t) -> 
+          fprintf fmt "forall %a%a %a" G.print g Const.quantsep kind print t
+      (* specific to Who, will not be printed in backends *)
+      | Param (t,e) -> 
+          fprintf fmt "parameter(%a,%a)" 
+            typrint t NEffect.print e
+      | For (dir,inv,_,st,en,t) ->
+          fprintf fmt "%a (%a) %a %a (%a)" 
+            Name.print dir pre inv Name.print st Name.print en print t
+      | LetReg (v,t) -> 
+          fprintf fmt "@[letregion %a in@ %a@]" 
+            (print_list space Name.print) v print t
+      | Lam (x,t,cap,p,e,q) -> 
+          fprintf fmt "@[(fun %a@ ->%a@ %a@ %a@ %a)@]" 
+            binder (x,t) maycaplist cap pre p print e post q
+        
+    and print fmt t = print' false fmt t.v
+    and extprint ext fmt t = 
+      if ext then 
+        if t.v = Const Const.Void then () 
+        else print' true fmt t.v 
+      else print fmt t
+    and binder' par = 
+      let p fmt (x,t) = fprintf fmt "%a:%a" 
+        Name.print x typrint t in
+      if par then paren p else p
+    and binder fmt b = binder' true fmt b
+    and pre fmt (_,x) = 
+      match x with
+      | None -> ()
+      | Some x -> fprintf fmt "{%a}" print x
+    and post fmt (_,_,x) = 
+      match x with
+      | PNone -> ()
+      | PPlain f -> fprintf fmt "{%a}" print f
+      | PResult (r,f) -> fprintf fmt "{ %a : %a}" Name.print r print f
+    and maycap fmt = function
+      | [] -> ()
+      | l -> fprintf fmt "{%a}" (print_list space Name.print) l
+    and with_paren fmt x = 
+      if is_compound_node x then paren print fmt x else print fmt x in
+    extprint true fmt t
+
+  let decl ?(kind=`Who) pra prb prc open_ fmt d = 
+    let typrint = Ty.gen_print kind in
+    let term = term ~kind pra prb prc open_ in
+    let rec decl fmt d = 
+      match d with
+      | Logic (x,g,t) -> 
+          fprintf fmt "@[<hov 2>logic %a %a : %a@]" 
+            Name.print x G.print g typrint t
+      | Axiom (s,t) ->  
+          fprintf fmt "@[<hov 2>axiom %s : %a@]" s term t
+      | TypeDef (g,t,x) -> 
+          begin match t with
+          | None -> fprintf fmt "type %a%a" Name.print x G.print g
+          | Some t -> 
+              fprintf fmt "type %a%a =@ %a" Name.print x G.print g typrint t
+          end
+      | DLetReg l ->
+          fprintf fmt "@[letregion %a@]" (print_list space Name.print) l
+      | Section (s,cl,d) -> 
+          fprintf fmt "@[<hov 2>section %s@, %a@, %a@] end" s
+          (print_list newline Const.takeover) cl decl_list d
+      | Program (x,g,t,r) ->
+          fprintf fmt "@[<hov 2>let@ %a%a %a = %a @]" prrec r 
+          Name.print x G.print g term t 
+    and decl_list fmt d = print_list newline decl fmt d in
+    decl fmt d
+
+  let theory ?kind pra prb prc open_ fmt t = 
+    print_list newline (decl ?kind pra prb prc open_) fmt t
+end
 
 module Infer = struct
   type t = (U.node, U.rnode, U.enode) t'
+  type th' = (U.node, U.rnode, U.enode) theory
+  type theory = th'
 
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
   let mk_val v t = mk v t (U.new_e ())
@@ -256,7 +248,10 @@ module Infer = struct
   let lam_anon t e p = lam (Name.new_anon ()) t e p
 
   let print fmt t = 
-    print ~kind:`Who U.print_node U.prvar U.preff (fun (_,x,e) -> x,e) fmt t
+    Print.term ~kind:`Who U.print_node U.prvar U.preff (fun (_,x,e) -> x,e) fmt t
+
+  let print_theory fmt t = 
+    Print.theory ~kind:`Who U.print_node U.prvar U.preff (fun (_,x,e) -> x,e) fmt t
 
 end
 
@@ -328,8 +323,7 @@ let destruct_varname x =
 let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
   let rec aux t = 
     map ~varfun 
-      ~varbindfun:(fun p b -> 
-        let x,f = if p then sopen b else vopen b in close x (aux f))
+      ~varbindfun:(fun b -> let x,f = vopen b in close x (aux f))
       ~tyfun ~rvarfun ~effectfun t
   in
   aux t
@@ -360,11 +354,17 @@ let esubst evl el e =
 
 module Recon = struct
   type t = (Ty.t, Name.t, NEffect.t) t'
+  type th = (Ty.t, Name.t, NEffect.t) theory
+  type theory = th
+
 
   let gen_print kind fmt t = 
-    print ~kind (Ty.gen_print kind) Name.print NEffect.print sopen fmt t
+    Print.term ~kind (Ty.gen_print kind) Name.print NEffect.print sopen fmt t
   let coq_print fmt t = gen_print `Coq fmt t
   let print fmt t = gen_print `Who fmt t
+
+  let print_theory = 
+    Print.theory ~kind:`Who (Ty.gen_print `Who) Name.print NEffect.print sopen
 
   let print' fmt t = 
     print fmt {v = t; t = Ty.unit; e = NEffect.empty; loc = Loc.dummy }
@@ -385,22 +385,15 @@ module Recon = struct
 
   let annot e t = true_or e (mk (Annot (e,t)) t e.e e.loc)
 
-  let let_ ?(prelude=false) g e1 x e2 r l = 
+  let let_ g e1 x e2 r l = 
     true_or e2 
-      (mk (Let (prelude, g, e1,Name.close_bind x e2,r)) e2.t 
+      (mk (Let (g, e1,Name.close_bind x e2,r)) e2.t 
         (NEffect.union e1.e e2.e) l)
 
   let plam x t e loc = 
     mk_val (PureFun (t,Name.close_bind x e)) (Ty.parr t e.t) loc
 
-  let axiom e = mk (Axiom e) Ty.prop e.e
-  let logic t = mk (Logic t) t NEffect.empty
-  let typedef g t v e l = 
-    true_or e (mk (TypeDef (g,t,v,e)) e.t e.e l)
   let gen g e l = true_or e (mk (Gen (g, e)) e.t e.e l)
-  let section n f e l = true_or e (mk (Section (n,f,e)) e.t e.e l)
-  let endsec e l = true_or e (mk (EndSec e) e.t e.e l)
-
 
   let rec app ?(kind=`Prefix) ?(cap=[]) t1 t2 l = 
 (*     Format.printf "termapp: %a and %a@." print t1 print t2; *)
@@ -532,13 +525,13 @@ module Recon = struct
     (* this function is intended to be used with logic functions only *)
     let l = t.loc in
     let rec aux t = match t.v with
-    | Const _ | Logic _ -> t
+    | Const _ -> t
     | Var (v,i) -> varfun v i t
     | App (t1,t2,p,cap) -> allapp (aux t1) (aux t2) p cap l
     | Annot (e,t) -> annot (aux e) t
-    | Let (p,g,e1,b,r) -> 
-        let x,f = if p then sopen b else vopen b in 
-        let_ ~prelude:p g (aux e1) x (aux f) r l
+    | Let (g,e1,b,r) -> 
+        let x,f = vopen b in 
+        let_ g (aux e1) x (aux f) r l
     | PureFun (t,b) -> 
         let x,f = vopen b in 
         plam x t (aux f) l
@@ -546,11 +539,7 @@ module Recon = struct
         let x,f = vopen b in 
         squant k x t (aux f) l
     | Ite (e1,e2,e3) -> ite ~logic:false (aux e1) (aux e2) (aux e3) l
-    | Axiom e -> axiom (aux e) l
-    | TypeDef (g,t,x,e) -> typedef g t x (aux e) l
     | Gen (g,e) -> gen g (aux e) l
-    | Section (n,f,e) -> section n f (aux e) l
-    | EndSec e -> endsec (aux e) l 
     | _ -> assert false in
     aux t
   and impl h1 goal l = 
@@ -659,9 +648,9 @@ module Recon = struct
         List.fold_left (fun acc x -> and_ acc x loc) (and_ a b loc) rest
 
   let rec is_value = function
-    | Const _ | Var _ | Lam _ | PureFun _ | Axiom _ | Logic _ | Quant _ -> true
-    | Let _ | Ite _ | For _ | LetReg _ | Param _ | TypeDef _ 
-    | Annot _ | Gen _ | Section _ | EndSec _ -> false
+    | Const _ | Var _ | Lam _ | PureFun _ | Quant _ -> true
+    | Let _ | Ite _ | For _ | LetReg _ | Param _
+    | Annot _ | Gen _ -> false
     | App (t1,_,_,_) -> 
         match t1.t with
         | Ty.C (Ty.PureArr _) -> true
@@ -735,19 +724,15 @@ end
 
 module ParseT = struct
   type t = (unit,unit,unit) t'
+  type theory' = (unit,unit,unit) theory
+  type theory = theory'
+
   let nothing _ () = ()
-  let print fmt t = print nothing nothing nothing (fun (_,x,e) -> x,e) fmt t
+  let print fmt t = Print.term nothing nothing nothing (fun (_,x,e) -> x,e) fmt t
+  let print_theory fmt t = 
+    Print.theory nothing nothing nothing (fun (_,x,e) -> x,e) fmt t
   let mk v loc = { v = v; t = (); e = (); loc = loc }
   let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
   let annot e t = mk (Annot (e,t)) 
+  let gen g e = mk (Gen (g,e)) e.loc
 end
-
-let concat t1 t2 =
-  let rec aux' = function
-    | Const Const.Void -> t2.v
-    | Let (p,g,e1,(_,x,t2),r) -> Let (p,g,e1, Name.close_bind x (aux t2), r)
-    | TypeDef (g,t,x,t2) -> TypeDef (g,t,x,aux t2)
-    | _ -> assert false 
-  and aux t = { t with v = aux' t.v } in
-  aux t1
-

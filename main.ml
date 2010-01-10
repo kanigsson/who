@@ -52,13 +52,13 @@ let _ =
       else
         let prelude = parse_string ~prelude:true infer_parser Prelude.prelude in
         let ast = parse_file infer_parser !Options.filename in
-        let p = Parsetree.concat prelude ast in
-        let p = Internalize.main p in
-        maybe_abort Options.parse_only Ast.ParseT.print p;
-        let p = Infer.infer p in
-        maybe_abort Options.infer_only Ast.Infer.print p;
-        let p = Infer.recon p in
-        maybe_abort Options.constr_only Ast.Recon.print p;
+        let p = prelude@ ast in
+        let p = Internalize.theory p in
+        maybe_abort Options.parse_only Ast.ParseT.print_theory p;
+        let p = Infer.infer_th p in
+        maybe_abort Options.infer_only Ast.Infer.print_theory p;
+        let p = Infer.recon_th p in
+        maybe_abort Options.constr_only Ast.Recon.print_theory p;
         p
     in
     p 

@@ -154,65 +154,33 @@ let rec infer' env t loc x =
       unify U.prop t loc;
       Quant (k,xt,Name.close_bind x e), U.new_e ()
   | Lam (x,xt,cap,p,e,q) ->
-(*       Myformat.printf "treating lambda of %a@." Name.print x; *)
       let nt = sto_uf_node xt in
       let nt' = U.new_ty () in
       let env = add_svar env x xt in
       let e = infer {env with pm = false} nt' e in
-(*       Myformat.printf "nt' and e.e: %a and %a@." U.print_node nt' U.preff
- *       e.e; *)
       unify (U.arrow nt nt' e.e (List.map to_uf_rnode cap)) t loc;
-(*       Myformat.printf "nt' and e.e: %a and %a@." U.print_node nt' U.preff
- *       e.e; *)
       let p = pre env e.e p in
       let q = post env e.e nt' q in
       Lam (x,xt,cap,p,e,q), U.new_e ()
   | Param (t',e) -> 
       unify t (sto_uf_node t') loc;
       Param (t',e), to_uf_enode e
-  | TypeDef (g,t',x,e) -> 
-      let env = add_ty env x g t' in
-      let e = infer env t e in
-      TypeDef (g,t',x,e), U.new_e ()
-  | Section (n,f,e) ->
-      let e = infer env t e in
-      Section (n,f,e), e.e
-  | EndSec e -> 
-      let e = infer env t e in
-      EndSec e, e.e
-  | Let (p,g,e1,(_,x,e2),r) ->
-      let nt = U.new_ty () in
-      let env' = 
-        match r with
-        | NoRec -> env
-        | Rec  ty -> (add_svar env x ty) in
-      let e1 = infer env' nt e1 in
-      let xt = try U.to_ty nt 
-               with Assert_failure _ -> 
-                 error (Myformat.sprintf "%a: %a@." Name.print x U.print_node nt) 
-                   loc in
-      let e2 = infer (add_var env x g xt) t e2 in
-      Let (p,g, e1,Name.close_bind x e2,r), 
+  | Let (g,e1,(_,x,e2),r) ->
+      let env, e1 = letgen env x g e1 r in
+      let e2 = infer env t e2 in
+      Let (g, e1,Name.close_bind x e2,r), 
       U.effect [] [e1.e; e2.e]
   | Ite (e1,e2,e3) ->
       let e1 = infer env U.bool e1 in
       let e2 = infer env t e2 in
       let e3 = infer env t e3 in
       Ite (e1,e2,e3), U.effect [] [e1.e;e2.e; e3.e]
-  | Axiom e -> 
-      unify U.prop t loc;
-      Axiom (infer env U.prop e), U.new_e ()
   | For (dir,inv,i,s,e,body) ->
       unify t U.unit loc;
       let env = add_svar env i Ty.int in
       let body = infer env U.unit body in
       let inv = pre env body.e inv in
       For (dir,inv,i,s,e,body), body.e
-  | Logic t' -> 
-(*       Myformat.printf "logic: %a@." Ty.print t'; *)
-      let nt = sto_uf_node t' in
-      unify nt t loc; 
-      Logic t', U.new_e ()
   | LetReg (vl,e) ->
       let e = infer env t e in
       let eff = NEffect.rremove (U.to_eff e.e) vl in
@@ -243,11 +211,42 @@ and post env eff t (old,cur,x) =
         (postf eff t old cur r f)) in
   old,cur,p
 
+and letgen env x g e r =
+  let nt = U.new_ty () in
+  let env' = 
+    match r with
+    | NoRec -> env
+    | Rec  ty -> (add_svar env x ty) in
+  let e = infer env' nt e in
+  let xt = 
+    try U.to_ty nt 
+    with Assert_failure _ -> 
+      error (Myformat.sprintf "%a: %a@." Name.print x U.print_node nt) e.loc in
+  add_var env x g xt, e
+
+let rec infer_th env d = 
+  match d with
+  | Axiom (s,e) -> env, Axiom (s,infer env U.prop e)
+  | Section (s,cl,dl) -> 
+      let env, dl = 
+        Misc.list_fold_map infer_th env dl in
+      env, Section (s,cl,dl)
+  | Logic (n,g,t) -> 
+      let env = add_var env n g t in
+      env, Logic (n,g,t)
+  | TypeDef (g,t,n) -> 
+      let env = add_ty env n g t in
+      env, TypeDef (g,t,n)
+  | DLetReg rl -> env, DLetReg rl
+  | Program (x,g,e,r) -> 
+      let env,e = letgen env x g e r in
+      env, Program (x,g,e,r)
+
 let initial = { vars = Name.M.empty; pm = false; 
                 types = Name.M.empty; curloc = Loc.dummy; }
-let infer e = 
-  let nt = U.new_ty () in
-  infer initial nt e
+let infer_th th = 
+  let _, dl = Misc.list_fold_map infer_th initial th in
+  dl
 
 open Recon
 let rec recon' = function
@@ -260,12 +259,9 @@ let rec recon' = function
       let e = recon e in
       Lam (x,ot, cap, pre e.e p e.loc, e, post e.e e.t q e.loc)
   | Param (t,e) -> Param (t,e)
-  | Let (p,g,e1,(_,x,e2),r) -> 
-      Let (p,g, recon e1, Name.close_bind x (recon e2),r)
+  | Let (g,e1,(_,x,e2),r) -> 
+      Let (g, recon e1, Name.close_bind x (recon e2),r)
   | Ite (e1,e2,e3) -> Ite (recon e1, recon e2, recon e3)
-  | Axiom e -> Axiom (recon e)
-  | Logic t -> Logic t
-  | TypeDef (g,t,x,e) -> TypeDef (g,t,x,recon e)
   | For (dir,inv,i,st,en,body) ->
       let bdir = match dir with {Name.name = Some "forto"} -> true|_ -> false in
       let body = recon body in 
@@ -297,8 +293,6 @@ let rec recon' = function
       (app2 (app2 (var dir ([],[],[e]) Ty.forty l) inv' sv l) ev bodyfun l).v
   | LetReg (vl,e) -> LetReg (vl,recon e)
   | Annot (e,t) -> Annot (recon e, t)
-  | Section (n,f,e) -> Section (n,f,recon e)
-  | EndSec e -> EndSec (recon e)
   | Gen _ -> assert false
 and pre eff (cur,x) loc = 
   match x with
@@ -316,3 +310,13 @@ and post eff t (old,cur,x) loc =
   | PPlain f -> PPlain (recon f)
   | _ -> assert false in
   old, cur, p
+
+let rec recon_decl x = 
+  match x with
+  | Logic (x,g,t) -> Logic (x,g,t)
+  | Axiom (s,t) -> Axiom (s, recon t)
+  | Section (s,cl, dl) -> Section (s,cl, recon_th dl)
+  | DLetReg rl -> DLetReg rl
+  | TypeDef (g,t,n) -> TypeDef (g,t,n)
+  | Program (n,g,t,r) -> Program (n,g,recon t, r)
+and recon_th l = List.map recon_decl l

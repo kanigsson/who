@@ -2,6 +2,8 @@
   open Loc
   open Const
   open AnnotParseTree
+  (** TODO compute the type of a recursive function by the given return type and
+   * the argument types *)
 
 %}
 

@@ -119,24 +119,10 @@ let rec ast' env = function
   | I.Lam (x,t,cap,p,e,q) ->
       let env, nv = add_var env x in
       Lam (nv,ty env t, List.map (rvar env) cap,  pre env p, ast env e, post env q)
-  | I.Let (p,g,e1,x,e2,r) ->
-      let env', g' = add_gen env g in
-      let nv = Name.from_string x in
-      let env' = 
-        match r with 
-        | I.NoRec -> env' 
-        | I.Rec _ -> add_ex_var env' x nv in
-      let e1 = 
-        match e1.I.v with 
-        | I.Logic t ->
-            let t = ty env' t in
-            (* in the case of a logic, we save the chosen variable name *)
-            Ty.add_var x (nv,g',t);
-            { Ast.v = Logic t; loc = e1.I.loc; t = (); e = () }
-        | _ -> ast env' e1 in
-      let env = add_ex_var env x nv in
+  | I.Let (g,e1,x,e2,r) ->
+      let env, nv, g , e1, r = letgen env x g e1 r in
       let e2 = ast env e2 in
-      Let (p,g', e1,Name.close_bind nv e2,rec_ env' r)
+      Let (g, e1,Name.close_bind nv e2, r)
   | I.PureFun (x,t,e) ->
       let env, x = add_var env x in
       PureFun (ty env t, Name.close_bind x (ast env e))
@@ -144,16 +130,7 @@ let rec ast' env = function
       let env, x = add_var env x in
       Quant (k,ty env t, Name.close_bind x (ast env e))
   | I.Ite (e1,e2,e3) -> Ite (ast env e1, ast env e2, ast env e3)
-  | I.Axiom e -> Axiom (ast env e)
-  | I.Logic t -> Logic (ty env t)
   | I.Annot (e,t) -> Annot (ast env e, ty env t)
-  | I.TypeDef (g,t,x,e) ->
-      let env', g = add_gen env g in
-      let t = Misc.opt_map (ty env') t in
-      let env,nv = add_tvar env x g t in
-      (* we also save the type names *)
-      Ty.add_tyvar x (nv,g);
-      TypeDef (g, t, nv, ast env e)
   | I.Param (t,e) -> Param (ty env t, effect env e)
   | I.For (dir,p,i,st,en,e) ->
       let d = var env dir in
@@ -163,11 +140,8 @@ let rec ast' env = function
       let env, nrl = add_rvars env rl in
       LetReg (nrl, ast env e)
   | I.Seq (e1,e2) -> 
-      Let (false,G.empty, ParseT.annot (ast env e1) Ty.unit e1.I.loc, 
+      Let (G.empty, ParseT.annot (ast env e1) Ty.unit e1.I.loc, 
            Name.close_bind (Name.new_anon ()) (ast env e2), NoRec)
-  | I.Section (n,f,e) -> 
-      Section (n,f,ast env e)
-  | I.EndSec e -> EndSec (ast env e)
 and post env x = 
   let env, old = add_var env "old" in
   let env, cur = add_var env "cur" in
@@ -190,9 +164,51 @@ and rec_ env = function
 and ast env {I.v = v; loc = loc} = 
   { Ast.v = ast' env v; loc = loc; t = (); e = () }
 
+and letgen env x g e r = 
+  let env', g = add_gen env g in
+  let nv = Name.from_string x in
+  let env' = 
+    match r with 
+    | I.NoRec -> env' 
+    | I.Rec _ -> add_ex_var env' x nv in
+  let e = ast env' e in
+  let env = add_ex_var env x nv in
+  let r = rec_ env' r in
+  env, nv, g, e, r
+
 let empty = 
   { v = SM.empty; t = SM.empty; 
     r = SM.empty; e = SM.empty;
     tyrepl = NM.empty;
   }
-let main t = ast empty t
+
+let rec decl env d = 
+  match d with
+  | I.Logic (n,g,t) -> 
+      let env, g = add_gen env g in
+      let env, nv = add_var env n in
+      env, Logic (nv,g, ty env t)
+  | I.Axiom (s,g,t) -> 
+      let env', g = add_gen env g in
+      env,Axiom (s, ParseT.gen g (ast env' t))
+  | I.Section (s,cl, dl) ->
+      let env, dl = theory env dl in
+      env, Section (s,cl,dl)
+  | I.TypeDef (g,t,n) ->
+      let env', g = add_gen env g in
+      let t = Misc.opt_map (ty env') t in
+      let env,nv = add_tvar env n g t in
+      (* we also save the type names *)
+      Ty.add_tyvar n (nv,g);
+      env, TypeDef (g, t, nv)
+  | I.DLetReg rl -> 
+      let env, nrl = add_rvars env rl in
+      env, DLetReg nrl
+  | I.Program (x,g,e,r) ->
+      let env, nv, g , e, r = letgen env x g e r in
+      env, Program (nv, g, e, r)
+and theory x = Misc.list_fold_map decl x
+
+let theory th = 
+  let _, th = theory empty th in
+  th
