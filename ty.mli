@@ -78,14 +78,8 @@ val allsubst :
 
 val forty : Generalize.t * t
 
-val add_var : string -> (Name.t * Generalize.t * t) -> unit
-val get_predef_var : string -> Name.t * Generalize.t * t
-val add_tyvar : string -> (Name.t * Generalize.t) -> unit
-val get_predef_tyvar : string -> Name.t * Generalize.t
-
 val find_type_of_r : Name.t -> t -> t option
 
-val spredef_var : string -> t
 val get_reg : t -> Name.t
 
 val selim_map : (Name.t -> t) -> t -> t
@@ -93,3 +87,18 @@ val selim_map : (Name.t -> t) -> t -> t
 val pretype : t -> NEffect.t -> t
 val posttype : t -> t -> NEffect.t -> t
 val prepost_type: t -> t -> NEffect.t -> t
+
+module Predef : sig
+  val prop_2 : t
+  val prop_3 : t
+  val bool_3 : t
+  val int_3 : t
+  val iip : t
+  val iib : t
+  val aap : Generalize.t * t
+  val aab : Generalize.t * t
+  val mk_tuple : Generalize.t * t
+
+  val fst : Generalize.t * t
+  val snd : Generalize.t * t
+end

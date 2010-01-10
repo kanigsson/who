@@ -11,7 +11,7 @@ let new_name =
   function n -> incr x; {n with n = !x}
 let new_anon () = new_name { name = None; n = 0 }
 let from_string s = new_name {name = Some s; n = 0}
-let to_string n = 
+let unsafe_to_string n = 
   match n.name with
   | Some s -> s
   | None -> "anon"
@@ -66,7 +66,7 @@ let fresh_string s =
     Hashtbl.add name_map s x;
     s
 
-let to_string n = fresh_string (to_string n)
+let to_string n = fresh_string (unsafe_to_string n)
 
 let reserved_names = 
   [ "Definition"; "for"; "end"; "Lemma"; "Parameter"; ]

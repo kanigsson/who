@@ -232,6 +232,7 @@ module Generalize = struct
     | [],[],[] -> assert false
 
 end
+module G = Generalize
 
 let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target = 
   elsubst evl el (rlsubst rvl rl (tlsubst tvl tl target))
@@ -263,22 +264,6 @@ let forty =
      (parr int (parr (map eff) prop))
      (parr int (parr int (arrow (arrow int unit eff) unit eff)))
 
-let h = Hashtbl.create 17
-
-let add_var s x = Hashtbl.add h s x
-let get_predef_var s = 
-  try Hashtbl.find h s
-  with Not_found -> failwith ("predef_var: " ^ s)
-
-let ht = Hashtbl.create 17
-
-let add_tyvar s x = Hashtbl.add ht s x
-let get_predef_tyvar s = 
-  try Hashtbl.find ht s
-  with Not_found -> failwith ("predef_tyvar: " ^ s)
-
-let iter_vars f = Hashtbl.iter f h
-
 exception Found of t option
 
 let find_type_of_r name x = 
@@ -302,10 +287,6 @@ let find_type_of_r name x =
   and aux (C t) = aux' t in
   aux x
 
-let spredef_var s = 
-  let n,_ = get_predef_tyvar s in
-  C (App (n, ([],[],[])))
-
 let get_reg = function
   | C (Ref (reg,_)) -> reg 
   | _ -> assert false
@@ -313,7 +294,7 @@ let get_reg = function
 let selim_map get_rtype t = 
   let rec aux' = function
     | (Var _ | Const _) as t -> C t
-    | Map _ -> spredef_var "kmap"
+    | Map _ -> assert false
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
     | PureArr (C (Map e), t) ->
         let t = NEffect.efold (fun e acc -> parr (get_rtype e) acc) (aux t) e in
@@ -329,7 +310,7 @@ let selim_map get_rtype t =
 let selim_map_log t = 
   let rec aux' = function
     | (Var _ | Const _) as t -> C t
-    | Map _ -> spredef_var "kmap"
+    | Map _ -> assert false
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)    
     | Arrow (t1,t2,e,_) -> prepost_type (aux t1) (aux t2) e
@@ -337,3 +318,21 @@ let selim_map_log t =
     | App (v,i) -> app v (Inst.map aux Misc.id Misc.id i)
   and aux (C t) = aux' t in
   aux t
+
+module Predef = struct
+  let prop_2 = parr prop prop
+  let prop_3 = parr prop (parr prop prop)
+  let bool_3 = parr bool (parr bool bool)
+  let int_3 = parr int (parr int int)
+  let iip = parr int (parr int prop)
+  let iib = parr int (parr int bool)
+  let aap, aab, mk_tuple, fst, snd = 
+    let a = Name.from_string "a" and b = Name.from_string "b" in
+    let ta = var a and tb = var b in
+    (([a],[],[]), parr ta (parr ta prop)),
+    (([a],[],[]), parr ta (parr ta bool)),
+    (([a;b],[],[]), parr ta (parr tb (tuple ta tb))),
+    (([a;b],[],[]), parr (tuple ta tb) ta),
+    (([a;b],[],[]), parr (tuple ta tb) tb)
+
+end

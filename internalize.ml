@@ -38,14 +38,18 @@ let rvar env = gen_var "region" env.r
 let effvar env = gen_var "effect" env.e
 
 let add_var env x = 
-  let y = Name.from_string x in
+  let y =
+    try SM.find x Predefined.Logic.map
+    with Not_found -> Name.from_string x in
   { env with v = SM.add x y env.v }, y
 
 let add_ex_var env x y = 
   { env with v = SM.add x y env.v }
 
 let add_tvar env x g t = 
-  let y = Name.from_string x in
+  let y = 
+    try SM.find x Predefined.Ty.map
+    with Not_found -> Name.from_string x in
   { env with t = SM.add x y env.t;
     tyrepl = 
        match t with
@@ -199,7 +203,6 @@ let rec decl env d =
       let t = Misc.opt_map (ty env') t in
       let env,nv = add_tvar env n g t in
       (* we also save the type names *)
-      Ty.add_tyvar n (nv,g);
       env, TypeDef (g, t, nv)
   | I.DLetReg rl -> 
       let env, nrl = add_rvars env rl in

@@ -267,18 +267,18 @@ let destruct_app2 = function
 
 let destruct_app2_var' x = 
   match destruct_app2 x with
-  | Some ({v = Var ({Name.name = v},g)},f1,f2) -> Some (v,g,f1,f2)
+  | Some ({v = Var (v,g)},f1,f2) -> Some (v,g,f1,f2)
   | _ -> None
 
 let destruct_get' x = 
   match destruct_app2_var' x with
-  | Some (Some "!!", ([t],[reg],[e]), r,map) -> 
+  | Some ({ Name.name = Some "!!"}, ([t],[reg],[e]), r,map) -> 
       Some (t,r,reg,e,map)
   | _ -> None
 
 let destruct_kget' x = 
   match destruct_app2_var' x with
-  | Some (Some "kget", ([t],[reg],[]), ref,map) -> 
+  | Some ({ Name.name = Some "kget"}, ([t],[reg],[]), ref,map) -> 
       Some (t,ref,reg,map)
   | _ -> None
 
@@ -296,13 +296,13 @@ let destruct_krestrict' x =
 
 let destruct_combine' x = 
   match destruct_app2_var' x with
-  | Some (Some "combine",([],[],[e1;e2]), m1,m2) ->
+  | Some ({ Name.name = Some "combine" },([],[],[e1;e2]), m1,m2) ->
       Some (m1,e1,m2,e2)
   | _ -> None
 
 let destruct_kcombine' x = 
   match destruct_app2_var' x with
-  | Some (Some "kcombine",([],[],[e1;e2]), m1,m2) ->
+  | Some ({ Name.name = Some "kcombine" },([],[],[e1;e2]), m1,m2) ->
       Some (m1,e1,m2,e2)
   | _ -> None
 
@@ -357,7 +357,6 @@ module Recon = struct
   type th = (Ty.t, Name.t, NEffect.t) theory
   type theory = th
 
-
   let gen_print kind fmt t = 
     Print.term ~kind (Ty.gen_print kind) Name.print NEffect.print sopen fmt t
   let coq_print fmt t = gen_print `Coq fmt t
@@ -372,11 +371,55 @@ module Recon = struct
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
   let mk_val v t loc = { v = v; t = t; e = NEffect.empty; loc = loc }
 
+  module PL = Predefined.Logic
+  module PT = Ty.Predef
   let ptrue_ loc = mk_val (Const Const.Ptrue) Ty.prop loc
   let pfalse_ loc = mk_val (Const Const.Pfalse) Ty.prop loc
   let btrue_ loc = mk_val (Const Const.Btrue) Ty.bool loc
   let bfalse_ loc = mk_val (Const Const.Bfalse) Ty.bool loc
   let void loc = mk_val (Const Const.Void) Ty.unit loc
+  let mempty l = mk_val (Var (PL.empty_var, Inst.empty)) Ty.emptymap l
+
+  let var s inst (g,t) = 
+    let nt = (Ty.allsubst g inst t) in
+    if Ty.equal nt Ty.unit then void 
+    else if Ty.equal nt Ty.emptymap then mempty
+    else mk_val (Var (s,inst)) nt
+
+  let svar s t = var s Inst.empty (G.empty, t)
+
+  module Predef = struct
+    let neg_t = svar PL.not_var PT.prop_2
+
+    let leb_t = svar PL.leb_var PT.iib
+    let ltb_t = svar PL.ltb_var PT.iib
+    let gtb_t = svar PL.gtb_var PT.iib
+    let geb_t = svar PL.geb_var PT.iib
+    let eqb_t i = var PL.eqb_var i PT.aab
+    let neqb_t i = var PL.neqb_var i PT.aab
+    let andb_t = svar PL.andb_var PT.bool_3
+    let orb_t = svar PL.orb_var PT.bool_3
+
+    let le_t = svar PL.le_var PT.iip
+    let lt_t = svar PL.lt_var PT.iip
+    let ge_t = svar PL.ge_var PT.iip
+    let gt_t = svar PL.gt_var PT.iip
+    let neq_t i = var PL.neq_var i PT.aap
+    let eq_t i = var PL.equal_var i PT.aap
+
+    let and_t = svar PL.and_var PT.prop_3
+    let or_t = svar PL.or_var PT.prop_3
+    let impl_t = svar PL.impl_var PT.prop_3
+
+    let tuple_t i = var PL.tuple_var i PT.mk_tuple
+    let fst_t i = var PL.fst_var i PT.fst
+    let snd_t i = var PL.snd_var i PT.snd
+
+    let plus_t = svar PL.plus_var PT.int_3
+    let minus_t = svar PL.minus_var PT.int_3
+  end
+
+  module P = Predef
 
   let true_or e v = 
     match e.v with
@@ -407,6 +450,19 @@ module Recon = struct
     simple_app ?kind (simple_app t t1 loc) t2 loc
   let simple_appi t t1 t2 loc = simple_app2 ~kind:`Infix t t1 t2 loc
 
+  let boolcmp_to_propcmp x = 
+    let eq = Name.equal in
+    match x with
+    | x when eq x PL.leb_var -> fun _ -> P.le_t
+    | x when eq x PL.ltb_var -> fun _ -> P.lt_t
+    | x when eq x PL.geb_var -> fun _ -> P.ge_t
+    | x when eq x PL.gtb_var -> fun _ -> P.gt_t
+    | x when eq x PL.eqb_var -> P.eq_t
+    | x when eq x PL.neqb_var -> P.neq_t
+    | x when eq x PL.andb_var -> fun _ -> P.and_t
+    | x when eq x PL.orb_var -> fun _ -> P.or_t
+    | _ -> raise Exit
+
   let rec app ?kind ?cap t1 t2 l = 
       try match t1.v with
       (* we are trying to build (λx.t) e, reduce to t[x|->e] *)
@@ -432,48 +488,22 @@ module Recon = struct
   and app2 ?kind t t1 t2 loc = app ?kind (app t t1 loc) t2 loc
   and appi t t1 t2 loc = app2 ~kind:`Infix t t1 t2 loc
   and allapp t1 t2 kind cap loc = app ~kind ~cap t1 t2 loc
-  and var s inst (g,t) = 
-    let nt = (Ty.allsubst g inst t) in
-    if Ty.equal nt Ty.unit then void 
-    else if Ty.equal nt Ty.emptymap then mempty
-    else mk_val (Var (s,inst)) nt
-
-  and var_i s inst t =
-    mk_val (Var (s,inst)) t
-
-  and pre_defvar s inst = 
-    let v,g,t = Ty.get_predef_var s in
-    var v inst (g,t) 
-
-  and spredef_var s  = pre_defvar s Inst.empty
-  and mempty l = 
-    let v,_,_ = Ty.get_predef_var "empty" in
-    mk_val (Var (v,Inst.empty)) Ty.emptymap l
-
   and neg f l = 
     match f.v with
     | Const Const.Ptrue -> pfalse_ l
     | Const Const.Pfalse -> ptrue_ l
-    | _ -> simple_app (spredef_var "~" l) f l
+    | _ -> simple_app (P.neg_t l) f l
 
-  and reduce_bool t loc = 
+  and reduce_bool t l = 
     let rec aux t =
       match destruct_app2_var t with
-      | Some (op, g, arg1, arg2) ->
-          let op' = 
-            match op with
-            | Some "<<=" -> "<="
-            | Some "<<" -> "<"
-            | Some ">>" -> ">"
-            | Some ">>=" -> ">="
-            | Some "==" -> "="
-            | Some "!=" -> "<>"
-            | Some "band" -> "/\\"
-            | Some "bor" -> "\\/"
-            | _ -> raise Exit
-          in
-          let f arg = if op' = "/\\" || op' = "\\/" then aux arg else arg in
-          appi (pre_defvar op' g loc) (f arg1) (f arg2) loc
+      | Some (op, i, arg1, arg2) ->
+          let v = boolcmp_to_propcmp op in
+          let arg1, arg2 = 
+            if Name.equal op PL.andb_var || Name.equal op PL.orb_var then 
+              aux arg1, aux arg2
+            else arg1, arg2 in
+          appi (v i l) arg1 arg2 l
       | None -> raise Exit in
     aux t
   and rebuild_map ~varfun t =
@@ -499,13 +529,14 @@ module Recon = struct
     aux t
   and impl h1 goal l = 
     try match destruct_app2_var h1 with
-    | Some (Some "/\\", _, ha, hb) -> impl ha (impl hb goal l) l
+    | Some (v, _, ha, hb) when Name.equal v PL.and_var -> impl ha (impl hb goal l) l
     | _ ->
         match destruct_app2_var goal with
-        | Some (Some "->", _, h2, goal) ->
+        | Some (v, _, h2, goal) when Name.equal v PL.impl_var ->
             begin match destruct_app2_var h1,destruct_app2_var h2 with
-            | Some ( Some "=", _,_, _), _ -> raise Exit
-            | _, Some (Some "=", _,_, _) -> impl h1 (impl h2 goal l) l
+            | Some ( v, _,_, _), _ when Name.equal v PL.equal_var -> raise Exit
+            | _, Some (v, _,_, _) when Name.equal v PL.equal_var -> 
+                impl h1 (impl h2 goal l) l
             | _ -> raise Exit
             end
          | _ ->
@@ -516,7 +547,7 @@ module Recon = struct
              | _, _ when equal h1 goal -> ptrue_ l
              | _ -> raise Exit
             end
-    with Exit -> simple_appi (spredef_var "->" l) h1 goal l
+    with Exit -> simple_appi (P.impl_t l) h1 goal l
   and ite ?(logic=true) e1 e2 e3 l = 
     let im b c = impl (eq e1 (b l) l) c l in
     if logic then and_ (im btrue_ e2) (im bfalse_ e3) l
@@ -529,14 +560,14 @@ module Recon = struct
       | (Const Const.Btrue | Const Const.Bfalse) as n ->
           let f = reduce_bool t1 l in
           if n = Const Const.Btrue then f else neg f l
-      | _ -> simple_appi (pre_defvar "=" ([t1.t],[],[]) l) t1 t2 l
-  and and_ t1 t2 loc = 
+      | _ -> simple_appi (P.eq_t ([t1.t],[],[]) l) t1 t2 l
+  and and_ t1 t2 l = 
     match t1.v,t2.v with
     | Const Const.Ptrue, _ -> t2
     | _, Const Const.Ptrue -> t1
     | Const Const.Pfalse, _ -> t1
     | _, Const Const.Pfalse -> t2
-    | _ -> simple_appi (spredef_var "/\\" loc) t1 t2 loc
+    | _ -> simple_appi (P.and_t l) t1 t2 l
   and subst x v e =
     rebuild_map
       ~varfun:(fun z i def -> if Name.equal z x then v i else def) e
@@ -548,15 +579,18 @@ module Recon = struct
     if Ty.equal t Ty.unit || Ty.equal t Ty.emptymap then f 
     else (
       try match destruct_app2_var f with
-      | Some (Some "->", _, t1,f)  ->
+      | Some (i, _, t1,f) when Name.equal i PL.impl_var ->
           begin match destruct_app2_var t1 with
-          | Some (Some "=", _,({v= Var(y,_)} as t1), ({v = Var (z,_)} as t2) )->
+          | Some (e, _,({v= Var(y,_)} as t1), ({v = Var (z,_)} as t2) ) 
+            when Name.equal e PL.equal_var ->
               if Name.equal x y then subst x (fun _ -> t2) f
               else if Name.equal x z then subst z (fun _ -> t1) f
               else raise Exit
-          | Some (Some "=", _,{v= Var(y,_)}, def)  ->
+          | Some (e, _,{v= Var(y,_)}, def)
+              when Name.equal e PL.equal_var ->
               if Name.equal x y then subst x (fun _ -> def) f else raise Exit
-          | Some (Some "=", _,def,{v = Var (y,_)}) ->
+          | Some (e, _,def,{v = Var (y,_)})
+              when Name.equal e PL.equal_var ->
               if Name.equal x y then subst x (fun _ -> def) f else raise Exit
           | _ -> 
               raise Exit
@@ -565,22 +599,22 @@ module Recon = struct
       with Exit -> 
         true_or f (mk (Quant (k,t,Name.close_bind x f)) f.t f.e loc) )
 
-  and pre t loc = 
+  and pre t l = 
     match destruct_app2_var t with
-    | Some (Some ",",_,a,_) -> a
+    | Some (v,_,a,_) when Name.equal v PL.tuple_var -> a
     | _ -> 
         let t1, t2 = Ty.destr_tuple t.t in
-        simple_app (pre_defvar "fst" ([t1;t2],[],[]) loc) t loc
+        simple_app (P.fst_t ([t1;t2],[],[]) l) t l
 
-  and post t loc = 
+  and post t l = 
     match destruct_app2_var t with
-    | Some (Some ",",_,_,b) -> b
+    | Some (v,_,_,b) when Name.equal v PL.tuple_var -> b
     | _ -> 
         let t1, t2 = Ty.destr_tuple t.t in
-        simple_app (pre_defvar "snd" ([t1;t2],[],[]) loc) t loc
+        simple_app (P.snd_t ([t1;t2],[],[]) l) t l
     
   let svar s t = var s Inst.empty (G.empty,t) 
-  let le t1 t2 loc = appi (spredef_var "<=" loc) t1 t2 loc
+  let le t1 t2 loc = appi (P.le_t loc) t1 t2 loc
 
   let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
   let efflam x eff e = plam x (Ty.map eff) e
@@ -588,8 +622,8 @@ module Recon = struct
     mk_val (Lam (x,t,[],p,e,q)) (Ty.arrow t e.t e.e)
   let caplam x t cap p e q = 
     mk_val (Lam (x,t,cap,p,e,q)) (Ty.caparrow t e.t e.e cap)
-  let plus t1 t2 loc = appi (spredef_var "+" loc) t1 t2 loc
-  let minus t1 t2 loc = appi (spredef_var "-" loc) t1 t2 loc
+  let plus t1 t2 loc = appi (P.plus_t loc) t1 t2 loc
+  let minus t1 t2 loc = appi (P.minus_t loc) t1 t2 loc
   let one = mk_val (Const (Const.Int Big_int.unit_big_int)) Ty.int 
   let succ t loc = plus t (one loc) loc
   let prev t loc = minus t (one loc) loc
@@ -597,7 +631,7 @@ module Recon = struct
   let param t e = mk (Param (t,e)) t e
 
   let mk_tuple t1 t2 loc = 
-    appi (pre_defvar "," ([t1.t;t2.t],[],[]) loc) t1 t2 loc
+    appi (P.tuple_t ([t1.t;t2.t],[],[]) loc) t1 t2 loc
 
 
   let letreg l e = mk (LetReg (l,e)) e.t (NEffect.rremove e.e l)
@@ -664,6 +698,7 @@ module Recon = struct
     | Ty.C Ty.Map e -> e
     | _ -> assert false
 
+(*
   let combine t1 t2 l = 
     let d1 = domain t1 and d2 = domain t2 in
     if NEffect.equal d1 d2 then t2 
@@ -684,6 +719,7 @@ module Recon = struct
     | Ty.C (Ty.Ref (r,t)) ->
         app2 (pre_defvar  "!!" ([t],[r],[d]) l) ref map l
     | _ -> assert false
+*)
 
 
 end
