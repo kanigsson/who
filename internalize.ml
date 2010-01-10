@@ -194,7 +194,7 @@ let rec decl env d =
       env, Logic (nv,g, ty env t)
   | I.Axiom (s,g,t) -> 
       let env', g = add_gen env g in
-      env,Axiom (s, ParseT.gen g (ast env' t))
+      env,Formula (s, ParseT.gen g (ast env' t), `Assumed)
   | I.Section (s,cl, dl) ->
       let env, dl = theory env dl in
       env, Section (s,cl,dl)

@@ -226,7 +226,7 @@ and letgen env x g e r =
 
 let rec infer_th env d = 
   match d with
-  | Axiom (s,e) -> env, Axiom (s,infer env U.prop e)
+  | Formula (s,e,k) -> env, Formula (s,infer env U.prop e, k)
   | Section (s,cl,dl) -> 
       let env, dl = 
         Misc.list_fold_map infer_th env dl in
@@ -314,7 +314,7 @@ and post eff t (old,cur,x) loc =
 let rec recon_decl x = 
   match x with
   | Logic (x,g,t) -> Logic (x,g,t)
-  | Axiom (s,t) -> Axiom (s, recon t)
+  | Formula (s,t,k) -> Formula (s, recon t, k)
   | Section (s,cl, dl) -> Section (s,cl, recon_th dl)
   | DLetReg rl -> DLetReg rl
   | TypeDef (g,t,n) -> TypeDef (g,t,n)

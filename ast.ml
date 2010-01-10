@@ -31,7 +31,7 @@ and isrec = Rec of Ty.t | NoRec
 
 type ('a,'b,'c) decl = 
   | Logic of Name.t *  G.t * Ty.t
-  | Axiom of string * ('a,'b,'c) t'
+  | Formula of string * ('a,'b,'c) t' * [ `Proved | `Assumed ]
   | Section of string * Const.takeover list * ('a,'b,'c) decl list
   | TypeDef of G.t * Ty.t option * Name.t
   | Program of Name.t * G.t * ('a,'b,'c) t' * isrec
@@ -208,8 +208,10 @@ module Print = struct
       | Logic (x,g,t) -> 
           fprintf fmt "@[<hov 2>logic %a %a : %a@]" 
             Name.print x G.print g typrint t
-      | Axiom (s,t) ->  
+      | Formula (s,t,`Assumed) ->  
           fprintf fmt "@[<hov 2>axiom %s : %a@]" s term t
+      | Formula (s,t,`Proved) ->  
+          fprintf fmt "@[<hov 2>lemma %s : %a@]" s term t
       | TypeDef (g,t,x) -> 
           begin match t with
           | None -> fprintf fmt "type %a%a" Name.print x G.print g
