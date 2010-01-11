@@ -4,9 +4,9 @@
 TIME:=/usr/bin/time
 TIMETMP:=time-tmp.bak
 PROGRAM=../../../main.native $(OPTIONS)
-EXT=lm
+EXT=who
 
-OPTIONS=$(shell if test -f options; then cat options; else echo ""; fi)
+OPTIONS=$(shell if test -f $*.opt; then cat $*.opt; else cat options; fi)
 BAD_INPUTS=$(shell if pwd | grep bad 1> /dev/null; \
              then find . -name "*.$(EXT)"; fi)
 BAD_OUTPUTS=$(BAD_INPUTS:.$(EXT)=.bad-output)
@@ -14,8 +14,6 @@ GOOD_INPUTS=$(shell if pwd | grep good 1> /dev/null; \
               then find . -name "*.$(EXT)"; fi)
 GOOD_OUTPUTS=$(GOOD_INPUTS:.$(EXT)=.good-output)
 GOOD_EXPECTED=$(GOOD_INPUTS:.$(EXT)=.expected)
-ALLTESTFILES=$(wildcard ../../all/*.lm)
-MYTESTFILES=$(notdir $(ALLTESTFILES))
 
 all:
 
@@ -84,13 +82,10 @@ announce:
 	@ echo "========================================================";
 	@ echo "In "`pwd | sed 's/.*\/\(.*\/.*\)/\1/' `
 
-check: $(MYTESTFILES) announce clean-silent good bad
+check: announce clean-silent good bad
 
 clean:
 	$(RM) --force *.good-output *.bad-output *counter *~
 
 clean-silent:
 	@ $(RM) --force *.good-output *.bad-output *counter *~
-
-%.lm: 
-	ln -s ../../all/$@ .

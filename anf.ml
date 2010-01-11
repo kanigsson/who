@@ -7,17 +7,14 @@ let rec normalize_term v = normalize v id
 and normalize e k =
   let loc = e.loc in
   match e.v with
-  | (Const _ | Ast.Var _ | Axiom _ | Logic _ | Quant _ | Param _ ) -> k e
-  | For _ | Gen _ -> assert false
+  | (Const _ | Ast.Var _ | Quant _ | Param _ ) -> k e
+  | For _ -> assert false
   | Lam (x,t,cap,p,e,q) -> k (caplam x t cap p (normalize_term e) q loc)
   | PureFun (t,(_,x,e))-> k (plam x t (normalize_term e) loc)
-  | Let (p,g,e1,(_,x,e2),r) -> 
-(*       Myformat.printf "normalizing let: %a@." Name.print x; *)
-      normalize e1 (fun v -> let_ ~prelude:p g v x (normalize e2 k) r loc)
-  | Section (n,f,e) -> k (section n f (normalize_term e) loc)
-  | EndSec e -> k (endsec (normalize_term e) loc)
+  | Let (g,e1,(_,x,e2),r) -> 
+      normalize e1 (fun v -> let_ g v x (normalize e2 k) r loc)
   | LetReg (l,e) -> k (letreg l (normalize_term e) loc)
-  | TypeDef (g,t,v,e) -> k (typedef g t v (normalize_term e) loc)
+  | Gen (g,e) -> k (gen g (normalize_term e) loc)
   | Ite (e1,e2,e3) ->
       normalize_name e1
         (fun v -> k (ite ~logic:false v (normalize_term e2) (normalize_term e3) loc))
@@ -37,3 +34,12 @@ and normalize_name e k =
         let_ Generalize.empty e nv (k nvv) NoRec e.loc)
 
 let term = normalize_term
+
+let rec decl d = 
+  match d with
+  | Logic _ | TypeDef _ | DLetReg _ -> d 
+  | Formula (s,t,r) -> Formula (s, term t, r)
+  | Section (s,cl, th) -> Section (s,cl, theory th)
+  | Program (n,g,t,r) -> Program (n,g,term t, r)
+
+and theory th = List.map decl th

@@ -159,6 +159,7 @@ let rec infer' env t loc x =
       unify (U.arrow nt nt' e.e (List.map to_uf_rnode cap)) t loc;
       let p = pre env e.e p in
       let q = post env e.e nt' q in
+      Myformat.printf "closing lambda : %a @." Name.print x;
       Lam (x,xt,cap,p,e,q), U.new_e ()
   | Param (t',e) -> 
       unify t (sto_uf_node t') loc;
@@ -240,6 +241,7 @@ let rec infer_th env d =
   | DLetReg rl -> env, DLetReg rl
   | Program (x,g,e,r) -> 
       let env,e = letgen env x g e r in
+      Myformat.printf "found %a : %a@." Name.print x U.print_node e.t;
       env, Program (x,g,e,r)
 
 let initial = { vars = Name.M.empty; pm = false; 

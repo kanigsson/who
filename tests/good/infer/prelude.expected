@@ -166,4 +166,3 @@ section List coq "WhoList"
   logic cons ['a30||] : 'a30 -> (list['a30||]) -> list['a30||]
   logic is_nil ['a31||] : (list['a31||]) -> bool
   logic l_in ['a32||] : 'a32 -> (list['a32||]) -> Prop end
-axiom a : forall . forall (x5:int). x5 =[int||] 0
