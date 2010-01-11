@@ -10,7 +10,6 @@ type ('a,'b,'c) t'' =
   | App of ('a,'b,'c) t' * ('a,'b,'c) t' * [`Infix | `Prefix ] * Name.t list
   | Lam of 
       Name.t * Ty.t * Name.t list * ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post 
-  (* boolean which describes if the let comes from the prelude or not *)  
   | Let of G.t * ('a,'b,'c) t' * ('a,'b,'c) t' Name.bind * isrec
   | PureFun of Ty.t * ('a,'b,'c) t' Name.bind
   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
@@ -27,7 +26,7 @@ and ('a,'b,'c) post' =
   | PResult of Name.t * ('a,'b,'c) t'
 and ('a,'b,'c) pre = Name.t * ('a,'b,'c) t' option
 and ('a,'b,'c) post = Name.t * Name.t * ('a,'b,'c) post'
-and isrec = Rec of Ty.t | NoRec
+and isrec = Ty.t Const.isrec
 
 type ('a,'b,'c) decl = 
   | Logic of Name.t *  G.t * Ty.t
@@ -117,8 +116,10 @@ module Print = struct
     else fprintf fmt "cap %a" (print_list space Name.print) l
 
   let prrec fmt = function
-    | NoRec -> ()
-    | Rec t -> fprintf fmt "rec(%a) " Ty.print t
+    | Const.NoRec -> ()
+    | Const.Rec t -> fprintf fmt "rec(%a) " Ty.print t
+    | Const.LogicDef -> fprintf fmt "logic" 
+
   (* TODO factorize the different branches *)
   let term ?(kind=`Who) pra prb prc open_ fmt t = 
     let typrint = Ty.gen_print kind in
@@ -389,6 +390,10 @@ module Recon = struct
   let btrue_ loc = mk_val (Const Const.Btrue) Ty.bool loc
   let bfalse_ loc = mk_val (Const Const.Bfalse) Ty.bool loc
   let void loc = mk_val (Const Const.Void) Ty.unit loc
+
+  let const c = 
+    mk_val (Const c) (Ty.const (Const.type_of_constant c))
+
   let mempty l = mk_val (Var (PL.empty_var, Inst.empty)) Ty.emptymap l
 
   let var s inst (g,t) = 
@@ -428,6 +433,9 @@ module Recon = struct
 
     let plus_t = svar PL.plus_var PT.int_3
     let minus_t = svar PL.minus_var PT.int_3
+
+    let combine_t i = var PL.combine_var i PT.combine
+    let restrict_t i = var PL.restrict_var i PT.restrict
   end
 
   module P = Predef
@@ -709,21 +717,19 @@ module Recon = struct
     | Ty.C Ty.Map e -> e
     | _ -> assert false
 
-(*
   let combine t1 t2 l = 
     let d1 = domain t1 and d2 = domain t2 in
     if NEffect.equal d1 d2 then t2 
-    else app2 (pre_defvar "combine" ([],[],[d1;d2]) l) t1 t2 l
-
-  let set r v m l = 
-    let d = domain m in
-    app2 (pre_defvar "set" ([v.t],[r],[d]) l) v m l
+    else 
+      let d1, d2, d3 = NEffect.split d1 d2 in
+      app2 (P.combine_t ([],[],[d1;d2;d3]) l) t1 t2 l
 
   let restrict eff t l =
     let d = domain t in
     if NEffect.equal d eff then t else
-      app (pre_defvar "restrict" ([],[],[domain t; eff]) l) t l
+      app (P.restrict_t ([],[],[NEffect.diff (domain t) eff; eff]) l) t l
 
+(*
   let get ref map l = 
     let d = domain map in
     match ref.t with 

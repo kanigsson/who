@@ -12,7 +12,7 @@ let backend : [ `Coq | `Pangoline ] ref = ref `Coq
 let suffix = ref ".v"
 
 let transforms = 
-  ref (List.rev  [ Anf.theory ])
+  ref (List.rev  [ Anf.theory ; Wp.theory ])
 
 let append_trans x () = transforms := x :: !transforms
 
@@ -27,6 +27,8 @@ let opt_spec =
     "-clear", Arg.Unit clear, " clear the list of transformations";
     "-anf", Arg.Unit (append_trans Anf.theory),
       " apply anf normal form transformation";
+    "-wp", Arg.Unit (append_trans Wp.theory),
+      " apply weakest precondition calculus";
     "-o", Arg.Set_string outfile, 
             "<arg> use <arg> instead of default filename for output";
     "-pangoline", Arg.Unit (fun () -> backend := `Pangoline; suffix := ".pge" ), 

@@ -9,6 +9,8 @@ repair inference:
     which hasn't been determined yet (for example to build formulas)
   * effect vars which appear only in connection with other vars are never
     instantiated
+  * effect instantiation should be given by the user : we don't have problems
+    any more
 
 
 MINOR ISSUES

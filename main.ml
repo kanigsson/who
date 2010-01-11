@@ -59,7 +59,7 @@ let _ =
       if !Options.input_annot then
         let p = parse_file annotparser !Options.filename in
         let p = AnnotInternalize.theory p in
-        maybe_abort Options.parse_only Ast.ParseT.print_theory p;
+        maybe_abort Options.parse_only Ast.Recon.print_theory p;
         p
       else
         let prelude = 

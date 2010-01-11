@@ -16,7 +16,7 @@ type t' =
   | App of t * t * [`Infix | `Prefix ] * rvar list
   | Lam of var * ty * rvar list * t * t * t 
   (* boolean which describes if the let comes from the prelude or not *)  
-  | Let of generalize * t * var * t * isrec
+  | Let of generalize * t * var * t * ParseTypes.t Const.isrec
   | LetReg of rvar list * t
   | PureFun of ty * var * t
   | Ite of t * t * t
@@ -25,14 +25,13 @@ type t' =
   | Param of ty * effect
   | Gen of generalize * t
 and t = { v : t' ; loc : Loc.loc }
-and isrec = Rec of ty | NoRec
 
 type decl = 
   | Axiom of string * t
   | Logic of var *  generalize * ty
   | Section of string * Const.takeover list * decl list
   | TypeDef of generalize * ty option * tyvar
-  | Program of var * generalize * t * isrec
+  | Program of var * generalize * t * ParseTypes.t Const.isrec
   | DLetReg of rvar list 
 
 type theory = decl list

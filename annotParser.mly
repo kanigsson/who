@@ -29,6 +29,8 @@ decl:
     { Program (x,g,t, NoRec) }
   | LET REC x = defprogvar_no_pos g = gen COLON t = ty EQUAL e = nterm
     { Program (x,g,e,Rec t) }
+  | LET LOGIC x = defprogvar_no_pos g = gen EQUAL t = nterm
+    { Program (x,g,t,LogicDef) }
 
 one_binding:
   LPAREN x = IDENT COLON t = ty RPAREN

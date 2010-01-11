@@ -31,7 +31,7 @@ and normalize_name e k =
       else
         let nv = Name.from_string "anf" in
         let nvv = svar nv e.t e.loc in
-        let_ Generalize.empty e nv (k nvv) NoRec e.loc)
+        let_ Generalize.empty e nv (k nvv) Const.NoRec e.loc)
 
 let term = normalize_term
 

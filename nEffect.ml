@@ -69,3 +69,11 @@ let print fmt e = fprintf fmt "{%a}" print_nosep e
 
 let print_list sep fmt l = print_list sep print fmt l
 
+let inter (r1,e1) (r2,e2) = S.inter r1 r2, S.inter e1 e2
+let diff (r1,e1) (r2,e2) = S.diff r1 r2, S.diff e1 e2
+
+let split d1 d2 = 
+  let d1 = diff d1 d2 and d2 = diff d2 d1 and d3 = inter d1 d2 in
+  d1, d3, d2
+
+

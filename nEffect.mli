@@ -29,3 +29,12 @@ val lsubst : Name.t list -> t list -> t -> t
 val rfold : (Name.t -> 'a -> 'a) -> 'a -> t -> 'a
 val efold : (Name.t -> 'a -> 'a) -> 'a -> t -> 'a
 val eiter : (Name.t -> unit) -> t -> unit
+val inter : t -> t -> t
+val diff : t -> t -> t
+
+val split : t -> t -> t * t * t
+(** take two effects and return:
+    * the first without the second
+    * their intersection
+    * the second without the first 
+*)

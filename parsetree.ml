@@ -15,7 +15,7 @@ type t' =
   | App of t * t * [`Infix | `Prefix ] * rvar list
   | Seq of t * t
   | Lam of var * ty * rvar list * t option * t * post
-  | Let of generalize * t * var * t * isrec
+  | Let of generalize * t * var * t * ParseTypes.t Const.isrec
   | PureFun of var * ty * t
   | Ite of t * t * t
   | Annot of t * ty
@@ -28,7 +28,6 @@ and post =
   | PNone
   | PPlain of t
   | PResult of var * t
-and isrec = Rec of ty | NoRec
 and generalize = tvar list * rvar list * effvar list
 
 type decl = 
@@ -36,7 +35,7 @@ type decl =
   | Axiom of string * generalize * t
   | Section of var * Const.takeover list * decl list
   | TypeDef of generalize * ty option * var
-  | Program of var * generalize * t * isrec
+  | Program of var * generalize * t * ParseTypes.t Const.isrec
   | DLetReg of rvar list 
 
 type theory = decl list

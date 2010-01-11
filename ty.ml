@@ -335,4 +335,13 @@ module Predef = struct
     (([a;b],[],[]), parr (tuple ta tb) ta),
     (([a;b],[],[]), parr (tuple ta tb) tb)
 
+  let combine, restrict =
+    let es = NEffect.esingleton and nf = Name.from_string in
+    let ess a b = NEffect.eadd (es a) b in
+    let e1 = nf "e1" and e2 = nf "e2" and e3 = nf "e3" in
+    let eff1 = ess e1 e2 and eff2 = ess e2 e3 in
+    let eff3 = NEffect.eadd eff1 e3 in
+    (([],[],[e1;e2;e3]), parr (map eff1) (parr (map eff2) (map eff3))) ,
+    (([],[],[e1;e2]), parr (map eff1) (map (es e1)))
+
 end

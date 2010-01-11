@@ -28,6 +28,9 @@ module Identifier = struct
   let plus_id = "+"
   let minus_id = "-"
 
+  let combine_id = "combine"
+  let restrict_id = "restrict"
+
 end
 
 module Logic = struct
@@ -58,12 +61,15 @@ module Logic = struct
   let plus_var = Name.from_string plus_id
   let minus_var = Name.from_string minus_id
 
+  let combine_var = Name.from_string combine_id
+  let restrict_var = Name.from_string restrict_id
+
   let allvars = [ equal_var ; empty_var ; not_var ; equal_var
       ; empty_var ; not_var ; leb_var ; ltb_var ; gtb_var 
       ; geb_var ; eqb_var ; neqb_var ; andb_var ; orb_var 
       ; le_var  ; lt_var  ; ge_var  ; gt_var  ; neq_var 
       ; and_var ; or_var ; impl_var ; tuple_var ; fst_var ; snd_var ;
-      plus_var ; minus_var
+      plus_var ; minus_var ; combine_var ; restrict_var
   ]
 
 

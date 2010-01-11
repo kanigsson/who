@@ -221,9 +221,11 @@ and letgen env x g e r =
         error e.loc "generalization over non-value";
   let env' =
     match r with 
-    | NoRec -> env
-    | Rec t -> add_svar env x t in
-  let t, eff, cap = typing env' e in
+    | Const.NoRec | Const.LogicDef -> env
+    | Const.Rec t -> add_svar env x t in
+  let t, eff, cap = 
+    if r = Const.LogicDef then formtyping env' e, NEffect.empty, RS.empty  
+    else typing env' e in
   let env = add_var env x g t in
   env, eff, cap
 

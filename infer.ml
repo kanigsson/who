@@ -221,8 +221,8 @@ and letgen env x g e r =
   let nt = U.new_ty () in
   let env' = 
     match r with
-    | NoRec -> env
-    | Rec  ty -> (add_svar env x ty) in
+    | Const.NoRec | Const.LogicDef -> env
+    | Const.Rec ty -> add_svar env x ty in
   let e = infer env' nt e in
   let xt = 
     try U.to_ty nt 
@@ -246,7 +246,6 @@ let rec infer_th env d =
   | DLetReg rl -> env, DLetReg rl
   | Program (x,g,e,r) -> 
       let env,e = letgen env x g e r in
-(*       Myformat.printf "found %a : %a@." Name.print x U.print_node e.t; *)
       env, Program (x,g,e,r)
 
 let initial = { vars = Name.M.empty; pm = false; 

@@ -101,4 +101,7 @@ module Predef : sig
 
   val fst : Generalize.t * t
   val snd : Generalize.t * t
+  
+  val combine : Generalize.t * t
+  val restrict : Generalize.t * t
 end

@@ -12,6 +12,11 @@ type ty =
   | TUnit
   | TProp
 
+type 'a isrec = 
+  | LogicDef
+  | NoRec
+  | Rec of 'a
+
 type fix = Infix | Prefix
 
 let type_of_constant = function
@@ -44,7 +49,8 @@ let print_ty fmt = function
   | TBool -> pp_print_string fmt "bool"
   | TInt -> pp_print_string fmt "int"
   | TUnit -> pp_print_string fmt "unit"
-  | TProp -> pp_print_string fmt "Prop"
+  | TProp -> 
+      pp_print_string fmt "prop"
 
 let quant fmt = function
   | `FA -> pp_print_string fmt "forall"

@@ -12,16 +12,12 @@ let plamho = plamho ~s:"r"
 let effFA = effFA ~s:"s"
 
 let rec lift_value v = 
-(*   Format.printf "lift: %a@." print v ; *)
   let l = v.loc in
   match v.v with
   | Var (_,_) -> 
-(*       Format.printf "var: %a@." Name.print n ; *)
-(*       v *)
       { v with t = ty v.t }
-  | Const _ | Logic _ | Axiom _ | Quant _ -> v
+  | Const _ | Quant _ -> v
   | App (v1,v2,kind,_) -> 
-(*       Format.printf "app: %a,%a@." print v1 print v2; *)
       app ~kind (lift_value v1) (lift_value v2) l
   | PureFun (t,(_,x,e)) -> 
       plam x (ty t) (lift_value e) l
@@ -41,23 +37,18 @@ let rec lift_value v =
                 efflamho eff (fun _ -> 
                   plamho (ty e.t) (fun _ -> ptrue_ l) l) l) l) l
         | PPlain q -> plam x t q l in
-(*
-      Format.printf "lam %a: %a,%a; argument: %a; result : %a@." 
-        Name.print x print p print q Ty.print t Ty.print e.t;
-*)
       mk_tuple p q l
-  | Let (p,g,e1,b,NoRec) -> 
+  | Let (g,e1,b,Const.LogicDef) -> 
       let x,f = sopen b in
-      let_ ~prelude:p g (lift_value e1) x (lift_value f) NoRec l
+      let_ g (lift_value e1) x (lift_value f) Const.LogicDef l
 
-  | _ -> 
+  | Let _ | LetReg _ | For _ | Gen _ | Param _ | Annot _ | Ite _ -> 
       error (Myformat.sprintf "not a value: %a" print v) l
 
 let rec correct v = 
-(*   Format.printf "correct: %a@." print v ; *)
   let l = v.loc in
   match v.v with
-  | Var _ | Const _ | Axiom _ | Logic _ | Quant _ -> ptrue_ l
+  | Var _ | Const _ | Quant _ -> ptrue_ l
   | App (v1,v2,_,_) -> and_ (correct v1) (correct v2) l
   | Lam (x,t,_,p,e,q) -> 
       let lt = ty t and eff = e.e in
@@ -73,14 +64,11 @@ let rec correct v =
                 | _,_,PPlain f -> app f r l in
         sforall x lt (impl p (wp_node r q e) l) l) l
   | PureFun (t,(_,x,e)) -> sforall x (ty t) (correct e) l
-  | Let (p,g,e1,b,NoRec) -> 
+  | Let (g,e1,b,Const.LogicDef) -> 
       let x,e2 = sopen b in
       and_ (gen g (correct e1) l)
-        (let_ ~prelude:p g (lift_value e1) x (correct e2) NoRec l) l
-  | Section (n,f,e) -> 
-      section n f (correct e) l
-  | EndSec e -> endsec (correct e) l
-  | _ -> 
+        (let_ g (lift_value e1) x (correct e2) Const.LogicDef l) l
+  | Let _ | LetReg _ | For _ | Gen _ | Param _ | Annot _ | Ite _ -> 
       Myformat.printf "correct: not a value: %a@." print v;
       assert false
 and wp m q e = 
@@ -98,10 +86,6 @@ and wp m q e =
               app q (restrict e.e s l) l) l) se) l) l
     | App (v1,v2,_,_) -> 
         let lv1 = lift_value v1 and lv2 = lift_value v2 in
-(*         Format.printf "app; v1 of type %a; effect : %a@." *)
-(*         Ty.print v1.t NEffect.print eff; *)
-(*         Format.printf "app: %a; %a : %a@." print e print lv1 Ty.print lv1.t;
- *         *)
         andlist 
         [ correct v1; correct v2;
           applist [pre lv1 l; lv2; m ] l;
@@ -109,18 +93,22 @@ and wp m q e =
             forall ft (fun x ->
               impl (applist [post lv1 l; lv2; m; m2; x] l)
                 (applist [q;m2; x] l) l) l) l ] l 
-    | Let (p,g,e1,b,r) -> 
+    | Let (g,e1,b,Const.LogicDef) ->
         let x,e2 = sopen b in
-(*         Myformat.printf "let: %a@." Name.print x; *)
+        let f = wp_node m q e2 in
+        let_ g e1 x f (Const.LogicDef) l
+    | Let (g,e1,b,r) -> 
+        let x,e2 = sopen b in
         (* TODO recursive case *)
         if is_value_node e1 then
           let lv = lift_value e1 in
           let f = gen g (correct e1) l in
           let wp = wp_node m q e2 in
-          let gen f = let_ ~prelude:p g lv x f NoRec l in
+          let gen f = let_ g lv x f Const.LogicDef l in
           match r with
-          | NoRec -> and_ f (gen wp) l
-          | Rec _ -> gen (and_ f wp l)
+          | Const.NoRec -> and_ f (gen wp) l
+          | Const.Rec _ -> gen (and_ f wp l)
+          | Const.LogicDef -> assert false
         else
           let t = ty e1.t and eff = e.e in
           let f = efflamho eff (fun m2 ->
@@ -128,18 +116,10 @@ and wp m q e =
           wp_node m f e1
     | Ite (c,th,el) -> ite (lift_value c) (wp_node m q th) (wp_node m q el) l
     | Param _ -> ptrue_ l
-    | TypeDef (g,k,x,e) -> typedef g k x (wp_node m q e) l
-    | Section (n,f,e) -> 
-        (* let's assume for now that sections only contain
-         * logics and typedefs *)
-        section n f (wp_node m q e) l
-    | EndSec e -> endsec (wp_node m q e) l
     | _ -> assert false
 and wp_node m q e = 
   if NEffect.equal (domain m) e.e then wp m q e
   else begin
-(*     Format.printf "q: %a; effects: %a <= %a@."  *)
-(*       print q NEffect.print e.e NEffect.print (domain m); *)
     let l = e.loc in
     wp (restrict e.e m l) 
       (efflamho e.e (fun m2 -> app q (combine m m2 l) l) l) 
@@ -150,3 +130,22 @@ let main e =
   let l = e.loc in
   let q = efflamho e.e (fun _ -> plamho e.t (fun _ -> ptrue_ l) l) l in
     effFA e.e (fun m -> (wp_node m q e)) l
+
+
+let rec decl d = 
+  match d with
+  | Logic _ | Formula _ | TypeDef _ | DLetReg _ 
+  | Program (_,_,_,Const.LogicDef) -> [d]
+  | Section (s,cl,dl) -> [Section (s,cl, theory dl)]
+  | Program (x,g,e,_) when is_value_node e ->
+      (* TODO recursive functions *)
+      let lv = lift_value e in
+      let f = gen g (correct e) e.loc in
+      [ Formula (Name.unsafe_to_string x ^ "_correct", f, `Proved) ; 
+        Program (x,g,lv, Const.LogicDef) ; ]
+  | Program _ -> assert false
+
+
+and theory th = 
+  List.flatten (List.map decl th)
+
