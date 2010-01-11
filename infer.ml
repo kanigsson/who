@@ -4,6 +4,7 @@ module G = Ty.Generalize
 module U = Unify
 
 module S = Name.S
+module AI = Ast.Infer
 
 type env = { 
   vars : (G.t * Ty.t) Name.M.t ;  
@@ -83,12 +84,17 @@ let to_uf_node (tl,rl,el) x =
           try ignore (HT.find eh z);() with Not_found -> raise (FindFirst z)) eff;
         (* we have not found one *)
         (* We simply choose one and add the others as constraints *)
+        (* TODO here it would probably be better to simply build the canoical
+           effect: [U.effect rl el] *)
+        U.effect (List.map auxr rl) (List.map auxe el)
+(*
         let e = NEffect.e_choose eff in
         let en = HT.find eh e in
         let eff = NEffect.eremove eff e in
         let rl, el = NEffect.to_lists eff in
         let en' = U.effect (List.map auxr rl) (List.map auxe el) in
         U.eunify en en'; en
+*)
       with FindFirst e ->
         let eff = NEffect.eremove eff e in
         let rl, el = NEffect.to_lists eff in
@@ -116,12 +122,16 @@ let postf eff t old cur res (p : ParseT.t) =
   let lameff s = lam s et in
   lameff old (lameff cur (lam res (U.to_ty t) p p.loc ) p.loc) p.loc
 
+module AP = Ast.ParseT
 let rec infer' env t loc x = 
   match x with
   | App (e1,e2,k,cap) ->
+(*       Myformat.printf "app : %a and %a@." AP.print e1 AP.print e2; *)
       let nt = U.new_ty () and e = U.new_e () in
       let e1 = infer env (U.arrow nt t e (List.map to_uf_rnode cap)) e1 in
+(*       Myformat.printf "inferred1: %a@." AI.print e1; *)
       let e2 = infer env nt e2 in
+(*       Myformat.printf "inferred2: %a@." AI.print e2; *)
       App (e1,e2,k,cap), Unify.effect [] [e;e1.e;e2.e]
   | Annot (e,xt) -> 
       unify (sto_uf_node xt) t loc;
@@ -157,9 +167,10 @@ let rec infer' env t loc x =
       let env = add_svar env x xt in
       let e = infer {env with pm = false} nt' e in
       unify (U.arrow nt nt' e.e (List.map to_uf_rnode cap)) t loc;
-      let p = pre env e.e p in
-      let q = post env e.e nt' q in
-      Myformat.printf "closing lambda : %a @." Name.print x;
+(*       Myformat.printf "lambda %a, effect %a@." Name.print x U.preff e.e; *)
+      let p = pre env e.e p loc in
+      let q = post env e.e nt' q loc in
+(*       Myformat.printf "closing lambda : %a @." Name.print x; *)
       Lam (x,xt,cap,p,e,q), U.new_e ()
   | Param (t',e) -> 
       unify t (sto_uf_node t') loc;
@@ -178,7 +189,7 @@ let rec infer' env t loc x =
       unify t U.unit loc;
       let env = add_svar env i Ty.int in
       let body = infer env U.unit body in
-      let inv = pre env body.e inv in
+      let inv = pre env body.e inv loc in
       For (dir,inv,i,s,e,body), body.e
   | LetReg (vl,e) ->
       let e = infer env t e in
@@ -191,26 +202,20 @@ let rec infer' env t loc x =
 and infer env t (e : ParseT.t) : Ast.Infer.t = 
   let e',eff = infer' {env with curloc = e.loc} t e.loc e.v in
   { v = e' ; t = t; e = eff; loc = e.loc }
-and pre env eff (cur,x) = 
-  let p = match x with
-  | None -> None
-  | Some f -> 
-      Some (infer {env with pm = true} (base_pre_ty eff) (pref eff cur f))
-  in cur, p
-and post env eff t (old,cur,x) = 
-  let p = match x with
-  | PNone -> PNone
-  | PPlain f -> 
-      let t = to_logic_ty t in
-      let bp = base_post_ty eff t in
-      let pf = postf eff t old cur (Name.new_anon ()) f in
-      let r = PPlain (infer {env with pm = true} bp pf) in
-      r
-  | PResult (r,f) ->
-      let t = to_logic_ty t in
-      PPlain (infer {env with pm = true} (base_post_ty eff t) 
-        (postf eff t old cur r f)) in
-  old,cur,p
+and pre env eff (cur,x) l : AI.pre' = 
+  let f = match x with
+  | None -> ParseT.ptrue l
+  | Some f -> f in
+  cur, Some (infer {env with pm = true} (base_pre_ty eff) (pref eff cur f))
+and post env eff t (old,cur,x) l = 
+  let t = to_logic_ty t in
+  let bp = base_post_ty eff t in
+  let r, f = 
+    match x with
+    | PNone -> Name.new_anon (), ParseT.ptrue l
+    | PPlain f -> Name.new_anon (), f
+    | PResult (r,f) -> r, f in
+  old, cur, PPlain (infer {env with pm = true} bp (postf eff t old cur r f))
 
 and letgen env x g e r =
   let nt = U.new_ty () in
@@ -241,7 +246,7 @@ let rec infer_th env d =
   | DLetReg rl -> env, DLetReg rl
   | Program (x,g,e,r) -> 
       let env,e = letgen env x g e r in
-      Myformat.printf "found %a : %a@." Name.print x U.print_node e.t;
+(*       Myformat.printf "found %a : %a@." Name.print x U.print_node e.t; *)
       env, Program (x,g,e,r)
 
 let initial = { vars = Name.M.empty; pm = false; 
@@ -259,7 +264,7 @@ let rec recon' = function
   | Quant (k,t,(s,x,e)) -> Quant (k,t,(s,x, recon e))
   | Lam (x,ot,cap,p,e,q) -> 
       let e = recon e in
-      Lam (x,ot, cap, pre e.e p e.loc, e, post e.e e.t q e.loc)
+      Lam (x,ot, cap, pre p, e, post q)
   | Param (t,e) -> Param (t,e)
   | Let (g,e1,(_,x,e2),r) -> 
       Let (g, recon e1, Name.close_bind x (recon e2),r)
@@ -268,7 +273,7 @@ let rec recon' = function
       let bdir = match dir with {Name.name = Some "forto"} -> true|_ -> false in
       let body = recon body in 
       let e = body.e and l = body.loc in
-      let cur,inv = pre e inv l in
+      let cur,inv = pre inv in
       let inv = match inv with | None -> ptrue_ l | Some f -> f in
       let inv' = plam i Ty.int inv l in
       let intvar s = svar s Ty.int l in
@@ -296,19 +301,17 @@ let rec recon' = function
   | LetReg (vl,e) -> LetReg (vl,recon e)
   | Annot (e,t) -> Annot (recon e, t)
   | Gen (g,e) -> Gen (g,recon e)
-and pre eff (cur,x) loc = 
+and pre (cur,x) = 
   match x with
-  | None -> cur, Some (efflamho eff (fun _ -> ptrue_ loc) loc)
+  | None ->  assert false
   | Some x -> cur, Some (recon x)
 and recon (t : Ast.Infer.t) : Ast.Recon.t = 
   { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e; loc = t.loc }
 and inst (th,rh,eh) =
     List.map U.to_ty th, List.map U.to_r rh, List.map U.to_eff eh
-and post eff t (old,cur,x) loc =
+and post (old,cur,x) =
   let p = match x with
-  | PNone -> 
-      PPlain (efflamho eff (fun _ -> efflamho eff (fun _ ->
-                plamho t (fun _ -> ptrue_ loc) loc) loc) loc)
+  | PNone -> assert false
   | PPlain f -> PPlain (recon f)
   | _ -> assert false in
   old, cur, p

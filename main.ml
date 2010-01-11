@@ -46,12 +46,11 @@ let apply_one_trans f t =
   Typing.theory nt; nt
 
 let apply_all_trans t = 
-  if !Options.transforms = [] then begin Typing.theory t; t end
-  else
-    let t = 
-      List.fold_right apply_one_trans !Options.transforms t in
-    Myformat.printf "%a@." Ast.Recon.print_theory t;
-    t
+  let t = 
+    if !Options.transforms = [] then begin Typing.theory t; t end
+    else List.fold_right apply_one_trans !Options.transforms t in
+  Myformat.printf "%a@." Ast.Recon.print_theory t;
+  t
 
 let _ = 
   Options.update ();

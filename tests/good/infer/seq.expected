@@ -1,0 +1,32 @@
+logic = ['a||] : 'a -> 'a -> Prop
+logic /\  : Prop -> Prop -> Prop
+logic !! ['a1|r|'e] : ref(r,'a1) -> < 'e > -> 'a1
+let
+  ! ['a2|r1|] = (fun (x:ref(r1,'a2)) -> {(fun (cur:<r1  >) -> True)}
+                parameter('a2,{r1  })
+                {(fun (old:<r1  >) ->
+                 (fun (cur1:<r1  >) ->
+                 (fun (r2:'a2) ->
+                 ((!! ['a2|r1|{r1|}] x cur1) =['a2||] r2) /\
+                 ((!! ['a2|r1|{r1|}] x old) =['a2||]
+                  (!! ['a2|r1|{r1|}] x cur1)))))}) 
+let seq ['a3 'b 'c||'e1
+  'e2] = (fun (f:'a3 ->{ 'e1 } 'b) ->
+         (fun (g:'b ->{ 'e2 } 'c) ->
+         (fun (x1:'a3) -> {(fun (cur2:< 'e1 'e2 >) -> True)} g (f x1)
+         {(fun (old1:< 'e1 'e2 >) ->
+          (fun (cur3:< 'e1 'e2 >) -> (fun (anon:'c) -> True)))}))) 
+let h [|r1
+  r2|] = (fun (a4:ref(r1,int)) ->
+         (fun (b1:ref(r2,int)) -> {(fun (cur4:< >) -> True)}
+         seq [int,int,int||{r1 r1 r1|{r1|} 259 262},{r2 r2 r2|{r2|} 306 309}]
+         (fun (c1:int) -> {(fun (cur5:<r1  >) -> True)} ! [int|r1|] a4
+         {(fun (old2:<r1  >) ->
+          (fun (cur6:<r1  >) -> (fun (anon1:int) -> True)))})
+         (fun (d:int) -> {(fun (cur7:<r2  >) -> True)} ! [int|r2|] b1
+         {(fun (old3:<r2  >) ->
+          (fun (cur8:<r2  >) -> (fun (anon2:int) -> True)))})
+         {(fun (old4:< >) ->
+          (fun (cur9:< >) ->
+          (fun (anon3:(int -> <r1 r2  > -> Prop) * (int -> <r1 r2  > -> <r1
+          r2  > -> int -> Prop)) -> True)))})) 

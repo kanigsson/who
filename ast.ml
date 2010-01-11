@@ -235,6 +235,7 @@ end
 
 module Infer = struct
   type t = (U.node, U.rnode, U.enode) t'
+  type pre' = (U.node, U.rnode, U.enode) pre
   type th' = (U.node, U.rnode, U.enode) theory
   type theory = th'
 
@@ -242,13 +243,21 @@ module Infer = struct
   let mk_val v t = mk v t (U.new_e ())
   let const c = mk_val (Const c) (U.const (Const.type_of_constant c))
 
+(*   let ptrue = const (Const.Ptrue) *)
+
+(*
   let lam x t p e q = 
     mk_val (Lam (x,U.to_ty t,[],p,e,q)) (U.arrow t e.t e.e [])
   let caplam x t cap p e q = 
     mk_val (Lam (x,U.to_ty t,cap,p,e,q)) (U.arrow t e.t e.e [])
-(*   let plam x t e = mk_val (PureFun (x,t,e)) (U.parr t e.t) *)
-  let lam_anon t e p = lam (Name.new_anon ()) t e p
+  let plamho t f = 
+    let n = Name.new_anon () in
+    let e = f n in
+    mk_val (PureFun (U.to_ty t,Name.close_bind n e)) (U.parr t e.t)
 
+  let efflamho eff = plamho (U.map eff)
+
+*)
   let print fmt t = 
     Print.term ~kind:`Who U.print_node U.prvar U.preff (fun (_,x,e) -> x,e) fmt t
 
@@ -739,4 +748,5 @@ module ParseT = struct
   let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
   let annot e t = mk (Annot (e,t)) 
   let gen g e = mk (Gen (g,e)) e.loc
+  let ptrue l = mk (Const Const.Ptrue) l
 end

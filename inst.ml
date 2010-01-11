@@ -12,7 +12,9 @@ let prsl pr fmt l =
 let print ?(kind=`Who) ~intype pra prb prc fmt ((tl,rl,el) as g) =
   if is_empty g then () else
     match kind with
-    | `Who -> fprintf fmt "[%a|%a|%a]" (prl pra) tl (prl prb) rl (prl prc) el
+    | `Who -> 
+        (* separate types with comma, the others by spaces *)
+        fprintf fmt "[%a|%a|%a]" (prl pra) tl (prsl prb) rl (prsl prc) el
     | `Coq -> 
         if intype then
           fprintf fmt "%a%a%a" (prsl pra) tl (prsl prb) rl (prsl prc) el

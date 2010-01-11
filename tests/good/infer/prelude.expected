@@ -33,26 +33,29 @@ section Whoref coq "WhoMap"
   pangoline predefined
    logic !! ['a7|r|'e] : ref(r,'a7) -> < 'e > -> 'a7
   let
-    ! ['a8|r1|] = (fun (x:ref(r1,'a8)) ->  parameter('a8,{r1  })
+    ! ['a8|r1|] = (fun (x:ref(r1,'a8)) -> {(fun (cur:<r1  >) -> True)}
+                  parameter('a8,{r1  })
                   {(fun (old:<r1  >) ->
-                   (fun (cur:<r1  >) ->
+                   (fun (cur1:<r1  >) ->
                    (fun (r2:'a8) ->
-                   ((!! ['a8|r1|{r1|}] x cur) =['a8||] r2) /\
+                   ((!! ['a8|r1|{r1|}] x cur1) =['a8||] r2) /\
                    ((!! ['a8|r1|{r1|}] x old) =['a8||]
-                    (!! ['a8|r1|{r1|}] x cur)))))}) 
+                    (!! ['a8|r1|{r1|}] x cur1)))))}) 
   let
     := ['a9|r3|] = (fun (x1:ref(r3,'a9)) ->
-                   (fun (v:'a9) ->  parameter(unit,{r3  })
+                   (fun (v:'a9) -> {(fun (cur2:<r3  >) -> True)}
+                   parameter(unit,{r3  })
                    {(fun (old1:<r3  >) ->
-                    (fun (cur1:<r3  >) ->
+                    (fun (cur3:<r3  >) ->
                     (fun (anon:unit) ->
-                    (!! ['a9|r3|{r3|}] x1 cur1) =['a9||] v)))})) 
+                    (!! ['a9|r3|{r3|}] x1 cur3) =['a9||] v)))})) 
   let
-    ref ['a10|r4|] = (fun (v1:'a10) ->cap r4  parameter(ref(r4,'a10),{r4  })
+    ref ['a10|r4|] = (fun (v1:'a10) ->cap r4 {(fun (cur4:<r4  >) -> True)}
+                     parameter(ref(r4,'a10),{r4  })
                      {(fun (old2:<r4  >) ->
-                      (fun (cur2:<r4  >) ->
+                      (fun (cur5:<r4  >) ->
                       (fun (x2:ref(r4,'a10)) ->
-                      (!! ['a10|r4|{r4|}] x2 cur2) =['a10||] v1)))}) 
+                      (!! ['a10|r4|{r4|}] x2 cur5) =['a10||] v1)))}) 
   logic combine [||'e1] : < 'e1 > -> < 'e1 > -> < 'e1 >
   logic restrict [||'e1 'e2] : < 'e1 > -> < 'e2 >
   logic empty  : < >
@@ -70,8 +73,8 @@ let
                   (fun (start:int) ->
                   (fun (end_:int) ->
                   (fun (f:int ->{ 'e2 } unit) ->
-                  {(fun (cur3:< 'e2 >) ->
-                   (inv start cur3) /\
+                  {(fun (cur6:< 'e2 >) ->
+                   (inv start cur6) /\
                    (forall (i:int).
                     ((start <= i) /\ (i <= end_)) ->
                     (forall (m:< 'e2 >).
@@ -85,15 +88,15 @@ let
                        -> (inv (i + 1) n))))))}
                   parameter(unit,{ 'e2 })
                   {(fun (old3:< 'e2 >) ->
-                   (fun (cur4:< 'e2 >) ->
-                   (fun (anon1:unit) -> inv (max start (end_ + 1)) cur4)))})))) 
+                   (fun (cur7:< 'e2 >) ->
+                   (fun (anon1:unit) -> inv (max start (end_ + 1)) cur7)))})))) 
 let
   fordownto [||'e3] = (fun (inv1:int -> < 'e3 > -> Prop) ->
                       (fun (start1:int) ->
                       (fun (end_1:int) ->
                       (fun (f1:int ->{ 'e3 } unit) ->
-                      {(fun (cur5:< 'e3 >) ->
-                       (inv1 start1 cur5) /\
+                      {(fun (cur8:< 'e3 >) ->
+                       (inv1 start1 cur8) /\
                        (forall (i1:int).
                         ((end_1 <= i1) /\ (i1 <= start1)) ->
                         (forall (m1:< 'e3 >).
@@ -107,9 +110,9 @@ let
                            -> (inv1 (i1 - 1) n1))))))}
                       parameter(unit,{ 'e3 })
                       {(fun (old4:< 'e3 >) ->
-                       (fun (cur6:< 'e3 >) ->
+                       (fun (cur9:< 'e3 >) ->
                        (fun (anon2:unit) ->
-                       inv1 (min start1 (end_1 - 1)) cur6)))})))) 
+                       inv1 (min start1 (end_1 - 1)) cur9)))})))) 
 section Array coq "WhoArray"
   pangoline takeover
    type array['a15||]

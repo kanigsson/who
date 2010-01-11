@@ -37,6 +37,7 @@ one_binding:
 term:
   | x = IDENT { svar x.c x.info }
   | x = IDENT i = inst { var x.c i x.info }
+  | x = prefix i = inst { let p, s = x in var s i p }
   | p = REF i = inst { var "ref" i p}
   | p = DEXCLAM i = inst x = IDENT t = term
     { app (app (var "!!" i p) (svar x.c x.info) (embrace p x.info)) 

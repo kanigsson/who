@@ -100,7 +100,7 @@ exception CannotUnify
 
 open Format
 let rec unify a b =
-  printf "unify: %a and %a@." print_node a print_node b;
+(*   printf "unify: %a and %a@." print_node a print_node b; *)
   if Uf.equal a b then () else
   match Uf.desc a, Uf.desc b with
   | U, U -> union a b
@@ -142,7 +142,7 @@ and runify a b =
 (*       printf "runify: %a and %a@." prvar a prvar b; *)
       raise CannotUnify
 and eunify a b = 
-  printf "eunify : %a and %a@." preff a preff b;
+(*   printf "eunify : %a and %a@." preff a preff b; *)
   if Uf.equal a b then () else eunion a b;
 (*
     begin match Uf.desc a, Uf.desc b with
