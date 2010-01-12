@@ -159,7 +159,6 @@ let add_effect env x d =
 let simplify ~genbind 
              ~(varbind : 'a -> [`FA | `LAM | `EX] -> 'b) 
              ~tyfun before after env f = 
-(*   Format.printf "simplify: %a@." print f; *)
   let rec aux env f = 
     let l = f.loc in
     let env = { env with l = f.loc; et = f.t } in
@@ -198,49 +197,52 @@ let simplify ~genbind
       | Change_rerun f -> aux env f in
     let f = {f with t = tyfun env f.t} in
     f
-(*
-  and pre env (n,p) = n, Misc.opt_map (aux env) p
-  and post env (a,b,q) = 
-    a,b,
-    match q with
-    | PNone -> PNone
-    | PPlain f -> PPlain (aux env f)
-    | PResult _ -> assert false in
-*)
   in
   aux env f
 
-(*
-let map_simplify f = 
-  let rec aux env f =
-    simplify 
-      ~genbind:(fun (tvl,rl,el) env t -> 
-        let env = List.fold_left (fun env r -> 
-          rtype_add r (find_type r t) env) env rl in
-        let env = List.fold_left (fun env e ->
-          rtype_add e (Ty.var e) env) env el in
-        let t = aux env t in
-        let t = 
-          if Ty.equal t.t Ty.prop then 
-            List.fold_left (fun acc r -> 
-              aquant `FA r (Ty.spredef_var "key") acc env.l) t rl
-        else t in
-        (* effect variables become type variables *)
-        (tvl@el,[],[]), t )
-      ~varbind:(fun env k x t e l ->
-        if Ty.is_map t then
-          let env, rl, el = add_effect env x (Ty.domain t) in
-          let e = aux env e in
-          let f = List.fold_left (fun acc (x,t) -> aquant k x t acc l) e rl in
-          List.fold_left (fun acc (old,new_) -> 
-            aquant k new_ (rtype env old) acc l) f el
-        else if Ty.is_ref t then aux env e
-        else aquant k x (Ty.selim_map (rtype env) t) (aux env e)  l)
-      ~tyfun:(fun env t -> Ty.selim_map (rtype env) t) 
-      simplify_maps [] env f in
-  aux empty f
+let tyfun env t = Ty.selim_map (rtype env) t
 
-*)
+let map_simplify f = 
+  let rec genbind (tvl,rl,el) env t = 
+    let env = List.fold_left (fun env r -> 
+      rtype_add r (find_type r t) env) env rl in
+    let env = List.fold_left (fun env e ->
+      rtype_add e (Ty.var e) env) env el in
+    let t = aux env t in
+    (* effect variables become type variables *)
+    (tvl@el,[],[]), t
+
+  and varbind env k x t e l =
+    if Ty.is_map t then
+      let env, rl, el = add_effect env x (Ty.domain t) in
+      let e = aux env e in
+      let f = List.fold_left (fun acc (x,t) -> aquant k x t acc l) e rl in
+      List.fold_left (fun acc (old,new_) -> 
+        aquant k new_ (rtype env old) acc l) f el
+    else if Ty.is_ref t then aux env e
+    else aquant k x (Ty.selim_map (rtype env) t) (aux env e) l
+
+  and aux env f =
+    simplify ~genbind ~varbind ~tyfun simplify_maps [] env f in
+  let rec decl env d = 
+    match d with
+    | Logic (s,((_,[],[]) as g),t) -> env, Logic (s,g,tyfun env t)
+    | DLetReg _ -> 
+        (* TODO *)
+        env, d
+    | TypeDef _ -> env, d
+    | Formula (n,f,k) -> env, Formula (n, aux env f, k)
+    | Section (s,cl,th) -> 
+        let env, th = theory env th in
+        env, Section (s,cl,th)
+    | Program (n,g,t,LogicDef) -> 
+        let g,t = genbind g env t in
+        env, Program (n,g,t,LogicDef)
+    | Logic _ | Program _ -> assert false 
+  and theory env th = Misc.list_fold_map decl env th in
+  let _, th = theory empty f in
+  th
+
 let term env t =
   rebuild_map 
     ~varfun:(fun z i def ->
@@ -275,4 +277,4 @@ let inline_let th =
   let _, th = theory Name.M.empty th in
   th
   
-(* let map = map_simplify *)
+let map = map_simplify

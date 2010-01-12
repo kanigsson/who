@@ -75,16 +75,10 @@ let _ =
         p
     in
     let p = apply_all_trans p in
-    p
-(*
-    let p = Simplify.allsimplify p in
     let kind = !Options.backend in
-    let s = Sectionize.section kind p in
-    let s = Sectionize.Flatten.main kind s in
-    maybe_abort Options.sectionize_only (Sectionize.Flatten.print_all kind) s;
-    if !Options.backend = `Coq then Regen2.main s else
-      Pangoline.out s
-*)
+    let s = Sectionize.to_section kind p in
+    let s = Sectionize.flatten s in
+    if !Options.backend = `Coq then Regen2.main s else Pangoline.out s
   with
   | Sys_error e -> Error.bad e
   | Infer.Error (s,loc) 

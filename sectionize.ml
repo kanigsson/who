@@ -1,106 +1,96 @@
 open Name
 open Ast
 
-type intro = 
-  | Gen of Ty.Generalize.t
-  | Variable of Name.t * Ty.Generalize.t * Ty.t * [`Logic | `Quant]
-  | Type of Name.t * Ty.Generalize.t
-  | Hypo of Name.t * Ast.Recon.t
-  | Axiom of Name.t * Ty.Generalize.t *  Ast.Recon.t
-  | Import of string
-(*   | WhoSection of string * string option *)
-type section = 
-  | Empty
-  | PO of Name.t * Ast.Recon.t
-  | Section of Name.t * intro list * section list
+module PL = Predefined.Logic
+module G = Ty.Generalize
 
+type outdecl = 
+  | Decl of string 
+  | Gen of Ty.Generalize.t
+  | Variable of Name.t * G.t * Ty.t * [`Logic | `Quant]
+  | Type of Name.t * G.t
+  | Axiom of Name.t * G.t *  Ast.Recon.t
+  | Section of Name.t * outdecl list
+  | BeginSec of Name.t
+  | EndSec of Name.t
+  | Import of string
+  | PO of Name.t * Ast.Recon.t
 
 let intro_eq f = function
-  | Gen _ | Variable _ | Type _  -> false
-  | Hypo (_,x) -> equal x f
+  (* TODO PO could actually be used here*)
+  | Gen _ | Variable _ | Type _ | Section _ | PO _ | Decl _ 
+  | BeginSec _ | EndSec _ -> false
   | Axiom (_,g,x) when Ty.Generalize.is_empty g -> equal x f
   | Axiom _ | Import _ -> false
 
-let rec skip_till_end x = 
-  match x.v with
-  | EndSec e -> e
-  | Let (_,_,_,b,_) -> 
-      let _,f = sopen b in
-      skip_till_end f
-  | TypeDef (_,_,_,e) -> skip_till_end e
-  | _ -> assert false
-
-let section kind f = 
-  let rec section f =
-    let il, f' = intro f in
-    match prove il f' with
-    | [] -> Empty
-    | [x] when List.length il = 0 -> x
-    | l -> Section (Name.from_string "sec", il,l)
-
-  and intro f = 
+let to_section kind th = 
+  let rec decl_to_outdecl d = 
+    match d with
+    | DLetReg _ | Program _ -> assert false
+    | TypeDef (g,_,n) -> [Type (n,g)]
+    | Formula (s,f, k) -> 
+        begin match k with
+        | `Assumed -> [Axiom (Name.from_string s,G.empty,f)]
+        | `Proved -> mk_Section ~namehint:s f
+        end
+    | Logic (x,g,t) -> [ Variable (x,g,t, `Logic)]
+    | Ast.Section (_,cl,th) -> 
+        let choice = List.fold_left (fun acc (p,c) -> 
+          if p = kind then c else acc) Const.TakeOver cl in
+        begin match choice with
+        | Const.Predefined -> []
+        | Const.Include f -> [ Import f ]
+        | Const.TakeOver -> List.flatten (List.map decl_to_outdecl th)
+        end
+  and term_intro (f : Ast.Recon.t) : outdecl list * Ast.Recon.t = 
+    (* take a formula and cut it into two parts : intro and the rest *)
     let rec aux acc f = 
       match f.v with
       | Quant (`FA, t,b) ->
           let x , f = vopen b in
-          aux ( Variable (x,Ty.Generalize.empty,t,`Quant) :: acc) f
+          aux (Variable (x,Ty.Generalize.empty,t,`Quant) :: acc) f
       | Ast.Gen (g,f) -> 
           if Ty.Generalize.is_empty g then aux acc f
           else aux ((Gen g)::acc) f
-      | Let (_,_,{v = Logic _}, ((_,{name = Some 
-      ("!=" | "!!" | "==" | "<<" | "<<=" | ">>" | ">>=" | "empty" )},_) as b) ,_)
-      -> 
-        let _,f = sopen b in
-        aux acc f
-      | Let (_,g,{v = Logic t},b,_) ->
-          let x, f = sopen b in
-          aux (Variable (x,g,t, `Logic)::acc) f
-      | Let (_,g,{v = Ast.Axiom a},b,_) ->
-          let x, f = sopen b in
-          aux (Axiom (x,g,a)::acc) f
-      | TypeDef (g,_,x,e) -> 
-          aux (Type (x,g)::acc) e
-      | Ast.Section (_,f,e) ->
-          let choice = List.fold_left (fun acc (p,c) -> 
-            if p = kind then c else acc) Const.TakeOver f in
-          begin match choice with
-          | Const.Predefined -> aux acc (skip_till_end e)
-          | Const.Include f -> aux (Import f :: acc) (skip_till_end e)
-          | Const.TakeOver -> aux acc e
-          end
       | f' -> 
           match destruct_app2_var' f' with
-          | Some (Some "->",_,f1,f2) -> 
-              aux (Hypo (Name.from_string "H", f1)::acc) f2
+          | Some (v,_,f1,f2) when Name.equal v PL.impl_var  -> 
+              aux (Axiom (Name.from_string "H",G.empty, f1)::acc) f2
           | _ -> List.rev acc, f in
     aux [] f
-
-  and prove ctx f =
-    let rec aux acc f =
+  and make_PO ?(namehint="goal") ( f : Ast.Recon.t) : outdecl list = 
+    let rec aux acc f = 
       match f.v with
-      | Quant (`FA,_,_) | Ast.Gen _
-      | TypeDef _
-      | Let (_,_,{v = Logic _},_,_)
-      | Let (_,_,{v = Ast.Axiom _},_,_) ->
-          begin match section f with
-          | Empty -> acc
-          | s -> s::acc
-          end
+      | Quant (`FA,_,_) | Ast.Gen _ ->
+          mk_Section f @ acc
       | f' ->
           match destruct_app2_var' f' with
-          | Some (Some "->",_,_,_) ->
-              begin match section f with
-              | Empty -> acc
-              | s -> s::acc
-              end
-          | Some (Some "/\\",_,f1,f2) -> aux (aux acc f2) f1
-          | _ -> 
-              if List.exists (intro_eq f) ctx then acc
-              else PO (Name.from_string "goal", f) :: acc
+          | Some (v,_,_,_) when Name.equal v PL.impl_var -> mk_Section f @ acc
+          | Some (v,_,f1,f2) when Name.equal v PL.and_var -> aux (aux acc f2) f1
+          | _ -> PO (Name.from_string namehint, f) :: acc
     in
     aux [] f
+  and mk_Section ?namehint (f : Ast.Recon.t) :outdecl list = 
+    let il, f' = term_intro f in
+    match make_PO ?namehint f' with
+    | [] -> []
+    | [x] when List.length il = 0 -> [x]
+    | l -> [Section (Name.from_string "sec", il@l)]
   in
-  section f
+  List.flatten (List.map decl_to_outdecl th)
+
+let rec flatten th = List.flatten (List.map decl th)
+and decl d = 
+  match d with
+  | Section (n,dl) -> BeginSec n :: (flatten dl @ [ EndSec n ] )
+  | _ -> [d]
+
+let to_coq_decls th = 
+  let aux d = 
+    match d with
+    | Import f -> Decl (Printf.sprintf "Require Import %s." f)
+    | _ -> d in
+  Decl "Set Implicit Arguments." :: List.map aux th
 
 open Myformat
 
@@ -123,160 +113,73 @@ let pr_generalize in_term kind fmt ((tl,rl,el) as g) =
     | `Pangoline -> 
         fprintf fmt "forall %t %a." in_term (print_list space Name.print) tl
 
-(*
-let pr_intro fmt = function
+let def kind fmt x = 
+  match kind, x with
+  | `Coq, `Quant -> pp_print_string fmt "Variable"
+  | `Coq, `Logic -> pp_print_string fmt "Definition"
+  | `Pangoline, _ -> pp_print_string fmt "logic"
+
+let hypo fmt = function
+  | `Pangoline -> pp_print_string fmt "hypothesis"
+  | `Coq -> pp_print_string fmt "Hypothesis"
+let lemma fmt = function
+  | `Pangoline -> pp_print_string fmt "lemma"
+  | `Coq -> pp_print_string fmt "Lemma"
+
+let print_stop fmt = function
+  | `Pangoline -> ()
+  | `Coq -> pp_print_string fmt "."
+
+let print_proof fmt = function
+  | `Pangoline -> ()
+  | `Coq -> fprintf fmt "@\nProof.@\nAdmitted.@\n"
+
+let print_def_end kind fmt x = 
+  match x with
+  | `Quant -> ()
+  | `Logic -> print_proof fmt kind
+
+type sup = [`Coq | `Pangoline | `Who ]
+
+let print kind fmt = function
+  | Decl s -> fprintf fmt "%s" s
+  | Import _ | Section _ -> assert false
   | Gen (tl,rl,el) -> 
-      fprintf fmt "%a%a%a"
-      (intro_name "Set") tl (intro_name "key") rl (intro_name "kmap") el
-  | Variable (x,g,t) -> 
-      fprintf fmt "@[<hov 2>Variable %a:@ %a%a. @]" 
-      Name.print x pr_generalize g Ty.cprint t
-  | Hypo (h,e) -> 
-      fprintf fmt "@[Hypothesis %a:@ %a. @]" 
-        Name.print h Ast.Recon.cprint e
-  | Axiom (x,g,t) -> 
-      fprintf fmt "@[Axiom %a: %a %a. @]" Name.print x 
-        pr_generalize g Ast.Recon.cprint t
-  | Type (x,g) -> 
-      fprintf fmt "@[Parameter %a :@ %a%s. @]" Name.print x pr_generalize g "Set"
-
-let rec print fmt = function
-  | Empty -> ()
+      begin match kind with
+      | `Coq ->
+          fprintf fmt "%a%a%a"
+          (intro_name "Type") tl (intro_name "key") rl (intro_name "kmap") el
+      | `Pangoline ->
+          print_list newline (fun fmt s -> 
+            fprintf fmt "type (0) %a" Name.print s) fmt tl
+      end
+  | Variable (x,g,t,k) -> 
+      fprintf fmt "@[<hov 2>%a %a:@ %a %a%a%a @]" (def kind) k Name.print x
+        (pr_generalize false kind) g (Ty.gen_print (kind :> sup)) t print_stop kind
+        (print_def_end kind) k
+  | Axiom (h,g,e) -> 
+      fprintf fmt "@[<hov 2>%a %a:@ %a %a%a @]" hypo kind Name.print h 
+        (pr_generalize true kind) g (Ast.Recon.gen_print (kind :> sup)) e print_stop kind
   | PO (x,e) -> 
-      fprintf fmt "@[Lemma %a:@ %a.@]@," Name.print x 
-        Ast.Recon.cprint e
-  | Section (x,il,sl) -> 
-      fprintf fmt "@,@[<hov 2>Section %a.@\n%a@\n%a@]@\nEnd %a."
-        Name.print x (print_list pp_force_newline pr_intro) il 
-          (print_list pp_force_newline print) sl
-        Name.print x
+      fprintf fmt "@[<hov 2>%a %a:@ %a%a%a@]" lemma kind Name.print x 
+        (Ast.Recon.gen_print (kind :> sup)) e print_stop kind print_proof kind
+  | Type (x,((tl,_,_) as g)) -> 
+      begin match kind with
+      | `Coq ->
+          fprintf fmt "@[<hov 2>Definition %a :@ %a%s. @]" Name.print x 
+            (pr_generalize true `Coq) g "Type"
+      | `Pangoline ->
+          fprintf fmt "@[<hov 2> type (%d) %a @]" (List.length tl) Name.print x
+      end
+  | BeginSec n -> 
+      if kind = `Coq then fprintf fmt "@[<hov 2>Section %a." Name.print n
+  | EndSec n -> 
+      if kind = `Coq then fprintf fmt "@]End %a." Name.print n
 
-let print_decls fmt () = 
-  fprintf fmt "Set Implicit Arguments.@\n";
-  fprintf fmt "Require Import WhoMap.@\n";
-  fprintf fmt "Require Import ZArith.@\n";
-  fprintf fmt "Open Scope Z_scope.@\n";
-  fprintf fmt "Require Omega.@\n";
-  fprintf fmt "Variable ref : forall (a : Type) (k : key), Type.@\n";
-  fprintf fmt "Definition ___get (A : Type) (k : key) (r : ref A k) (m : kmap) :=
-    __get A k m.@\n";
-  fprintf fmt "Notation \"!!\" := (___get) (at level 50).@\n";
-*)
-
-(*
-let print_all fmt s = 
-  print_decls fmt ();
-  print fmt s;
-  pp_print_flush fmt ()
-*)
-
-module Flatten = struct
-
-  type t = 
-    | FCoqDecl of string * Name.t
-    | FGen of Ty.Generalize.t
-    | FVariable of Name.t * Ty.Generalize.t * Ty.t * [`Logic | `Quant]
-    | FType of Name.t * Ty.Generalize.t
-    | FAxiom of Name.t * Ty.Generalize.t *  Ast.Recon.t
-    | FPO of Name.t * Ast.Recon.t
-    | FBeginSec of Name.t
-    | FEndSec of Name.t
-
-  let name_of_string s = 
-    let n = try String.index s ' ' with Not_found -> String.length s - 1 in
-    let n = min 10 n in
-    Name.from_string (String.sub s 0 n)
-
-  let intro = function
-    | Gen g -> FGen g
-    | Variable (n,g,t,k) -> FVariable (n,g,t,k)
-    | Type (n,t) -> FType (n,t)
-    | Hypo (n,e) -> FAxiom (n,([],[],[]),e)
-    | Axiom (n,g,e) -> FAxiom (n,g,e)
-    | Import f -> 
-        FCoqDecl (sprintf "Require Import %s" f, name_of_string f)
-
-  let rec section x acc = 
-    match x with
-    | Empty -> acc
-    | PO (n,e) -> FPO (n,e) :: acc
-    | Section (n,il,sl) -> 
-        FBeginSec n ::
-          List.fold_right
-            (fun x acc -> intro x :: acc) il
-            (List.fold_right section sl (FEndSec n :: acc))
-
-  let coqdecls = 
-    List.map (fun s -> FCoqDecl (s, name_of_string s))
-      [ "Set Implicit Arguments"; ]
-
-  let main kind s = 
-    let s = section s [] in
-    if s = [] then [] else 
-      if kind = `Coq then coqdecls @ s else s
-
-  let def kind fmt x = 
-    match kind, x with
-    | `Coq, `Quant -> pp_print_string fmt "Variable"
-    | `Coq, `Logic -> pp_print_string fmt "Definition"
-    | `Pangoline, _ -> pp_print_string fmt "logic"
-
-  let hypo fmt = function
-    | `Pangoline -> pp_print_string fmt "hypothesis"
-    | `Coq -> pp_print_string fmt "Hypothesis"
-  let lemma fmt = function
-    | `Pangoline -> pp_print_string fmt "lemma"
-    | `Coq -> pp_print_string fmt "Lemma"
-
-  let print_stop fmt = function
-    | `Pangoline -> ()
-    | `Coq -> pp_print_string fmt "."
-
-  let print_proof fmt = function
-    | `Pangoline -> ()
-    | `Coq -> fprintf fmt "@\nProof.@\nAdmitted.@\n"
-
-  let print_def_end kind fmt x = 
-    match x with
-    | `Quant -> ()
-    | `Logic -> print_proof fmt kind
-
-  type sup = [`Coq | `Pangoline | `Who ]
-  let print kind fmt = function
-    | FCoqDecl (s,_) -> fprintf fmt "%s." s
-    | FGen (tl,rl,el) -> 
-        begin match kind with
-        | `Coq ->
-            fprintf fmt "%a%a%a"
-            (intro_name "Type") tl (intro_name "key") rl (intro_name "kmap") el
-        | `Pangoline ->
-            print_list newline (fun fmt s -> 
-              fprintf fmt "type (0) %a" Name.print s) fmt tl
-        end
-    | FVariable (x,g,t,k) -> 
-        fprintf fmt "@[<hov 2>%a %a:@ %a %a%a%a @]" (def kind) k Name.print x
-          (pr_generalize false kind) g (Ty.gen_print (kind :> sup)) t print_stop kind
-          (print_def_end kind) k
-    | FAxiom (h,g,e) -> 
-        fprintf fmt "@[<hov 2>%a %a:@ %a %a%a @]" hypo kind Name.print h 
-          (pr_generalize true kind) g (Ast.Recon.gen_print (kind :> sup)) e print_stop kind
-    | FPO (x,e) -> 
-        fprintf fmt "@[<hov 2>%a %a:@ %a%a%a@]" lemma kind Name.print x 
-          (Ast.Recon.gen_print (kind :> sup)) e print_stop kind print_proof kind
-    | FType (x,((tl,_,_) as g)) -> 
-        begin match kind with
-        | `Coq ->
-            fprintf fmt "@[<hov 2>Definition %a :@ %a%s. @]" Name.print x 
-              (pr_generalize true `Coq) g "Type"
-        | `Pangoline ->
-            fprintf fmt "@[<hov 2> type (%d) %a @]" (List.length tl) Name.print x
-        end
-    | FBeginSec n -> 
-        if kind = `Coq then fprintf fmt "@[<hov 2>Section %a." Name.print n
-    | FEndSec n -> 
-        if kind = `Coq then fprintf fmt "@]End %a." Name.print n
-
-  let print_all kind fmt l = print_list newline (print kind) fmt l
-
-end
-        
+let print_all kind fmt l = 
+  let l = 
+    match kind with
+    | `Coq -> to_coq_decls l
+    | _ -> l
+  in
+  print_list newline (print kind) fmt l

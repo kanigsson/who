@@ -12,7 +12,7 @@ let backend : [ `Coq | `Pangoline ] ref = ref `Coq
 let suffix = ref ".v"
 
 let transforms = 
-  ref (List.rev  [ Anf.theory ; Wp.theory ; Simplify.inline_let ])
+  ref (List.rev  [ Anf.theory ; Wp.theory ; Simplify.inline_let ; Simplify.map ])
 
 let append_trans x () = transforms := x :: !transforms
 
@@ -31,10 +31,8 @@ let opt_spec =
       " apply weakest precondition calculus";
     "-inlinelet", Arg.Unit (append_trans Simplify.inline_let),
       " inline let bindings";
-(*
     "-mapsimpl", Arg.Unit (append_trans Simplify.map),
       " simplify map expressions";
-*)
     "-o", Arg.Set_string outfile, 
             "<arg> use <arg> instead of default filename for output";
     "-pangoline", Arg.Unit (fun () -> backend := `Pangoline; suffix := ".pge" ), 
