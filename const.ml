@@ -32,9 +32,13 @@ and choice =
   | Predefined
 
 open Myformat
-let print fmt = function
+let print kind fmt = function
   | Int b -> pp_print_string fmt (Big_int.string_of_big_int b)
-  | Void -> pp_print_string fmt "tt"
+  | Void -> 
+      begin match kind with 
+      | `Coq -> pp_print_string fmt "tt"
+      | _ -> pp_print_string fmt "()"
+      end
   | Btrue -> pp_print_string fmt "true"
   | Bfalse -> pp_print_string fmt "false"
   | Ptrue -> pp_print_string fmt "True"

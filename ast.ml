@@ -124,7 +124,7 @@ module Print = struct
   let term ?(kind=`Who) pra prb prc open_ fmt t = 
     let typrint = Ty.gen_print kind in
     let rec print' ext fmt = function
-      | Const c -> Const.print fmt c
+      | Const c -> Const.print kind fmt c
       | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) -> 
           fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 Name.print v 
             (Inst.print ~kind ~intype:false pra prb prc) i with_paren t2

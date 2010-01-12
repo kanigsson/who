@@ -40,7 +40,7 @@
   (* remove location information from a list of annotated values *)
   (* build a for loop *)
   let forfunction dir i start end_ inv body pos =
-    let s = "-start" and e = "-end" in
+    let s = "__start" and e = "__end" in
     let forterm = mk (For (dir,inv,i.c,s,e,body)) pos in
     let em = [],[],[] in
     (* let start = start and end_ = end_ in 

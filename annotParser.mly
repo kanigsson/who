@@ -65,6 +65,8 @@ nterm:
     { appi ~inst (snd i) t1 t2 (embrace t1.loc t2.loc) }
   | sp = FORALL l = one_binding DOT e = nterm %prec forall
     { let x,t = l in mk_term (Quant (`FA,t,x,e)) (embrace sp e.loc) }
+  | sp = FORALL g = gen DOT e = nterm %prec forall
+    { mk_term (Gen (g,e)) (embrace sp e.loc) }
   | sp = EXISTS l = one_binding DOT e = nterm %prec forall
     { let x,t = l in mk_term (Quant (`EX,t,x,e)) (embrace sp e.loc) }
   | sp = FUN l = one_binding ARROW e = nterm 
