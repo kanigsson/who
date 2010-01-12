@@ -77,12 +77,7 @@ let _ =
     let p = apply_all_trans p in
     p
 (*
-    let p = Wp.main p in
-    maybe_abort Options.wp_only Ast.Recon.print p;
-    Typing.formtyping p;
     let p = Simplify.allsimplify p in
-    maybe_abort Options.simplify_only Ast.Recon.print p;
-    Typing.formtyping p;
     let kind = !Options.backend in
     let s = Sectionize.section kind p in
     let s = Sectionize.Flatten.main kind s in

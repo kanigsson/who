@@ -340,34 +340,37 @@ let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
   in
   aux t
 
-let tsubst tvl tl e =
-  open_close_map ~varfun:(fun v i -> Var (v,i)) 
-                 ~tyfun:(Ty.tlsubst tvl tl) 
-                 ~rvarfun:Misc.id
-                 ~effectfun:Misc.id
-                 e
-
-let rsubst rvl rl e = 
-(*
-  Myformat.printf "rsubsting: [%a|->%a]@." Name.print_list rvl Name.print_list
-  rl;
-*)
-  open_close_map ~varfun:(fun v i -> Var (v,i)) 
-                 ~tyfun:(Ty.rlsubst rvl rl) 
-                 ~rvarfun:(Ty.rsubst rvl rl)
-                 ~effectfun:(NEffect.rmap (Ty.rsubst rvl rl))
-                 e
-
-let esubst evl el e =
-  open_close_map ~varfun:(fun v i -> Var (v,i))
-    ~tyfun:(Ty.elsubst evl el)
-    ~rvarfun:Misc.id
-    ~effectfun:(NEffect.lsubst evl el) e
 
 module Recon = struct
   type t = (Ty.t, Name.t, NEffect.t) t'
   type th = (Ty.t, Name.t, NEffect.t) theory
+  type decl' = (Ty.t, Name.t, NEffect.t) decl
+  type inst = (Ty.t, Name.t, NEffect.t) Inst.t
   type theory = th
+  type decl = decl'
+
+  let tsubst tvl tl e =
+    open_close_map ~varfun:(fun v i -> Var (v,i)) 
+                   ~tyfun:(Ty.tlsubst tvl tl) 
+                   ~rvarfun:Misc.id
+                   ~effectfun:Misc.id
+                   e
+
+  let rsubst rvl rl e = 
+    open_close_map ~varfun:(fun v i -> Var (v,i)) 
+                   ~tyfun:(Ty.rlsubst rvl rl) 
+                   ~rvarfun:(Ty.rsubst rvl rl)
+                   ~effectfun:(NEffect.rmap (Ty.rsubst rvl rl))
+                   e
+
+  let esubst evl el e =
+    open_close_map ~varfun:(fun v i -> Var (v,i))
+      ~tyfun:(Ty.elsubst evl el)
+      ~rvarfun:Misc.id
+      ~effectfun:(NEffect.lsubst evl el) e
+
+  let allsubst ((tvl,rvl,evl) : G.t) ((tl,rl,el) : inst)  t = 
+    esubst evl el (rsubst rvl rl (tsubst tvl tl t))
 
   let gen_print kind fmt t = 
     Print.term ~kind (Ty.gen_print kind) Name.print NEffect.print sopen fmt t
@@ -402,6 +405,7 @@ module Recon = struct
     else if Ty.equal nt Ty.emptymap then mempty
     else mk_val (Var (s,inst)) nt
 
+  let var_i s inst t = mk_val (Var (s,inst)) t
   let svar s t = var s Inst.empty (G.empty, t)
 
   module Predef = struct
@@ -525,26 +529,29 @@ module Recon = struct
           appi (v i l) arg1 arg2 l
       | None -> raise Exit in
     aux t
-  and rebuild_map ~varfun t =
+  and rebuild_map ~varfun ~termfun t =
     (* this function is intended to be used with logic functions only *)
     let l = t.loc in
-    let rec aux t = match t.v with
-    | Const _ -> t
-    | Var (v,i) -> varfun v i t
-    | App (t1,t2,p,cap) -> allapp (aux t1) (aux t2) p cap l
-    | Annot (e,t) -> annot (aux e) t
-    | Let (g,e1,b,r) -> 
-        let x,f = vopen b in 
-        let_ g (aux e1) x (aux f) r l
-    | PureFun (t,b) -> 
-        let x,f = vopen b in 
-        plam x t (aux f) l
-    | Quant (k,t,b) -> 
-        let x,f = vopen b in 
-        squant k x t (aux f) l
-    | Ite (e1,e2,e3) -> ite ~logic:false (aux e1) (aux e2) (aux e3) l
-    | Gen (g,e) -> gen g (aux e) l
-    | _ -> assert false in
+    let rec aux t = 
+      let t = 
+        match t.v with
+        | Const _ -> t
+        | Var (v,i) -> varfun v i t
+        | App (t1,t2,p,cap) -> allapp (aux t1) (aux t2) p cap l
+        | Annot (e,t) -> annot (aux e) t
+        | Let (g,e1,b,r) -> 
+            let x,f = vopen b in 
+            let_ g (aux e1) x (aux f) r l
+        | PureFun (t,b) -> 
+            let x,f = vopen b in 
+            plam x t (aux f) l
+        | Quant (k,t,b) -> 
+            let x,f = vopen b in 
+            squant k x t (aux f) l
+        | Ite (e1,e2,e3) -> ite ~logic:false (aux e1) (aux e2) (aux e3) l
+        | Gen (g,e) -> gen g (aux e) l
+        | For _ | LetReg _ | Param _ | Lam _  -> assert false in
+      termfun t in
     aux t
   and impl h1 goal l = 
     try match destruct_app2_var h1 with
@@ -589,11 +596,10 @@ module Recon = struct
     | _ -> simple_appi (P.and_t l) t1 t2 l
   and subst x v e =
     rebuild_map
-      ~varfun:(fun z i def -> if Name.equal z x then v i else def) e
+      ~varfun:(fun z i def -> if Name.equal z x then v i else def)
+      ~termfun:Misc.id e
 
-  and polsubst (tvl,rvl,evl) x v e =
-    let builder (tl,rl,el)= esubst evl el (rsubst rvl rl (tsubst tvl tl v)) in
-    subst x builder e
+  and polsubst g x v e = subst x (fun i -> allsubst g i v) e
   and squant k x t f loc = 
     if Ty.equal t Ty.unit || Ty.equal t Ty.emptymap then f 
     else (
@@ -738,6 +744,17 @@ module Recon = struct
     | _ -> assert false
 *)
 
+  let rec decl_map ~varfun ~termfun ~declfun d : decl list =
+    let d = 
+      match d with
+      | Logic _ | TypeDef _ | DLetReg _ -> d
+      | Formula (s,t,k) -> Formula (s,rebuild_map ~varfun ~termfun t, k)
+      | Section (s,cl,th) -> 
+          Section (s,cl,theory_map ~varfun ~termfun ~declfun th)
+      | Program (n,g,t,r) -> Program (n,g,rebuild_map ~varfun ~termfun t, r) in
+    declfun d
+  and theory_map ~varfun ~termfun ~declfun th = 
+    List.flatten (List.map (decl_map ~varfun ~termfun ~declfun) th)
 
 end
 

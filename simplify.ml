@@ -56,11 +56,6 @@ let find_type rname x =
                 let _,e = sopen b in
                 aux e
             end
-        | Let (_,_,{ v = Logic t} ,b,_) ->
-            begin match Ty.find_type_of_r rname t with
-            | Some x -> x
-            | None -> let _,e = sopen b in aux e
-            end
         | Gen (_,t) -> aux t
         | App (t1,t2,_,_) -> 
             begin try aux t1 
@@ -175,8 +170,7 @@ let simplify ~genbind
       | Change_rerun f -> aux env f in
     let f = 
       match f.v with
-      | (Const _  | Axiom _ ) -> f
-      | Logic t -> logic (tyfun env t) l
+      | (Const _ ) -> f
       | Var (v,i) -> 
           var_i v (Inst.map (tyfun env) Misc.id Misc.id i) (tyfun env f.t) l
       | App (f1,f2,k,c) -> 
@@ -184,11 +178,10 @@ let simplify ~genbind
       | Gen (g,t) -> 
           let g,t = genbind g env t in
           gen g t env.l
-      | Let (p, g ,e1,b,r) ->
-          let x,e2 = if p then sopen b else vopen b in
-(*           Myformat.printf "let %b: %a@." p Name.print x; *)
+      | Let (g ,e1,b,r) ->
+          let x,e2 = vopen b in
           let g,e1 = genbind g env e1 in
-          let_ ~prelude:p g e1 x (aux env e2) r l
+          let_ g e1 x (aux env e2) r l
       | PureFun (t,b) ->
           let x,e = vopen b in
           varbind env `LAM x t e l
@@ -197,11 +190,6 @@ let simplify ~genbind
           varbind env (k :> [`EX | `FA | `LAM ]) x t e l
       | Ite (e1,e2,e3) -> 
           ite (aux env e1) (aux env e2) (aux env e3) l
-      | TypeDef (g,t,x,e) -> 
-          typedef g t x (aux env e) l
-      | Section (n,f,e) -> 
-          section n f (aux env e) l
-      | EndSec e -> endsec (aux env e) l 
       | Lam _ | Annot _ | For _ | LetReg _ | Param _ -> assert false in
     let f =
       match exhaust after env f with
@@ -222,14 +210,11 @@ let simplify ~genbind
   in
   aux env f
 
+(*
 let map_simplify f = 
   let rec aux env f =
     simplify 
       ~genbind:(fun (tvl,rl,el) env t -> 
-(*
-        Myformat.printf "treating gen %a for expression %a@." 
-          Ty.Generalize.print g print t;
-*)
         let env = List.fold_left (fun env r -> 
           rtype_add r (find_type r t) env) env rl in
         let env = List.fold_left (fun env e ->
@@ -243,10 +228,6 @@ let map_simplify f =
         (* effect variables become type variables *)
         (tvl@el,[],[]), t )
       ~varbind:(fun env k x t e l ->
-(*
-        Myformat.printf "varbind: %a : %a. %a" Name.print x Ty.print t print
-        e;
-*)
         if Ty.is_map t then
           let env, rl, el = add_effect env x (Ty.domain t) in
           let e = aux env e in
@@ -259,39 +240,39 @@ let map_simplify f =
       simplify_maps [] env f in
   aux empty f
 
-let logic_simplify f =
-  let l = f.loc in
-  let rec aux f = match f.v with
-  | (Const _  | Logic _ | Var _ ) -> f
-  | Axiom e -> axiom (aux e) l
-  | App (f1,f2,k,c) -> app ~kind:k ~cap:c (aux f1) (aux f2) l
-  | Gen (g,t) -> gen g (aux t) l
-  | Let (p,g,e1,b,r) ->
-      let x,e2 = if p then sopen b else vopen b in
-      let e2 = aux e2 in
-      begin match e1.v with
-      | Axiom _ | Logic _ -> let_ ~prelude:p g e1 x e2 r l
-      | _ -> polsubst g x (aux e1) e2
-      end
-  | PureFun (t,b) ->
-      let x,e = vopen b in
-      aquant `LAM x t (aux e) l
-  | Quant (k,t,b) -> 
-      let x,e = vopen b in
-      squant k x t (aux e) l
-  | Ite (e1,e2,e3) -> 
-      ite (aux e1) (aux e2) (aux e3) l
-  | TypeDef (g,t,x,e) -> typedef g t x (aux e) l
-  | Section (n,f,e) -> section n f (aux e) l
-  | EndSec e -> endsec (aux e) l 
-  | Lam _ | Annot _ | For _ | LetReg _ | Param _ -> assert false in
-  aux f
+*)
+let term env t =
+  rebuild_map 
+    ~varfun:(fun z i def ->
+      try 
+        let g,t = Name.M.find z env in
+        allsubst g i t
+      with Not_found -> def)
+    ~termfun:(fun t ->
+      match t.v with
+      | Let (g,e1,b,_) ->
+          let x,e2 = vopen b in
+          polsubst g x e1 e2
+      | Const _ | Var _ | App _ | Gen _ | PureFun _ | Quant _ | Ite _ 
+      | Lam _ | Annot _ | For _ | LetReg _ | Param _ -> t)
+    t
 
-let allsimplify f =
-  let f = logic_simplify f in
-(*   Myformat.printf "=============@.%a@.=================@." print f; *)
-  Typing.formtyping f;
-  let f = map_simplify f in
-(*   Myformat.printf ">>>>>>>>>>>>>@.%a@.>>>>>>>>>>>>>>>>>@." print f; *)
-  Typing.formtyping f;
-  f
+let rec decl env d = 
+  match d with
+  | Logic _ | TypeDef _ | DLetReg _ -> env, [d]
+  | Formula (n,f,k) -> env, [Formula (n, term env f, k) ]
+  | Section (s,cl,th) -> 
+      let env, th = theory env th in
+      env, [Section (s,cl,th)]
+  | Program (n,g,t,LogicDef) -> Name.M.add n (g,term env t) env, []
+  | Program _ -> assert false
+and theory env th = 
+  List.fold_left (fun (env, acc) d -> 
+    let env, th  = decl env d in
+    env, th@acc) (env,[]) th
+
+let inline_let th = 
+  let _, th = theory Name.M.empty th in
+  th
+  
+(* let map = map_simplify *)

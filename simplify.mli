@@ -1,1 +1,2 @@
-val allsimplify : Ast.Recon.t -> Ast.Recon.t
+val inline_let : Ast.Recon.theory -> Ast.Recon.theory
+(* val map : Ast.Recon.theory -> Ast.Recon.theory *)
