@@ -22,6 +22,7 @@ let id_or_keyword =
         ("False", fun i -> PFALSE (create_info i) );
         ("let", fun i -> LET (create_info i)  );
         ("axiom", fun i -> AXIOM (create_info i)  );
+        ("goal", fun i -> GOAL (create_info i)  );
         ("logic", fun i -> LOGIC (create_info i)  );
         ("parameter", fun i -> PARAMETER (create_info i)  );
         ("type", fun i -> TYPE (create_info i)  );

@@ -28,6 +28,7 @@ and t = { v : t' ; loc : Loc.loc }
 
 type decl = 
   | Axiom of string * t
+  | Goal of string * t
   | Logic of var *  generalize * ty
   | Section of string * Const.takeover list * decl list
   | TypeDef of generalize * ty option * tyvar

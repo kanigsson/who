@@ -83,6 +83,8 @@ let rec decl env d =
       env, Logic (nv,g, t)
   | I.Axiom (s,t) -> 
       env,Formula (s, term true env t, `Assumed)
+  | I.Goal (s,t) -> 
+      env,Formula (s, term true env t, `Proved)
   | I.Section (s,cl, dl) ->
       let env, dl = theory env dl in
       env, Section (s,cl,dl)

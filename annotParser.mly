@@ -15,6 +15,8 @@ main:
 decl:
   | AXIOM id = defprogvar_no_pos g = gen COLON t = nterm 
     { Axiom (id,mk_term (Gen (g,t)) t.loc) }
+  | GOAL id = defprogvar_no_pos g = gen COLON t = nterm 
+    { Goal (id,mk_term (Gen (g,t)) t.loc) }
   | LETREGION l = IDENT* 
     { DLetReg (strip_info l) }
   | SECTION x = IDENT fn = takeoverdecl* l = decl+ END

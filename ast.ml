@@ -212,7 +212,7 @@ module Print = struct
       | Formula (s,t,`Assumed) ->  
           fprintf fmt "@[<hov 2>axiom %s : %a@]" s term t
       | Formula (s,t,`Proved) ->  
-          fprintf fmt "@[<hov 2>lemma %s : %a@]" s term t
+          fprintf fmt "@[<hov 2>goal %s : %a@]" s term t
       | TypeDef (g,t,x) -> 
           begin match t with
           | None -> fprintf fmt "type %a%a" Name.print x G.print g

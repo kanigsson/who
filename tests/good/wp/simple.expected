@@ -1,0 +1,27 @@
+logic , ['a4 'b2||] : 'a4 -> 'b2 -> 'a4 * 'b2
+logic t  : prop
+logic /\  : prop -> prop -> prop
+logic ->  : prop -> prop -> prop
+logic = ['a||] : 'a -> 'a -> prop
+logic fst ['a2 'b||] : ('a2 * 'b) -> 'a2
+logic snd ['a3 'b1||] : ('a3 * 'b1) -> 'b1
+goal !_correct : True
+let
+  logic ! [|r|] = (fun (x:unit) -> (fun (c:<r  >) -> True)) ,[unit -> <r
+                   > -> prop,unit -> <r  > -> <r  > -> unit -> prop||]
+                  (fun (x:unit) ->
+                  (fun (o:<r  >) ->
+                  (fun (c1:<r  >) -> (fun (r2:unit) -> True)))) 
+goal blit_correct : forall [|s|]. forall (s1:<s  >).
+                                  (9 =[int||] 0) ->
+                                  (t ->
+                                   (fst [unit -> <s  > -> prop,unit -> <s
+                                     > -> <s  > -> unit -> prop||] ! [| s|]
+                                    () s1))
+let
+  logic blit [|s|] = (fun (x1:unit) ->
+                     (fun (c2:<s  >) -> t /\ (9 =[int||] 0))) ,[unit -> <s
+                      > -> prop,unit -> <s  > -> <s  > -> unit -> prop||]
+                     (fun (x1:unit) ->
+                     (fun (a1:<s  >) ->
+                     (fun (c3:<s  >) -> (fun (a2:unit) -> True)))) 
