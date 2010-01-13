@@ -31,6 +31,7 @@ module Identifier = struct
   let combine_id = "combine"
   let restrict_id = "restrict"
   let get_id = "!!"
+  let store_id = ":="
 
 end
 
@@ -65,19 +66,29 @@ module Logic = struct
   let combine_var = Name.from_string combine_id
   let restrict_var = Name.from_string restrict_id
   let get_var = Name.from_string get_id
+  let store_var = Name.from_string store_id
 
   let allvars = [ equal_var ; empty_var ; not_var ; equal_var
       ; empty_var ; not_var ; leb_var ; ltb_var ; gtb_var 
       ; geb_var ; eqb_var ; neqb_var ; andb_var ; orb_var 
       ; le_var  ; lt_var  ; ge_var  ; gt_var  ; neq_var 
       ; and_var ; or_var ; impl_var ; tuple_var ; fst_var ; snd_var ;
-      plus_var ; minus_var ; combine_var ; restrict_var ; get_var
+      plus_var ; minus_var ; combine_var ; restrict_var ; get_var;
+      store_var
   ]
 
+  let infix_vars = 
+    [equal_var ; leb_var ; ltb_var ; gtb_var ; geb_var ; eqb_var
+    ; neqb_var ; andb_var ; orb_var ; le_var ; lt_var ; ge_var 
+    ; gt_var ; neq_var ; and_var ; or_var ; impl_var ; tuple_var
+    ; plus_var ; minus_var ; store_var ]
 
   let map =
     List.fold_left (fun acc x ->
       SM.add (Name.unsafe_to_string x) x acc) SM.empty allvars
+
+  let infix_set = List.fold_right Name.S.add infix_vars Name.S.empty
+
 end
 
 module Ty = struct

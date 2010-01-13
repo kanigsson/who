@@ -32,6 +32,8 @@ val eiter : (Name.t -> unit) -> t -> unit
 val inter : t -> t -> t
 val diff : t -> t -> t
 
+val sub_effect : t -> t -> bool
+
 val split : t -> t -> t * t * t
 (** take two effects and return:
     * the first without the second

@@ -1,0 +1,2 @@
+let logic x  = 5 
+let f  = let logic z = 3 2 

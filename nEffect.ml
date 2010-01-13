@@ -76,4 +76,6 @@ let split d1 d2 =
   let d1 = diff d1 d2 and d2 = diff d2 d1 and d3 = inter d1 d2 in
   d1, d3, d2
 
+let sub_effect (r1,e1) (r2,e2) = S.subset r1 r2 && S.subset e1 e2
+
 

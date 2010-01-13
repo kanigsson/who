@@ -1,6 +1,7 @@
 module U = Unify
 module C = Const
 module G = Ty.Generalize
+module PL = Predefined.Logic
 
 type ('a,'b,'c) t'' =
   | Const of Const.t
@@ -147,9 +148,13 @@ module Print = struct
       | Var (v,i) -> 
           begin match kind with
           | `Who | `Pangoline ->
-              if Inst.is_empty i then Name.print fmt v 
-              else fprintf fmt "%a %a" Name.print v 
-                (Inst.print ~kind ~intype:false pra prb prc) i
+              let pr fmt () =
+                if Inst.is_empty i then Name.print fmt v 
+                else fprintf fmt "%a %a" Name.print v 
+                  (Inst.print ~kind ~intype:false pra prb prc) i
+              in 
+              if Name.S.mem v PL.infix_set then Myformat.paren pr fmt ()
+              else pr fmt ()
           | `Coq -> Name.print fmt v
           end
       | Annot (e,t) -> fprintf fmt "(%a : %a)" print e typrint t
@@ -380,7 +385,6 @@ module Recon = struct
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
   let mk_val v t loc = { v = v; t = t; e = NEffect.empty; loc = loc }
 
-  module PL = Predefined.Logic
   module PT = Ty.Predef
   let ptrue_ loc = mk_val (Const Const.Ptrue) Ty.prop loc
   let pfalse_ loc = mk_val (Const Const.Pfalse) Ty.prop loc
@@ -655,20 +659,22 @@ module Recon = struct
             print t Ty.print t.t
   and combine t1 t2 l = 
     let d1 = domain t1 and d2 = domain t2 in
-    if NEffect.equal d1 d2 then t2 
-    else 
-      let d1', d2', d3' = NEffect.split d1 d2 in
-(*
-      let p = NEffect.print in
-      Myformat.printf "combining %a and %a: from %a and %a, compute: %a | %a | %a@."
-        print t1 print t2 p d1 p d2 p d1' p d2' p d3';
-*)
-      simple_app2 (P.combine_t ([],[],[d1';d2';d3']) l) t1 t2 l
+    let d1', d2', d3' = NEffect.split d1 d2 in
+    if NEffect.is_empty d1' then t2
+    else simple_app2 (P.combine_t ([],[],[d1';d2';d3']) l) t1 t2 l
 
   and restrict eff t l =
     let d = NEffect.diff (domain t) eff in
     if NEffect.is_empty d then t else
-      simple_app (P.restrict_t ([],[],[d; eff]) l) t l
+    try
+      match destruct_app2_var t with
+      | Some (v,([],[],[e1;_;e3]), m1, m2) 
+        when Name.equal v PL.combine_var  ->
+          if NEffect.sub_effect eff e3 then restrict eff m2 l
+          else if NEffect.sub_effect eff e1 then restrict eff m1 l
+          else raise Exit
+      | _ -> raise Exit
+    with Exit -> simple_app (P.restrict_t ([],[],[d; eff]) l) t l
 
     
   let svar s t = var s Inst.empty (G.empty,t) 
@@ -788,6 +794,13 @@ module Recon = struct
     declfun d
   and theory_map ~varfun ~termfun ~declfun th = 
     List.flatten (List.map (decl_map ~varfun ~termfun ~declfun) th)
+
+  let mk_formula n f k = 
+    match f.v with
+    | Const Const.Ptrue -> None
+    | _ -> Some (Formula (n,f,k))
+
+  let mk_goal n f = mk_formula n f `Proved
 
 end
 

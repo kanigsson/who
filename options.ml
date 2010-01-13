@@ -12,6 +12,7 @@ let backend : [ `Coq | `Pangoline ] ref = ref `Coq
 let suffix = ref ".v"
 let verbose = ref false
 let transform_only = ref false
+let no_check = ref false
 
 let transforms = 
   ref (List.rev  [ Anf.theory ; Wp.theory ; Simplify.inline_let ; Simplify.map ])
@@ -27,6 +28,7 @@ let opt_spec =
     "-parse-only", Arg.Set parse_only, " parse file and exit";
     "-infer-only", Arg.Set infer_only, " do type inference and exit";
     "-transform-only", Arg.Set transform_only, " stop after applying transforms";
+    "-no-check", Arg.Set no_check, " do not execute type checks after transforms";
     "-clear", Arg.Unit clear, " clear the list of transformations";
     "-anf", Arg.Unit (append_trans Anf.theory),
       " apply anf normal form transformation";

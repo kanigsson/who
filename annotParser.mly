@@ -42,6 +42,7 @@ term:
   | x = IDENT { svar x.c x.info }
   | x = IDENT i = inst { var x.c i x.info }
   | x = prefix i = inst { let p, s = x in var s i p }
+  | x = prefix { let p, s = x in var s Inst.empty p }
   | p = REF i = inst { var "ref" i p}
   | p = DEXCLAM i = inst x = IDENT t = term
     { app (app (var "!!" i p) (svar x.c x.info) (embrace p x.info)) 
@@ -49,6 +50,8 @@ term:
   | c = constant { let p,c = c in mk_term (Const c) p }
   | p1 = LPAREN t = nterm p2 = RPAREN 
     { mk_term t.v (embrace p1 p2) }
+  | p1 = LPAREN i = infix inst = inst p2 = RPAREN
+    { let _,x = i in mk_term (Var (x,inst)) (embrace p1 p2) }
   | l = LPAREN e = nterm COLON t = ty r = RPAREN 
     { mk_term (Annot (e,t)) (embrace l r) }
 
@@ -82,6 +85,9 @@ nterm:
     { mk_term (Ite(it,tb,eb)) (embrace st eb.loc) }
   | st = LET x = defprogvar_no_pos g = gen EQUAL t1 = nterm IN t2 = nterm %prec let_
     { mk_term (Let (g,t1,x,t2, NoRec)) (embrace st t2.loc) }
+  | st = LET LOGIC x = defprogvar_no_pos g = gen EQUAL t1 = nterm 
+     IN t2 = nterm %prec let_
+    { mk_term (Let (g,t1,x,t2, LogicDef)) (embrace st t2.loc) }
   | st = LET REC x = defprogvar_no_pos g = gen COLON t = ty 
     EQUAL t1 = nterm IN t2 = nterm %prec let_
     { mk_term (Let (g,t1,x,t2, Rec t)) (embrace st t2.loc) }

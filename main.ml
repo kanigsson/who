@@ -45,7 +45,7 @@ let apply_one_trans f t =
   if !Options.verbose then Myformat.printf "applying transformation...@?";
   let nt = f t in
   if !Options.verbose then Myformat.printf "checking...@?";
-  Typing.theory nt; 
+  if !Options.no_check then () else Typing.theory nt; 
   if !Options.verbose then Myformat.printf "done@.";
   nt
 

@@ -145,8 +145,11 @@ let rec decl d =
       (* TODO recursive functions *)
       let lv = lift_value e in
       let f = gen g (correct e) e.loc in
-      [ Formula (Name.unsafe_to_string x ^ "_correct", f, `Proved) ; 
-        Program (x,g,lv, Const.LogicDef) ; ]
+      let def = Program (x,g,lv, Const.LogicDef) in
+      begin match mk_goal (Name.unsafe_to_string x ^ "_correct") f with
+      | None -> [def]
+      | Some goal -> [goal ; def ]
+      end
   | Program _ -> assert false
 
 

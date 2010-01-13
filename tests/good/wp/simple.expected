@@ -5,7 +5,6 @@ logic ->  : prop -> prop -> prop
 logic = ['a||] : 'a -> 'a -> prop
 logic fst ['a2 'b||] : ('a2 * 'b) -> 'a2
 logic snd ['a3 'b1||] : ('a3 * 'b1) -> 'b1
-goal !_correct : True
 let
   logic ! [|r|] = (fun (x:unit) -> (fun (c:<r  >) -> True)) ,[unit -> <r
                    > -> prop,unit -> <r  > -> <r  > -> unit -> prop||]

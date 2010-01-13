@@ -269,9 +269,13 @@ let rec decl env d =
   | Program (n,g,t,LogicDef) -> Name.M.add n (g,term env t) env, []
   | Program _ -> assert false
 and theory env th = 
+  let env, l = Misc.list_fold_map decl env th in
+  env, List.flatten l
+(*
   List.fold_left (fun (env, acc) d -> 
     let env, th  = decl env d in
     env, th@acc) (env,[]) th
+*)
 
 let inline_let th = 
   let _, th = theory Name.M.empty th in

@@ -62,7 +62,7 @@ let rec term logic env (t : I.t) =
   | I.Param (t,e) -> R.param (ty env t) (effect env e) l
 and letgen env x g e r = 
   let env', g = add_gen env g in
-  let nv = Name.from_string x in
+  let nv = var_from_string x in
   let env', logic = 
     match r with 
     | Const.NoRec -> env', false

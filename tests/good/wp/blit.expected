@@ -32,7 +32,6 @@ logic != ['a6||] : 'a6 -> 'a6 -> bool
 section Whoref coq "WhoMap"
   pangoline predefined
    logic !! ['a7|r|'e] : ref(r,'a7) -> < 'e > -> 'a7
-  goal !_correct : True
   let
     logic ! ['a8|r1|] = (fun (x:ref(r1,'a8)) -> (fun (cur:<r1  >) -> True))
                         ,[ref(r1,'a8) -> <r1  > -> prop,ref(r1,'a8) -> <r1
@@ -44,7 +43,6 @@ section Whoref coq "WhoMap"
                         ((!! ['a8| r1| {r1  }] x cur1) =['a8||] r2) /\
                         ((!! ['a8| r1| {r1  }] x old) =['a8||]
                          (!! ['a8| r1| {r1  }] x cur1)))))) 
-  goal :=_correct : True
   let
     logic := ['a9|r3|] = (fun (x1:ref(r3,'a9)) ->
                          (fun (v:'a9) -> (fun (cur2:<r3  >) -> True))
@@ -55,7 +53,6 @@ section Whoref coq "WhoMap"
                          (fun (cur3:<r3  >) ->
                          (fun (anon:unit) ->
                          (!! ['a9| r3| {r3  }] x1 cur3) =['a9||] v))))) 
-  goal ref_correct : True
   let
     logic ref ['a10|r4|] = (fun (v1:'a10) -> (fun (cur4:<r4  >) -> True))
                            ,['a10 -> <r4  > -> prop,'a10 -> <r4  > -> <r4
@@ -69,11 +66,8 @@ section Whoref coq "WhoMap"
     >
   logic restrict [||'e11 'e21] : < 'e11 'e21 > -> < 'e21 >
   logic empty  : < >
-  goal pre_correct : True
   let logic pre ['a11 'b3||] = (fun (x3:'a11 * 'b3) -> fst ['a11,'b3||] x3) 
-  goal post_correct : True
   let logic post ['a12 'b4||] = (fun (x4:'a12 * 'b4) -> snd ['a12,'b4||] x4)  end
-goal forto_correct : True
 let
   logic forto [||'e11] = (fun (inv:int -> < 'e11 > -> prop) ->
                          (fun (start:int) ->
@@ -105,7 +99,6 @@ let
                          (fun (cur7:< 'e11 >) ->
                          (fun (anon1:unit) ->
                          inv (max start (end_ + 1)) cur7))))))) 
-goal fordownto_correct : True
 let
   logic fordownto [||'e21] = (fun (inv1:int -> < 'e21 > -> prop) ->
                              (fun (start1:int) ->
@@ -229,17 +222,14 @@ goal blit_correct : forall ['a31|r11
                ((fst [ref(r21,array['a31||]) -> <r21  > ->
                  prop,ref(r21,array['a31||]) -> <r21  > -> <r21  > ->
                  (array['a31||]) -> prop||] ! [array['a31||]| r21|] ar2
-                 (restrict [|| {r11  } {r21  }]
-                  (combine [|| {r21  } {r11  } { }] s s1)))
+                 (restrict [|| {r11  } {r21  }] s))
                 /\
                 (forall (s2:<r21  >).
                  forall (anon2:array['a31||]).
                  (snd [ref(r21,array['a31||]) -> <r21  > ->
                   prop,ref(r21,array['a31||]) -> <r21  > -> <r21  > ->
                   (array['a31||]) -> prop||] ! [array['a31||]| r21|] ar2
-                  (restrict [|| {r11  } {r21  }]
-                   (combine [|| {r21  } {r11  } { }] s s1))
-                  s2 anon2)
+                  (restrict [|| {r11  } {r21  }] s) s2 anon2)
                  ->
                  (let logic l21 = len ['a31||] anon2 in
                   ((ofs1 < ofs2) ->
@@ -283,8 +273,7 @@ goal blit_correct : forall ['a31|r11
                               prop,ref(r21,array['a31||]) -> <r21  > -> <r21
                                > -> (array['a31||]) -> prop||]
                               ! [array['a31||]| r21|] ar2
-                              (restrict [|| {r11  } {r21  }]
-                               (combine [|| {r21  } {r11  } { }] s3 s4)))
+                              (restrict [|| {r11  } {r21  }] s3))
                              /\
                              (forall (s5:<r21  >).
                               forall (anon4:array['a31||]).
@@ -292,14 +281,12 @@ goal blit_correct : forall ['a31|r11
                                prop,ref(r21,array['a31||]) -> <r21  > -> <r21
                                 > -> (array['a31||]) -> prop||]
                                ! [array['a31||]| r21|] ar2
-                               (restrict [|| {r11  } {r21  }]
-                                (combine [|| {r21  } {r11  } { }] s3 s4))
-                               s5 anon4)
+                               (restrict [|| {r11  } {r21  }] s3) s5 anon4)
                               ->
                               ((fst [(array['a31||]) -> <r21  > ->
                                 prop,(array['a31||]) -> <r21  > -> <r21  > ->
                                 unit -> prop||]
-                                (:= [array['a31||]| r21|] ar2)
+                                ((:= [array['a31||]| r21|]) ar2)
                                 (set ['a31||] (ofs2 + i6)
                                  (get ['a31||] (ofs1 + i6) anon3) anon4)
                                 s5)
@@ -308,7 +295,7 @@ goal blit_correct : forall ['a31|r11
                                 (snd [(array['a31||]) -> <r21  > ->
                                  prop,(array['a31||]) -> <r21  > -> <r21
                                   > -> unit -> prop||]
-                                 (:= [array['a31||]| r21|] ar2)
+                                 ((:= [array['a31||]| r21|]) ar2)
                                  (set ['a31||] (ofs2 + i6)
                                   (get ['a31||] (ofs1 + i6) anon3) anon4)
                                  s5 s6 ())
@@ -539,8 +526,7 @@ goal blit_correct : forall ['a31|r11
                               prop,ref(r21,array['a31||]) -> <r21  > -> <r21
                                > -> (array['a31||]) -> prop||]
                               ! [array['a31||]| r21|] ar2
-                              (restrict [|| {r11  } {r21  }]
-                               (combine [|| {r21  } {r11  } { }] s8 s9)))
+                              (restrict [|| {r11  } {r21  }] s8))
                              /\
                              (forall (s10:<r21  >).
                               forall (anon6:array['a31||]).
@@ -548,14 +534,12 @@ goal blit_correct : forall ['a31|r11
                                prop,ref(r21,array['a31||]) -> <r21  > -> <r21
                                 > -> (array['a31||]) -> prop||]
                                ! [array['a31||]| r21|] ar2
-                               (restrict [|| {r11  } {r21  }]
-                                (combine [|| {r21  } {r11  } { }] s8 s9))
-                               s10 anon6)
+                               (restrict [|| {r11  } {r21  }] s8) s10 anon6)
                               ->
                               ((fst [(array['a31||]) -> <r21  > ->
                                 prop,(array['a31||]) -> <r21  > -> <r21  > ->
                                 unit -> prop||]
-                                (:= [array['a31||]| r21|] ar2)
+                                ((:= [array['a31||]| r21|]) ar2)
                                 (set ['a31||] (ofs2 + i7)
                                  (get ['a31||] (ofs1 + i7) anon5) anon6)
                                 s10)
@@ -564,7 +548,7 @@ goal blit_correct : forall ['a31|r11
                                 (snd [(array['a31||]) -> <r21  > ->
                                  prop,(array['a31||]) -> <r21  > -> <r21
                                   > -> unit -> prop||]
-                                 (:= [array['a31||]| r21|] ar2)
+                                 ((:= [array['a31||]| r21|]) ar2)
                                  (set ['a31||] (ofs2 + i7)
                                   (get ['a31||] (ofs1 + i7) anon5) anon6)
                                  s10 s11 ())
