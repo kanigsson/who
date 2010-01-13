@@ -42,14 +42,18 @@ let infer_parser abort fn token buf =
         abort ()
 
 let apply_one_trans f t = 
+  if !Options.verbose then Myformat.printf "applying transformation...@?";
   let nt = f t in
-  Typing.theory nt; nt
+  if !Options.verbose then Myformat.printf "checking...@?";
+  Typing.theory nt; 
+  if !Options.verbose then Myformat.printf "done@.";
+  nt
 
 let apply_all_trans t = 
   let t = 
     if !Options.transforms = [] then begin Typing.theory t; t end
     else List.fold_right apply_one_trans !Options.transforms t in
-  Myformat.printf "%a@." Ast.Recon.print_theory t;
+  maybe_abort Options.transform_only Ast.Recon.print_theory t;
   t
 
 let _ = 

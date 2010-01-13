@@ -118,13 +118,17 @@ and wp m q e =
     | Param _ -> ptrue_ l
     | _ -> assert false
 and wp_node m q e = 
+(*   Myformat.printf "wp:%a@." print e; *)
+  let r = 
   if NEffect.equal (domain m) e.e then wp m q e
   else begin
     let l = e.loc in
     wp (restrict e.e m l) 
       (efflamho e.e (fun m2 -> app q (combine m m2 l) l) l) 
       e
-  end
+  end in
+(*   Myformat.printf "--end@.";  *)
+  r
 
 let main e = 
   let l = e.loc in

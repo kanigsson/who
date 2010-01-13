@@ -1,0 +1,5 @@
+logic <<  : int -> int -> bool
+let
+  blit  = (fun (d:int) -> {(fun (cur10:< >) -> True)}
+          if 0 << 0 then () else ()
+          {(fun (a:< >) -> (fun (b:< >) -> (fun (c:unit) -> True)))}) 

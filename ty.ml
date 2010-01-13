@@ -83,7 +83,7 @@ let arg = function
 let destr_tuple (C t) = 
   match t with
   | Tuple (t1,t2) -> t1,t2
-  | _ -> assert false
+  | _ ->  invalid_arg "Ty.destr_tuple"
 
 let latent_effect = function
   | C (Arrow (_,_,e,_)) -> e
@@ -335,13 +335,17 @@ module Predef = struct
     (([a;b],[],[]), parr (tuple ta tb) ta),
     (([a;b],[],[]), parr (tuple ta tb) tb)
 
-  let combine, restrict =
+  let combine, restrict, get =
     let es = NEffect.esingleton and nf = Name.from_string in
     let ess a b = NEffect.eadd (es a) b in
     let e1 = nf "e1" and e2 = nf "e2" and e3 = nf "e3" in
+    let a = Name.from_string "c" in
+    let ta = var a in
+    let r = Name.from_string "r" in
     let eff1 = ess e1 e2 and eff2 = ess e2 e3 in
     let eff3 = NEffect.eadd eff1 e3 in
     (([],[],[e1;e2;e3]), parr (map eff1) (parr (map eff2) (map eff3))) ,
-    (([],[],[e1;e2]), parr (map eff1) (map (es e1)))
+    (([],[],[e1;e2]), parr (map eff1) (map (es e2))), 
+    (([a],[r],[e1]), parr (ref_ r ta) (parr (map (NEffect.radd (es e1) r)) ta))
 
 end

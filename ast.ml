@@ -118,7 +118,7 @@ module Print = struct
   let prrec fmt = function
     | Const.NoRec -> ()
     | Const.Rec t -> fprintf fmt "rec(%a) " Ty.print t
-    | Const.LogicDef -> fprintf fmt "logic" 
+    | Const.LogicDef -> fprintf fmt "logic " 
 
   (* TODO factorize the different branches *)
   let term ?(kind=`Who) pra prb prc open_ fmt t = 
@@ -282,22 +282,11 @@ let destruct_app2_var' x =
   | Some ({v = Var (v,g)},f1,f2) -> Some (v,g,f1,f2)
   | _ -> None
 
-let destruct_get' x = 
-  match destruct_app2_var' x with
-  | Some ({ Name.name = Some "!!"}, ([t],[reg],[e]), r,map) -> 
-      Some (t,r,reg,e,map)
-  | _ -> None
-
+(*
 let destruct_kget' x = 
   match destruct_app2_var' x with
   | Some ({ Name.name = Some "kget"}, ([t],[reg],[]), ref,map) -> 
       Some (t,ref,reg,map)
-  | _ -> None
-
-let destruct_restrict' x = 
-  match destruct_app' x with
-  | Some ({v = Var ({Name.name = Some "restrict"},([],[],[e1;e2]))}, map) ->
-      Some (map,e1,e2)
   | _ -> None
 
 let destruct_krestrict' x = 
@@ -306,30 +295,27 @@ let destruct_krestrict' x =
       Some (map,e1,e2)
   | _ -> None
 
-let destruct_combine' x = 
-  match destruct_app2_var' x with
-  | Some ({ Name.name = Some "combine" },([],[],[e1;e2]), m1,m2) ->
-      Some (m1,e1,m2,e2)
-  | _ -> None
-
 let destruct_kcombine' x = 
   match destruct_app2_var' x with
   | Some ({ Name.name = Some "kcombine" },([],[],[e1;e2]), m1,m2) ->
       Some (m1,e1,m2,e2)
   | _ -> None
 
+*)
 let destruct_app2_var x = destruct_app2_var' x.v
 let destruct_app x = destruct_app' x.v
+(*
 let destruct_get x = destruct_get' x.v
 let destruct_kget x = destruct_kget' x.v
 let destruct_restrict x = destruct_restrict' x.v
 let destruct_combine x = destruct_combine' x.v
 let destruct_krestrict x = destruct_krestrict' x.v
 let destruct_kcombine x = destruct_kcombine' x.v
+*)
 
 let destruct_varname x = 
   match x.v with
-  | Var ({ Name.name = Some v}, tl) -> Some (v,tl)
+  | Var (v, tl) -> Some (v,tl)
   | _ -> None
 
 let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
@@ -348,6 +334,11 @@ module Recon = struct
   type inst = (Ty.t, Name.t, NEffect.t) Inst.t
   type theory = th
   type decl = decl'
+
+  exception Error of string * Loc.loc
+
+  let error loc s = 
+    Myformat.ksprintf (fun s -> raise (Error (s,loc))) s
 
   let tsubst tvl tl e =
     open_close_map ~varfun:(fun v i -> Var (v,i)) 
@@ -376,6 +367,9 @@ module Recon = struct
     Print.term ~kind (Ty.gen_print kind) Name.print NEffect.print sopen fmt t
   let coq_print fmt t = gen_print `Coq fmt t
   let print fmt t = gen_print `Who fmt t
+
+  let print_decl =
+    Print.decl ~kind:`Who (Ty.gen_print `Who) Name.print NEffect.print sopen
 
   let print_theory = 
     Print.theory ~kind:`Who (Ty.gen_print `Who) Name.print NEffect.print sopen
@@ -440,6 +434,7 @@ module Recon = struct
 
     let combine_t i = var PL.combine_var i PT.combine
     let restrict_t i = var PL.restrict_var i PT.restrict
+    let get_t i = var PL.get_var i PT.get
   end
 
   module P = Predef
@@ -450,6 +445,11 @@ module Recon = struct
     | _ -> v
 
   let annot e t = true_or e (mk (Annot (e,t)) t e.e e.loc)
+
+  let domain t = 
+    match t.t with
+    | Ty.C Ty.Map e -> e
+    | _ -> assert false
 
   let let_ g e1 x e2 r l = 
     true_or e2 
@@ -486,7 +486,8 @@ module Recon = struct
     | x when eq x PL.orb_var -> fun _ -> P.or_t
     | _ -> raise Exit
 
-  let rec app ?kind ?cap t1 t2 l = 
+  let rec app ?kind ?cap t1 t2 l : t = 
+(*     Myformat.printf "app: %a and %a@." print t1 print t2; *)
       try match t1.v with
       (* we are trying to build (λx.t) e, reduce to t[x|->e] *)
       | PureFun (_,l) ->
@@ -495,16 +496,20 @@ module Recon = struct
       (* double application, check if we are not in a simplification case *)
       | App (op,t1,_,_) ->
           begin match destruct_varname op with
-          | Some ("/\\",_) -> and_ t1 t2 l
-          | Some ("->",_) -> impl t1 t2 l
-          | Some ("=",_) -> eq t1 t2 l
+          | Some (v,_) when Name.equal v PL.and_var -> and_ t1 t2 l
+          | Some (v,_) when Name.equal v PL.impl_var -> impl t1 t2 l
+          | Some (v,_) when Name.equal v PL.equal_var -> eq t1 t2 l
+          | Some (v,_) when Name.equal v PL.combine_var -> combine t1 t2 l
           | _ -> raise Exit
           end
       | _ ->
+      (* simple application *)
           match destruct_varname t1 with
-          | Some ("~",_) -> neg t2 l
-          | Some (("fst" | "pre"), _) -> pre t2 l
-          | Some (("post" | "snd"), _) -> post t2 l
+          | Some (v,_) when Name.equal v PL.not_var -> neg t2 l
+          | Some (v, _) when Name.equal v PL.fst_var -> pre t2 l
+          | Some (v, _) when Name.equal v PL.snd_var -> post t2 l
+          | Some (v, ([],[],[_;b])) when Name.equal v PL.restrict_var -> 
+              restrict b t2 l
           | _ -> raise Exit
       with Exit -> simple_app ?kind ?cap t1 t2 l
 
@@ -554,6 +559,7 @@ module Recon = struct
       termfun t in
     aux t
   and impl h1 goal l = 
+(*     Myformat.printf "impl: %a and %a@." print h1 print goal; *)
     try match destruct_app2_var h1 with
     | Some (v, _, ha, hb) when Name.equal v PL.and_var -> impl ha (impl hb goal l) l
     | _ ->
@@ -562,7 +568,7 @@ module Recon = struct
             begin match destruct_app2_var h1,destruct_app2_var h2 with
             | Some ( v, _,_, _), _ when Name.equal v PL.equal_var -> raise Exit
             | _, Some (v, _,_, _) when Name.equal v PL.equal_var -> 
-                impl h1 (impl h2 goal l) l
+                impl h2 (impl h1 goal l) l
             | _ -> raise Exit
             end
          | _ ->
@@ -595,6 +601,7 @@ module Recon = struct
     | _, Const Const.Pfalse -> t2
     | _ -> simple_appi (P.and_t l) t1 t2 l
   and subst x v e =
+(*     Myformat.printf "subst: %a@." Name.print x ; *)
     rebuild_map
       ~varfun:(fun z i def -> if Name.equal z x then v i else def)
       ~termfun:Misc.id e
@@ -628,18 +635,44 @@ module Recon = struct
     match destruct_app2_var t with
     | Some (v,_,a,_) when Name.equal v PL.tuple_var -> a
     | _ -> 
-        let t1, t2 = Ty.destr_tuple t.t in
-        simple_app (P.fst_t ([t1;t2],[],[]) l) t l
+        try 
+          let t1, t2 = Ty.destr_tuple t.t in
+          simple_app (P.fst_t ([t1;t2],[],[]) l) t l
+        with Invalid_argument "Ty.destr_tuple" ->
+          error t.loc "term %a is not of tuple type, but of type %a@." 
+            print t Ty.print t.t
+
 
   and post t l = 
     match destruct_app2_var t with
     | Some (v,_,_,b) when Name.equal v PL.tuple_var -> b
     | _ -> 
-        let t1, t2 = Ty.destr_tuple t.t in
-        simple_app (P.snd_t ([t1;t2],[],[]) l) t l
+        try
+          let t1, t2 = Ty.destr_tuple t.t in
+          simple_app (P.snd_t ([t1;t2],[],[]) l) t l
+        with Invalid_argument "Ty.destr_tuple" ->
+          error t.loc "term %a is not of tuple type, but of type %a@." 
+            print t Ty.print t.t
+  and combine t1 t2 l = 
+    let d1 = domain t1 and d2 = domain t2 in
+    if NEffect.equal d1 d2 then t2 
+    else 
+      let d1', d2', d3' = NEffect.split d1 d2 in
+(*
+      let p = NEffect.print in
+      Myformat.printf "combining %a and %a: from %a and %a, compute: %a | %a | %a@."
+        print t1 print t2 p d1 p d2 p d1' p d2' p d3';
+*)
+      simple_app2 (P.combine_t ([],[],[d1';d2';d3']) l) t1 t2 l
+
+  and restrict eff t l =
+    let d = NEffect.diff (domain t) eff in
+    if NEffect.is_empty d then t else
+      simple_app (P.restrict_t ([],[],[d; eff]) l) t l
+
     
   let svar s t = var s Inst.empty (G.empty,t) 
-  let le t1 t2 loc = appi (P.le_t loc) t1 t2 loc
+  let le t1 t2 loc = simple_appi (P.le_t loc) t1 t2 loc
 
   let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
   let efflam x eff e = plam x (Ty.map eff) e
@@ -718,31 +751,31 @@ module Recon = struct
     | PureFun (_,(_,_,e)) -> is_param e
     | _ -> false
 
-  let domain t = 
-    match t.t with
-    | Ty.C Ty.Map e -> e
-    | _ -> assert false
+  let destruct_restrict' x = 
+    match destruct_app' x with
+    | Some ({v = Var (v,([],[],[e1;e2]))},map) when Name.equal v PL.restrict_var ->
+        Some (map,e1,e2)
+    | _ -> None
 
-  let combine t1 t2 l = 
-    let d1 = domain t1 and d2 = domain t2 in
-    if NEffect.equal d1 d2 then t2 
-    else 
-      let d1, d2, d3 = NEffect.split d1 d2 in
-      app2 (P.combine_t ([],[],[d1;d2;d3]) l) t1 t2 l
+  let destruct_combine' x = 
+    match destruct_app2_var' x with
+    | Some (v,([],[],[e1;e2]), m1,m2) when Name.equal v PL.combine_var ->
+        Some (m1,e1,m2,e2)
+    | _ -> None
 
-  let restrict eff t l =
-    let d = domain t in
-    if NEffect.equal d eff then t else
-      app (P.restrict_t ([],[],[NEffect.diff (domain t) eff; eff]) l) t l
+  let destruct_get' x = 
+    match destruct_app2_var' x with
+    | Some (v, ([t],[reg],[e]), r,map) when Name.equal v PL.get_var -> 
+        Some (t,r,reg,e,map)
+    | _ -> None
 
-(*
   let get ref map l = 
-    let d = domain map in
     match ref.t with 
     | Ty.C (Ty.Ref (r,t)) ->
-        app2 (pre_defvar  "!!" ([t],[r],[d]) l) ref map l
+        let d = domain map in
+        let d = NEffect.rremove d [r] in
+        simple_app2 (P.get_t ([t],[r],[d]) l) ref map l
     | _ -> assert false
-*)
 
   let rec decl_map ~varfun ~termfun ~declfun d : decl list =
     let d = 

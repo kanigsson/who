@@ -104,4 +104,5 @@ module Predef : sig
   
   val combine : Generalize.t * t
   val restrict : Generalize.t * t
+  val get : Generalize.t * t
 end

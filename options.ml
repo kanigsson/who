@@ -10,6 +10,8 @@ let check_coq = ref false
 let input_annot = ref false
 let backend : [ `Coq | `Pangoline ] ref = ref `Coq
 let suffix = ref ".v"
+let verbose = ref false
+let transform_only = ref false
 
 let transforms = 
   ref (List.rev  [ Anf.theory ; Wp.theory ; Simplify.inline_let ; Simplify.map ])
@@ -24,6 +26,7 @@ let opt_spec =
     "-input-annot", Arg.Set input_annot, "take fully type annotated input file";
     "-parse-only", Arg.Set parse_only, " parse file and exit";
     "-infer-only", Arg.Set infer_only, " do type inference and exit";
+    "-transform-only", Arg.Set transform_only, " stop after applying transforms";
     "-clear", Arg.Unit clear, " clear the list of transformations";
     "-anf", Arg.Unit (append_trans Anf.theory),
       " apply anf normal form transformation";
@@ -39,6 +42,7 @@ let opt_spec =
             " set output format to pangoline";
     "-check-coq", Arg.Set check_coq, " check produced coq file using coqc";
     "-no-prelude", Arg.Set no_prelude, " do not add a prelude to the file";
+    "-v", Arg.Set verbose, " be verbose";
   ]
 
 let () = Arg.parse opt_spec store_fn "Usage: who <options> <file>"
