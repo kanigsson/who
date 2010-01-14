@@ -2,6 +2,7 @@ open Name
 open Const
 open Ast
 open Recon
+module PL = Predefined.Logic
 
 module NPair = struct
   type t = Name.t * Name.t
@@ -9,8 +10,6 @@ module NPair = struct
 end
 
 module NPM = Map.Make(NPair)
-
-exception No_Match
 
 (* rtypes : returns a type for a region name 
    renames : retuns a unique name for a couple (region, state) 
@@ -115,7 +114,7 @@ let distrib_app env x =
       Simple_change f
   | _ -> Nochange
 
-(* transform !! x m into m|x *)
+(* transform !! x m into m_x *)
 let get_map env x = 
 (*   Myformat.printf "get_form: %a@." print' x; *)
   match destruct_get' x with
@@ -228,8 +227,8 @@ let map_simplify f =
   let rec decl env d = 
     Myformat.printf "%a@." print_decl d;
     match d with
+    | Logic (n,_,_) when Name.S.mem n PL.effrec_set -> env, []
     | Logic (s,((_,[],[]) as g),t) -> env, [Logic (s,g,tyfun env t)]
-    | Logic _ -> env, []
     | DLetReg _ -> 
         (* TODO *)
         env, [d]
@@ -241,7 +240,7 @@ let map_simplify f =
     | Program (n,g,t,LogicDef) -> 
         let g,t = genbind g env t in
         env, [Program (n,g,t,LogicDef)]
-    | Program _ -> assert false 
+    | Program _ | Logic _ -> assert false 
   and theory env th = 
     let env, l = Misc.list_fold_map decl env th in
     env, List.flatten l in

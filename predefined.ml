@@ -77,17 +77,22 @@ module Logic = struct
       store_var
   ]
 
-  let infix_vars = 
-    [equal_var ; leb_var ; ltb_var ; gtb_var ; geb_var ; eqb_var
-    ; neqb_var ; andb_var ; orb_var ; le_var ; lt_var ; ge_var 
-    ; gt_var ; neq_var ; and_var ; or_var ; impl_var ; tuple_var
-    ; plus_var ; minus_var ; store_var ]
 
   let map =
     List.fold_left (fun acc x ->
       SM.add (Name.unsafe_to_string x) x acc) SM.empty allvars
 
-  let infix_set = List.fold_right Name.S.add infix_vars Name.S.empty
+  let infix_set = 
+    let infix_vars = 
+      [equal_var ; leb_var ; ltb_var ; gtb_var ; geb_var ; eqb_var
+      ; neqb_var ; andb_var ; orb_var ; le_var ; lt_var ; ge_var 
+      ; gt_var ; neq_var ; and_var ; or_var ; impl_var ; tuple_var
+      ; plus_var ; minus_var ; store_var ] in
+    List.fold_right Name.S.add infix_vars Name.S.empty
+
+  let effrec_set = 
+    let effrec_vars = [ combine_var ; restrict_var ; empty_var ] in
+    List.fold_right Name.S.add effrec_vars Name.S.empty
 
 end
 
