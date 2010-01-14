@@ -91,7 +91,7 @@ module Logic = struct
     List.fold_right Name.S.add infix_vars Name.S.empty
 
   let effrec_set = 
-    let effrec_vars = [ combine_var ; restrict_var ; empty_var ] in
+    let effrec_vars = [ combine_var ; restrict_var ; empty_var ; get_var ] in
     List.fold_right Name.S.add effrec_vars Name.S.empty
 
 end

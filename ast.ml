@@ -313,7 +313,6 @@ let destruct_app x = destruct_app' x.v
 let destruct_get x = destruct_get' x.v
 let destruct_kget x = destruct_kget' x.v
 let destruct_restrict x = destruct_restrict' x.v
-let destruct_combine x = destruct_combine' x.v
 let destruct_krestrict x = destruct_krestrict' x.v
 let destruct_kcombine x = destruct_kcombine' x.v
 *)
@@ -761,12 +760,6 @@ module Recon = struct
     match destruct_app' x with
     | Some ({v = Var (v,([],[],[e1;e2]))},map) when Name.equal v PL.restrict_var ->
         Some (map,e1,e2)
-    | _ -> None
-
-  let destruct_combine' x = 
-    match destruct_app2_var' x with
-    | Some (v,([],[],[e1;e2]), m1,m2) when Name.equal v PL.combine_var ->
-        Some (m1,e1,m2,e2)
     | _ -> None
 
   let destruct_get' x = 

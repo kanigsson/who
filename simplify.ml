@@ -105,7 +105,7 @@ let distrib_app env x =
   let l = env.l in
   match x with
   | App (t1,t2,_,_) when Ty.is_map t2.t -> 
-      let er = Effrec.from_form_t t2.t t2.v in
+      let er = Effrec.from_form_t t2.t t2 in
       let t1 = {t1 with t = Ty.selim_map (rtype env) t1.t} in
       let f = Effrec.rfold (fun r s acc -> 
         app acc (build_var r s env) l) er t1 in
@@ -119,8 +119,8 @@ let get_map env x =
 (*   Myformat.printf "get_form: %a@." print' x; *)
   match destruct_get' x with
   | Some (_,_,reg,dom,m) -> 
-      let (rm,_) = Effrec.from_form dom m.v in
-      let nf = build_var reg (Name.M.find reg rm) env in
+      let t = Effrec.from_form dom m in
+      let nf = build_var reg (Effrec.get_reg reg t) env in
       Simple_change nf
   | _ -> 
 (*       Myformat.printf "get_form: %a@." print' x; *)
@@ -170,7 +170,7 @@ let simplify ~genbind
       match f.v with
       | (Const _ ) -> f
       | Var (v,i) -> 
-          Myformat.printf "treating var: %a@." Name.print v;
+(*           Myformat.printf "treating var: %a@." Name.print v; *)
           var_i v (Inst.map (tyfun env) Misc.id Misc.id i) (tyfun env f.t) l
       | App (f1,f2,k,c) -> 
           app ~kind:k ~cap:c (aux env f1) (aux env f2) l
@@ -225,7 +225,7 @@ let map_simplify f =
   and aux env f =
     simplify ~genbind ~varbind ~tyfun simplify_maps [] env f in
   let rec decl env d = 
-    Myformat.printf "%a@." print_decl d;
+(*     Myformat.printf "%a@." print_decl d; *)
     match d with
     | Logic (n,_,_) when Name.S.mem n PL.effrec_set -> env, []
     | Logic (s,((_,[],[]) as g),t) -> env, [Logic (s,g,tyfun env t)]
@@ -236,7 +236,7 @@ let map_simplify f =
     | Formula (n,f,k) -> env, [Formula (n, aux env f, k)]
     | Section (s,cl,th) -> 
         let env, th = theory env th in
-        env, [Section (s,cl,th)]
+        env, if th = [] then [] else [Section (s,cl,th)]
     | Program (n,g,t,LogicDef) -> 
         let g,t = genbind g env t in
         env, [Program (n,g,t,LogicDef)]

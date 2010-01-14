@@ -1,8 +1,0 @@
-pangoline lookup_who.pge
-type arrow (2)
-type parrow (1)
-type tprop (0)
-logic equal : forall type a. (a,a)  ->  prop
-logic papp : forall type a. ((a) parrow,a)  ->  prop
-logic app : forall type a b. ((a,b) arrow,a)  ->  b
-logic eval : (() tprop)  ->  prop
