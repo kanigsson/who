@@ -171,6 +171,7 @@ let simplify ~genbind
       match f.v with
       | (Const _ ) -> f
       | Var (v,i) -> 
+          Myformat.printf "treating var: %a@." Name.print v;
           var_i v (Inst.map (tyfun env) Misc.id Misc.id i) (tyfun env f.t) l
       | App (f1,f2,k,c) -> 
           app ~kind:k ~cap:c (aux env f1) (aux env f2) l
@@ -225,21 +226,25 @@ let map_simplify f =
   and aux env f =
     simplify ~genbind ~varbind ~tyfun simplify_maps [] env f in
   let rec decl env d = 
+    Myformat.printf "%a@." print_decl d;
     match d with
-    | Logic (s,((_,[],[]) as g),t) -> env, Logic (s,g,tyfun env t)
+    | Logic (s,((_,[],[]) as g),t) -> env, [Logic (s,g,tyfun env t)]
+    | Logic _ -> env, []
     | DLetReg _ -> 
         (* TODO *)
-        env, d
-    | TypeDef _ -> env, d
-    | Formula (n,f,k) -> env, Formula (n, aux env f, k)
+        env, [d]
+    | TypeDef _ -> env, [d]
+    | Formula (n,f,k) -> env, [Formula (n, aux env f, k)]
     | Section (s,cl,th) -> 
         let env, th = theory env th in
-        env, Section (s,cl,th)
+        env, [Section (s,cl,th)]
     | Program (n,g,t,LogicDef) -> 
         let g,t = genbind g env t in
-        env, Program (n,g,t,LogicDef)
-    | Logic _ | Program _ -> assert false 
-  and theory env th = Misc.list_fold_map decl env th in
+        env, [Program (n,g,t,LogicDef)]
+    | Program _ -> assert false 
+  and theory env th = 
+    let env, l = Misc.list_fold_map decl env th in
+    env, List.flatten l in
   let _, th = theory empty f in
   th
 

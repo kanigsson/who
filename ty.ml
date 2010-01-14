@@ -304,7 +304,7 @@ let selim_map get_rtype t =
     | Ref (r,t) -> ref_ r (aux t)
     | App (v,i) -> app v (Inst.map aux Misc.id Misc.id i)
   and aux (C t) = aux' t in
-(*   Myformat.printf "converting type: %a@." print t; *)
+  Myformat.printf "converting type: %a@." print t;
   aux t
 
 let selim_map_log t = 
