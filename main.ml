@@ -1,13 +1,13 @@
-let parse parser buf close fn = 
+let parse p buf close fn = 
   let abort () = close (); exit 1 in
   Lexer.reset buf;
-  let prog = parser abort fn Lexer.token buf in
+  let prog = p abort fn Lexer.token buf in
   prog
 
 let maybe_abort r print f = 
   if !r then begin Myformat.printf "%a@." print f; exit 0; end
   
-let parse_file parser fn = 
+let parse_file p fn = 
   let ch, close =
     match fn with
     | None -> stdin, fun () -> ()
@@ -15,11 +15,11 @@ let parse_file parser fn =
         let ch = open_in s in
         ch, fun () -> close_in ch in
   let buf = Lexing.from_channel ch in
-  parse parser buf close fn
+  parse p buf close fn
 
-let parse_string parser ?(string="prelude") s = 
+let parse_string p ?(string="prelude") s = 
   let buf = Lexing.from_string s in
-  parse parser buf (fun () -> ()) (Some string)
+  parse p buf (fun () -> ()) (Some string)
 
 let annotparser abort fn token buf =
   try AnnotParser.main token buf

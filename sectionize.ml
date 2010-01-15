@@ -9,7 +9,7 @@ type outdecl =
   | Gen of Ty.Generalize.t
   | Variable of Name.t * G.t * Ty.t * [`Logic | `Quant]
   | Type of Name.t * G.t
-  | Axiom of Name.t * G.t *  Ast.Recon.t
+  | Axiom of Name.t * Ast.Recon.t
   | Section of Name.t * outdecl list
   | BeginSec of Name.t
   | EndSec of Name.t
@@ -20,8 +20,8 @@ let intro_eq f = function
   (* TODO PO could actually be used here*)
   | Gen _ | Variable _ | Type _ | Section _ | PO _ | Decl _ 
   | BeginSec _ | EndSec _ -> false
-  | Axiom (_,g,x) when Ty.Generalize.is_empty g -> equal x f
-  | Axiom _ | Import _ -> false
+  | Axiom (_,x) -> equal x f
+  | Import _ -> false
 
 let to_section kind th = 
   let rec decl_to_outdecl d = 
@@ -30,7 +30,7 @@ let to_section kind th =
     | TypeDef (g,_,n) -> [Type (n,g)]
     | Formula (s,f, k) -> 
         begin match k with
-        | `Assumed -> [Axiom (Name.from_string s,G.empty,f)]
+        | `Assumed -> [Axiom (Name.from_string s,f)]
         | `Proved -> mk_Section ~namehint:s f
         end
     | Logic (x,g,t) -> [ Variable (x,g,t, `Logic)]
@@ -55,7 +55,7 @@ let to_section kind th =
       | f' -> 
           match destruct_app2_var' f' with
           | Some (v,_,f1,f2) when Name.equal v PL.impl_var  -> 
-              aux (Axiom (Name.from_string "H",G.empty, f1)::acc) f2
+              aux (Axiom (Name.from_string "H", f1)::acc) f2
           | _ -> List.rev acc, f in
     aux [] f
   and make_PO ?(namehint="goal") ( f : Ast.Recon.t) : outdecl list = 
@@ -157,9 +157,9 @@ let print kind fmt = function
       fprintf fmt "@[<hov 2>%a %a:@ %a %a%a%a @]" (def kind) k Name.print x
         (pr_generalize false kind) g (Ty.gen_print (kind :> sup)) t print_stop kind
         (print_def_end kind) k
-  | Axiom (h,g,e) -> 
-      fprintf fmt "@[<hov 2>%a %a:@ %a %a%a @]" hypo kind Name.print h 
-        (pr_generalize true kind) g (Ast.Recon.gen_print (kind :> sup)) e print_stop kind
+  | Axiom (h,e) -> 
+      fprintf fmt "@[<hov 2>%a %a:@ %a%a @]" hypo kind Name.print h 
+        (Ast.Recon.gen_print (kind :> sup)) e print_stop kind
   | PO (x,e) -> 
       fprintf fmt "@[<hov 2>%a %a:@ %a%a%a@]" lemma kind Name.print x 
         (Ast.Recon.gen_print (kind :> sup)) e print_stop kind print_proof kind

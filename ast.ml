@@ -121,6 +121,10 @@ module Print = struct
     | Const.Rec t -> fprintf fmt "rec(%a) " Ty.print t
     | Const.LogicDef -> fprintf fmt "logic " 
 
+  let lname s fmt l = 
+    if l = [] then () else
+    fprintf fmt "(%a :@ %s)" (print_list space Name.print) l s
+
   (* TODO factorize the different branches *)
   let term ?(kind=`Who) pra prb prc open_ fmt t = 
     let typrint = Ty.gen_print kind in
@@ -163,8 +167,17 @@ module Print = struct
           let bind = if k = `FA then binder else binder' false in
           fprintf fmt "@[%a %a%a@ %a@]" C.quant k bind (x,t) 
             Const.quantsep kind print e
-      | Gen (g,t) -> 
-          fprintf fmt "forall %a%a %a" G.print g Const.quantsep kind print t
+      | Gen ((tl,_,_) as g,t) -> 
+          if G.is_empty g then print fmt t else
+            begin match kind with
+            | `Coq -> 
+                fprintf fmt "forall@ %a@,@ %a " (lname "Type") tl print t
+            | `Pangoline  -> 
+                fprintf fmt "forall type %a. %a" (print_list space Name.print) tl
+                  print t
+            | `Who -> 
+                fprintf fmt "forall %a%a %a" G.print g Const.quantsep kind print t
+            end
       (* specific to Who, will not be printed in backends *)
       | Param (t,e) -> 
           fprintf fmt "parameter(%a,%a)" 
