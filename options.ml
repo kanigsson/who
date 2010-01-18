@@ -15,7 +15,7 @@ let transform_only = ref false
 let no_check = ref false
 
 let transforms = 
-  ref (List.rev  [ Anf.theory ; Wp.theory ; Simplify.inline_let ; Simplify.map ])
+  ref (List.rev  [ Anf.theory ; Wp.theory ; InlineLet.theory ; Simplify.map ])
 
 let append_trans x () = transforms := x :: !transforms
 
@@ -34,7 +34,7 @@ let opt_spec =
       " apply anf normal form transformation";
     "-wp", Arg.Unit (append_trans Wp.theory),
       " apply weakest precondition calculus";
-    "-inlinelet", Arg.Unit (append_trans Simplify.inline_let),
+    "-inlinelet", Arg.Unit (append_trans InlineLet.theory),
       " inline let bindings";
     "-mapsimpl", Arg.Unit (append_trans Simplify.map),
       " simplify map expressions";
