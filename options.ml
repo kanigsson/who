@@ -15,7 +15,7 @@ let transform_only = ref false
 let no_check = ref false
 
 let transforms = 
-  ref (List.rev  [ Anf.theory ; Wp.theory ; InlineLet.theory ; Simplify.map ])
+  ref (List.rev  [ Anf.theory ; Wp.theory ; InlineLet.theory ; Simplify.theory ])
 
 let append_trans x () = transforms := x :: !transforms
 
@@ -36,7 +36,7 @@ let opt_spec =
       " apply weakest precondition calculus";
     "-inlinelet", Arg.Unit (append_trans InlineLet.theory),
       " inline let bindings";
-    "-mapsimpl", Arg.Unit (append_trans Simplify.map),
+    "-mapsimpl", Arg.Unit (append_trans Simplify.theory),
       " simplify map expressions";
     "-o", Arg.Set_string outfile, 
             "<arg> use <arg> instead of default filename for output";

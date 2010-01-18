@@ -1,1 +1,1 @@
-val map : Ast.Recon.theory -> Ast.Recon.theory
+val theory : Ast.Recon.theory -> Ast.Recon.theory

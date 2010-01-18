@@ -642,7 +642,12 @@ module Recon = struct
     let d1 = domain t1 and d2 = domain t2 in
     let d1', d2', d3' = NEffect.split d1 d2 in
     if NEffect.is_empty d1' then t2
-    else simple_app2 (P.combine_t ([],[],[d1';d2';d3']) l) t1 t2 l
+    else 
+      match destruct_app2_var t1 with
+      | Some (v,([],[],[e1;_;_]), _, db)
+        when Name.equal v PL.combine_var && NEffect.sub_effect e1 d2' -> 
+          combine db t2 l
+      | _  -> simple_app2 (P.combine_t ([],[],[d1';d2';d3']) l) t1 t2 l
 
   and restrict eff t l =
     let d = NEffect.diff (domain t) eff in
@@ -747,8 +752,10 @@ module Recon = struct
   let destruct_get' x = 
     match destruct_app2_var' x with
     | Some (v, ([t],[reg],[e]), r,map) when Name.equal v PL.get_var -> 
-        Some (t,r,reg,e,map)
+        Some (t,r,reg,NEffect.radd e reg,map)
     | _ -> None
+
+  let destruct_get x = destruct_get' x.v
 
   let get ref map l = 
     match ref.t with 

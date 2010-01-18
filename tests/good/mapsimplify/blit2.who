@@ -1,0 +1,5 @@
+logic !! ['a7|r|'e] : ref(r,'a7) -> <r  'e > -> 'a7
+goal blit_correct : forall [|r2|]. 
+  forall (ar2:ref(r2,prop)).  
+  forall (s2:<r2  >).  
+    !! [prop| r2| { }] ar2 s2
