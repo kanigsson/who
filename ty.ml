@@ -75,11 +75,6 @@ let bool = const (Const.TBool)
 let int = const (Const.TInt)
 let emptymap = map (NEffect.empty)
 
-let arg = function
-  | C (Arrow (t1,_,_,_)) -> t1
-  | C (PureArr (t1,_)) -> t1
-  | _ -> assert false
-
 let destr_tuple (C t) = 
   match t with
   | Tuple (t1,t2) -> t1,t2
@@ -90,11 +85,14 @@ let latent_effect = function
   | C (PureArr _) -> NEffect.empty
   | _ -> assert false
 
-let result = function
-  | C (Arrow (_,t2,_,_)) -> t2
-  | C (PureArr (_,t2)) -> t2
-  | _ -> assert false
+let split t = 
+  match t with
+  | C (Arrow (t1,t2,_,_)) -> t1, t2
+  | C (PureArr (t1,t2)) -> t1, t2
+  | _ -> failwith "split"
 
+let arg t = fst (split t)
+let result t = snd (split t)
 let domain = function
   | C (Map e) -> e
   | _ -> assert false

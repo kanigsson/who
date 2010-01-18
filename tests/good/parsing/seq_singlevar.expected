@@ -31,7 +31,7 @@ logic == ['a5||] : 'a5 -> 'a5 -> bool
 logic != ['a6||] : 'a6 -> 'a6 -> bool
 section Whoref coq "WhoMap"
   pangoline predefined
-   logic !! ['a7|r|'e] : ref(r,'a7) -> < 'e > -> 'a7
+   logic !! ['a7|r|'e] : ref(r,'a7) -> <r  'e > -> 'a7
   let
     ! ['a8|r1|] = (fun (x:ref(r1,'a8)) ->  parameter('a8,{r1  })
                   { r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))}) 
@@ -60,7 +60,7 @@ let
                      (inv i m) ->
                      ((pre f i m) /\
                       (forall (n:< 'e1 >).
-                       (post f i m n tt) -> (inv (i + 1) n)))))}
+                       (post f i m n ()) -> (inv (i + 1) n)))))}
                   parameter(unit,{ 'e1 }) {inv (max start (end_ + 1)) cur4})))) 
 let
   fordownto [||'e2] = (fun (inv1:int -> < 'e2 > -> prop) ->
@@ -74,7 +74,7 @@ let
                          (inv1 i1 m1) ->
                          ((pre f1 i1 m1) /\
                           (forall (n1:< 'e2 >).
-                           (post f1 i1 m1 n1 tt) -> (inv1 (i1 - 1) n1)))))}
+                           (post f1 i1 m1 n1 ()) -> (inv1 (i1 - 1) n1)))))}
                       parameter(unit,{ 'e2 })
                       {inv1 (min start1 (end_1 - 1)) cur6})))) 
 section Array coq "WhoArray"
@@ -126,12 +126,12 @@ section List coq "WhoList"
 let
   seq [||'e3] = (fun (f2:unit ->{ 'e3 } unit) ->
                 (fun (g:unit ->{ 'e3 } unit) ->
-                {(fst f2 tt cur7) /\
+                {(fst f2 () cur7) /\
                  (forall (i6:< 'e3 >).
-                  (True /\ (snd f2 tt cur7 i6 tt)) -> (fst g tt i6))}
-                let x5 = f2 tt in g tt
+                  (True /\ (snd f2 () cur7 i6 ())) -> (fst g () i6))}
+                let x5 = f2 () in g ()
                 {exists i7:< 'e3 >.
-                 (snd f2 tt old1 i7 tt) /\ (snd g tt i7 cur8 tt)})) 
+                 (snd f2 () old1 i7 ()) /\ (snd g () i7 cur8 ())})) 
 let
   z3 [|r5|] = (fun (x6:ref(r5,int)) -> 
               seq (fun (z4:unit) ->  x6 := 0 {(!! x6 cur9) = 0})

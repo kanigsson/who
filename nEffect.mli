@@ -23,6 +23,7 @@ val eremove : t -> Name.t -> t
 val print : t Myformat.fmt
 val print_nosep: t Myformat.fmt
 val union : t -> t -> t
+val union3 : t -> t -> t -> t
 val equal : t -> t -> bool
 val rmap : (Name.t -> Name.t) -> t -> t
 val lsubst : Name.t list -> t list -> t -> t

@@ -42,7 +42,7 @@ section Whoref
   coq \"WhoMap\"
   pangoline predefined
 
-  logic !! ['a|r|'e] : ref(r,'a) -> <r 'e> -> 'a
+  logic !! ['a|r|] : ref(r,'a) -> <r > -> 'a
   parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
     {}
     {r : !!x = r /\\ !!x|old = !!x}

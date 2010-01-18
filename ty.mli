@@ -17,6 +17,7 @@ val print' : ?kind:[`Coq | `Who | `Pangoline ] -> 'a Myformat.fmt ->
 
 val varprint : [`Coq | `Who | `Pangoline ] -> Name.t Myformat.fmt
 
+val is_compound : ('a,'b,'c) t' -> bool
 
 val coq_print : t Myformat.fmt
 
@@ -39,6 +40,7 @@ val emptymap : t
 
 val arg : t -> t
 val result : t -> t
+val split : t -> t * t
 val latent_effect : t -> NEffect.t
 val domain : t -> NEffect.t
 val is_map : t -> bool

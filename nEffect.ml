@@ -7,6 +7,7 @@ let no_effvar (_,e) = S.is_empty e
 
 let are_disjoint s1 s2 = S.is_empty (S.inter s1 s2)
 let union (r1,e1) (r2,e2) = S.union r1 r2, S.union e1 e2
+let union3 a b c = union a (union b c)
 
 let rsingleton r = S.add r S.empty, S.empty
 let esingleton e = S.empty, S.add e S.empty

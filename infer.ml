@@ -10,12 +10,12 @@ type env = {
   vars : (G.t * Ty.t) Name.M.t ;  
   types : (G.t * Ty.t option) Name.M.t;
   pm : bool;
-  curloc : Loc.loc;
   }
 
 exception Error of string * Loc.loc
 
-let error s loc = raise (Error (s,loc))
+let error loc s = 
+  Myformat.ksprintf (fun s -> raise (Error (s,loc))) s
 
 let add_var env x g t = { env with vars = Name.M.add x (g,t) env.vars }
 let add_svar env x t = add_var env x G.empty t
@@ -35,9 +35,8 @@ module HT = Hashtbl
 let unify t1 t2 loc = 
   try U.unify t1 t2 
   with U.CannotUnify ->
-    error 
-      (Myformat.sprintf "Inference: type mismatch between %a and %a" 
-        U.print_node t1 U.print_node t2) loc
+    error loc "Inference: type mismatch between %a and %a" 
+      U.print_node t1 U.print_node t2
 
 let bh f l = 
   let h = Hashtbl.create 3 in
@@ -52,161 +51,131 @@ let prepost_type t1 t2 e = U.tuple (prety t1 e) (postty t1 e t2)
 
 exception FindFirst of Name.t
 
-let to_uf_node (tl,rl,el) x = 
-  let tn,th = bh U.new_ty tl and rn,rh = bh U.new_r rl 
-  and en,eh = bh U.new_e el in
+let to_uf_node (tl,rl,evl) el x = 
+  let x = Ty.elsubst evl el x in
+  let tn,th = bh U.new_ty tl and rn,rh = bh U.new_r rl in
   let rec aux' f = function
     | (Ty.Const c) -> Unify.const c
     | Ty.Arrow (t1,t2,e, c) -> 
-        U.arrow (f t1) (f t2) (eff e) (List.map auxr c)
+        U.arrow (f t1) (f t2) e (List.map auxr c)
     | Ty.Tuple (t1,t2) -> U.tuple (f t1) (f t2)
     | Ty.Var x -> (try HT.find th x with Not_found -> U.var x)
     | Ty.Ref (r,t) -> U.ref_ (auxr r) (f t)
-    | Ty.Map e -> U.map (eff e)
+    | Ty.Map e -> U.map e
     | Ty.PureArr (t1,t2) -> U.parr (f t1) (f t2)
-    | Ty.App (v,i) -> Unify.app v (Inst.map f auxr eff i) 
+    | Ty.App (v,i) -> Unify.app v (Inst.map f auxr (fun x -> x) i) 
   and aux f (Ty.C x) = aux' f x 
   and real x = ymemo aux x
-  and auxr r = try HT.find rh r with Not_found -> U.mkr r
-  and auxe e = try HT.find eh e with Not_found -> U.mke e 
-  and eff eff = 
-    (* We need a single effect variable here *)
-      (* We are lucky, the effect is in fact a single effect var *)
-    if NEffect.is_esingleton eff then auxe (NEffect.e_choose eff)
-    (* or in fact there is no effect var, also ok *)
-    else if NEffect.no_effvar eff then 
-      let rl = NEffect.to_rlist eff in
-      U.effect (List.map auxr rl) []
-    else
-      (* try to find an unquantified effect var *)
-      try 
-        NEffect.eiter (fun z -> 
-          try ignore (HT.find eh z);() with Not_found -> raise (FindFirst z)) eff;
-        (* we have not found one *)
-        (* We simply choose one and add the others as constraints *)
-        (* TODO here it would probably be better to simply build the canoical
-           effect: [U.effect rl el] *)
-        U.effect (List.map auxr rl) (List.map auxe el)
-(*
-        let e = NEffect.e_choose eff in
-        let en = HT.find eh e in
-        let eff = NEffect.eremove eff e in
-        let rl, el = NEffect.to_lists eff in
-        let en' = U.effect (List.map auxr rl) (List.map auxe el) in
-        U.eunify en en'; en
-*)
-      with FindFirst e ->
-        let eff = NEffect.eremove eff e in
-        let rl, el = NEffect.to_lists eff in
-        U.effect ~name:e (List.map auxr rl) (List.map auxe el) in
-  real x, (tn,rn,en)
+  and auxr r = try HT.find rh r with Not_found -> U.mkr r in
+  real x, (tn,rn,el)
 
 let to_uf_rnode r = U.mkr r
-let to_uf_enode eff = 
-  if NEffect.is_esingleton eff then U.mke (NEffect.e_choose eff)
-  else 
-    let rl, el = NEffect.to_lists eff in
-    U.effect (List.map U.mkr rl) (List.map U.mke el)
+let sto_uf_node x = fst (to_uf_node G.empty [] x)
 
-let sto_uf_node x = fst (to_uf_node G.empty x)
-
-let to_logic_ty t = 
-  sto_uf_node (Ty.to_logic_type (U.to_ty t))
+let to_logic_ty t = sto_uf_node (Ty.to_logic_type (U.to_ty t))
 
 let pref eff cur (p : ParseT.t) = 
-  Ast.ParseT.pure_lam cur (Ty.map (U.to_eff eff)) p p.loc
+  Ast.ParseT.pure_lam cur (Ty.map eff) p p.loc
 
 let postf eff t old cur res (p : ParseT.t) = 
-  let et = Ty.map (U.to_eff eff) in
+  let et = Ty.map eff in
   let lam = Ast.ParseT.pure_lam in
   let lameff s = lam s et in
   lameff old (lameff cur (lam res (U.to_ty t) p p.loc ) p.loc) p.loc
 
 module AP = Ast.ParseT
-let rec infer' env t loc x = 
-  match x with
-  | App (e1,e2,k,cap) ->
-(*       Myformat.printf "app : %a and %a@." AP.print e1 AP.print e2; *)
-      let nt = U.new_ty () and e = U.new_e () in
-      let e1 = infer env (U.arrow nt t e (List.map to_uf_rnode cap)) e1 in
-(*       Myformat.printf "inferred1: %a@." AI.print e1; *)
-      let e2 = infer env nt e2 in
-(*       Myformat.printf "inferred2: %a@." AI.print e2; *)
-      App (e1,e2,k,cap), Unify.effect [] [e;e1.e;e2.e]
-  | Annot (e,xt) -> 
-      unify (sto_uf_node xt) t loc;
-      let e = infer env t e in
-      Annot (e,xt), e.e
-  | Var (x,_) -> 
-        let m,xt = 
-          try Name.M.find x env.vars
-          with Not_found -> 
-            error (Myformat.sprintf "variable %a not found" Name.print x) loc in
-        let xt = if env.pm then Ty.to_logic_type xt else xt in
-        let nt,i = to_uf_node m xt in
-        unify nt t loc;
-        Var (x, i), U.new_e ()
-  | Const c -> 
-      unify t (U.const (Const.type_of_constant c)) loc;
-      Const c, U.new_e ()
-  | PureFun (xt,(_,x,e)) ->
-      let nt = sto_uf_node xt in
-      let nt' = U.new_ty () in
-      let env = add_svar env x xt in
-      let e = infer env nt' e in
-      unify (U.parr nt nt') t loc;
-      PureFun (xt,Name.close_bind x e), U.new_e ()
-  | Quant (k,xt,(_,x,e)) ->
-      let env = add_svar env x xt in
-      let e = infer env t e in
-      unify U.prop t loc;
-      Quant (k,xt,Name.close_bind x e), U.new_e ()
-  | Lam (x,xt,cap,p,e,q) ->
-      let nt = sto_uf_node xt in
-      let nt' = U.new_ty () in
-      let env = add_svar env x xt in
-      let e = infer {env with pm = false} nt' e in
-      unify (U.arrow nt nt' e.e (List.map to_uf_rnode cap)) t loc;
-(*       Myformat.printf "lambda %a, effect %a@." Name.print x U.preff e.e; *)
-      let p = pre env e.e p loc in
-      let q = post env e.e nt' q loc in
-(*       Myformat.printf "closing lambda : %a @." Name.print x; *)
-      Lam (x,xt,cap,p,e,q), U.new_e ()
-  | Param (t',e) -> 
-      unify t (sto_uf_node t') loc;
-      Param (t',e), to_uf_enode e
-  | Let (g,e1,(_,x,e2),r) ->
-      let env, e1 = letgen env x g e1 r in
-      let e2 = infer env t e2 in
-      Let (g, e1,Name.close_bind x e2,r), 
-      U.effect [] [e1.e; e2.e]
-  | Ite (e1,e2,e3) ->
-      let e1 = infer env U.bool e1 in
-      let e2 = infer env t e2 in
-      let e3 = infer env t e3 in
-      Ite (e1,e2,e3), U.effect [] [e1.e;e2.e; e3.e]
-  | For (dir,inv,i,s,e,body) ->
-      unify t U.unit loc;
-      let env = add_svar env i Ty.int in
-      let body = infer env U.unit body in
-      let inv = pre env body.e inv loc in
-      For (dir,inv,i,s,e,body), body.e
-  | LetReg (vl,e) ->
-      let e = infer env t e in
-      let eff = NEffect.rremove (U.to_eff e.e) vl in
-      LetReg (vl,e), to_uf_enode eff
-  | Gen (g,e) -> 
-      let e = infer env t e in
-      Gen (g,e), e.e
+module Uf = Unionfind
 
-and infer env t (e : ParseT.t) : Ast.Infer.t = 
-  let e',eff = infer' {env with curloc = e.loc} t e.loc e.v in
-  { v = e' ; t = t; e = eff; loc = e.loc }
+let rec check_type env t x : Ast.Infer.t = 
+  let e = infer env x in
+  begin try U.unify t e.t
+  with U.CannotUnify ->
+    error e.loc "type error: term %a has type %a but expected type %a@."
+      AI.print e U.print_node e.t U.print_node t
+  end ; 
+  e
+and infer env (x : Ast.ParseT.t) : Ast.Infer.t = 
+  let l = x.loc in
+  let e,t,eff = 
+    match x.v with
+    | App (e1,e2, k, cap) ->
+        let e1 = infer env e1 in
+        let t1,t2, eff = 
+          match Uf.desc e1.t with
+          | U.T Ty.Arrow (t1,t2, eff, cap') -> 
+              List.iter2 (fun a b -> U.runify a (to_uf_rnode b)) cap' cap; 
+              t1,t2, eff
+          | U.T Ty.PureArr (t1,t2) -> t1, t2, NEffect.empty
+          | _ -> 
+              error l "term %a is expected to be a function but is of type %a"
+                AI.print e1 U.print_node e1.t
+        in
+        let e2 = check_type env t1 e2 in
+        App (e1,e2,k, cap), t2, NEffect.union3 e1.e e2.e eff
+    | Annot (e,t) ->
+        let t' = sto_uf_node t in
+        let e = check_type env t' e in
+        Annot (e,t), t', e.e
+    | Const c -> Const c, U.const (Const.type_of_constant c), NEffect.empty
+    | PureFun (xt,(_,x,e)) ->
+        let nt = sto_uf_node xt in
+        let env = add_svar env x xt in
+        let e = infer env e in
+        PureFun (xt, Name.close_bind x e), U.parr nt e.t, NEffect.empty
+    | Quant (k,xt,(_,x,e)) ->
+        let env = add_svar env x xt in
+        let e = check_type env U.prop e in
+        Quant (k, xt, Name.close_bind x e), U.prop, NEffect.empty
+    | LetReg (rl,e) -> 
+        let e = infer env e in
+        let eff = NEffect.rremove e.e rl in
+        LetReg (rl,e), e.t, eff
+    | Ite (e1,e2,e3) ->
+        let e1 = check_type env U.bool e1 in
+        let e2 = infer env e2 in
+        let e3 = check_type env e2.t e3 in
+        Ite (e1,e2,e3), e2.t, NEffect.union3 e1.e e2.e e3.e
+    | Gen (g,e) ->
+        let e = infer env e in
+        Gen (g,e), e.t, e.e
+    | Param (t,eff) -> Param (t,eff), sto_uf_node t, eff
+    | For (dir,inv,i,s,e,body) ->
+        let env = add_svar env i Ty.int in
+        let body = check_type env U.unit body in
+        let inv = pre env body.e inv l in
+        For (dir, inv, i, s, e, body), U.unit, body.e
+    | Var (v,(_,_,el)) ->
+        Myformat.printf "treating var: %a@." Name.print v;
+        let m,xt = 
+          try Name.M.find v env.vars
+          with Not_found -> error l "variable %a not found" Name.print v in
+        let xt = if env.pm then Ty.to_logic_type xt else xt in
+        let nt,i = 
+          try to_uf_node m el xt
+          with Invalid_argument "List.fold_left2" ->
+            error l "not the right number of effect vars: %a@." Name.print v in
+        Myformat.printf "found type: %a@." U.print_node nt;
+        Var (v, i), nt, NEffect.empty
+    | Let (g,e1,(_,x,e2),r) ->
+        let env, e1 = letgen env x g e1 r in
+        Myformat.printf "derived: %a : %a@." Name.print x U.print_node e1.t;
+        let e2 = infer env e2 in
+        Let (g, e1,Name.close_bind x e2,r), e2.t, NEffect.union e1.e e2.e
+    | Lam (x,xt,cap,p,e,q) ->
+        let nt = sto_uf_node xt in
+        let env = add_svar env x xt in
+        let e = infer {env with pm = false} e in
+        let p = pre env e.e p l in
+        let q = post env e.e e.t q l in
+        Lam (x,xt,cap,p,e,q), U.arrow nt e.t e.e (List.map to_uf_rnode cap),
+        NEffect.empty
+  in
+  { v = e ; t = t ; e  = eff ; loc = l }
 and pre env eff (cur,x) l : AI.pre' = 
   let f = match x with
   | None -> ParseT.ptrue l
   | Some f -> f in
-  cur, Some (infer {env with pm = true} (base_pre_ty eff) (pref eff cur f))
+  cur, Some (check_type {env with pm = true} (base_pre_ty eff) (pref eff cur f))
 and post env eff t (old,cur,x) l = 
   let t = to_logic_ty t in
   let bp = base_post_ty eff t in
@@ -215,30 +184,30 @@ and post env eff t (old,cur,x) l =
     | PNone -> Name.new_anon (), ParseT.ptrue l
     | PPlain f -> Name.new_anon (), f
     | PResult (r,f) -> r, f in
-  old, cur, PPlain (infer {env with pm = true} bp (postf eff t old cur r f))
-
+  old, cur, PPlain (check_type {env with pm = true} bp (postf eff t old cur r f))
 and letgen env x g e r =
-  let nt = U.new_ty () in
   let env' = 
     match r with
     | Const.NoRec | Const.LogicDef -> env
     | Const.Rec ty -> add_svar env x ty in
-  let e = infer env' nt e in
+  let e = infer env' e in
   let xt = 
-    try U.to_ty nt 
+    try U.to_ty e.t 
     with Assert_failure _ -> 
-      error (Myformat.sprintf "%a: %a@." Name.print x U.print_node nt) e.loc in
+      error e.loc "could not determine the type of: %a : %a@." Name.print x 
+        U.print_node e.t in
   add_var env x g xt, e
 
 let rec infer_th env d = 
   match d with
-  | Formula (s,e,k) -> env, Formula (s,infer env U.prop e, k)
+  | Formula (s,e,k) -> env, Formula (s,check_type env U.prop e, k)
   | Section (s,cl,dl) -> 
       let env, dl = 
         Misc.list_fold_map infer_th env dl in
       env, Section (s,cl,dl)
   | Logic (n,g,t) -> 
       let env = add_var env n g t in
+      Myformat.printf "added: %a : %a@." Name.print n Ty.print t;
       env, Logic (n,g,t)
   | TypeDef (g,t,n) -> 
       let env = add_ty env n g t in
@@ -248,8 +217,7 @@ let rec infer_th env d =
       let env,e = letgen env x g e r in
       env, Program (x,g,e,r)
 
-let initial = { vars = Name.M.empty; pm = false; 
-                types = Name.M.empty; curloc = Loc.dummy; }
+let initial = { vars = Name.M.empty; pm = false; types = Name.M.empty; }
 let infer_th th = 
   let _, dl = Misc.list_fold_map infer_th initial th in
   dl
@@ -305,9 +273,9 @@ and pre (cur,x) =
   | None ->  assert false
   | Some x -> cur, Some (recon x)
 and recon (t : Ast.Infer.t) : Ast.Recon.t = 
-  { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e; loc = t.loc }
+  { v = recon' t.v; t = U.to_ty t.t; e = t.e; loc = t.loc }
 and inst (th,rh,eh) =
-    List.map U.to_ty th, List.map U.to_r rh, List.map U.to_eff eh
+    List.map U.to_ty th, List.map U.to_r rh, eh
 and post (old,cur,x) =
   let p = match x with
   | PNone -> assert false

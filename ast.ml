@@ -263,19 +263,26 @@ module Print = struct
 end
 
 module Infer = struct
-  type t = (U.node, U.rnode, U.enode) t'
-  type pre' = (U.node, U.rnode, U.enode) pre
-  type th' = (U.node, U.rnode, U.enode) theory
+  type t = (U.node, U.rnode, NEffect.t) t'
+  type pre' = (U.node, U.rnode, NEffect.t) pre
+  type th' = (U.node, U.rnode, NEffect.t) theory
   type theory = th'
 
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
-  let mk_val v t = mk v t (U.new_e ())
+  let mk_val v t = mk v t NEffect.empty
   let const c = mk_val (Const c) (U.const (Const.type_of_constant c))
   let print fmt t = 
-    Print.term ~kind:`Who U.print_node U.prvar U.preff (fun (_,x,e) -> x,e) fmt t
+    Print.term ~kind:`Who U.print_node U.prvar NEffect.print 
+      (fun (_,x,e) -> x,e) fmt t
+
+  let ty_print fmt t = 
+    Ty.print' ~kind:`Who U.print_node U.prvar NEffect.print (fun _ -> false) fmt t
+    
+
 
   let print_theory fmt t = 
-    Print.theory ~kind:`Who U.print_node U.prvar U.preff (fun (_,x,e) -> x,e) fmt t
+    Print.theory ~kind:`Who U.print_node U.prvar NEffect.print 
+      (fun (_,x,e) -> x,e) fmt t
 
 end
 
