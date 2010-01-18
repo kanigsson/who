@@ -1,6 +1,6 @@
 logic = ['a||] : 'a -> 'a -> prop
 logic /\ : prop -> prop -> prop
-logic !! ['a|r|'e] : ref(r,'a) -> <'e> -> 'a
+logic !! ['a|r|] : ref(r,'a) -> < r > -> 'a
 parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
 {}
 {r : !!x = r /\ !!x|old = !!x}
@@ -12,5 +12,5 @@ g (f x)
 
 let h [|r1 r2|] (a : ref(r1,int)) (b : ref(r2,int)) =
   {}
-  seq (fun (c : int) -> {} !a {}) (fun (d : int) -> {} !b {}) 
+  seq [{r1} {r2}] (fun (c : int) -> {} !a {}) (fun (d : int) -> {} !b {}) 
   {}

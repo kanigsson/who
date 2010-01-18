@@ -2,12 +2,13 @@ module Uf = Unionfind
 
 type ty = 
   | U
-  | T of (node,rnode, NEffect.t) Ty.t'
+  | T of (node,rnode, effect) Ty.t'
 and node = ty Uf.t
 and rnode = r Uf.t
 and r = 
   | RU 
   | RT of Name.t
+and effect = rnode list * Name.S.t
 
 let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh (T t)
@@ -20,6 +21,22 @@ let var s = mkt (Ty.Var s)
 let map e = mkt (Ty.Map e)
 let app v i = mkt (Ty.App (v,i))
 let parr t1 t2 = mkt (Ty.PureArr (t1,t2))
+
+let eff_empty = [], Name.S.empty
+
+let r_equal r1 r2 = 
+  match Uf.desc r1, Uf.desc r2 with
+  | RU, RU -> Uf.equal r1 r2
+  | RU, RT _ | RT _, RU -> false
+  | RT n1, RT n2 -> Name.equal n1 n2
+
+let rremove (r,e) rl = 
+  List.filter (fun x -> not (Misc.list_mem r_equal x rl)) r, e
+let eff_union (r1,e1) (r2,e2) = 
+  Misc.list_union r_equal r1 r2, Name.S.union e1 e2
+
+let eff_union3 a b c = eff_union a (eff_union b c)
+
 
 open Const
 let const =
@@ -39,7 +56,7 @@ let rec print_node fmt x =
   match Uf.desc x with
   | U -> fprintf fmt "%d" (Uf.tag x)
   | T t -> 
-      Ty.print' ~kind:`Who print_node prvar NEffect.print is_c fmt t
+      Ty.print' ~kind:`Who print_node prvar preff is_c fmt t
 and is_c x = 
   match Uf.desc x with
   | U -> false
@@ -48,6 +65,10 @@ and prvar fmt x =
   match Uf.desc x with
   | RU -> fprintf fmt "%d" (Uf.tag x)
   | RT x -> Name.print fmt x
+and preff fmt (rl,el) = 
+  fprintf fmt "{%a|" (print_list space prvar) rl;
+  Name.S.iter (Name.print fmt) el;
+  pp_print_string fmt "}"
 
 exception CannotUnify
 
@@ -94,8 +115,9 @@ and runify a b =
   | RT _, RT _ -> 
 (*       printf "runify: %a and %a@." prvar a prvar b; *)
       raise CannotUnify
-and eunify e1 e2 = 
-  if NEffect.equal e1 e2 then () else raise CannotUnify
+and eunify (r1,e1) (r2,e2) = 
+  if NEffect.s_equal e1 e2 && Misc.list_equal_unsorted r_equal r1 r2 then ()
+  else raise CannotUnify
       
 module H = Hashtbl.Make (struct 
                            type t = node
@@ -103,18 +125,18 @@ module H = Hashtbl.Make (struct
                            let hash = Uf.tag
                          end)
 
-let to_ty, to_r =
+let to_ty, to_eff, to_r =
   let h = H.create 127 in
-  let rec ty' : (node, rnode, NEffect.t) Ty.t' -> Ty.t = function
+  let rec ty' : (node, rnode, effect) Ty.t' -> Ty.t = function
     | Ty.Var s -> Ty.var s
     | Ty.Arrow (t1,t2,e,cap) -> 
-        Ty.caparrow (ty t1) (ty t2) e (List.map rv cap)
+        Ty.caparrow (ty t1) (ty t2) (eff e) (List.map rv cap)
     | Ty.Tuple (t1,t2) -> Ty.tuple (ty t1) (ty t2)
     | Ty.Const c -> Ty.const c
     | Ty.Ref (r,t) -> Ty.ref_ (rv r) (ty t)
-    | Ty.Map e -> Ty.map e
+    | Ty.Map e -> Ty.map (eff e)
     | Ty.PureArr (t1,t2) -> Ty.parr (ty t1) (ty t2)
-    | Ty.App (v,i) -> Ty.app v (Inst.map ty rv (fun x -> x) i) 
+    | Ty.App (v,i) -> Ty.app v (Inst.map ty rv eff i) 
   and ty x = 
     try H.find h x 
     with Not_found -> 
@@ -126,6 +148,7 @@ let to_ty, to_r =
   and rv r = 
     match Uf.desc r with
     | RU -> assert false
-    | RT s -> s in
-  ty, rv
+    | RT s -> s
+  and eff (r,e) = NEffect.from_u_effect (List.map rv r) e in
+  ty, eff, rv
 

@@ -30,6 +30,17 @@ let opt_equal eq o1 o2 =
   | Some t1, Some t2 -> eq t1 t2
   | _, _ -> false
 
+let list_mem eq x l = List.exists (fun b -> eq x b) l
+let list_contained eq l1 l2 = 
+  List.for_all (fun a -> list_mem eq a l2) l1
+
+let list_equal_unsorted eq l1 l2 = 
+  list_contained eq l1 l2 && list_contained eq l2 l1
+
+let list_union eq l1 l2 = 
+  List.fold_left
+    (fun acc x -> if list_mem eq x acc then acc else x :: acc) l2 l1
+
 module StringMap = Map.Make(String)
 module StringSet = Set.Make(String)
 module SS = StringSet

@@ -71,11 +71,11 @@ let
                    ((start <= i) /\ (i <= end_)) ->
                    (forall (m:< 'e >).
                     (inv i m) ->
-                    ((pre [int -> <{|e}> -> prop,int -> <{|e}> -> <{|e}> ->
+                    ((pre [int -> < 'e > -> prop,int -> < 'e > -> < 'e > ->
                       unit -> prop||] f i m)
                      /\
                      (forall (n:< 'e >).
-                      (post [int -> <{|e}> -> prop,int -> <{|e}> -> <{|e}> ->
+                      (post [int -> < 'e > -> prop,int -> < 'e > -> < 'e > ->
                        unit -> prop||] f i m n ())
                       -> (inv (i + 1) n))))))}
                  parameter(unit,{ 'e })
@@ -93,12 +93,12 @@ let
                         ((end_1 <= i1) /\ (i1 <= start1)) ->
                         (forall (m1:< 'e1 >).
                          (inv1 i1 m1) ->
-                         ((pre [int -> <{|e1}> -> prop,int -> <{|e1}> ->
-                           <{|e1}> -> unit -> prop||] f1 i1 m1)
+                         ((pre [int -> < 'e1 > -> prop,int -> < 'e1 > ->
+                           < 'e1 > -> unit -> prop||] f1 i1 m1)
                           /\
                           (forall (n1:< 'e1 >).
-                           (post [int -> <{|e1}> -> prop,int -> <{|e1}> ->
-                            <{|e1}> -> unit -> prop||] f1 i1 m1 n1 ())
+                           (post [int -> < 'e1 > -> prop,int -> < 'e1 > ->
+                            < 'e1 > -> unit -> prop||] f1 i1 m1 n1 ())
                            -> (inv1 (i1 - 1) n1))))))}
                       parameter(unit,{ 'e1 })
                       {(fun (old4:< 'e1 >) ->

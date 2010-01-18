@@ -12,7 +12,8 @@ open CommonInternalize
 
 let rec ast' env = function
   | I.Const c -> Const c
-  | I.Var (v,i) -> Var (var env v,([],[],List.map (effect env) i))
+  | I.Var (v,i) -> 
+      Var (var env v,([],[],List.map (effect env) i))
   | I.App (e1,e2,f,c) -> 
       App (ast env e1, ast env e2, f, List.map (rvar env) c)
   | I.Lam (x,t,cap,p,e,q) ->

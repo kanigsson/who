@@ -15,6 +15,8 @@ val to_lists : t -> Name.t list * Name.t list
 val to_rlist : t -> Name.t list 
 val to_elist : t -> Name.t list 
 val from_lists : Name.t list -> Name.t list -> t
+val from_u_effect : Name.t list -> Name.S.t -> t
+val to_u_effect : t -> Name.t list * Name.S.t
 
 val eadd :  t -> Name.t -> t
 val radd :  t -> Name.t -> t
@@ -41,3 +43,5 @@ val split : t -> t -> t * t * t
     * their intersection
     * the second without the first 
 *)
+
+val s_equal : Name.S.t -> Name.S.t -> bool

@@ -1,0 +1,6 @@
+logic = ['a||] : 'a -> 'a -> prop
+logic !! ['a|r|] : ref(r,'a) -> <r > -> 'a
+parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
+  {}
+  {r : !!x = r}
+

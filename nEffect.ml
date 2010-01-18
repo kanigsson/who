@@ -25,12 +25,15 @@ let rmem (rs,_) r = S.mem r rs
 let emem (_,es) e = S.mem e es
 
 let from_lists rl el = Name.list_to_set rl, Name.list_to_set el
+let from_u_effect rl es = Name.list_to_set rl, es
 
 let to_lists, to_rlist, to_elist =
   let list_from_set l = S.fold (fun x acc -> x ::acc) l [] in
   (fun (r,e) -> list_from_set r, list_from_set e),
   (fun (r,_) -> list_from_set r),
   (fun (_,e) -> list_from_set e)
+
+let to_u_effect ((_,e) as eff) = to_rlist eff, e
 
 let is_esingleton (rl,el) =  S.is_empty rl && S.cardinal el = 1 
 let e_choose (_,el) = S.choose el
@@ -55,9 +58,9 @@ let lsubst el effl (rt,et) =
       et empty in
   S.union rt nrt, ne
 
-let equal = 
-  let cmp a b = Misc.list_equal Name.compare (S.elements a) (S.elements b) in
-  fun (r1,e1) (r2, e2) -> cmp r1 r2 && cmp e1 e2
+let s_equal a b = 
+  Misc.list_equal Name.compare (S.elements a) (S.elements b)
+let equal (r1,e1) (r2, e2) = s_equal r1 r2 && s_equal e1 e2
 
 open Myformat
 let print_set fmt s = 

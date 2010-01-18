@@ -263,25 +263,20 @@ module Print = struct
 end
 
 module Infer = struct
-  type t = (U.node, U.rnode, NEffect.t) t'
-  type pre' = (U.node, U.rnode, NEffect.t) pre
-  type th' = (U.node, U.rnode, NEffect.t) theory
+  type t = (U.node, U.rnode, U.effect) t'
+  type pre' = (U.node, U.rnode, U.effect) pre
+  type th' = (U.node, U.rnode, U.effect) theory
   type theory = th'
 
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
-  let mk_val v t = mk v t NEffect.empty
+  let mk_val v t = mk v t U.eff_empty
   let const c = mk_val (Const c) (U.const (Const.type_of_constant c))
   let print fmt t = 
-    Print.term ~kind:`Who U.print_node U.prvar NEffect.print 
+    Print.term ~kind:`Who U.print_node U.prvar U.preff
       (fun (_,x,e) -> x,e) fmt t
 
-  let ty_print fmt t = 
-    Ty.print' ~kind:`Who U.print_node U.prvar NEffect.print (fun _ -> false) fmt t
-    
-
-
   let print_theory fmt t = 
-    Print.theory ~kind:`Who U.print_node U.prvar NEffect.print 
+    Print.theory ~kind:`Who U.print_node U.prvar U.preff
       (fun (_,x,e) -> x,e) fmt t
 
 end
@@ -794,9 +789,12 @@ module ParseT = struct
     Print.term nothing nothing NEffect.print (fun (_,x,e) -> x,e) fmt t
   let print_theory fmt t = 
     Print.theory nothing nothing NEffect.print (fun (_,x,e) -> x,e) fmt t
-  let mk v e loc = { v = v; t = (); e = e; loc = loc }
-  let pure_lam x t e = mk (PureFun (t, Name.close_bind x e)) NEffect.empty
-  let annot e t = mk (Annot (e,t)) e.e
-  let gen g e = mk (Gen (g,e)) NEffect.empty e.loc
-  let ptrue l = mk (Const Const.Ptrue) NEffect.empty l
+  let mk v loc = { v = v; t = (); e = NEffect.empty; loc = loc }
+  let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
+  let var ?(inst = []) v = mk (Var (v,([],[],inst)))
+  let annot e t = mk (Annot (e,t))
+  let gen g e = mk (Gen (g,e)) e.loc
+  let ptrue l = mk (Const Const.Ptrue) l
+
+  let app t1 t2 = mk (App (t1,t2,`Prefix, []))
 end
