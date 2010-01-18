@@ -171,6 +171,7 @@ let _ = dispatch begin function
        flag ["ocaml"; "compile"; "warn_error" ] (S[A "-w"; A "Z"; A "-warn-error"; A "A"]);
        (* Menhir --explain flag *)
        flag ["menhir"] (S[A"--explain"]);
+       flag ["menhir"] (S[A"--table"]);
        
    | _ -> ()
 end

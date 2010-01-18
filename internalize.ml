@@ -12,7 +12,7 @@ open CommonInternalize
 
 let rec ast' env = function
   | I.Const c -> Const c
-  | I.Var v -> Var (var env v,([],[],[]))
+  | I.Var (v,i) -> Var (var env v,([],[],List.map (effect env) i))
   | I.App (e1,e2,f,c) -> 
       App (ast env e1, ast env e2, f, List.map (rvar env) c)
   | I.Lam (x,t,cap,p,e,q) ->
@@ -57,8 +57,8 @@ and pre env x =
   cur, Misc.opt_map (ast env) x
 
   
-and ast env {I.v = v; loc = loc} = 
-  { Ast.v = ast' env v; loc = loc; t = (); e = () }
+and ast env {I.v = v; loc = loc} : Ast.ParseT.t = 
+  { Ast.v = ast' env v; loc = loc; t = (); e = NEffect.empty }
 
 and letgen env x g e r = 
   let env', g = add_gen env g in

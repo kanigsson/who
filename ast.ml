@@ -778,17 +778,18 @@ module Recon = struct
 end
 
 module ParseT = struct
-  type t = (unit,unit,unit) t'
-  type theory' = (unit,unit,unit) theory
+  type t = (unit,unit, NEffect.t) t'
+  type theory' = (unit, unit, NEffect.t) theory
   type theory = theory'
 
-  let nothing _ () = ()
-  let print fmt t = Print.term nothing nothing nothing (fun (_,x,e) -> x,e) fmt t
+  let nothing _ _ = ()
+  let print fmt t = 
+    Print.term nothing nothing NEffect.print (fun (_,x,e) -> x,e) fmt t
   let print_theory fmt t = 
-    Print.theory nothing nothing nothing (fun (_,x,e) -> x,e) fmt t
-  let mk v loc = { v = v; t = (); e = (); loc = loc }
-  let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
-  let annot e t = mk (Annot (e,t)) 
-  let gen g e = mk (Gen (g,e)) e.loc
-  let ptrue l = mk (Const Const.Ptrue) l
+    Print.theory nothing nothing NEffect.print (fun (_,x,e) -> x,e) fmt t
+  let mk v e loc = { v = v; t = (); e = e; loc = loc }
+  let pure_lam x t e = mk (PureFun (t, Name.close_bind x e)) NEffect.empty
+  let annot e t = mk (Annot (e,t)) e.e
+  let gen g e = mk (Gen (g,e)) NEffect.empty e.loc
+  let ptrue l = mk (Const Const.Ptrue) NEffect.empty l
 end

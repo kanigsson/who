@@ -63,6 +63,7 @@ aterm:
   | p = DEXCLAM x = IDENT MID t = aterm 
     { app2 "!!" (var x.c x.info) t (embrace p t.loc)  }
   | x = IDENT { var x.c x.info }
+  | x = IDENT LBRACKET sepeffect* RBRACKET { var x.c x.info }
   | l = LPAREN x = prefix r = RPAREN 
     { var (snd x) (embrace l r) }
   | c = constant { let p,c = c in const c p }
