@@ -112,6 +112,16 @@ module Print = struct
     | Quant _ | Param _ | For _ | LetReg _ | Gen _ -> true
   let is_compound_node t = is_compound t.v
 
+  type sup = [ `Coq | `Who | `Pangoline ]
+  let name_print ?(kind : sup =`Who) fmt x = 
+    match kind with
+    | `Pangoline -> 
+        begin try 
+          let s = Name.M.find x PL.pangoline_map in
+          pp_print_string fmt s
+        with Not_found -> Name.print fmt x end
+    | `Coq | `Who -> Name.print fmt x
+
   let maycaplist fmt l = 
     if l = [] then ()
     else fprintf fmt "cap %a" (print_list space Name.print) l
@@ -126,12 +136,12 @@ module Print = struct
     fprintf fmt "(%a :@ %s)" (print_list space Name.print) l s
 
   (* TODO factorize the different branches *)
-  let term ?(kind=`Who) pra prb prc open_ fmt t = 
+  let term ?(kind : sup =`Who) pra prb prc open_ fmt t = 
     let typrint = Ty.gen_print kind in
     let rec print' ext fmt = function
       | Const c -> Const.print kind fmt c
       | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) -> 
-          fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 Name.print v 
+          fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 (name_print ~kind) v 
             (Inst.print ~kind ~intype:false pra prb prc) i with_paren t2
       | App (t1,t2,_,cap) ->
             fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
@@ -261,22 +271,6 @@ module Infer = struct
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
   let mk_val v t = mk v t (U.new_e ())
   let const c = mk_val (Const c) (U.const (Const.type_of_constant c))
-
-(*   let ptrue = const (Const.Ptrue) *)
-
-(*
-  let lam x t p e q = 
-    mk_val (Lam (x,U.to_ty t,[],p,e,q)) (U.arrow t e.t e.e [])
-  let caplam x t cap p e q = 
-    mk_val (Lam (x,U.to_ty t,cap,p,e,q)) (U.arrow t e.t e.e [])
-  let plamho t f = 
-    let n = Name.new_anon () in
-    let e = f n in
-    mk_val (PureFun (U.to_ty t,Name.close_bind n e)) (U.parr t e.t)
-
-  let efflamho eff = plamho (U.map eff)
-
-*)
   let print fmt t = 
     Print.term ~kind:`Who U.print_node U.prvar U.preff (fun (_,x,e) -> x,e) fmt t
 
@@ -300,35 +294,8 @@ let destruct_app2_var' x =
   | Some ({v = Var (v,g)},f1,f2) -> Some (v,g,f1,f2)
   | _ -> None
 
-(*
-let destruct_kget' x = 
-  match destruct_app2_var' x with
-  | Some ({ Name.name = Some "kget"}, ([t],[reg],[]), ref,map) -> 
-      Some (t,ref,reg,map)
-  | _ -> None
-
-let destruct_krestrict' x = 
-  match destruct_app' x with
-  | Some ({v = Var ({Name.name = Some "krestrict"},([],[],[e1;e2]))}, map) ->
-      Some (map,e1,e2)
-  | _ -> None
-
-let destruct_kcombine' x = 
-  match destruct_app2_var' x with
-  | Some ({ Name.name = Some "kcombine" },([],[],[e1;e2]), m1,m2) ->
-      Some (m1,e1,m2,e2)
-  | _ -> None
-
-*)
 let destruct_app2_var x = destruct_app2_var' x.v
 let destruct_app x = destruct_app' x.v
-(*
-let destruct_get x = destruct_get' x.v
-let destruct_kget x = destruct_kget' x.v
-let destruct_restrict x = destruct_restrict' x.v
-let destruct_krestrict x = destruct_krestrict' x.v
-let destruct_kcombine x = destruct_kcombine' x.v
-*)
 
 let destruct_varname x = 
   match x.v with

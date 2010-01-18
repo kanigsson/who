@@ -94,6 +94,13 @@ module Logic = struct
     let effrec_vars = [ combine_var ; restrict_var ; empty_var ; get_var ] in
     List.fold_right Name.S.add effrec_vars Name.S.empty
 
+  let pangoline_map = 
+    let l = 
+      [ 
+        impl_var, "=>" ; 
+      ] in
+    List.fold_left (fun acc (a,b) -> Name.M.add a b acc) Name.M.empty l
+
 end
 
 module Ty = struct
