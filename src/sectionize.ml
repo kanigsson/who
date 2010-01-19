@@ -7,6 +7,7 @@ module G = Ty.Generalize
 type outdecl = 
   | Decl of string 
   | Gen of Ty.Generalize.t
+  | Infix of Name.t * int
   | Variable of Name.t * G.t * Ty.t * [`Logic | `Quant]
   | Type of Name.t * G.t
   | Axiom of Name.t * Ast.Recon.t
@@ -16,9 +17,16 @@ type outdecl =
 
 let intro_eq f = function
   (* TODO PO could actually be used here *)
-  | Gen _ | Variable _ | Type _ | Section _ | PO _ | Decl _ -> false
+  | Gen _ | Variable _ | Type _ | Section _ | PO _ | Decl _ | Infix _ -> false
   | Axiom (_,x) -> equal x f
   | Import _ -> false
+
+(* FIXME do something more intelligent for Pangoline infix notation *)
+let is_infix_name n = 
+  let s = Name.unsafe_to_string n in
+  match s.[0] with
+  | '=' | '!' | '+' | '-' | '*' | '<' | '>'  -> true
+  | _ -> false
 
 let to_section kind th = 
   let rec decl_to_outdecl d = 
@@ -30,7 +38,9 @@ let to_section kind th =
         | `Assumed -> [Axiom (Name.from_string s,f)]
         | `Proved -> mk_Section ~namehint:s f
         end
-    | Logic (x,g,t) -> [ Variable (x,g,t, `Logic)]
+    | Logic (x,g,t) -> 
+        let decl = Variable (x,g,t, `Logic) in
+        if is_infix_name x then [ Infix (x,0) ; decl ] else [decl]
     | Ast.Section (_,cl,th) -> 
         let choice = List.fold_left (fun acc (p,c) -> 
           if p = kind then c else acc) Const.TakeOver cl in
@@ -158,7 +168,11 @@ let rec print kind fmt = function
             fprintf fmt "type (0) %a" Name.print s) fmt tl
       end
   | Variable (x,g,t,k) -> 
-      fprintf fmt "@[<hov 2>%a %a:@ %a %a%a%a @]" (def kind) k Name.print x
+      let npr fmt n = 
+        match kind with 
+        | `Pangoline when is_infix_name n -> fprintf fmt "( %a )" Name.print n
+        | _ -> Name.print fmt n in
+      fprintf fmt "@[<hov 2>%a %a:@ %a %a%a%a @]" (def kind) k npr x
         (pr_generalize false kind) g (Ty.gen_print (kind :> sup)) t print_stop kind
         (print_def_end kind) k
   | Axiom (h,e) -> 
@@ -167,6 +181,8 @@ let rec print kind fmt = function
   | PO (x,e) -> 
       fprintf fmt "@[<hov 2>%a %a:@ %a%a%a@]" lemma kind Name.print x 
         (Ast.Recon.gen_print (kind :> sup)) e print_stop kind print_proof kind
+  | Infix (n,i) ->
+      fprintf fmt "infix %a %d" Name.print n i
   | Type (x,((tl,_,_) as g)) -> 
       begin match kind with
       | `Coq ->

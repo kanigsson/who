@@ -7,7 +7,6 @@ section basiclogic
   logic -> : prop -> prop -> prop
   logic ~ : prop -> prop
   logic = ['a||] : 'a -> 'a -> prop
-  logic <> ['a||] : 'a -> 'a -> prop
   logic fst ['a 'b||] : 'a * 'b -> 'a
   logic snd ['a 'b||] : 'a * 'b -> 'b
   logic , ['a 'b||] : 'a -> 'b -> 'a * 'b
@@ -15,7 +14,7 @@ end
 
 section arith
   coq \"WhoArith\"
-  pangoline predefined
+  pangoline takeover
   logic + : int -> int -> int
   logic - : int -> int -> int
   logic * : int -> int -> int
@@ -27,6 +26,7 @@ section arith
   logic <<= : int -> int -> bool
   logic >> : int -> int -> bool
   logic >>= : int -> int -> bool
+  logic <> ['a||] : 'a -> 'a -> prop
   logic max : int -> int -> int
   logic min : int -> int -> int
   logic mod : int -> int -> int
