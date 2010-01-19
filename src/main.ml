@@ -81,7 +81,6 @@ let _ =
     let p = apply_all_trans p in
     let kind = !Options.backend in
     let s = Sectionize.to_section kind p in
-    let s = Sectionize.flatten s in
     if !Options.backend = `Coq then Regen2.main s else Pangoline.out s
   with
   | Sys_error e -> Error.bad e

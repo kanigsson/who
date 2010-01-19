@@ -11,15 +11,12 @@ type outdecl =
   | Type of Name.t * G.t
   | Axiom of Name.t * Ast.Recon.t
   | Section of Name.t * outdecl list
-  | BeginSec of Name.t
-  | EndSec of Name.t
   | Import of string
   | PO of Name.t * Ast.Recon.t
 
 let intro_eq f = function
-  (* TODO PO could actually be used here*)
-  | Gen _ | Variable _ | Type _ | Section _ | PO _ | Decl _ 
-  | BeginSec _ | EndSec _ -> false
+  (* TODO PO could actually be used here *)
+  | Gen _ | Variable _ | Type _ | Section _ | PO _ | Decl _ -> false
   | Axiom (_,x) -> equal x f
   | Import _ -> false
 
@@ -79,12 +76,6 @@ let to_section kind th =
   in
   List.flatten (List.map decl_to_outdecl th)
 
-let rec flatten th = List.flatten (List.map decl th)
-and decl d = 
-  match d with
-  | Section (n,dl) -> BeginSec n :: (flatten dl @ [ EndSec n ] )
-  | _ -> [d]
-
 let to_coq_decls th = 
   let aux d = 
     match d with
@@ -141,9 +132,22 @@ let print_def_end kind fmt x =
 
 type sup = [`Coq | `Pangoline | `Who ]
 
-let print kind fmt = function
+let beginsec kind fmt n = 
+  match kind with
+  | `Pangoline -> pp_print_string fmt "begin"
+  | `Coq -> fprintf fmt "Section %a" Name.print n
+
+let endsec kind fmt n = 
+  match kind with
+  | `Pangoline -> pp_print_string fmt "end"
+  | `Coq -> fprintf fmt "End %a." Name.print n
+
+let rec print kind fmt = function
   | Decl s -> fprintf fmt "%s" s
-  | Import _ | Section _ -> assert false
+  | Import _ -> assert false
+  | Section (n,l) ->
+      fprintf fmt "@[<hov 2>%a@\n %a@] %a" 
+        (beginsec kind) n (theory kind) l (endsec kind) n
   | Gen (tl,rl,el) -> 
       begin match kind with
       | `Coq ->
@@ -171,15 +175,11 @@ let print kind fmt = function
       | `Pangoline ->
           fprintf fmt "@[<hov 2> type (%d) %a @]" (List.length tl) Name.print x
       end
-  | BeginSec n -> 
-      if kind = `Coq then fprintf fmt "@[<hov 2>Section %a." Name.print n
-  | EndSec n -> 
-      if kind = `Coq then fprintf fmt "@]End %a." Name.print n
+and theory kind fmt l = print_list newline (print kind) fmt l
 
 let print_all kind fmt l = 
   let l = 
     match kind with
     | `Coq -> to_coq_decls l
-    | _ -> l
-  in
-  print_list newline (print kind) fmt l
+    | _ -> l in
+  theory kind fmt l
