@@ -1,7 +1,2 @@
-<*.ml> : warn_Z
-<annotParser.ml> : pkg_menhirLib
-<parser.ml> : pkg_menhirLib
-<common.ml> : pkg_menhirLib
-<tokens.mly> : only_tokens
-<parser.mly> or <annotParser.mly> or <common.mly> : use_tokens
-<main.*> : pkg_unix, pkg_num, pkg_menhirLib
+"src" : include
+<src/*.ml> : warn_Z
