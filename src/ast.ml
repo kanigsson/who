@@ -16,7 +16,7 @@ type ('a,'b,'c) t'' =
   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
   | Annot of ('a,'b,'c) t' * Ty.t
   | Quant of [`FA | `EX ] * Ty.t * ('a,'b,'c) t' Name.bind
-  | Param of Ty.t * NEffect.t
+  | Param of Ty.t * Effect.t
   | Gen of G.t *  ('a,'b,'c) t'
   | For of Name.t * ('a,'b,'c) pre * Name.t * Name.t * Name.t * ('a,'b,'c) t'
   | LetReg of Name.t list * ('a,'b,'c) t'
@@ -83,7 +83,7 @@ let rec equal' a b =
   | Const c1, Const c2 -> Const.compare c1 c2 = 0
   | Var (v1,i1), Var (v2,i2) ->
       Name.equal v1 v2 && 
-      Inst.equal Ty.equal Name.equal NEffect.equal i1 i2
+      Inst.equal Ty.equal Name.equal Effect.equal i1 i2
   | App (a1,b1,_,_), App (a2,b2,_,_) -> equal a1 a2 && equal b1 b2
   | Gen (g1,t1), Gen (g2,t2) ->
       G.equal g1 g2 && equal t1 t2
@@ -191,7 +191,7 @@ module Print = struct
       (* specific to Who, will not be printed in backends *)
       | Param (t,e) -> 
           fprintf fmt "parameter(%a,%a)" 
-            typrint t NEffect.print e
+            typrint t Effect.print e
       | For (dir,inv,_,st,en,t) ->
           fprintf fmt "%a (%a) %a %a (%a)" 
             Name.print dir pre inv Name.print st Name.print en print t
@@ -314,10 +314,10 @@ let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
 
 
 module Recon = struct
-  type t = (Ty.t, Name.t, NEffect.t) t'
-  type th = (Ty.t, Name.t, NEffect.t) theory
-  type decl' = (Ty.t, Name.t, NEffect.t) decl
-  type inst = (Ty.t, Name.t, NEffect.t) Inst.t
+  type t = (Ty.t, Name.t, Effect.t) t'
+  type th = (Ty.t, Name.t, Effect.t) theory
+  type decl' = (Ty.t, Name.t, Effect.t) decl
+  type inst = (Ty.t, Name.t, Effect.t) Inst.t
   type theory = th
   type decl = decl'
 
@@ -337,34 +337,34 @@ module Recon = struct
     open_close_map ~varfun:(fun v i -> Var (v,i)) 
                    ~tyfun:(Ty.rlsubst rvl rl) 
                    ~rvarfun:(Ty.rsubst rvl rl)
-                   ~effectfun:(NEffect.rmap (Ty.rsubst rvl rl))
+                   ~effectfun:(Effect.rmap (Ty.rsubst rvl rl))
                    e
 
   let esubst evl el e =
     open_close_map ~varfun:(fun v i -> Var (v,i))
       ~tyfun:(Ty.elsubst evl el)
       ~rvarfun:Misc.id
-      ~effectfun:(NEffect.lsubst evl el) e
+      ~effectfun:(Effect.lsubst evl el) e
 
   let allsubst ((tvl,rvl,evl) : G.t) ((tl,rl,el) : inst)  t = 
     esubst evl el (rsubst rvl rl (tsubst tvl tl t))
 
   let gen_print kind fmt t = 
-    Print.term ~kind (Ty.gen_print kind) Name.print NEffect.print sopen fmt t
+    Print.term ~kind (Ty.gen_print kind) Name.print Effect.print sopen fmt t
   let coq_print fmt t = gen_print `Coq fmt t
   let print fmt t = gen_print `Who fmt t
 
   let print_decl =
-    Print.decl ~kind:`Who (Ty.gen_print `Who) Name.print NEffect.print sopen
+    Print.decl ~kind:`Who (Ty.gen_print `Who) Name.print Effect.print sopen
 
   let print_theory = 
-    Print.theory ~kind:`Who (Ty.gen_print `Who) Name.print NEffect.print sopen
+    Print.theory ~kind:`Who (Ty.gen_print `Who) Name.print Effect.print sopen
 
   let print' fmt t = 
-    print fmt {v = t; t = Ty.unit; e = NEffect.empty; loc = Loc.dummy }
+    print fmt {v = t; t = Ty.unit; e = Effect.empty; loc = Loc.dummy }
 
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
-  let mk_val v t loc = { v = v; t = t; e = NEffect.empty; loc = loc }
+  let mk_val v t loc = { v = v; t = t; e = Effect.empty; loc = loc }
 
   module PT = Ty.Predef
   let ptrue_ loc = mk_val (Const Const.Ptrue) Ty.prop loc
@@ -439,7 +439,7 @@ module Recon = struct
   let let_ g e1 x e2 r l = 
     true_or e2 
       (mk (Let (g, e1,Name.close_bind x e2,r)) e2.t 
-        (NEffect.union e1.e e2.e) l)
+        (Effect.union e1.e e2.e) l)
 
   let plam x t e loc = 
     mk_val (PureFun (t,Name.close_bind x e)) (Ty.parr t e.t) loc
@@ -453,7 +453,7 @@ module Recon = struct
       and argument %a has type %a@." print t1 Ty.print t1.t 
       print t2 Ty.print t2.t ; invalid_arg "app" end
     else 
-      mk (App (t1,t2,kind,cap)) t (NEffect.union t1.e (NEffect.union t2.e e)) l
+      mk (App (t1,t2,kind,cap)) t (Effect.union t1.e (Effect.union t2.e e)) l
   let simple_app2 ?kind t t1 t2 loc = 
     simple_app ?kind (simple_app t t1 loc) t2 loc
   let simple_appi t t1 t2 loc = simple_app2 ~kind:`Infix t t1 t2 loc
@@ -569,7 +569,7 @@ module Recon = struct
     let im b c = impl (eq e1 (b l) l) c l in
     if logic then and_ (im btrue_ e2) (im bfalse_ e3) l
     else
-      mk (Ite (e1,e2,e3)) e2.t (NEffect.union e1.e (NEffect.union e2.e e3.e)) l
+      mk (Ite (e1,e2,e3)) e2.t (Effect.union e1.e (Effect.union e2.e e3.e)) l
   and eq t1 t2 l = 
     if equal t1 t2 then ptrue_ l 
     else
@@ -640,24 +640,24 @@ module Recon = struct
             print t Ty.print t.t
   and combine t1 t2 l = 
     let d1 = domain t1 and d2 = domain t2 in
-    let d1', d2', d3' = NEffect.split d1 d2 in
-    if NEffect.is_empty d1' then t2
+    let d1', d2', d3' = Effect.split d1 d2 in
+    if Effect.is_empty d1' then t2
     else 
       match destruct_app2_var t1 with
       | Some (v,([],[],[e1;_;_]), _, db)
-        when Name.equal v PL.combine_var && NEffect.sub_effect e1 d2' -> 
+        when Name.equal v PL.combine_var && Effect.sub_effect e1 d2' -> 
           combine db t2 l
       | _  -> simple_app2 (P.combine_t ([],[],[d1';d2';d3']) l) t1 t2 l
 
   and restrict eff t l =
-    let d = NEffect.diff (domain t) eff in
-    if NEffect.is_empty d then t else
+    let d = Effect.diff (domain t) eff in
+    if Effect.is_empty d then t else
     try
       match destruct_app2_var t with
       | Some (v,([],[],[e1;_;e3]), m1, m2) 
         when Name.equal v PL.combine_var  ->
-          if NEffect.sub_effect eff e3 then restrict eff m2 l
-          else if NEffect.sub_effect eff e1 then restrict eff m1 l
+          if Effect.sub_effect eff e3 then restrict eff m2 l
+          else if Effect.sub_effect eff e1 then restrict eff m1 l
           else raise Exit
       | _ -> raise Exit
     with Exit -> simple_app (P.restrict_t ([],[],[d; eff]) l) t l
@@ -684,7 +684,7 @@ module Recon = struct
     appi (P.tuple_t ([t1.t;t2.t],[],[]) loc) t1 t2 loc
 
 
-  let letreg l e = mk (LetReg (l,e)) e.t (NEffect.rremove e.e l)
+  let letreg l e = mk (LetReg (l,e)) e.t (Effect.rremove e.e l)
 
   let applist l loc = 
     match l with
@@ -752,7 +752,7 @@ module Recon = struct
   let destruct_get' x = 
     match destruct_app2_var' x with
     | Some (v, ([t],[reg],[e]), r,map) when Name.equal v PL.get_var -> 
-        Some (t,r,reg,NEffect.radd e reg,map)
+        Some (t,r,reg,Effect.radd e reg,map)
     | _ -> None
 
   let destruct_get x = destruct_get' x.v
@@ -761,7 +761,7 @@ module Recon = struct
     match ref.t with 
     | Ty.C (Ty.Ref (r,t)) ->
         let d = domain map in
-        let d = NEffect.rremove d [r] in
+        let d = Effect.rremove d [r] in
         simple_app2 (P.get_t ([t],[r],[d]) l) ref map l
     | _ -> assert false
 
@@ -787,16 +787,16 @@ module Recon = struct
 end
 
 module ParseT = struct
-  type t = (unit,unit, NEffect.t) t'
-  type theory' = (unit, unit, NEffect.t) theory
+  type t = (unit,unit, Effect.t) t'
+  type theory' = (unit, unit, Effect.t) theory
   type theory = theory'
 
   let nothing _ _ = ()
   let print fmt t = 
-    Print.term nothing nothing NEffect.print (fun (_,x,e) -> x,e) fmt t
+    Print.term nothing nothing Effect.print (fun (_,x,e) -> x,e) fmt t
   let print_theory fmt t = 
-    Print.theory nothing nothing NEffect.print (fun (_,x,e) -> x,e) fmt t
-  let mk v loc = { v = v; t = (); e = NEffect.empty; loc = loc }
+    Print.theory nothing nothing Effect.print (fun (_,x,e) -> x,e) fmt t
+  let mk v loc = { v = v; t = (); e = Effect.empty; loc = loc }
   let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
   let var ?(inst = []) v = mk (Var (v,([],[],inst)))
   let annot e t = mk (Annot (e,t))

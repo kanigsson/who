@@ -59,7 +59,7 @@ and pre env x =
 
   
 and ast env {I.v = v; loc = loc} : Ast.ParseT.t = 
-  { Ast.v = ast' env v; loc = loc; t = (); e = NEffect.empty }
+  { Ast.v = ast' env v; loc = loc; t = (); e = Effect.empty }
 
 and letgen env x g e r = 
   let env', g = add_gen env g in

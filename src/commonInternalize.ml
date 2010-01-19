@@ -81,7 +81,7 @@ let add_gen env (tl,rl,el) =
   env, (List.rev tl,List.rev rl,List.rev el)
 
 let effect env (rl,el) = 
-  NEffect.from_lists
+  Effect.from_lists
     (List.map (rvar env) rl)
     (List.map (effvar env) el)
 

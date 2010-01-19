@@ -7,7 +7,7 @@ type ('a,'b,'c) t' =
   | App of Name.t * ('a,'b,'c) Inst.t
   | Ref of 'b * 'a
   | Map of 'c
-type t = C of (t,Name.t,NEffect.t) t'
+type t = C of (t,Name.t,Effect.t) t'
 
 open Myformat
 
@@ -49,7 +49,7 @@ let print' ?(kind=`Who) pt pr pe is_c fmt x =
         (Inst.print ~kind ~intype:true mayp pr pe) i
 
 let rec gen_print kind fmt (C x) = 
-  print' ~kind (gen_print kind) Name.print NEffect.print_nosep
+  print' ~kind (gen_print kind) Name.print Effect.print_nosep
     (function C x -> is_compound x) fmt x
 
 let print fmt x = gen_print `Who fmt x
@@ -73,7 +73,7 @@ let unit = const (Const.TUnit)
 let prop = const (Const.TProp)
 let bool = const (Const.TBool)
 let int = const (Const.TInt)
-let emptymap = map (NEffect.empty)
+let emptymap = map (Effect.empty)
 
 let destr_tuple (C t) = 
   match t with
@@ -82,7 +82,7 @@ let destr_tuple (C t) =
 
 let latent_effect = function
   | C (Arrow (_,_,e,_)) -> e
-  | C (PureArr _) -> NEffect.empty
+  | C (PureArr _) -> Effect.empty
   | _ -> assert false
 
 let split t = 
@@ -167,7 +167,7 @@ let rlsubst rvl rl target =
     | Map e -> Map (effsubst e)
     | App (v,i) -> App (v, Inst.map aux auxr effsubst i)
   and auxr r = try Name.M.find r map with Not_found -> r
-  and effsubst e = NEffect.rmap auxr e
+  and effsubst e = Effect.rmap auxr e
   and aux (C x) = C (aux' x) in
   aux target
 
@@ -188,7 +188,7 @@ let elsubst evl effl target =
     | Ref (r,t) -> Ref (r, aux t)
     | App (v,i) -> App (v, Inst.map aux Misc.id effsubst i)
   and aux (C x) = C (aux' x) 
-  and effsubst eff' = NEffect.lsubst evl effl eff' in
+  and effsubst eff' = Effect.lsubst evl effl eff' in
   aux target
 
 module Generalize = struct
@@ -248,15 +248,15 @@ let rec equal' eff t1 t2 =
   | Ref (r1,t1), Ref (r2,t2) -> Name.equal r1 r2 && equal eff t1 t2
   | Map e1, Map e2 -> eff e1 e2
   | App (v1,i1), App (v2,i2) -> 
-      v1 = v2 && Inst.equal (equal eff) Name.equal (NEffect.equal) i1 i2
+      v1 = v2 && Inst.equal (equal eff) Name.equal (Effect.equal) i1 i2
   | _ -> false
 and equal eff (C a) (C b) = equal' eff a b
 
-let equal = equal NEffect.equal
+let equal = equal Effect.equal
 
 let forty = 
   let e = Name.from_string "e" in
-  let eff = NEffect.esingleton e in
+  let eff = Effect.esingleton e in
   ([],[],[e]),
    parr 
      (parr int (parr (map eff) prop))
@@ -295,8 +295,8 @@ let selim_map get_rtype t =
     | Map _ -> assert false
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
     | PureArr (C (Map e), t) ->
-        let t = NEffect.efold (fun e acc -> parr (get_rtype e) acc) (aux t) e in
-        NEffect.rfold (fun r acc -> parr (get_rtype r) acc) t e
+        let t = Effect.efold (fun e acc -> parr (get_rtype e) acc) (aux t) e in
+        Effect.rfold (fun r acc -> parr (get_rtype r) acc) t e
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)    
     | Arrow (t1,t2,e,cap) -> caparrow (aux t1) (aux t2) e cap
     | Ref (r,t) -> ref_ r (aux t)
@@ -334,16 +334,16 @@ module Predef = struct
     (([a;b],[],[]), parr (tuple ta tb) tb)
 
   let combine, restrict, get =
-    let es = NEffect.esingleton and nf = Name.from_string in
-    let ess a b = NEffect.eadd (es a) b in
+    let es = Effect.esingleton and nf = Name.from_string in
+    let ess a b = Effect.eadd (es a) b in
     let e1 = nf "e1" and e2 = nf "e2" and e3 = nf "e3" in
     let a = Name.from_string "c" in
     let ta = var a in
     let r = Name.from_string "r" in
     let eff1 = ess e1 e2 and eff2 = ess e2 e3 in
-    let eff3 = NEffect.eadd eff1 e3 in
+    let eff3 = Effect.eadd eff1 e3 in
     (([],[],[e1;e2;e3]), parr (map eff1) (parr (map eff2) (map eff3))) ,
     (([],[],[e1;e2]), parr (map eff1) (map (es e2))), 
-    (([a],[r],[e1]), parr (ref_ r ta) (parr (map (NEffect.radd (es e1) r)) ta))
+    (([a],[r],[e1]), parr (ref_ r ta) (parr (map (Effect.radd (es e1) r)) ta))
 
 end

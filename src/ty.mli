@@ -7,7 +7,7 @@ type ('a,'b,'c) t' =
   | App of Name.t * ('a,'b,'c) Inst.t
   | Ref of 'b * 'a
   | Map of 'c
-type t = C of (t,Name.t,NEffect.t) t'
+type t = C of (t,Name.t,Effect.t) t'
 
 val print : t Myformat.fmt
 val print_list : 
@@ -26,12 +26,12 @@ val gen_print : [`Coq | `Who | `Pangoline ] -> t Myformat.fmt
 val is_compound : ('a,'b,'c) t' -> bool
 val var : Name.t -> t
 val const : Const.ty -> t
-val arrow : t -> t -> NEffect.t -> t
-val caparrow : t -> t -> NEffect.t -> Name.t list -> t
+val arrow : t -> t -> Effect.t -> t
+val caparrow : t -> t -> Effect.t -> Name.t list -> t
 val parr : t -> t -> t
 val tuple : t -> t -> t
 val ref_ : Name.t -> t -> t
-val map : NEffect.t -> t
+val map : Effect.t -> t
 val unit : t
 val prop : t
 val bool : t
@@ -41,8 +41,8 @@ val emptymap : t
 val arg : t -> t
 val result : t -> t
 val split : t -> t * t
-val latent_effect : t -> NEffect.t
-val domain : t -> NEffect.t
+val latent_effect : t -> Effect.t
+val domain : t -> Effect.t
 val is_map : t -> bool
 val is_ref : t -> bool
 val destr_tuple : t -> t * t
@@ -51,9 +51,9 @@ val to_logic_type : t -> t
 
 val tlsubst : Name.t list -> t list -> t -> t
 val rlsubst : Name.t list -> Name.t list -> t -> t
-val elsubst : Name.t list -> NEffect.t list -> t -> t
+val elsubst : Name.t list -> Effect.t list -> t -> t
 val rsubst : Name.t list -> Name.t list -> Name.t -> Name.t
-val app : Name.t -> (t,Name.t,NEffect.t) Inst.t -> t
+val app : Name.t -> (t,Name.t,Effect.t) Inst.t -> t
 
 val equal : t -> t -> bool
 
@@ -75,7 +75,7 @@ module Generalize : sig
 end
 
 val allsubst : 
-  Generalize.t -> t list * Name.t list * NEffect.t list -> 
+  Generalize.t -> t list * Name.t list * Effect.t list -> 
     t -> t
 
 val forty : Generalize.t * t
@@ -86,9 +86,9 @@ val get_reg : t -> Name.t
 
 val selim_map : (Name.t -> t) -> t -> t
 
-val pretype : t -> NEffect.t -> t
-val posttype : t -> t -> NEffect.t -> t
-val prepost_type: t -> t -> NEffect.t -> t
+val pretype : t -> Effect.t -> t
+val posttype : t -> t -> Effect.t -> t
+val prepost_type: t -> t -> Effect.t -> t
 
 module Predef : sig
   val prop_2 : t

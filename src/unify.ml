@@ -116,7 +116,7 @@ and runify a b =
 (*       printf "runify: %a and %a@." prvar a prvar b; *)
       raise CannotUnify
 and eunify (r1,e1) (r2,e2) = 
-  if NEffect.s_equal e1 e2 && Misc.list_equal_unsorted r_equal r1 r2 then ()
+  if Effect.s_equal e1 e2 && Misc.list_equal_unsorted r_equal r1 r2 then ()
   else raise CannotUnify
       
 module H = Hashtbl.Make (struct 
@@ -149,6 +149,6 @@ let to_ty, to_eff, to_r =
     match Uf.desc r with
     | RU -> assert false
     | RT s -> s
-  and eff (r,e) = NEffect.from_u_effect (List.map rv r) e in
+  and eff (r,e) = Effect.from_u_effect (List.map rv r) e in
   ty, eff, rv
 

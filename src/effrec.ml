@@ -12,9 +12,9 @@ let e_combine (r1,e1) (r2,e2) =
 
 let e_restrict d (r,e) = 
   M.fold (fun k v acc -> 
-    if NEffect.rmem d k then M.add k v acc else acc) r M.empty,
+    if Effect.rmem d k then M.add k v acc else acc) r M.empty,
   M.fold (fun k v acc -> 
-    if NEffect.emem d k then M.add k v acc else acc) e M.empty
+    if Effect.emem d k then M.add k v acc else acc) e M.empty
 
 let get_reg x (rm,_) = M.find x rm
 
@@ -30,8 +30,8 @@ let rec from_form d x =
       | None | Some _ ->
           match x.v with
           | Var (s,_) -> 
-              NEffect.rfold (fun k acc -> M.add k s acc) M.empty d,
-              NEffect.efold (fun k acc -> M.add k s acc) M.empty d 
+              Effect.rfold (fun k acc -> M.add k s acc) M.empty d,
+              Effect.efold (fun k acc -> M.add k s acc) M.empty d 
           | _ -> 
               Myformat.printf "strange term: %a@." print x;
               assert false

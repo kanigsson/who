@@ -107,13 +107,13 @@ let build_evar e v env =
 let tyfun env t = Ty.selim_map (rtype env) t
 
 let add_effect env x d = 
-(*   Myformat.printf "adding effect : %a@." NEffect.print d; *)
+(*   Myformat.printf "adding effect : %a@." Effect.print d; *)
   let env,rl = 
-    NEffect.rfold (fun r (env,rl) -> 
+    Effect.rfold (fun r (env,rl) -> 
       let n = Name.new_name r in
       name_add r x n env, (n,rtype env r)::rl) (env,[]) d in
   let env, el = 
-    NEffect.efold (fun e (env,el) -> 
+    Effect.efold (fun e (env,el) -> 
       let n = Name.new_name e in
       name_add e x n env, (e,n)::el) (env,[]) d in
   env, rl,el

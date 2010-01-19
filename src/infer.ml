@@ -69,14 +69,14 @@ let to_uf_node (tl,rl,evl) el (x : Ty.t ) =
   and aux f (Ty.C x) : U.node = aux' f x 
   and real x = ymemo aux x
   and auxr r = try HT.find rh r with Not_found -> U.mkr r 
-  and eff (ef : NEffect.t) : U.effect =
-    let rl, e = NEffect.to_u_effect ef in
+  and eff (ef : Effect.t) : U.effect =
+    let rl, e = Effect.to_u_effect ef in
     List.map auxr rl, e in
   real x, (tn, rn, List.map eff el)
 
 let to_uf_rnode r = U.mkr r
 let to_uf_enode ef =
-  let rl, e = NEffect.to_u_effect ef in
+  let rl, e = Effect.to_u_effect ef in
   List.map to_uf_rnode rl, e
 
 let sto_uf_node x = fst (to_uf_node G.empty [] x)

@@ -5,7 +5,7 @@ COQTARGETS := $(addprefix coq_files/, $(COQVO))
 COQFILES := $(addprefix coq_files/, $(COQV))
 
 
-ALLML := $(wildcard *.ml *.mly *mll *.mli)
+ALLML := $(wildcard src/*.ml src/*.mly src/*mll src/*.mli)
 
 all: main.native
 

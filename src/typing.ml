@@ -103,8 +103,8 @@ and formtyping env (e : Ast.Recon.t) : Ty.t =
 (*   Myformat.printf "formtyping %a@." Ast.Recon.print e; *)
   let t = formtyping' env e.loc e.v in
   if Ty.equal e.t t then
-    if NEffect.is_empty e.e then t
-    else error e.loc "not empty: %a" NEffect.print e.e
+    if Effect.is_empty e.e then t
+    else error e.loc "not empty: %a" Effect.print e.e
   else
     error e.loc "fannotation mismatch on %a: %a and %a@." 
       Ast.Recon.print e Ty.print e.t Ty.print t
@@ -123,27 +123,27 @@ and post env eff t (_,_,x) =
 
 and typing' env loc = function
   | Ast.Const c -> 
-      Ty.const (Const.type_of_constant c), NEffect.empty, RS.empty
+      Ty.const (Const.type_of_constant c), Effect.empty, RS.empty
   |Ast.Var (s,i) -> 
       begin try 
         let g, t = type_of_var env s in
-        Ty.allsubst g i t, NEffect.empty, RS.empty
+        Ty.allsubst g i t, Effect.empty, RS.empty
       with Not_found -> 
         error loc "unknown variable: %a" Name.print s
       end
   | Ast.App (e1,e2,_,capapp) ->
       let t1, eff1, cap1 = typing env e1 in
       let t2,eff2, cap2 = typing env e2 in
-      let effi = NEffect.union eff2 eff1 in
+      let effi = Effect.union eff2 eff1 in
 (*
       printf "app of %a and %a: eff1:%a eff2:%a@."
-      Recon.print e1 Recon.print e2 NEffect.print eff1 NEffect.print eff2;
+      Recon.print e1 Recon.print e2 Effect.print eff1 Effect.print eff2;
 *)
       begin match t1 with
       | C (Arrow (ta,tb,eff,caparg)) -> 
           if Ty.equal ta t2 then 
             if Misc.list_equal Name.compare capapp caparg then
-              tb, NEffect.union eff effi, 
+              tb, Effect.union eff effi, 
               disj_union3 loc cap1 cap2 (Name.list_to_set caparg)
             else 
               error loc "mismatch on creation permissions: expected %a, given %a"
@@ -161,25 +161,25 @@ and typing' env loc = function
         error loc "wrong declaration of capacities";
       pre env eff p;
       post env eff t' q;
-      caparrow t t' eff cap, NEffect.empty, RS.empty
+      caparrow t t' eff cap, Effect.empty, RS.empty
   | Let (g,e1,b,r) ->
       let x, e2 = sopen b in
 (*       Myformat.printf "plet: %a@." Name.print x; *)
       let env, eff1, cap1 = letgen env x g e1 r in
       let t, eff2, cap2 = typing env e2 in
-      t, NEffect.union eff1 eff2, disjoint_union loc cap1 cap2
+      t, Effect.union eff1 eff2, disjoint_union loc cap1 cap2
   | Param (t,e) -> t,e, RS.empty
   | PureFun (t,b) ->
       let x,e = sopen b in
       let env = add_svar env x t in
       let t', eff, cap = typing env e in
-      if NEffect.is_empty eff && RS.is_empty cap then parr t t', eff, cap
+      if Effect.is_empty eff && RS.is_empty cap then parr t t', eff, cap
       else error loc "effectful pure function"
   | Quant (_,t,b) ->
       let x, e = sopen b in
       let env = add_svar env x t in
       let t', eff, cap = typing env e in
-      if NEffect.is_empty eff && RS.is_empty cap && Ty.equal t' Ty.prop 
+      if Effect.is_empty eff && RS.is_empty cap && Ty.equal t' Ty.prop 
       then Ty.prop, eff, cap
       else error loc "not of type prop"
   | Annot (e,t) -> 
@@ -191,7 +191,7 @@ and typing' env loc = function
         let t2, eff2, cap2 = typing env e2 in
         let t3, eff3, cap3 = typing env e3 in
         if Ty.equal t2 t3 then 
-          t2, NEffect.union eff1 (NEffect.union eff2 eff3),
+          t2, Effect.union3 eff1 eff2 eff3,
           (* we have the right to create the same ref on both sides of the
             branch *)
           disjoint_union loc cap1 (RS.union cap2 cap3)
@@ -199,11 +199,11 @@ and typing' env loc = function
       else error loc "condition is not of boolean type"
   | LetReg (vl,e) ->
       let t, eff, cap = typing env e in
-      t, NEffect.rremove eff vl, Name.remove_list_from_set vl cap
+      t, Effect.rremove eff vl, Name.remove_list_from_set vl cap
   | For _ -> assert false
   | Gen _ -> assert false
 
-and typing env (e : Ast.Recon.t) : Ty.t * NEffect.t * RS.t =
+and typing env (e : Ast.Recon.t) : Ty.t * Effect.t * RS.t =
 (*   Myformat.printf "typing %a@." Ast.Recon.print e; *)
   let ((t',_,_) as x) = typing' env e.loc e.v in
   if Ty.equal e.t t' then x else 
@@ -224,7 +224,7 @@ and letgen env x g e r =
     | Const.NoRec | Const.LogicDef -> env
     | Const.Rec t -> add_svar env x t in
   let t, eff, cap = 
-    if r = Const.LogicDef then formtyping env' e, NEffect.empty, RS.empty  
+    if r = Const.LogicDef then formtyping env' e, Effect.empty, RS.empty  
     else typing env' e in
   let env = add_var env x g t in
   env, eff, cap

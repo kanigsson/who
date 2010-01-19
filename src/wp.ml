@@ -78,11 +78,11 @@ and wp m q e =
   else 
     match e.v with
     | LetReg (rl,se) -> 
-        let ef = NEffect.from_lists rl [] in
+        let ef = Effect.from_lists rl [] in
         rgen rl 
         (effFA ef (fun cur ->
           wp_node (combine m cur l)
-            (efflamho (NEffect.union se.e ef) (fun s -> 
+            (efflamho (Effect.union se.e ef) (fun s -> 
               app q (restrict e.e s l) l) l) se) l) l
     | App (v1,v2,_,_) -> 
         let lv1 = lift_value v1 and lv2 = lift_value v2 in
@@ -120,7 +120,7 @@ and wp m q e =
 and wp_node m q e = 
 (*   Myformat.printf "wp:%a@." print e; *)
   let r = 
-  if NEffect.equal (domain m) e.e then wp m q e
+  if Effect.equal (domain m) e.e then wp m q e
   else begin
     let l = e.loc in
     wp (restrict e.e m l) 
