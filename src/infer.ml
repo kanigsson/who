@@ -61,10 +61,11 @@ let to_uf_node (tl,rl,evl) el (x : Ty.t ) =
     | Ty.Arrow (t1,t2,e, c) -> 
         U.arrow (f t1) (f t2) (eff e) (List.map auxr c)
     | Ty.Tuple (t1,t2) -> U.tuple (f t1) (f t2)
-    | Ty.Var x -> (try HT.find th x with Not_found -> U.var x)
     | Ty.Ref (r,t) -> U.ref_ (auxr r) (f t)
     | Ty.Map e -> U.map (eff e)
     | Ty.PureArr (t1,t2) -> U.parr (f t1) (f t2)
+    | Ty.App (v,([],[],[])) -> 
+        begin try HT.find th v with Not_found -> U.var v end
     | Ty.App (v,i) -> Unify.app v (Inst.map f auxr eff i) 
   and aux f (Ty.C x) : U.node = aux' f x 
   and real x = ymemo aux x

@@ -163,8 +163,8 @@ module Print = struct
           begin match kind with
           | `Who | `Pangoline ->
               let pr fmt () =
-                if Inst.is_empty i then Name.print fmt v 
-                else fprintf fmt "%a %a" Name.print v 
+                if Inst.is_empty i then (name_print ~kind) fmt v 
+                else fprintf fmt "%a %a" (name_print ~kind) v 
                   (Inst.print ~kind ~intype:false pra prb prc) i
               in 
               if Name.S.mem v PL.infix_set then Myformat.paren pr fmt ()
@@ -369,14 +369,14 @@ module Recon = struct
   module PT = Ty.Predef
   let ptrue_ loc = mk_val (Const Const.Ptrue) Ty.prop loc
   let pfalse_ loc = mk_val (Const Const.Pfalse) Ty.prop loc
-  let btrue_ loc = mk_val (Const Const.Btrue) Ty.bool loc
-  let bfalse_ loc = mk_val (Const Const.Bfalse) Ty.bool loc
   let void loc = mk_val (Const Const.Void) Ty.unit loc
 
   let const c = 
     mk_val (Const c) (Ty.const (Const.type_of_constant c))
 
-  let mempty l = mk_val (Var (PL.empty_var, Inst.empty)) Ty.emptymap l
+  let mempty = mk_val (Var (PL.empty_var, Inst.empty)) Ty.emptymap
+  let btrue_ = mk_val (Var (PL.btrue_var, Inst.empty)) Ty.bool 
+  let bfalse_ = mk_val (Var (PL.bfalse_var, Inst.empty)) Ty.bool
 
   let var s inst (g,t) = 
     let nt = (Ty.allsubst g inst t) in
@@ -574,9 +574,10 @@ module Recon = struct
     if equal t1 t2 then ptrue_ l 
     else
       match t2.v with
-      | (Const Const.Btrue | Const Const.Bfalse) as n ->
+      | Var (v, ([], [], [])) when 
+         Name.equal v PL.btrue_var || Name.equal v PL.bfalse_var ->
           let f = reduce_bool t1 l in
-          if n = Const Const.Btrue then f else neg f l
+          if Name.equal v PL.btrue_var then f else neg f l
       | _ -> simple_appi (P.eq_t ([t1.t],[],[]) l) t1 t2 l
   and and_ t1 t2 l = 
     match t1.v,t2.v with

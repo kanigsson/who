@@ -1,4 +1,5 @@
 module Uf = Unionfind
+module PT = Predefined.Ty
 
 type ty = 
   | U
@@ -17,7 +18,7 @@ let tuple t1 t2 = mkt (Ty.Tuple (t1,t2))
 let ref_ r t = mkt (Ty.Ref (r,t))
 let mkr r = Uf.fresh (RT r)
 let new_r () = Uf.fresh RU
-let var s = mkt (Ty.Var s)
+let var s = mkt (Ty.App (s,([],[],[])))
 let map e = mkt (Ty.Map e)
 let app v i = mkt (Ty.App (v,i))
 let parr t1 t2 = mkt (Ty.PureArr (t1,t2))
@@ -42,11 +43,11 @@ open Const
 let const =
   let h = Hashtbl.create 5 in
   List.iter (fun c -> Hashtbl.add h c (mkt (Ty.Const c))) 
-  [ TBool ; TInt ; TUnit; TProp ];
+  [ TInt ; TUnit; TProp ];
   fun c -> Hashtbl.find h c
 
 let prop = const TProp
-let bool = const TBool
+let bool = var (PT.bool_var)
 let int = const TInt
 let unit = const TUnit
 
@@ -82,7 +83,6 @@ let rec unify a b =
   | T _, U -> union a b
   | T t1, T t2 ->
       begin match t1, t2 with
-      | Ty.Var s1, Ty.Var s2 when s1 = s2 -> ()
       | Ty.Const c1, Ty.Const c2 when c1 = c2 -> ()
       | Ty.PureArr (ta1,ta2), Ty.PureArr (tb1,tb2)
       | Ty.Arrow (ta1,ta2,_,_), Ty.PureArr (tb1,tb2)
@@ -128,7 +128,6 @@ module H = Hashtbl.Make (struct
 let to_ty, to_eff, to_r =
   let h = H.create 127 in
   let rec ty' : (node, rnode, effect) Ty.t' -> Ty.t = function
-    | Ty.Var s -> Ty.var s
     | Ty.Arrow (t1,t2,e,cap) -> 
         Ty.caparrow (ty t1) (ty t2) (eff e) (List.map rv cap)
     | Ty.Tuple (t1,t2) -> Ty.tuple (ty t1) (ty t2)

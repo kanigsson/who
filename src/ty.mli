@@ -1,5 +1,4 @@
 type ('a,'b,'c) t' = 
-  | Var of Name.t
   | Const of Const.ty
   | Tuple of 'a * 'a
   | Arrow of 'a * 'a * 'c * 'b list

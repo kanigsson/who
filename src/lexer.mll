@@ -16,8 +16,6 @@ let id_or_keyword =
   let h = Hashtbl.create 17 in
     List.iter (fun (s,k) -> Hashtbl.add h s k)
       [ 
-        ("true", fun i -> TRUE (create_info i) );
-        ("false", fun i -> FALSE (create_info i) );
         ("True", fun i -> PTRUE (create_info i) );
         ("False", fun i -> PFALSE (create_info i) );
         ("let", fun i -> LET (create_info i)  );
@@ -33,7 +31,6 @@ let id_or_keyword =
         ("downto", fun i -> DOWNTO (create_info i)  );
         ("do", fun _ -> DO );
         ("done", fun i -> DONE (create_info i)  );
-        ("bool", fun _ -> BOOL  );
         ("int", fun _ -> TINT  );
         ("unit", fun _ -> UNIT  );
         ("prop", fun _ -> PROP  );

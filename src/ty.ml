@@ -1,5 +1,6 @@
+module PT = Predefined.Ty
+
 type ('a,'b,'c) t' = 
-  | Var of Name.t
   | Const of Const.ty
   | Tuple of 'a * 'a
   | Arrow of 'a * 'a * 'c * 'b list
@@ -12,7 +13,7 @@ type t = C of (t,Name.t,Effect.t) t'
 open Myformat
 
 let is_compound = function
-  | Var _ | Const _ | Ref _ | Map _ -> false
+  | Const _ | Ref _ | Map _ -> false
   | Tuple _ | Arrow _ | PureArr _ | App _ -> true
 
 let maycap pr fmt = function
@@ -27,7 +28,6 @@ let varprint kind fmt x =
 let print' ?(kind=`Who) pt pr pe is_c fmt x = 
   let mayp fmt t = if is_c t then paren pt fmt t else pt fmt t in
   match x with 
-  | Var x -> varprint kind fmt x
   | Arrow (t1,t2,eff,cap) -> 
       (* there are no impure arrow types in Coq or Pangoline, so simply print it
       as you wish *)
@@ -59,7 +59,6 @@ let coq_print fmt x = gen_print `Coq fmt x
 let print_list sep fmt t = 
   print_list sep print fmt t
 
-let var v = C (Var v)
 let arrow t1 t2 eff = C (Arrow (t1,t2,eff,[]))
 let caparrow t1 t2 eff cap = C (Arrow (t1,t2,eff,cap))
 let parr t1 t2 = C (PureArr (t1,t2))
@@ -68,10 +67,11 @@ let const c = C (Const c)
 let ref_ r t = C (Ref (r,t))
 let map e = C (Map e)
 let app v i = C (App (v,i))
+let var v = C (App (v,Inst.empty))
 
 let unit = const (Const.TUnit)
 let prop = const (Const.TProp)
-let bool = const (Const.TBool)
+let bool = var (PT.bool_var)
 let int = const (Const.TInt)
 let emptymap = map (Effect.empty)
 
@@ -111,7 +111,7 @@ let prepost_type a b e = tuple (pretype a e) (posttype a b e)
 
 let to_logic_type t = 
   let rec aux' = function
-    | (Var _ | Const _ | Map _) as t -> C t
+    | (Const _ | Map _) as t -> C t
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)
     | Arrow (t1,t2,e,_) -> prepost_type (aux t1) (aux t2) e 
@@ -131,7 +131,7 @@ let build_tvar_map el effl =
 let tlsubst xl tl target = 
   let map = build_tvar_map xl tl in
   let rec aux' = function
-    | (Var y as t)-> 
+    | App (y,([],[],[])) as t -> 
         begin try let C t = Name.M.find y map in t
         with Not_found -> t end
     | (Const _ | Map _ ) as x -> x
@@ -158,7 +158,7 @@ let rlsubst rvl rl target =
 *)
   let map = build_rvar_map rvl rl in
   let rec aux' = function
-    | (Var _ | Const _) as x -> x
+    | Const _ as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
     | Arrow (t1,t2,eff, cap) -> 
@@ -180,7 +180,7 @@ let rsubst rvl rl r =
 
 let elsubst evl effl target = 
   let rec aux' = function
-    | (Var _ | Const _ ) as x -> x
+    | Const _ as x -> x
     | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
     | Arrow (t1,t2,eff',cap) -> Arrow (aux t1, aux t2,effsubst eff' ,cap) 
@@ -237,7 +237,6 @@ let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target =
 
 let rec equal' eff t1 t2 = 
   match t1, t2 with
-  | Var x1, Var x2 -> Name.equal x1 x2
   | Const x1, Const x2 -> x1 = x2
   | Tuple (ta1,ta2), Tuple (tb1,tb2)
   | PureArr (ta1,ta2), PureArr (tb1,tb2) -> 
@@ -267,7 +266,7 @@ exception Found of t option
 let find_type_of_r name x = 
 (*   Myformat.printf "finding %a in %a@." Name.print name print x; *)
   let rec aux' = function
-    | Var _ | Const _ | Map _ -> None
+    | Const _ | Map _ -> None
     | Ref (n,t) -> if Name.equal n name then Some t else aux t
     | Tuple (t1,t2) | Arrow (t1,t2,_,_) | PureArr (t1,t2) -> 
         begin match aux t1 with
@@ -291,7 +290,7 @@ let get_reg = function
 
 let selim_map get_rtype t = 
   let rec aux' = function
-    | (Var _ | Const _) as t -> C t
+    | Const _ as t -> C t
     | Map _ -> assert false
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
     | PureArr (C (Map e), t) ->
@@ -307,7 +306,7 @@ let selim_map get_rtype t =
 
 let selim_map_log t = 
   let rec aux' = function
-    | (Var _ | Const _) as t -> C t
+    | Const _ as t -> C t
     | Map _ -> assert false
     | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)    

@@ -22,7 +22,6 @@
   
 %public defprogvar_no_pos : x = defprogvar { x.c }
 %public tconstant:
-  | BOOL { Const.TBool }
   | TINT { Const.TInt }
   | UNIT { Const.TUnit }
   | PROP { Const.TProp }
@@ -62,8 +61,6 @@
 
 %public constant:
   | n = INT    { n.info, Const.Int n.c }
-  | p = TRUE   { p, Const.Btrue }
-  | p = FALSE  { p, Const.Bfalse }
   | p = PTRUE  { p, Const.Ptrue }
   | p = PFALSE { p, Const.Pfalse }
   | p = VOID   { p, Const.Void }

@@ -12,6 +12,14 @@ section basiclogic
   logic , ['a 'b||] : 'a -> 'b -> 'a * 'b
 end
 
+section boolean
+  coq predefined
+  pangoline takeover
+  type bool
+  logic true : bool
+  logic false : bool
+end
+
 section arith
   coq \"WhoArith\"
   pangoline takeover
