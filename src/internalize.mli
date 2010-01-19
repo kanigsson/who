@@ -1,1 +1,1 @@
-val theory : Parsetree.theory -> Ast.ParseT.theory
+val theory : ParseTree.theory -> Ast.ParseT.theory

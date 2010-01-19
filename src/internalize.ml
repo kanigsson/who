@@ -1,11 +1,11 @@
-(* This module transforms a Parsetree.t into a Ast.ParseT.t;
+(* This module transforms a ParseTree.t into a Ast.ParseT.t;
    For this, we need to build unique variables for each variable (string) in the
    parse tree. The following simplifications take place:
      * type definitions are expanded
      * sequences e1; e2 are transformed to let _ = e1 in e2 
    *)
 
-module I = Parsetree
+module I = ParseTree
 module IT = ParseTypes
 open Ast
 open CommonInternalize

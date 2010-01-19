@@ -3,7 +3,7 @@
    * the argument types *)
   open Loc
   open Const
-  open Parsetree
+  open ParseTree
 
   let void = const (Const.Void) Loc.dummy
 
@@ -50,7 +50,7 @@
 
 %}
 
-%start <Parsetree.theory> main
+%start <ParseTree.theory> main
 %%
 
 (* basic terms *)
