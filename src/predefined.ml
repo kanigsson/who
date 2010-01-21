@@ -106,6 +106,8 @@ module Logic = struct
       [ 
         impl_var, "=>" ; 
         not_var, "not" ; 
+        and_var, "and" ; 
+        or_var, "or" ; 
       ] in
     List.fold_left (fun acc (a,b) -> Name.M.add a b acc) Name.M.empty l
 

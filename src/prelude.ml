@@ -35,11 +35,28 @@ section arith
   logic >> : int -> int -> bool
   logic >>= : int -> int -> bool
   logic <> ['a||] : 'a -> 'a -> prop
-  logic max : int -> int -> int
-  logic min : int -> int -> int
+  logic int_max : int -> int -> int
+  logic int_min : int -> int -> int
   logic mod : int -> int -> int
   logic band : bool -> bool -> bool
   logic bor : bool -> bool -> bool
+
+  axiom int_max_is_ge :  
+    forall (x y :int).
+      int_max x y >= x /\\ int_max x y >= y
+
+  axiom int_max_is_some :  
+    forall (x y : int).
+      int_max x y = x \\/ int_max x y = y 
+
+  axiom int_min_is_le :  
+    forall (x y : int).
+      int_min x y <= x /\\ int_min x y <= y
+
+  axiom int_min_is_some :  
+    forall (x y : int).
+      int_min x y = x \\/ int_min x y = y 
+
 end
 
 
@@ -78,7 +95,7 @@ parameter forto [||'e] (inv : int -> <'e> -> prop) (start end_ : int)
           forall (m : <'e>) . inv i m -> pre f i m /\\
           forall (n : <'e>). post f i m n () -> inv (i+1) n
     }
-    { inv (max start (end_ + 1)) cur} 
+    { inv (int_max start (end_ + 1)) cur} 
 
 
 parameter fordownto [||'e] (inv :  int -> <'e> -> prop) (start end_ : int) 
@@ -88,7 +105,7 @@ parameter fordownto [||'e] (inv :  int -> <'e> -> prop) (start end_ : int)
           forall (m : <'e>) . inv i m -> pre f i m /\\
           forall (n : <'e>). post f i m n () -> inv (i-1) n
     }
-    { inv (min start (end_ - 1)) cur }
+    { inv (int_min start (end_ - 1)) cur }
 
 section Array
   coq \"WhoArray\"
