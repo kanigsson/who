@@ -1,16 +1,18 @@
-let init ['a|out|e]
-  (inv : <|e> -> int -> prop ) (len : int) (f : int ->{|e} 'a) =
-  { 0 <= len /\ inv cur|{e} 0 /\
+let init ['a|out| 'e]
+  (inv : <'e> -> int -> prop ) (len : int) (f : int ->{'e} 'a) = cap out
+  { 0 <= len /\ inv cur|{'e} 0 /\
     forall (i:int). 0 <= i /\ i < len ->
-    forall (m : <e>).  inv m i -> pre f i m /\
-    forall (n : <e>) (r : 'a).  post f i m n r -> inv n (i+1)
+    forall (m : <'e>).  inv m i -> pre f i m /\
+    forall (n : <'e>) (r : 'a).  post f i m n r -> inv n (i+1)
       }
-  let res = ref{out} (create [|'a|] len) in
-  let () = 
-    for i = 0 to len - 1 do
-      {inv cur|{e} i}
-      res := set [|'a|] i (f i) !res
-    done in
-  res
-  {inv cur|{e} len }
+  if len == 0 then ref{{out}} ar_empty
+  else 
+    let res = ref{{out}} (create len (f 0)) in
+    let z = 
+      for i = 1 to len - 1 do
+        {inv cur|{'e} i}
+        res := set i (f i) !res
+      done in
+    res
+  {inv cur|{'e} len }
 

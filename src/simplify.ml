@@ -133,7 +133,7 @@ let rec term env t =
       match t.v with
       | Const _ -> t
       | App (t1,t2,_,_) when Ty.is_map t2.t -> 
-          let t1 = term env t1 and t2 = term env t2 in
+          let t1 = term env t1 in
           let er = Effrec.from_form_t t2.t t2 in
           let t1 = {t1 with t = Ty.selim_map (rtype env) t1.t} in
           let f = Effrec.rfold (fun r s acc -> 
@@ -184,12 +184,15 @@ and varbind env k x t e l =
 let rec decl env d = 
   match d with
   | Logic (n,_,_) when Name.S.mem n PL.effrec_set -> env, []
-  | Logic (s,((_,[],[]) as g),t) -> env, [Logic (s,g,tyfun env t)]
+  | Logic (s,((_,[],[]) as g),t) -> 
+(*       Myformat.printf "%a@." Name.print s; *)
+      env, [Logic (s,g,tyfun env t)]
   | DLetReg _ -> 
       (* TODO *)
       env, [d]
   | TypeDef _ -> env, [d]
-  | Formula (n,f,k) -> env, [Formula (n, term env f, k)]
+  | Formula (n,f,k) -> 
+      env, [Formula (n, term env f, k)]
   | Section (s,cl,th) -> 
       let env, th = theory env th in
       env, if th = [] then [] else [Section (s,cl,th)]

@@ -123,6 +123,19 @@ and infer env (x : Ast.ParseT.t) : Ast.Infer.t =
             e.v, e.t, e.e
         | _ -> assert false
         end
+    (* special case for restrict *)
+    | App ({ v = Var (v,([],[],[e]))},m,`Prefix,[]) 
+        when Name.equal v PL.restrict_var ->
+          let map' = infer env m in
+          begin match Uf.desc map'.t with
+          | U.T Ty.Map em ->
+              let em = U.to_eff em in
+              let new_e = 
+                AP.app (AP.var ~inst:[Effect.diff em e; e] v l) m l in
+              let e = infer env new_e in
+              e.v, e.t, e.e
+          | _ -> assert false
+          end
     | App (e1,e2, k, cap) ->
         let e1 = infer env e1 in
         let t1,t2, eff = 

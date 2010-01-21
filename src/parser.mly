@@ -58,6 +58,8 @@ aterm:
   | p = REF { var "ref" p}
   | p = prefix x = IDENT
     { app (var (snd p) (fst p)) (var x.c x.info) (embrace (fst p) x.info) }
+  | x = IDENT MID e = sepeffect
+    { mk (Restrict (var x.c x.info,e)) x.info }
   | p = DEXCLAM x = IDENT 
     { app2 "!!" (var x.c x.info) (var "cur" p) (embrace p x.info) }
   | p = DEXCLAM x = IDENT MID t = aterm 

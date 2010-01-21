@@ -42,6 +42,9 @@ let rec ast' env = function
   | I.Seq (e1,e2) -> 
       Let (G.empty, ParseT.annot (ast env e1) Ty.unit e1.I.loc, 
            Name.close_bind (Name.new_anon ()) (ast env e2), Const.NoRec)
+  | I.Restrict (t,e) -> 
+      let t = ast env t and e = effect env e in
+      App (Ast.ParseT.var ~inst:[e] PL.restrict_var t.loc, t, `Prefix, [])
 and post env x = 
   let env, old = add_var env "old" in
   let env, cur = add_var env "cur" in

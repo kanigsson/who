@@ -23,6 +23,7 @@ type t' =
   | Param of ty * effect
   | For of var * t option * var * var * var * t
   | LetReg of rvar list * t
+  | Restrict of t * effect
 and t = { v : t' ; loc : Loc.loc }
 and post = 
   | PNone
