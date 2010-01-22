@@ -152,8 +152,7 @@ postcond:
   | p = LCURL x = defprogvar_no_pos COLON t = nterm RCURL { p, PResult (x,t)}
 
 precond:
-  | p = LCURL RCURL { p, None }
-  | p = LCURL t = nterm RCURL { p, Some t}
+  | p = LCURL t = nterm? RCURL { p, t }
 
 (* a declaration is either
   - a let

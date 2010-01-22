@@ -45,7 +45,7 @@ let id_or_keyword =
         ("rec", fun _ -> REC );
         ("section", fun i -> SECTION (create_info i) );
         ("coq", fun _ -> COQ );
-        ("cap", fun _ -> CAP );
+        ("allocates", fun _ -> ALLOCATES );
         ("predefined", fun _ -> PREDEFINED );
         ("takeover", fun _ -> TAKEOVER );
         ("pangoline", fun _ -> PANGOLINE );

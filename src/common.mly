@@ -127,5 +127,5 @@ effect: | l = rvar_or_effectvar* {partition_effect l }
 
 %public maycapdef:
   | {[] }
-  | CAP l = IDENT+ { (strip_info l) }
+  | ALLOCATES l = IDENT+ { (strip_info l) }
 
