@@ -7,9 +7,14 @@ section basiclogic
   logic -> : prop -> prop -> prop
   logic ~ : prop -> prop
   logic = ['a||] : 'a -> 'a -> prop
+  logic , ['a 'b||] : 'a -> 'b -> 'a * 'b
+end
+
+section pairs
+  coq predefined
+  pangoline takeover
   logic fst ['a 'b||] : 'a * 'b -> 'a
   logic snd ['a 'b||] : 'a * 'b -> 'b
-  logic , ['a 'b||] : 'a -> 'b -> 'a * 'b
 end
 
 section boolean
@@ -37,7 +42,7 @@ section arith
   logic <> ['a||] : 'a -> 'a -> prop
   logic int_max : int -> int -> int
   logic int_min : int -> int -> int
-  logic mod : int -> int -> int
+  logic mod_int : int -> int -> int
   logic band : bool -> bool -> bool
   logic bor : bool -> bool -> bool
 
@@ -76,7 +81,7 @@ section Whoref
     {}
     { !!x = v}
 
-  parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r} = cap r
+  parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r} = allocates r
     {}
     { x : !!x = v }
 
