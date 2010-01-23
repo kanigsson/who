@@ -1,1 +1,6 @@
-../../all/multargs.lm
+logic = ['a||] : 'a -> 'a -> prop
+logic + : int -> int -> int
+let f ( x y : int)=
+  { }
+  x + y
+  { r : x + y = r }

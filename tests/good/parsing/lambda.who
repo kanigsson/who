@@ -1,1 +1,1 @@
-../../all/lambda.lm
+let f = (fun (x : int) -> {} x {} )

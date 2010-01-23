@@ -1,1 +1,11 @@
+logic = ['a||] : 'a -> 'a -> prop
+logic /\ : prop -> prop -> prop
+logic -> : prop -> prop -> prop
+logic fst ['a 'b||] : 'a * 'b -> 'a
+logic snd ['a 'b||] : 'a * 'b -> 'b
+logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
+parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
+  {}
+  {r : !!x = r /\ !!x|old = !!x}
+
 let f ['a|toto|] (x : ref(toto,'a)) = {} !x {}

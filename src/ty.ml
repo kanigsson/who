@@ -304,6 +304,12 @@ let selim_map get_rtype t =
 (*   Myformat.printf "converting type: %a@." print t; *)
   aux t
 
+let from_logic_tuple t = 
+  match t with
+  | C Tuple (_,C PureArr (t1,C PureArr (C Map e, C PureArr (_, C PureArr (t2,
+  _))))) -> t1, t2, e
+  | _ -> assert false
+
 let selim_map_log t = 
   let rec aux' = function
     | Const _ as t -> C t

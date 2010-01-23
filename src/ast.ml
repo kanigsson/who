@@ -19,6 +19,8 @@ type ('a,'b,'c) t'' =
   | Param of Ty.t * Effect.t
   | Gen of G.t *  ('a,'b,'c) t'
   | For of Name.t * ('a,'b,'c) pre * Name.t * Name.t * Name.t * ('a,'b,'c) t'
+  | HoareTriple of 
+     ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) post
   | LetReg of Name.t list * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
 and ('a,'b,'c) post' = 
@@ -49,7 +51,7 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
     | Lam (x,t,cap,p,e,q) -> 
         Lam (x,tyfun t, List.map rvarfun cap, pre p, aux e, post q)
     | LetReg (l,e) -> LetReg (l,aux e)
-    | For _ -> assert false
+    | For _ | HoareTriple _ -> assert false
     | Let (g,e1,b,r) -> Let (g,aux e1,varbindfun b, r)
     | PureFun (t,b) -> PureFun (tyfun t, varbindfun b)
     | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
@@ -109,7 +111,7 @@ module Print = struct
   let is_compound = function
     | Const _ | Var _ | Lam _ | PureFun _ | Annot _-> false
     | App _ | Let _ | Ite _
-    | Quant _ | Param _ | For _ | LetReg _ | Gen _ -> true
+    | Quant _ | Param _ | For _ | LetReg _ | Gen _ | HoareTriple _ -> true
   let is_compound_node t = is_compound t.v
 
   type sup = [ `Coq | `Who | `Pangoline ]
@@ -195,6 +197,8 @@ module Print = struct
       | For (dir,inv,_,st,en,t) ->
           fprintf fmt "%a (%a) %a %a (%a)" 
             Name.print dir pre inv Name.print st Name.print en print t
+      | HoareTriple (p,f,x,q) ->
+          fprintf fmt "[[%a]]%a %a[[%a]]" pre p print f with_paren x post q
       | LetReg (v,t) -> 
           fprintf fmt "@[letregion %a in@ %a@]" 
             (print_list space Name.print) v print t
@@ -540,7 +544,7 @@ module Recon = struct
             squant k x t (aux f) l
         | Ite (e1,e2,e3) -> ite ~logic:false (aux e1) (aux e2) (aux e3) l
         | Gen (g,e) -> gen g (aux e) l
-        | For _ | LetReg _ | Param _ | Lam _  -> assert false in
+        | For _ | LetReg _ | Param _ | Lam _ | HoareTriple _  -> assert false in
       termfun t in
     aux t
   and impl h1 goal l = 
@@ -701,7 +705,7 @@ module Recon = struct
   let rec is_value = function
     | Const _ | Var _ | Lam _ | PureFun _ | Quant _ -> true
     | Let _ | Ite _ | For _ | LetReg _ | Param _
-    | Annot _ | Gen _ -> false
+    | Annot _ | Gen _ | HoareTriple _  -> false
     | App (t1,_,_,_) -> 
         match t1.t with
         | Ty.C (Ty.PureArr _) -> true

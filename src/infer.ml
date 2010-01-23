@@ -183,6 +183,19 @@ and infer env (x : Ast.ParseT.t) : Ast.Infer.t =
         let body = check_type env U.unit body in
         let inv = pre env body.e inv l in
         For (dir, inv, i, s, e, body), U.unit, body.e
+    | HoareTriple (p,f,x,q) ->
+        let f' = infer {env with pm = false} f in
+        begin match Uf.desc f'.t with
+          | U.T Ty.Arrow (t1,t2,eff, _) -> 
+              Format.printf "found HoareTriple of type %a@." U.print_node f'.t;
+              let x = check_type env t1 x in
+              let p = pre env eff p l in
+              let q = post env eff t2 q l in
+              HoareTriple  (p,infer env f,x,q), U.prop, U.eff_empty
+          | _ -> 
+              error l "term %a is not a function, but of type %a@."
+              AI.print f' U.print_node f'.t
+        end
     | Var (v,(_,_,el)) ->
 (*         Myformat.printf "treating var: %a@." Name.print v; *)
         let (_,_,evl) as m ,xt = 
@@ -193,7 +206,7 @@ and infer env (x : Ast.ParseT.t) : Ast.Infer.t =
           try to_uf_node m el xt
           with Invalid_argument "List.fold_left2" ->
             error l "not the right number of effect vars: %a@.\
-            I expected %d variables, but you gave only %d effects.@." 
+            I expected %d variables, but you gave %d effects.@." 
             Name.print v (List.length evl) (List.length el) in
 (*         Myformat.printf "found type: %a@." U.print_node nt; *)
         Var (v, i), nt, U.eff_empty
@@ -262,7 +275,9 @@ let infer_th th =
   let _, dl = Misc.list_fold_map infer_th initial th in
   dl
 
-open Recon
+module AR = Ast.Recon
+open AR
+
 let rec recon' = function
   | Var (x,i) -> Var (x,inst i)
   | Const c -> Const c
@@ -305,6 +320,17 @@ let rec recon' = function
       let bodyfun = lam i Ty.int (cur,Some pre) body (old,cur,PPlain post) l in
       (* forvar inv start end bodyfun *)
       (app2 (app2 (var dir ([],[],[e]) Ty.forty l) inv' sv l) ev bodyfun l).v
+  | HoareTriple (p,f,x,q) -> 
+      let f = recon f and x = recon x and p = get_pre p and q = get_post q in
+      let l = f.loc in
+      let _,t2, e = Ty.from_logic_tuple f.t in
+      let f =
+        effFA e (fun m -> effFA e (fun n -> forall t2 (fun r ->
+          let lhs = impl (app p m l) (applist [AR.pre f l; x; m] l) l in
+          let rhs = 
+            impl (applist [AR.post f l; x; m ; n; r] l) (applist [q;m;n;r] l) l in
+          and_ lhs rhs l) l) l) l in
+      f.v
   | LetReg (vl,e) -> LetReg (vl,recon e)
   | Annot (e,t) -> Annot (recon e, t)
   | Gen (g,e) -> Gen (g,recon e)
@@ -312,6 +338,14 @@ and pre (cur,x) =
   match x with
   | None ->  assert false
   | Some x -> cur, Some (recon x)
+and get_pre (_,x) = 
+  match x with
+  | None -> assert false
+  | Some x -> recon x
+and get_post (_,_,x) =
+  match x with
+  | PPlain f -> recon f
+  | _ -> assert false
 and recon (t : Ast.Infer.t) : Ast.Recon.t = 
   { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e; loc = t.loc }
 and inst i = Inst.map U.to_ty U.to_r U.to_eff i

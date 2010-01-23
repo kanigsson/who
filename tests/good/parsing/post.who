@@ -1,1 +1,4 @@
-../../all/post.lm
+let f (x : int) =
+  {} 
+  x 
+  { True }

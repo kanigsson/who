@@ -45,6 +45,11 @@ let rec ast' env = function
   | I.Restrict (t,e) -> 
       let t = ast env t and e = effect env e in
       App (Ast.ParseT.var ~inst:[e] PL.restrict_var t.loc, t, `Prefix, [])
+  | I.HoareTriple (p,f,x,q) ->
+      let p = pre env p and q = post env q 
+      and f = ast env f and x = ast env x in
+      HoareTriple (p,f,x,q)
+
 and post env x = 
   let env, old = add_var env "old" in
   let env, cur = add_var env "cur" in

@@ -1,3 +1,4 @@
+logic = ['a||] : 'a -> 'a -> prop
 type array ['a||]
 
 logic get ['a||] : int -> array ['a||] -> 'a

@@ -1,3 +1,11 @@
+logic = ['a||] : 'a -> 'a -> prop
+logic -> : prop -> prop -> prop
+logic <= : int -> int -> prop
+logic + : int -> int -> int
+logic * : int -> int -> int
+logic - : int -> int -> int
+type bool
+logic == ['a||] : 'a -> 'a -> bool
 logic fact : int -> int
 
 axiom fact_zero : fact 0 = 1

@@ -14,7 +14,7 @@ let term env t =
           let x,e2 = vopen b in
           polsubst g x e1 e2
       | Const _ | Var _ | App _ | Gen _ | PureFun _ | Quant _ | Ite _ 
-      | Lam _ | Annot _ | For _ | LetReg _ | Param _ -> t)
+      | Lam _ | Annot _ | For _ | LetReg _ | Param _ | HoareTriple _ -> t)
     t
 
 let rec decl env d = 

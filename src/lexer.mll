@@ -90,11 +90,11 @@ rule token = parse
   | '[' { LBRACKET   }
   | ']' { RBRACKET   }
   | '{' { LCURL (create_info lexbuf) }
-  | '}' { RCURL   }
+  | '}' { RCURL (create_info lexbuf) }
   | "{{" { DLCURL }
   | "}}" { DRCURL }
-  | "[[" { DLBRACKET }
-  | "]]" { DRBRACKET }
+  | "[[" { DLBRACKET (create_info lexbuf) }
+  | "]]" { DRBRACKET (create_info lexbuf) }
   | "!!" { DEXCLAM (create_info lexbuf) }
   | "!=" { BNEQ (create_info lexbuf) }
   | '!' { EXCLAM (create_info lexbuf) }

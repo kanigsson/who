@@ -47,6 +47,7 @@ val is_ref : t -> bool
 val destr_tuple : t -> t * t
 
 val to_logic_type : t -> t
+val from_logic_tuple : t -> t * t * Effect.t
 
 val tlsubst : Name.t list -> t list -> t -> t
 val rlsubst : Name.t list -> Name.t list -> t -> t

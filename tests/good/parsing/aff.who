@@ -1,1 +1,7 @@
-../../all/aff.lm
+logic = ['a||] : 'a -> 'a -> prop
+logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
+parameter := ['a|r|] (x : ref(r,'a)) (v : 'a) : unit, {r} =
+  {}
+  { !!x = v}
+
+let f [|r|] (x : ref(r,int)) = {} x := 0 {}

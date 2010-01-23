@@ -1,1 +1,3 @@
-../../all/polytype.lm
+type array ['a||]
+
+logic get ['a||] : array ['a||] -> int -> 'a

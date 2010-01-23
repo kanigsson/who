@@ -1,1 +1,10 @@
-../../all/myref.lm
+logic = ['a||] : 'a -> 'a -> prop
+logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
+parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r} = allocates r
+  {}
+  { x : !!x = v }
+
+let myref ['a|r|] (x : 'a) = allocates r
+  {}
+  ref{{r}} x 
+  {}

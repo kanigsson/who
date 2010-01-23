@@ -1,1 +1,2 @@
-../../all/axiom.lm
+logic = ['a||] : 'a -> 'a -> prop
+axiom a : forall (x : int). x = 0

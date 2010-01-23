@@ -1,1 +1,4 @@
-../../all/typeabbrv.lm
+type t = int
+logic + : int -> int -> int
+
+let f (x : t) = x + 1

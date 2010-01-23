@@ -107,6 +107,10 @@ nterm:
        e3 = nterm 
     en = DONE
     { forfunction dir i e1 e2 (snd p) e3 (embrace st en) }
+  | l = DLBRACKET p = nterm? DRBRACKET 
+      f = aterm x = aterm 
+    DLBRACKET q = postcond_int r = DRBRACKET
+    { mk (HoareTriple (p,f,x,q)) (embrace l r) }
 
 todownto:
   | TO { "forto" }
@@ -147,12 +151,14 @@ alllet:
 funcbody:
   cap = maycapdef p = precond e = nterm q = postcond { cap, p,e,q }
 
-postcond:
-  | p = precond { match p with p, None -> p, PNone | p, Some f -> p, PPlain f }
-  | p = LCURL x = defprogvar_no_pos COLON t = nterm RCURL { p, PResult (x,t)}
+postcond_int:
+  | {PNone }
+  | t = nterm { PPlain t }
+  | x = defprogvar_no_pos COLON t = nterm { PResult (x,t) }
 
-precond:
-  | p = LCURL t = nterm? RCURL { p, t }
+postcond: l = LCURL q = postcond_int r = RCURL { embrace l r, q }
+
+precond: | p = LCURL t = nterm? RCURL { p, t }
 
 (* a declaration is either
   - a let

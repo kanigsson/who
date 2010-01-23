@@ -76,7 +76,7 @@ section Whoref
     {}
     { !!x = v}
 
-  parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r} = cap r
+  parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r} = allocates r
     {}
     { x : !!x = v }
 

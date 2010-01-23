@@ -1,1 +1,1 @@
-../../all/logic.lm
+logic f : int -> int

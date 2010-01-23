@@ -1,1 +1,2 @@
+logic + : int -> int -> int
 let f (x : int) = { } x + 3 {}

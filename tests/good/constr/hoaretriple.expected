@@ -1,0 +1,274 @@
+found HoareTriple of type (a) ->{{t|e}} unit
+section basiclogic coq predefined
+  pangoline predefined
+   logic /\  : prop -> prop -> prop
+  logic \/  : prop -> prop -> prop
+  logic ->  : prop -> prop -> prop
+  logic ~  : prop -> prop
+  logic = ['a1||] : (a1) -> (a1) -> prop
+  logic fst ['a2 'b||] : ((a2) * (b)) -> a2
+  logic snd ['a3 'b1||] : ((a3) * (b1)) -> b1
+  logic , ['a4 'b2||] : (a4) -> (b2) -> (a4) * (b2) end
+section boolean coq predefined
+  pangoline takeover type bool
+  logic true  : bool
+  logic false  : bool end
+section arith coq "WhoArith"
+  pangoline takeover
+   logic +  : int -> int -> int
+  logic -  : int -> int -> int
+  logic *  : int -> int -> int
+  logic <  : int -> int -> prop
+  logic <=  : int -> int -> prop
+  logic >  : int -> int -> prop
+  logic >=  : int -> int -> prop
+  logic <<  : int -> int -> bool
+  logic <<=  : int -> int -> bool
+  logic >>  : int -> int -> bool
+  logic >>=  : int -> int -> bool
+  logic <> ['a5||] : (a5) -> (a5) -> prop
+  logic int_max  : int -> int -> int
+  logic int_min  : int -> int -> int
+  logic mod  : int -> int -> int
+  logic band  : (bool) -> (bool) -> bool
+  logic bor  : (bool) -> (bool) -> bool
+  axiom int_max_is_ge : forall (x:int).
+                        forall (y:int).
+                        ((int_max x y) >= x) /\ ((int_max x y) >= y)
+  axiom int_max_is_some : forall (x1:int).
+                          forall (y1:int).
+                          ((int_max x1 y1) =[int||] x1) \/
+                          ((int_max x1 y1) =[int||] y1)
+  axiom int_min_is_le : forall (x2:int).
+                        forall (y2:int).
+                        ((int_min x2 y2) <= x2) /\ ((int_min x2 y2) <= y2)
+  axiom int_min_is_some : forall (x3:int).
+                          forall (y3:int).
+                          ((int_min x3 y3) =[int||] x3) \/
+                          ((int_min x3 y3) =[int||] y3) end
+logic == ['a6||] : (a6) -> (a6) -> bool
+logic != ['a7||] : (a7) -> (a7) -> bool
+section Whoref coq "WhoMap"
+  pangoline predefined
+   logic !! ['a8|r|'e1] : ref(r,a8) -> <r  'e1 > -> a8
+  let
+    ! ['a9|r1|] = (fun (x4:ref(r1,a9)) -> {(fun (cur:<r1  >) -> True)}
+                  parameter(a9,{r1  })
+                  {(fun (old:<r1  >) ->
+                   (fun (cur1:<r1  >) ->
+                   (fun (r2:a9) ->
+                   ((!! [a9| r1| { }] x4 cur1) =[a9||] r2) /\
+                   ((!! [a9| r1| { }] x4 old) =[a9||]
+                    (!! [a9| r1| { }] x4 cur1)))))}) 
+  let
+    := ['a10|r3|] = (fun (x5:ref(r3,a10)) ->
+                    (fun (v:a10) -> {(fun (cur2:<r3  >) -> True)}
+                    parameter(unit,{r3  })
+                    {(fun (old1:<r3  >) ->
+                     (fun (cur3:<r3  >) ->
+                     (fun (anon:unit) ->
+                     (!! [a10| r3| { }] x5 cur3) =[a10||] v)))})) 
+  let
+    ref ['a11|r4|] = (fun (v1:a11) ->cap r4 {(fun (cur4:<r4  >) -> True)}
+                     parameter(ref(r4,a11),{r4  })
+                     {(fun (old2:<r4  >) ->
+                      (fun (cur5:<r4  >) ->
+                      (fun (x6:ref(r4,a11)) ->
+                      (!! [a11| r4| { }] x6 cur5) =[a11||] v1)))}) 
+  logic combine [||'e1 'e2 'e3] : < 'e1 'e2 > -> < 'e2 'e3 > -> < 'e1 'e2 'e3
+    >
+  logic restrict [||'e11 'e21] : < 'e11 'e21 > -> < 'e21 >
+  logic empty  : < >
+  let pre ['a12 'b3||] = (fun (x7:(a12) * (b3)) -> fst [a12,b3||] x7) 
+  let post ['a13 'b4||] = (fun (x8:(a13) * (b4)) -> snd [a13,b4||] x8)  end
+let
+  forto [||'e2] = (fun (inv:int -> < 'e2 > -> prop) ->
+                  (fun (start:int) ->
+                  (fun (end_:int) ->
+                  (fun (f:int ->{ 'e2 } unit) ->
+                  {(fun (cur6:< 'e2 >) ->
+                   (inv start cur6) /\
+                   (forall (i:int).
+                    ((start <= i) /\ (i <= end_)) ->
+                    (forall (m:< 'e2 >).
+                     (inv i m) ->
+                     ((pre [int -> < 'e2 > -> prop,int -> < 'e2 > -> < 'e2
+                       > -> unit -> prop||] f i m)
+                      /\
+                      (forall (n:< 'e2 >).
+                       (post [int -> < 'e2 > -> prop,int -> < 'e2 > -> < 'e2
+                        > -> unit -> prop||] f i m n ())
+                       -> (inv (i + 1) n))))))}
+                  parameter(unit,{ 'e2 })
+                  {(fun (old3:< 'e2 >) ->
+                   (fun (cur7:< 'e2 >) ->
+                   (fun (anon1:unit) -> inv (int_max start (end_ + 1)) cur7)))})))) 
+let
+  fordownto [||'e3] = (fun (inv1:int -> < 'e3 > -> prop) ->
+                      (fun (start1:int) ->
+                      (fun (end_1:int) ->
+                      (fun (f1:int ->{ 'e3 } unit) ->
+                      {(fun (cur8:< 'e3 >) ->
+                       (inv1 start1 cur8) /\
+                       (forall (i1:int).
+                        ((end_1 <= i1) /\ (i1 <= start1)) ->
+                        (forall (m1:< 'e3 >).
+                         (inv1 i1 m1) ->
+                         ((pre [int -> < 'e3 > -> prop,int -> < 'e3 > ->
+                           < 'e3 > -> unit -> prop||] f1 i1 m1)
+                          /\
+                          (forall (n1:< 'e3 >).
+                           (post [int -> < 'e3 > -> prop,int -> < 'e3 > ->
+                            < 'e3 > -> unit -> prop||] f1 i1 m1 n1 ())
+                           -> (inv1 (i1 - 1) n1))))))}
+                      parameter(unit,{ 'e3 })
+                      {(fun (old4:< 'e3 >) ->
+                       (fun (cur9:< 'e3 >) ->
+                       (fun (anon2:unit) ->
+                       inv1 (int_min start1 (end_1 - 1)) cur9)))})))) 
+section Array coq "WhoArray"
+  pangoline takeover
+   type array['a14||]
+  logic ar_empty ['a15||] : array[(a15)||]
+  logic get ['a16||] : int -> (array[(a16)||]) -> a16
+  logic set ['a17||] : int -> (a17) -> (array[(a17)||]) -> array[(a17)||]
+  logic len ['a18||] : (array[(a18)||]) -> int
+  logic create ['a19||] : int -> (a19) -> array[(a19)||]
+  axiom update_length : forall ['a20||]. forall (t1:array[(a20)||]).
+                                         forall (i2:int).
+                                         forall (z:a20).
+                                         (len [a20||] t1) =[int||]
+                                         (len [a20||] (set [a20||] i2 z t1))
+  axiom get_set_eq : forall ['a21||]. forall (t2:array[(a21)||]).
+                                      forall (i3:int).
+                                      forall (z1:a21).
+                                      (i3 < (len [a21||] t2)) ->
+                                      ((get [a21||] i3 (set [a21||] i3 z1 t2))
+                                       =[a21||] z1)
+  axiom length_empty : forall ['a22||]. (len [a22||]
+                                         (ar_empty [a22||] : array[(a22)||]))
+                                        =[int||] 0
+  axiom get_set_neq : forall ['a23||]. forall (t3:array[(a23)||]).
+                                       forall (i4:int).
+                                       forall (j:int).
+                                       forall (z2:a23).
+                                       (i4 < (len [a23||] t3)) ->
+                                       ((j < (len [a23||] t3)) ->
+                                        ((i4 <>[int||] j) ->
+                                         ((get [a23||] i4
+                                           (set [a23||] j z2 t3))
+                                          =[a23||] (get [a23||] i4 t3))))
+  axiom length_nonnegative : forall ['a24||]. forall (t4:array[(a24)||]).
+                                              0 <= (len [a24||] t4)
+  axiom length_create : forall ['a25||]. forall (l:int).
+                                         forall (v2:a25).
+                                         (0 <= l) ->
+                                         ((len [a25||] (create [a25||] l v2))
+                                          =[int||] l)
+  axiom length_access : forall ['a26||]. forall (i5:int).
+                                         forall (l1:int).
+                                         forall (v3:a26).
+                                         (0 <= i5) ->
+                                         ((i5 <= l1) ->
+                                          ((get [a26||] i5
+                                            (create [a26||] l1 v3))
+                                           =[a26||] v3)) end
+section List coq "WhoList"
+  pangoline takeover
+   type list['a27||]
+  logic nil ['a28||] : list[(a28)||]
+  logic cons ['a29||] : (a29) -> (list[(a29)||]) -> list[(a29)||]
+  logic is_nil ['a30||] : (list[(a30)||]) -> bool
+  logic l_in ['a31||] : (a31) -> (list[(a31)||]) -> prop end
+logic = ['a32||] : (a32) -> (a32) -> prop
+logic /\  : prop -> prop -> prop
+logic ->  : prop -> prop -> prop
+logic fst ['a33 'b5||] : ((a33) * (b5)) -> a33
+logic snd ['a34 'b6||] : ((a34) * (b6)) -> b6
+logic !! ['a35|r5|'e4] : ref(r5,a35) -> <r5  'e4 > -> a35
+let
+  !1 ['a36|r6|] = (fun (x9:ref(r6,a36)) -> {(fun (cur10:<r6  >) -> True)}
+                  parameter(a36,{r6  })
+                  {(fun (old5:<r6  >) ->
+                   (fun (cur11:<r6  >) ->
+                   (fun (r7:a36) ->
+                   ((!! [a36| r6| { }] x9 cur11) =[a36||] r7) /\
+                   ((!! [a36| r6| { }] x9 old5) =[a36||]
+                    (!! [a36| r6| { }] x9 cur11)))))}) 
+let pre1 ['a37 'b7||] = (fun (x10:(a37) * (b7)) -> fst [a37,b7||] x10) 
+let post1 ['a38 'b8||] = (fun (x11:(a38) * (b8)) -> snd [a38,b8||] x11) 
+logic <=  : int -> int -> prop
+logic <  : int -> int -> prop
+logic +  : int -> int -> int
+logic -  : int -> int -> int
+logic int_max1  : int -> int -> int
+type array1['a39||]
+logic len1 ['a40||] : (array1[(a40)||]) -> int
+logic get1 ['a41||] : int -> (array1[(a41)||]) -> a41
+let
+  forto1 [||'e5] = (fun (inv2:int -> < 'e5 > -> prop) ->
+                   (fun (start2:int) ->
+                   (fun (end_2:int) ->
+                   (fun (f2:int ->{ 'e5 } unit) ->
+                   {(fun (cur12:< 'e5 >) ->
+                    (inv2 start2 cur12) /\
+                    (forall (i6:int).
+                     ((start2 <= i6) /\ (i6 <= end_2)) ->
+                     (forall (m2:< 'e5 >).
+                      (inv2 i6 m2) ->
+                      ((pre1 [int -> < 'e5 > -> prop,int -> < 'e5 > -> < 'e5
+                        > -> unit -> prop||] f2 i6 m2)
+                       /\
+                       (forall (n2:< 'e5 >).
+                        (post1 [int -> < 'e5 > -> prop,int -> < 'e5 > ->
+                         < 'e5 > -> unit -> prop||] f2 i6 m2 n2 ())
+                        -> (inv2 (i6 + 1) n2))))))}
+                   parameter(unit,{ 'e5 })
+                   {(fun (old6:< 'e5 >) ->
+                    (fun (cur13:< 'e5 >) ->
+                    (fun (anon3:unit) ->
+                    inv2 (int_max1 start2 (end_2 + 1)) cur13)))})))) 
+let
+  iter ['a|t|'e] = (fun (inv3:<t  'e > -> int -> prop) ->
+                   (fun (ar:ref(t,array1[(a)||])) ->
+                   (fun (f3:(a) ->{t  'e } unit) ->
+                   {(fun (cur14:<t  'e >) ->
+                    (inv3 cur14 0) /\
+                    (forall (i7:int).
+                     ((0 <= i7) /\
+                      (i7 <
+                       (len1 [a||] (!! [array1[(a)||]| t| { 'e }] ar cur14))))
+                     ->
+                     (forall (anon4:<t  'e >).
+                      forall (anon5:<t  'e >).
+                      ((inv3 anon4 i7) ->
+                       (fst [(a) -> <t  'e > -> prop,(a) -> <t  'e > -> <t
+                         'e > -> unit -> prop||] f3
+                        (get1 [a||] i7
+                         (!! [array1[(a)||]| t| { 'e }] ar cur14))
+                        anon4))
+                      /\
+                      ((snd [(a) -> <t  'e > -> prop,(a) -> <t  'e > -> <t
+                         'e > -> unit -> prop||] f3
+                        (get1 [a||] i7
+                         (!! [array1[(a)||]| t| { 'e }] ar cur14))
+                        anon4 anon5 ())
+                       -> (inv3 anon5 (i7 + 1))))))}
+                   let __start = 0 in
+                   let __end = (len1 [a||] (!1 [array1[(a)||]| t|] ar)) - 1
+                   in
+                   forto1 [|| {t  'e }]
+                   (fun (i8:int) -> (fun (cur15:<t  'e >) -> inv3 cur15 i8))
+                   __start __end
+                   (fun (i8:int) ->
+                   {(fun (cur15:<t  'e >) ->
+                    ((__start <= i8) /\ (i8 <= __end)) /\ (inv3 cur15 i8))}
+                   f3 (get1 [a||] i8 (!1 [array1[(a)||]| t|] ar))
+                   {(fun (anon6:<t  'e >) ->
+                    (fun (cur15:<t  'e >) ->
+                    (fun (anon7:unit) -> inv3 cur15 (i8 + 1))))})
+                   {(fun (old7:<t  'e >) ->
+                    (fun (cur16:<t  'e >) ->
+                    (fun (anon8:unit) ->
+                    inv3 cur16
+                    (len1 [a||] (!! [array1[(a)||]| t| { 'e }] ar old7)))))}))) 

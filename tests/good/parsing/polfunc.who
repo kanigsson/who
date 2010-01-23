@@ -1,1 +1,7 @@
-../../all/polfunc.lm
+logic fst ['a 'b||] : 'a * 'b -> 'a
+logic snd ['a 'b||] : 'a * 'b -> 'b
+let f [||'e] (g : int -> {'e} int) =
+  { fst g 5 cur }
+    g 5
+  { r : snd g 5 old cur r }
+

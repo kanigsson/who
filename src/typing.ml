@@ -99,6 +99,7 @@ let rec formtyping' env loc = function
   | Param _ -> error loc "effectful parameter in logic"
   | For _ -> assert false
   | LetReg _ -> assert false
+  | HoareTriple _ -> assert false
 and formtyping env (e : Ast.Recon.t) : Ty.t =
 (*   Myformat.printf "formtyping %a@." Ast.Recon.print e; *)
   let t = formtyping' env e.loc e.v in
@@ -202,6 +203,7 @@ and typing' env loc = function
       t, Effect.rremove eff vl, Name.remove_list_from_set vl cap
   | For _ -> assert false
   | Gen _ -> assert false
+  | HoareTriple _ -> assert false
 
 and typing env (e : Ast.Recon.t) : Ty.t * Effect.t * RS.t =
 (*   Myformat.printf "typing %a@." Ast.Recon.print e; *)

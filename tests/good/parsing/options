@@ -1,1 +1,1 @@
--parse-only
+-parse-only -no-prelude

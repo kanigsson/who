@@ -1,1 +1,15 @@
-../../all/apply.lm
+logic = ['a||] : 'a -> 'a -> prop
+logic /\ : prop -> prop -> prop
+logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
+parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
+  {}
+  {r : !!x = r /\ !!x|old = !!x}
+let apply ['a 'b ||'e] (f : 'a ->{'e} 'b) (x : 'a) = 
+  {} 
+  f x 
+  {}
+
+let h [|r|] (x : ref(r,int)) = 
+  {} 
+  apply (fun (z : int) -> {} !x {}) 5 
+  {}
