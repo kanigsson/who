@@ -77,53 +77,53 @@ section Whoref coq "WhoMap"
                       (!! [a10| r4| { }] x6 cur5) =[a10||] v1)))}) 
   logic combine [||'e1 'e2 'e3] : < 'e1 'e2 > -> < 'e2 'e3 > -> < 'e1 'e2 'e3
     >
-  logic restrict [||'e11 'e21] : < 'e11 'e21 > -> < 'e21 >
+  logic restrict [||'e4 'e5] : < 'e4 'e5 > -> < 'e5 >
   logic empty  : < >
   let pre ['a11 'b3||] = (fun (x7:(a11) * (b3)) -> fst [a11,b3||] x7) 
   let post ['a12 'b4||] = (fun (x8:(a12) * (b4)) -> snd [a12,b4||] x8)  end
 let
-  forto [||'e1] = (fun (inv:int -> < 'e1 > -> prop) ->
+  forto [||'e6] = (fun (inv:int -> < 'e6 > -> prop) ->
                   (fun (start:int) ->
                   (fun (end_:int) ->
-                  (fun (f:int ->{ 'e1 } unit) ->
-                  {(fun (cur6:< 'e1 >) ->
+                  (fun (f:int ->{ 'e6 } unit) ->
+                  {(fun (cur6:< 'e6 >) ->
                    (inv start cur6) /\
                    (forall (i:int).
                     ((start <= i) /\ (i <= end_)) ->
-                    (forall (m:< 'e1 >).
+                    (forall (m:< 'e6 >).
                      (inv i m) ->
-                     ((pre [int -> < 'e1 > -> prop,int -> < 'e1 > -> < 'e1
+                     ((pre [int -> < 'e6 > -> prop,int -> < 'e6 > -> < 'e6
                        > -> unit -> prop||] f i m)
                       /\
-                      (forall (n:< 'e1 >).
-                       (post [int -> < 'e1 > -> prop,int -> < 'e1 > -> < 'e1
+                      (forall (n:< 'e6 >).
+                       (post [int -> < 'e6 > -> prop,int -> < 'e6 > -> < 'e6
                         > -> unit -> prop||] f i m n ())
                        -> (inv (i + 1) n))))))}
-                  parameter(unit,{ 'e1 })
-                  {(fun (old3:< 'e1 >) ->
-                   (fun (cur7:< 'e1 >) ->
+                  parameter(unit,{ 'e6 })
+                  {(fun (old3:< 'e6 >) ->
+                   (fun (cur7:< 'e6 >) ->
                    (fun (anon1:unit) -> inv (int_max start (end_ + 1)) cur7)))})))) 
 let
-  fordownto [||'e2] = (fun (inv1:int -> < 'e2 > -> prop) ->
+  fordownto [||'e7] = (fun (inv1:int -> < 'e7 > -> prop) ->
                       (fun (start1:int) ->
                       (fun (end_1:int) ->
-                      (fun (f1:int ->{ 'e2 } unit) ->
-                      {(fun (cur8:< 'e2 >) ->
+                      (fun (f1:int ->{ 'e7 } unit) ->
+                      {(fun (cur8:< 'e7 >) ->
                        (inv1 start1 cur8) /\
                        (forall (i1:int).
                         ((end_1 <= i1) /\ (i1 <= start1)) ->
-                        (forall (m1:< 'e2 >).
+                        (forall (m1:< 'e7 >).
                          (inv1 i1 m1) ->
-                         ((pre [int -> < 'e2 > -> prop,int -> < 'e2 > ->
-                           < 'e2 > -> unit -> prop||] f1 i1 m1)
+                         ((pre [int -> < 'e7 > -> prop,int -> < 'e7 > ->
+                           < 'e7 > -> unit -> prop||] f1 i1 m1)
                           /\
-                          (forall (n1:< 'e2 >).
-                           (post [int -> < 'e2 > -> prop,int -> < 'e2 > ->
-                            < 'e2 > -> unit -> prop||] f1 i1 m1 n1 ())
+                          (forall (n1:< 'e7 >).
+                           (post [int -> < 'e7 > -> prop,int -> < 'e7 > ->
+                            < 'e7 > -> unit -> prop||] f1 i1 m1 n1 ())
                            -> (inv1 (i1 - 1) n1))))))}
-                      parameter(unit,{ 'e2 })
-                      {(fun (old4:< 'e2 >) ->
-                       (fun (cur9:< 'e2 >) ->
+                      parameter(unit,{ 'e7 })
+                      {(fun (old4:< 'e7 >) ->
+                       (fun (cur9:< 'e7 >) ->
                        (fun (anon2:unit) ->
                        inv1 (int_min start1 (end_1 - 1)) cur9)))})))) 
 section Array coq "WhoArray"
@@ -185,7 +185,7 @@ logic /\  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
 logic fst ['a32 'b5||] : ((a32) * (b5)) -> a32
 logic snd ['a33 'b6||] : ((a33) * (b6)) -> b6
-logic !! ['a34|r5|'e3] : ref(r5,a34) -> <r5  'e3 > -> a34
+logic !! ['a34|r5|'e8] : ref(r5,a34) -> <r5  'e8 > -> a34
 let
   !1 ['a35|r6|] = (fun (x9:ref(r6,a35)) -> {(fun (cur10:<r6  >) -> True)}
                   parameter(a35,{r6  })
@@ -206,75 +206,76 @@ type array1['a38||]
 logic len1 ['a39||] : (array1[(a39)||]) -> int
 logic get1 ['a40||] : int -> (array1[(a40)||]) -> a40
 let
-  forto1 [||'e4] = (fun (inv2:int -> < 'e4 > -> prop) ->
+  forto1 [||'e9] = (fun (inv2:int -> < 'e9 > -> prop) ->
                    (fun (start2:int) ->
                    (fun (end_2:int) ->
-                   (fun (f2:int ->{ 'e4 } unit) ->
-                   {(fun (cur12:< 'e4 >) ->
+                   (fun (f2:int ->{ 'e9 } unit) ->
+                   {(fun (cur12:< 'e9 >) ->
                     (inv2 start2 cur12) /\
                     (forall (i6:int).
                      ((start2 <= i6) /\ (i6 <= end_2)) ->
-                     (forall (m2:< 'e4 >).
+                     (forall (m2:< 'e9 >).
                       (inv2 i6 m2) ->
-                      ((pre1 [int -> < 'e4 > -> prop,int -> < 'e4 > -> < 'e4
+                      ((pre1 [int -> < 'e9 > -> prop,int -> < 'e9 > -> < 'e9
                         > -> unit -> prop||] f2 i6 m2)
                        /\
-                       (forall (n2:< 'e4 >).
-                        (post1 [int -> < 'e4 > -> prop,int -> < 'e4 > ->
-                         < 'e4 > -> unit -> prop||] f2 i6 m2 n2 ())
+                       (forall (n2:< 'e9 >).
+                        (post1 [int -> < 'e9 > -> prop,int -> < 'e9 > ->
+                         < 'e9 > -> unit -> prop||] f2 i6 m2 n2 ())
                         -> (inv2 (i6 + 1) n2))))))}
-                   parameter(unit,{ 'e4 })
-                   {(fun (old6:< 'e4 >) ->
-                    (fun (cur13:< 'e4 >) ->
+                   parameter(unit,{ 'e9 })
+                   {(fun (old6:< 'e9 >) ->
+                    (fun (cur13:< 'e9 >) ->
                     (fun (anon3:unit) ->
                     inv2 (int_max1 start2 (end_2 + 1)) cur13)))})))) 
 let
-  iter ['a41|t4|'e5] = (fun (inv3:<t4  'e5 > -> int -> prop) ->
-                       (fun (ar:ref(t4,array1[(a41)||])) ->
-                       (fun (f3:(a41) ->{t4  'e5 } unit) ->
-                       {(fun (cur14:<t4  'e5 >) ->
-                        (inv3 cur14 0) /\
-                        (forall (i7:int).
-                         ((0 <= i7) /\
-                          (i7 <
-                           (len1 [a41||]
-                            (!! [array1[(a41)||]| t4| { 'e5 }] ar cur14))))
-                         ->
-                         (forall (anon4:<t4  'e5 >).
-                          forall (anon5:<t4  'e5 >).
-                          ((inv3 anon4 i7) ->
-                           (fst [(a41) -> <t4  'e5 > -> prop,(a41) -> <t4
-                             'e5 > -> <t4  'e5 > -> unit -> prop||] f3
-                            (get1 [a41||] i7
-                             (!! [array1[(a41)||]| t4| { 'e5 }] ar cur14))
-                            anon4))
-                          /\
-                          ((snd [(a41) -> <t4  'e5 > -> prop,(a41) -> <t4
-                             'e5 > -> <t4  'e5 > -> unit -> prop||] f3
-                            (get1 [a41||] i7
-                             (!! [array1[(a41)||]| t4| { 'e5 }] ar cur14))
-                            anon4 anon5 ())
-                           -> (inv3 anon5 (i7 + 1))))))}
-                       let __start = 0 in
-                       let
-                       __end =
-                              (len1 [a41||] (!1 [array1[(a41)||]| t4|] ar)) -
-                              1
-                       in
-                       forto1 [|| {t4  'e5 }]
-                       (fun (i8:int) ->
-                       (fun (cur15:<t4  'e5 >) -> inv3 cur15 i8)) __start
-                       __end
-                       (fun (i8:int) ->
-                       {(fun (cur15:<t4  'e5 >) ->
-                        ((__start <= i8) /\ (i8 <= __end)) /\ (inv3 cur15 i8))}
-                       f3 (get1 [a41||] i8 (!1 [array1[(a41)||]| t4|] ar))
-                       {(fun (anon6:<t4  'e5 >) ->
-                        (fun (cur15:<t4  'e5 >) ->
-                        (fun (anon7:unit) -> inv3 cur15 (i8 + 1))))})
-                       {(fun (old7:<t4  'e5 >) ->
-                        (fun (cur16:<t4  'e5 >) ->
-                        (fun (anon8:unit) ->
-                        inv3 cur16
-                        (len1 [a41||]
-                         (!! [array1[(a41)||]| t4| { 'e5 }] ar old7)))))}))) 
+  iter ['a41|t4|'e10] = (fun (inv3:<t4  'e10 > -> int -> prop) ->
+                        (fun (ar:ref(t4,array1[(a41)||])) ->
+                        (fun (f3:(a41) ->{t4  'e10 } unit) ->
+                        {(fun (cur14:<t4  'e10 >) ->
+                         (inv3 cur14 0) /\
+                         (forall (i7:int).
+                          ((0 <= i7) /\
+                           (i7 <
+                            (len1 [a41||]
+                             (!! [array1[(a41)||]| t4| { 'e10 }] ar cur14))))
+                          ->
+                          (forall (anon4:<t4  'e10 >).
+                           forall (anon5:<t4  'e10 >).
+                           ((inv3 anon4 i7) ->
+                            (fst [(a41) -> <t4  'e10 > -> prop,(a41) -> <t4
+                              'e10 > -> <t4  'e10 > -> unit -> prop||] f3
+                             (get1 [a41||] i7
+                              (!! [array1[(a41)||]| t4| { 'e10 }] ar cur14))
+                             anon4))
+                           /\
+                           ((snd [(a41) -> <t4  'e10 > -> prop,(a41) -> <t4
+                              'e10 > -> <t4  'e10 > -> unit -> prop||] f3
+                             (get1 [a41||] i7
+                              (!! [array1[(a41)||]| t4| { 'e10 }] ar cur14))
+                             anon4 anon5 ())
+                            -> (inv3 anon5 (i7 + 1))))))}
+                        let __start = 0 in
+                        let
+                        __end =
+                               (len1 [a41||] (!1 [array1[(a41)||]| t4|] ar))
+                               - 1
+                        in
+                        forto1 [|| {t4  'e10 }]
+                        (fun (i8:int) ->
+                        (fun (cur15:<t4  'e10 >) -> inv3 cur15 i8)) __start
+                        __end
+                        (fun (i8:int) ->
+                        {(fun (cur15:<t4  'e10 >) ->
+                         ((__start <= i8) /\ (i8 <= __end)) /\
+                         (inv3 cur15 i8))}
+                        f3 (get1 [a41||] i8 (!1 [array1[(a41)||]| t4|] ar))
+                        {(fun (anon6:<t4  'e10 >) ->
+                         (fun (cur15:<t4  'e10 >) ->
+                         (fun (anon7:unit) -> inv3 cur15 (i8 + 1))))})
+                        {(fun (old7:<t4  'e10 >) ->
+                         (fun (cur16:<t4  'e10 >) ->
+                         (fun (anon8:unit) ->
+                         inv3 cur16
+                         (len1 [a41||]
+                          (!! [array1[(a41)||]| t4| { 'e10 }] ar old7)))))}))) 

@@ -77,53 +77,53 @@ section Whoref coq "WhoMap"
                       (!! [a10| r4| { }] x6 cur5) =[a10||] v1)))}) 
   logic combine [||'e1 'e2 'e3] : < 'e1 'e2 > -> < 'e2 'e3 > -> < 'e1 'e2 'e3
     >
-  logic restrict [||'e11 'e21] : < 'e11 'e21 > -> < 'e21 >
+  logic restrict [||'e4 'e5] : < 'e4 'e5 > -> < 'e5 >
   logic empty  : < >
   let pre ['a11 'b3||] = (fun (x7:(a11) * (b3)) -> fst [a11,b3||] x7) 
   let post ['a12 'b4||] = (fun (x8:(a12) * (b4)) -> snd [a12,b4||] x8)  end
 let
-  forto [||'e1] = (fun (inv:int -> < 'e1 > -> prop) ->
+  forto [||'e6] = (fun (inv:int -> < 'e6 > -> prop) ->
                   (fun (start:int) ->
                   (fun (end_:int) ->
-                  (fun (f:int ->{ 'e1 } unit) ->
-                  {(fun (cur6:< 'e1 >) ->
+                  (fun (f:int ->{ 'e6 } unit) ->
+                  {(fun (cur6:< 'e6 >) ->
                    (inv start cur6) /\
                    (forall (i:int).
                     ((start <= i) /\ (i <= end_)) ->
-                    (forall (m:< 'e1 >).
+                    (forall (m:< 'e6 >).
                      (inv i m) ->
-                     ((pre [int -> < 'e1 > -> prop,int -> < 'e1 > -> < 'e1
+                     ((pre [int -> < 'e6 > -> prop,int -> < 'e6 > -> < 'e6
                        > -> unit -> prop||] f i m)
                       /\
-                      (forall (n:< 'e1 >).
-                       (post [int -> < 'e1 > -> prop,int -> < 'e1 > -> < 'e1
+                      (forall (n:< 'e6 >).
+                       (post [int -> < 'e6 > -> prop,int -> < 'e6 > -> < 'e6
                         > -> unit -> prop||] f i m n ())
                        -> (inv (i + 1) n))))))}
-                  parameter(unit,{ 'e1 })
-                  {(fun (old3:< 'e1 >) ->
-                   (fun (cur7:< 'e1 >) ->
+                  parameter(unit,{ 'e6 })
+                  {(fun (old3:< 'e6 >) ->
+                   (fun (cur7:< 'e6 >) ->
                    (fun (anon1:unit) -> inv (int_max start (end_ + 1)) cur7)))})))) 
 let
-  fordownto [||'e2] = (fun (inv1:int -> < 'e2 > -> prop) ->
+  fordownto [||'e7] = (fun (inv1:int -> < 'e7 > -> prop) ->
                       (fun (start1:int) ->
                       (fun (end_1:int) ->
-                      (fun (f1:int ->{ 'e2 } unit) ->
-                      {(fun (cur8:< 'e2 >) ->
+                      (fun (f1:int ->{ 'e7 } unit) ->
+                      {(fun (cur8:< 'e7 >) ->
                        (inv1 start1 cur8) /\
                        (forall (i1:int).
                         ((end_1 <= i1) /\ (i1 <= start1)) ->
-                        (forall (m1:< 'e2 >).
+                        (forall (m1:< 'e7 >).
                          (inv1 i1 m1) ->
-                         ((pre [int -> < 'e2 > -> prop,int -> < 'e2 > ->
-                           < 'e2 > -> unit -> prop||] f1 i1 m1)
+                         ((pre [int -> < 'e7 > -> prop,int -> < 'e7 > ->
+                           < 'e7 > -> unit -> prop||] f1 i1 m1)
                           /\
-                          (forall (n1:< 'e2 >).
-                           (post [int -> < 'e2 > -> prop,int -> < 'e2 > ->
-                            < 'e2 > -> unit -> prop||] f1 i1 m1 n1 ())
+                          (forall (n1:< 'e7 >).
+                           (post [int -> < 'e7 > -> prop,int -> < 'e7 > ->
+                            < 'e7 > -> unit -> prop||] f1 i1 m1 n1 ())
                            -> (inv1 (i1 - 1) n1))))))}
-                      parameter(unit,{ 'e2 })
-                      {(fun (old4:< 'e2 >) ->
-                       (fun (cur9:< 'e2 >) ->
+                      parameter(unit,{ 'e7 })
+                      {(fun (old4:< 'e7 >) ->
+                       (fun (cur9:< 'e7 >) ->
                        (fun (anon2:unit) ->
                        inv1 (int_min start1 (end_1 - 1)) cur9)))})))) 
 section Array coq "WhoArray"

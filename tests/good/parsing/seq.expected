@@ -7,7 +7,7 @@ let
 let seq ['a3 'b 'c||'e1
   'e2] = (fun (f:(a3) ->{ 'e1 } b) ->
          (fun (g:(b) ->{ 'e2 } c) -> (fun (x1:a3) ->  g (f x1) ))) 
-let h [|r1
-  r2|] = (fun (x2:ref(r1,int)) ->
-         (fun (y:ref(r2,int)) -> 
+let h [|r3
+  r4|] = (fun (x2:ref(r3,int)) ->
+         (fun (y:ref(r4,int)) -> 
          seq (fun (z:int) ->  ! x2 ) (fun (z1:int) ->  ! y ) )) 
