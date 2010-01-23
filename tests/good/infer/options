@@ -1,1 +1,1 @@
--infer-only -no-prelude
+--infer-only --no-prelude

@@ -187,7 +187,6 @@ and infer env (x : Ast.ParseT.t) : Ast.Infer.t =
         let f' = infer {env with pm = false} f in
         begin match Uf.desc f'.t with
           | U.T Ty.Arrow (t1,t2,eff, _) -> 
-              Format.printf "found HoareTriple of type %a@." U.print_node f'.t;
               let x = check_type env t1 x in
               let p = pre env eff p l in
               let q = post env eff t2 q l in
