@@ -1,5 +1,6 @@
 let init ['a|out| 'e]
-  (inv : <'e> -> int -> prop ) (len : int) (f : int ->{'e} 'a) = cap out
+  (inv : <'e> -> int -> prop ) (len : int) (f : int ->{'e} 'a) = 
+    allocates out
   { 0 <= len /\ inv cur|{'e} 0 /\
     forall (i:int). 0 <= i /\ i < len ->
     forall (m : <'e>).  inv m i -> pre f i m /\

@@ -34,7 +34,14 @@ let print' ?(kind=`Who) pt pr pe is_c fmt x =
       fprintf fmt "%a ->{%a%a} %a" mayp t1 pe eff (maycap pr) cap pt t2
   | Map e -> fprintf fmt "<%a>" pe e
   | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 pt t2
-  | Tuple (t1,t2) -> fprintf fmt "%a *@ %a" mayp t1 mayp t2
+  | Tuple (t1,t2) -> 
+      fprintf fmt "%a *@ %a" mayp t1 mayp t2
+(*
+      begin match kind with
+      | `Who | `Coq -> fprintf fmt "%a *@ %a" mayp t1 mayp t2
+      | `Pangoline -> fprintf fmt "tuple[%a,%a]" pt t1 pt t2
+      end
+*)
   | Const c -> Const.print_ty fmt c
   | Ref (r,t) -> 
       (* in Who, this is a special type constructor, in Coq its a simple

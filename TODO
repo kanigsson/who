@@ -1,17 +1,6 @@
 IMPORTANT FEATURES
-Pretty printer for Pangoline
-Syntax for lifted types
 Syntax for Hoare triples
 allow non-values at top-level
-
-repair inference: 
-  * sometimes the current implementation needs a concrete type
-    which hasn't been determined yet (for example to build formulas)
-  * effect vars which appear only in connection with other vars are never
-    instantiated
-  * effect instantiation should be given by the user : we don't have problems
-    any more
-
 
 MINOR ISSUES
 error messages for unknown variables in internalize
