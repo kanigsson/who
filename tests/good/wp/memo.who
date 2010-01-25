@@ -1,0 +1,53 @@
+   logic /\  : prop -> prop -> prop
+  logic \/  : prop -> prop -> prop
+  logic ->  : prop -> prop -> prop
+  logic = ['a||] : (a) -> (a) -> prop
+  logic , ['a1 'b||] : (a1) -> (b) -> (a1) * (b)
+   logic fst ['a2 'b1||] : ((a2) * (b1)) -> a2
+  logic snd ['a3 'b2||] : ((a3) * (b2)) -> b2
+  type bool
+  logic true  : bool
+  type unit
+  logic tt  : unit
+   logic !! ['a7|r|'e] : ref(r,a7) -> <r  'e > -> a7
+  let
+    ! ['a8|r1|] = (fun (x4:ref(r1,a8)) -> {(fun (cur:<r1  >) -> True)}
+                  parameter(a8,{r1  })
+                  {(fun (old:<r1  >) ->
+                   (fun (cur1:<r1  >) ->
+                   (fun (r2:a8) ->
+                   ((!! [a8| r1| { }] x4 cur1) =[a8||] r2) /\
+                   ((!! [a8| r1| { }] x4 old) =[a8||]
+                    (!! [a8| r1| { }] x4 cur1)))))}) 
+  let
+    := ['a9|r3|] = (fun (x5:ref(r3,a9)) ->
+                   (fun (v:a9) -> {(fun (cur2:<r3  >) -> True)}
+                   parameter(unit,{r3  })
+                   {(fun (old1:<r3  >) ->
+                    (fun (cur3:<r3  >) ->
+                    (fun (anon:unit) -> (!! [a9| r3| { }] x5 cur3) =[a9||] v)))})) 
+  logic combine [||'e1 'e2 'e3] : < 'e1 'e2 > -> < 'e2 'e3 > -> < 'e1 'e2 'e3
+    >
+  logic restrict [||'e4 'e5] : < 'e4 'e5 > -> < 'e5 >
+  logic empty  : < >
+type hmap['a31
+'b5||]
+logic hmem ['a32 'b6||] : (a32) -> (hmap[(a32),(b6)||]) -> bool
+logic hget ['a33 'b7||] : (a33) -> (hmap[(a33),(b7)||]) -> b7
+logic hset ['a34 'b8||] : (a34) -> (b8) -> (hmap[(a34),(b8)||]) ->
+  hmap[(a34),(b8)||]
+let
+  memo [|t4|] = (fun (table:ref(t4,hmap[int,int||])) ->
+                (fun (f3:int -> int) ->
+                (fun (x10:int) ->
+                {(fun (cur10:<t4  >) -> True )}
+                let anf2 = ! [hmap[int,int||]| t4|] table in
+                if true then
+                hget [int,int||] x10 anf2 else
+                let
+                anon3 =
+                       table :=[hmap[int,int||]| t4|]
+                       (hset [int,int||] x10 x10 anf2)
+                in x10
+                {(fun (old5:<t4  >) ->
+                 (fun (cur11:<t4  >) -> (fun (r5:int) -> True)))}))) 

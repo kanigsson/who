@@ -210,7 +210,14 @@ and typing' env loc = function
       t, Effect.rremove eff vl, Name.remove_list_from_set vl cap
   | For _ -> assert false
   | Gen _ -> assert false
-  | HoareTriple _ -> assert false
+  | HoareTriple (p,e,q) -> 
+      let t', eff, capreal = typing env e in
+      if not (RS.is_empty capreal) then
+        error loc "allocation is forbidden in hoaretriples"
+      else
+        pre env eff p;
+        post env eff t' q;
+        prop, Effect.empty, RS.empty
 
 and typing env (e : Ast.Recon.t) : Ty.t * Effect.t * RS.t =
 (*   Myformat.printf "typing %a@." Ast.Recon.print e; *)
