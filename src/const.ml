@@ -35,9 +35,16 @@ let funsep fmt kind =
   | `Who | `Pangoline -> pp_print_string fmt "->"
   | `Coq -> pp_print_string fmt "=>"
 
-let print_ty fmt = function
-  | TInt -> pp_print_string fmt "int"
-  | TProp -> pp_print_string fmt "prop"
+let print_ty kind fmt = function
+  | TInt -> 
+      begin match kind with
+      | `Coq -> pp_print_string fmt "Z"
+      | _ -> pp_print_string fmt "int"
+      end
+  | TProp -> 
+      match kind with 
+      | `Coq -> pp_print_string fmt "Prop"
+      | _ -> pp_print_string fmt "prop"
 
 let quant fmt = function
   | `FA -> pp_print_string fmt "forall"

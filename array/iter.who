@@ -3,7 +3,7 @@ let iter ['a|t|'e]
   (ar : ref(t, 'a array)) (f : 'a ->{t 'e} unit)  =
   { inv cur 0 /\ 
     forall (i:int). 0 <= i /\ i < len (!!ar) ->
-    [[ inv cur i ]] f (get i !!ar) [[inv cur (i+1)]]
+    [[ inv cur i ]] f (get i !ar) [[inv cur (i+1)]]
   }
   for i = 0 to len !ar - 1 do 
     { inv cur i }

@@ -71,9 +71,13 @@ section arith
 
 end
 
+section beq
+  coq predefined
+  pangoline takeover
 
-logic == ['a||] : 'a -> 'a -> bool
-logic != ['a||] : 'a -> 'a -> bool
+  logic == ['a||] : 'a -> 'a -> bool
+  logic != ['a||] : 'a -> 'a -> bool
+end
 
 section Whoref
   coq \"WhoMap\"

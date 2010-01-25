@@ -145,7 +145,7 @@ type sup = [`Coq | `Pangoline | `Who ]
 let beginsec kind fmt n = 
   match kind with
   | `Pangoline -> pp_print_string fmt "begin"
-  | `Coq -> fprintf fmt "Section %a" Name.print n
+  | `Coq -> fprintf fmt "Section %a." Name.print n
 
 let endsec kind fmt n = 
   match kind with
@@ -182,7 +182,7 @@ let rec print kind fmt = function
       fprintf fmt "@[<hov 2>%a %a:@ %a%a%a@]" lemma kind Name.print x 
         (Ast.Recon.gen_print (kind :> sup)) e print_stop kind print_proof kind
   | Infix (n,i) ->
-      fprintf fmt "infix %a %d" Name.print n i
+      if kind = `Pangoline then fprintf fmt "infix %a %d" Name.print n i
   | Type (x,((tl,_,_) as g)) -> 
       begin match kind with
       | `Coq ->

@@ -42,7 +42,7 @@ let print' ?(kind=`Who) pt pr pe is_c fmt x =
       | `Pangoline -> fprintf fmt "tuple[%a,%a]" pt t1 pt t2
       end
 *)
-  | Const c -> Const.print_ty fmt c
+  | Const c -> Const.print_ty kind fmt c
   | Ref (r,t) -> 
       (* in Who, this is a special type constructor, in Coq its a simple
       application, in Pangoline its a type instantiation *)

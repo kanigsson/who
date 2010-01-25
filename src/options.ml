@@ -40,8 +40,10 @@ let opt_spec =
       " simplify map expressions";
     "-o", Arg.Set_string outfile, 
             "<arg> use <arg> instead of default filename for output";
-    "--pangoline", Arg.Unit (fun () -> backend := `Pangoline; suffix := ".pge" ), 
+    "--pangoline", Arg.Unit (fun () -> backend := `Pangoline), 
             " set output format to pangoline";
+    "--coq", Arg.Unit (fun () -> backend := `Coq), 
+            " set output format to Coq";
     "--check-coq", Arg.Set check_coq, " check produced coq file using coqc";
     "--no-prelude", Arg.Set no_prelude, " do not add a prelude to the file";
     "-v", Arg.Set verbose, " be verbose";

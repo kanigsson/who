@@ -16,7 +16,7 @@ open Myformat
 let print fmt t = 
   let rec pt fmt = function
   | TVar v -> pp_print_string fmt v
-  | TConst c -> Const.print_ty fmt c
+  | TConst c -> Const.print_ty `Who fmt c
   | Tuple (t1,t2) -> fprintf fmt "(%a * %a)" pt t1 pt t2
   | PureArr (t1,t2) -> fprintf fmt "(%a -> %a)" pt t1 pt t2
   | Arrow (t1,t2,_,_) -> fprintf fmt "(%a ->{...} %a)" pt t1 pt t2
