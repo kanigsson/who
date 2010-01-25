@@ -50,8 +50,10 @@ section arith coq "WhoArith"
                           forall (y3:int).
                           ((int_min x3 y3) =[int||] x3) \/
                           ((int_min x3 y3) =[int||] y3) end
-logic == ['a5||] : (a5) -> (a5) -> bool
-logic != ['a6||] : (a6) -> (a6) -> bool
+section beq coq predefined
+  pangoline takeover
+   logic == ['a5||] : (a5) -> (a5) -> bool
+  logic != ['a6||] : (a6) -> (a6) -> bool end
 section Whoref coq "WhoMap"
   pangoline predefined
    logic !! ['a7|r|'e] : ref(r,a7) -> <r  'e > -> a7

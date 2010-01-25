@@ -45,7 +45,7 @@ let opt_spec =
     "--coq", Arg.Unit (fun () -> backend := `Coq), 
             " set output format to Coq";
     "--check-coq", Arg.Set check_coq, " check produced coq file using coqc";
-    "--no-prelude", Arg.Set no_prelude, " do not add a prelude to the file";
+    "--noprelude", Arg.Set no_prelude, " do not add a prelude to the file";
     "-v", Arg.Set verbose, " be verbose";
     "--verbose", Arg.Set verbose, " be verbose";
   ]
