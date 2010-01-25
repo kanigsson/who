@@ -76,9 +76,9 @@ let map e = C (Map e)
 let app v i = C (App (v,i))
 let var v = C (App (v,Inst.empty))
 
-let unit = const (Const.TUnit)
 let prop = const (Const.TProp)
-let bool = var (PT.bool_var)
+let bool = var PT.bool_var
+let unit = var PT.unit_var
 let int = const (Const.TInt)
 let emptymap = map (Effect.empty)
 

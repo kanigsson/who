@@ -1,3 +1,5 @@
+type unit
+logic tt  : unit
 logic = ['a||] : (a) -> (a) -> prop
 logic fst ['a1 'b||] : ((a1) * (b)) -> a1
 logic snd ['a2 'b1||] : ((a2) * (b1)) -> b1
@@ -11,5 +13,5 @@ let apply ['a5
               { k : snd f x1 old cur2 k})) 
 let
   main [|r2|] = (fun (x2:ref(r2,int)) -> 
-                apply (fun (z:unit) ->  x2 := 0 {(!! x2 cur3) = 0}) ()
+                apply (fun (z:unit) ->  x2 := 0 {(!! x2 cur3) = 0}) tt
                 {(!! x2 cur4) = 0}) 

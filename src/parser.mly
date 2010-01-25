@@ -4,8 +4,7 @@
   open Loc
   open Const
   open ParseTree
-
-  let void = const (Const.Void) Loc.dummy
+  module PI = Predefined.Identifier
 
   (* build a new location out of two old ones by forming the large region
   containing both *)
@@ -55,6 +54,7 @@
 
 (* basic terms *)
 aterm:
+  | p = VOID { var PI.void_id p }
   | p = REF { var "ref" p}
   | p = prefix x = IDENT
     { app (var (snd p) (fst p)) (var x.c x.info) (embrace (fst p) x.info) }

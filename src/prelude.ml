@@ -25,6 +25,13 @@ section boolean
   logic false : bool
 end
 
+section unit
+  coq predefined
+  pangoline takeover
+  type unit
+  logic tt : unit
+end
+
 section arith
   coq \"WhoArith\"
   pangoline takeover

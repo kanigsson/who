@@ -14,6 +14,9 @@ section boolean coq predefined
   pangoline takeover type bool
   logic true  : bool
   logic false  : bool end
+section unit coq predefined
+  pangoline takeover type unit
+  logic tt  : unit end
 section arith coq "WhoArith"
   pangoline takeover
    logic +  : int -> int -> int
@@ -93,11 +96,11 @@ let
                     (forall (m:< 'e6 >).
                      (inv i m) ->
                      ((pre [int -> < 'e6 > -> prop,int -> < 'e6 > -> < 'e6
-                       > -> unit -> prop||] f i m)
+                       > -> (unit) -> prop||] f i m)
                       /\
                       (forall (n:< 'e6 >).
                        (post [int -> < 'e6 > -> prop,int -> < 'e6 > -> < 'e6
-                        > -> unit -> prop||] f i m n ())
+                        > -> (unit) -> prop||] f i m n tt)
                        -> (inv (i + 1) n))))))}
                   parameter(unit,{ 'e6 })
                   {(fun (old3:< 'e6 >) ->
@@ -115,11 +118,11 @@ let
                         (forall (m1:< 'e7 >).
                          (inv1 i1 m1) ->
                          ((pre [int -> < 'e7 > -> prop,int -> < 'e7 > ->
-                           < 'e7 > -> unit -> prop||] f1 i1 m1)
+                           < 'e7 > -> (unit) -> prop||] f1 i1 m1)
                           /\
                           (forall (n1:< 'e7 >).
                            (post [int -> < 'e7 > -> prop,int -> < 'e7 > ->
-                            < 'e7 > -> unit -> prop||] f1 i1 m1 n1 ())
+                            < 'e7 > -> (unit) -> prop||] f1 i1 m1 n1 tt)
                            -> (inv1 (i1 - 1) n1))))))}
                       parameter(unit,{ 'e7 })
                       {(fun (old4:< 'e7 >) ->

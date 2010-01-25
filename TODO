@@ -8,3 +8,8 @@ error messages for unknown variables in internalize
 PROOFS
 
 Hashtbl
+
+COQ
+
+* Sections need a dot
+* void/ unit type

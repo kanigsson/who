@@ -14,6 +14,9 @@ section boolean coq predefined
   pangoline takeover type bool
   logic true  : bool
   logic false  : bool end
+section unit coq predefined
+  pangoline takeover type unit
+  logic tt  : unit end
 section arith coq "WhoArith"
   pangoline takeover
    logic +  : int -> int -> int
@@ -93,11 +96,11 @@ let
                     (forall (m:< 'e6 >).
                      (inv i m) ->
                      ((pre [int -> < 'e6 > -> prop,int -> < 'e6 > -> < 'e6
-                       > -> unit -> prop||] f i m)
+                       > -> (unit) -> prop||] f i m)
                       /\
                       (forall (n:< 'e6 >).
                        (post [int -> < 'e6 > -> prop,int -> < 'e6 > -> < 'e6
-                        > -> unit -> prop||] f i m n ())
+                        > -> (unit) -> prop||] f i m n tt)
                        -> (inv (i + 1) n))))))}
                   parameter(unit,{ 'e6 })
                   {(fun (old3:< 'e6 >) ->
@@ -115,11 +118,11 @@ let
                         (forall (m1:< 'e7 >).
                          (inv1 i1 m1) ->
                          ((pre [int -> < 'e7 > -> prop,int -> < 'e7 > ->
-                           < 'e7 > -> unit -> prop||] f1 i1 m1)
+                           < 'e7 > -> (unit) -> prop||] f1 i1 m1)
                           /\
                           (forall (n1:< 'e7 >).
                            (post [int -> < 'e7 > -> prop,int -> < 'e7 > ->
-                            < 'e7 > -> unit -> prop||] f1 i1 m1 n1 ())
+                            < 'e7 > -> (unit) -> prop||] f1 i1 m1 n1 tt)
                            -> (inv1 (i1 - 1) n1))))))}
                       parameter(unit,{ 'e7 })
                       {(fun (old4:< 'e7 >) ->
@@ -180,6 +183,8 @@ section List coq "WhoList"
   logic cons ['a28||] : (a28) -> (list[(a28)||]) -> list[(a28)||]
   logic is_nil ['a29||] : (list[(a29)||]) -> bool
   logic l_in ['a30||] : (a30) -> (list[(a30)||]) -> prop end
+type unit
+logic tt  : unit
 logic = ['a31||] : (a31) -> (a31) -> prop
 logic /\  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
@@ -217,11 +222,11 @@ let
                      (forall (m2:< 'e9 >).
                       (inv2 i6 m2) ->
                       ((pre1 [int -> < 'e9 > -> prop,int -> < 'e9 > -> < 'e9
-                        > -> unit -> prop||] f2 i6 m2)
+                        > -> (unit) -> prop||] f2 i6 m2)
                        /\
                        (forall (n2:< 'e9 >).
                         (post1 [int -> < 'e9 > -> prop,int -> < 'e9 > ->
-                         < 'e9 > -> unit -> prop||] f2 i6 m2 n2 ())
+                         < 'e9 > -> (unit) -> prop||] f2 i6 m2 n2 tt)
                         -> (inv2 (i6 + 1) n2))))))}
                    parameter(unit,{ 'e9 })
                    {(fun (old6:< 'e9 >) ->
@@ -244,16 +249,16 @@ let
                            forall (anon5:<t4  'e10 >).
                            ((inv3 anon4 i7) ->
                             (fst [(a41) -> <t4  'e10 > -> prop,(a41) -> <t4
-                              'e10 > -> <t4  'e10 > -> unit -> prop||] f3
+                              'e10 > -> <t4  'e10 > -> (unit) -> prop||] f3
                              (get1 [a41||] i7
                               (!! [array1[(a41)||]| t4| { 'e10 }] ar cur14))
                              anon4))
                            /\
                            ((snd [(a41) -> <t4  'e10 > -> prop,(a41) -> <t4
-                              'e10 > -> <t4  'e10 > -> unit -> prop||] f3
+                              'e10 > -> <t4  'e10 > -> (unit) -> prop||] f3
                              (get1 [a41||] i7
                               (!! [array1[(a41)||]| t4| { 'e10 }] ar cur14))
-                             anon4 anon5 ())
+                             anon4 anon5 tt)
                             -> (inv3 anon5 (i7 + 1))))))}
                         let __start = 0 in
                         let

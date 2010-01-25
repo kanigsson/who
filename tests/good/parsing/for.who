@@ -1,3 +1,5 @@
+type unit
+logic tt : unit
 logic = ['a||] : 'a -> 'a -> prop
 logic /\ : prop -> prop -> prop
 logic -> : prop -> prop -> prop

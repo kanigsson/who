@@ -140,8 +140,8 @@ module Print = struct
   (* TODO factorize the different branches *)
   let term ?(kind : sup =`Who) pra prb prc open_ fmt t = 
     let typrint = Ty.gen_print kind in
-    let rec print' ext fmt = function
-      | Const c -> Const.print kind fmt c
+    let rec print' fmt = function
+      | Const c -> Const.print fmt c
       | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) -> 
           fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 (name_print ~kind) v 
             (Inst.print ~kind ~intype:false pra prb prc) i with_paren t2
@@ -155,12 +155,8 @@ module Print = struct
             Const.funsep kind print e
       | Let (g,e1,b,r) -> 
           let x,e2 = open_ b in
-          if ext then
-            fprintf fmt "@[let@ %a%a %a=@[@ %a@]@]@ @,%a" 
-            prrec r Name.print x G.print g print e1 (extprint ext) e2
-          else
           fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]" 
-            prrec r Name.print x G.print g print e1 (extprint ext) e2
+            prrec r Name.print x G.print g print e1 print e2
       | Var (v,i) -> 
           begin match kind with
           | `Who | `Pangoline ->
@@ -206,12 +202,7 @@ module Print = struct
           fprintf fmt "@[(fun %a@ ->%a@ %a@ %a@ %a)@]" 
             binder (x,t) maycaplist cap pre p print e post q
         
-    and print fmt t = print' false fmt t.v
-    and extprint ext fmt t = 
-      if ext then 
-        if t.v = Const Const.Void then () 
-        else print' true fmt t.v 
-      else print fmt t
+    and print fmt t = print' fmt t.v
     and binder' par = 
       let p fmt (x,t) = fprintf fmt "%a:%a" 
         Name.print x typrint t in
@@ -231,7 +222,7 @@ module Print = struct
       | l -> fprintf fmt "{%a}" (print_list space Name.print) l
     and with_paren fmt x = 
       if is_compound_node x then paren print fmt x else print fmt x in
-    extprint true fmt t
+    print fmt t
 
   let decl ?(kind=`Who) pra prb prc open_ fmt d = 
     let typrint = Ty.gen_print kind in
@@ -373,7 +364,6 @@ module Recon = struct
   module PT = Ty.Predef
   let ptrue_ loc = mk_val (Const Const.Ptrue) Ty.prop loc
   let pfalse_ loc = mk_val (Const Const.Pfalse) Ty.prop loc
-  let void loc = mk_val (Const Const.Void) Ty.unit loc
 
   let const c = 
     mk_val (Const c) (Ty.const (Const.type_of_constant c))
@@ -381,6 +371,7 @@ module Recon = struct
   let mempty = mk_val (Var (PL.empty_var, Inst.empty)) Ty.emptymap
   let btrue_ = mk_val (Var (PL.btrue_var, Inst.empty)) Ty.bool 
   let bfalse_ = mk_val (Var (PL.bfalse_var, Inst.empty)) Ty.bool
+  let void loc = mk_val (Var (PL.void_var, Inst.empty)) Ty.unit loc
 
   let var s inst (g,t) = 
     let nt = (Ty.allsubst g inst t) in

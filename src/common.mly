@@ -23,7 +23,6 @@
 %public defprogvar_no_pos : x = defprogvar { x.c }
 %public tconstant:
   | TINT { Const.TInt }
-  | UNIT { Const.TUnit }
   | PROP { Const.TProp }
 
 %public gen:
@@ -63,7 +62,6 @@
   | n = INT    { n.info, Const.Int n.c }
   | p = PTRUE  { p, Const.Ptrue }
   | p = PFALSE { p, Const.Pfalse }
-  | p = VOID   { p, Const.Void }
 
 takeover:
   | PREDEFINED { Predefined }

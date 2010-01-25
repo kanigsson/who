@@ -43,13 +43,13 @@ open Const
 let const =
   let h = Hashtbl.create 5 in
   List.iter (fun c -> Hashtbl.add h c (mkt (Ty.Const c))) 
-  [ TInt ; TUnit; TProp ];
+  [ TInt ; TProp ];
   fun c -> Hashtbl.find h c
 
 let prop = const TProp
-let bool = var (PT.bool_var)
+let bool = var PT.bool_var
+let unit = var PT.unit_var
 let int = const TInt
-let unit = const TUnit
 
 let union a b = Uf.union (fun a _ -> a) a b
 open Myformat

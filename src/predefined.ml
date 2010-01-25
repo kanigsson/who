@@ -38,6 +38,9 @@ module Identifier = struct
   let btrue_id = "true"
   let bfalse_id = "false"
 
+  let unit_id = "unit"
+  let void_id = "tt"
+
 end
 
 module Logic = struct
@@ -76,13 +79,15 @@ module Logic = struct
   let btrue_var = Name.from_string btrue_id
   let bfalse_var = Name.from_string bfalse_id
 
+  let void_var = Name.from_string void_id
+
   let allvars = [ equal_var ; empty_var ; not_var ; equal_var
       ; empty_var ; not_var ; leb_var ; ltb_var ; gtb_var 
       ; geb_var ; eqb_var ; neqb_var ; andb_var ; orb_var 
       ; le_var  ; lt_var  ; ge_var  ; gt_var  ; neq_var 
       ; and_var ; or_var ; impl_var ; tuple_var ; fst_var ; snd_var ;
       plus_var ; minus_var ; combine_var ; restrict_var ; get_var;
-      store_var ; btrue_var ; bfalse_var
+      store_var ; btrue_var ; bfalse_var ; void_var
   ]
 
   let map =
@@ -119,8 +124,9 @@ module Ty = struct
   open Identifier
 
   let bool_var = Name.from_string bool_id
+  let unit_var = Name.from_string unit_id
 
-  let allvars = [ bool_var ]
+  let allvars = [ bool_var ; unit_var ]
   let map =
     List.fold_left (fun acc x ->
       SM.add (Name.unsafe_to_string x) x acc) SM.empty allvars

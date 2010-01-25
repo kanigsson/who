@@ -32,7 +32,6 @@ let id_or_keyword =
         ("do", fun _ -> DO );
         ("done", fun i -> DONE (create_info i)  );
         ("int", fun _ -> TINT  );
-        ("unit", fun _ -> UNIT  );
         ("prop", fun _ -> PROP  );
         ("begin", fun i -> LPAREN (create_info i));
         ("end", fun i -> RPAREN (create_info i) );

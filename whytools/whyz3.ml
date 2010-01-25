@@ -1,4 +1,5 @@
 let verbose = ref false
+let dontclean = ref false
 type provers = [ `Z3 | `Yices ]
 let prover : provers ref = ref `Z3
 let file_list = ref []
@@ -10,6 +11,7 @@ let args =
   [ 
     "-v", Arg.Set verbose, " be more verbose";
     "--dpopts", Arg.Set_string dp_opts, " pass these options to why-dp";
+    "--dont-clean", Arg.Set dontclean, " don't remove generated files";
     "--verbose", Arg.Set verbose, " be more verbose";
   ]
 
@@ -56,7 +58,8 @@ let _ =
   let files = List.rev !file_list in
   let z3files = List.map (fun x -> why x; why_output x) files in
   whydp z3files;
-  List.iter rm z3files
+  if !dontclean then ()
+  else List.iter rm z3files
 
 
 
