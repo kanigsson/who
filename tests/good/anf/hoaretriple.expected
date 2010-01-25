@@ -32,16 +32,17 @@ let
                   {(fun (cur2:< 'e1 >) ->
                    (inv start cur2) /\
                    (forall (i:int).
-                    ((start <= i) /\ (i <= end_)) ->
-                    (forall (m:< 'e1 >).
-                     (inv i m) ->
-                     ((pre [int -> < 'e1 > -> prop,int -> < 'e1 > -> < 'e1
-                       > -> (unit) -> prop||] f i m)
-                      /\
-                      (forall (n:< 'e1 >).
-                       (post [int -> < 'e1 > -> prop,int -> < 'e1 > -> < 'e1
-                        > -> (unit) -> prop||] f i m n tt)
-                       -> (inv (i + 1) n))))))}
+                    (start <= i) ->
+                    ((i <= end_) ->
+                     (forall (m:< 'e1 >).
+                      (inv i m) ->
+                      ((pre [int -> < 'e1 > -> prop,int -> < 'e1 > -> < 'e1
+                        > -> (unit) -> prop||] f i m)
+                       /\
+                       (forall (n:< 'e1 >).
+                        (post [int -> < 'e1 > -> prop,int -> < 'e1 > -> < 'e1
+                         > -> (unit) -> prop||] f i m n tt)
+                        -> (inv (i + 1) n)))))))}
                   parameter(unit,{ 'e1 })
                   {(fun (old1:< 'e1 >) ->
                    (fun (cur3:< 'e1 >) ->
@@ -53,36 +54,39 @@ let
                       {(fun (cur4:<t  'e2 >) ->
                        (inv1 cur4 0) /\
                        (forall (i1:int).
-                        ((0 <= i1) /\
-                         (i1 <
+                        (0 <= i1) ->
+                        ((i1 <
                           (len [a10||]
-                           (!! [array[(a10)||]| t| { 'e2 }] ar cur4))))
-                        ->
-                        ([[(fun (cur5:<t  'e2 >) -> inv1 cur5 i1)]]f1
-                                                                   (get [a10||]
-                                                                    i1
-                                                                    (
+                           (!! [array[(a10)||]| t| { 'e2 }] ar cur4)))
+                         ->
+                         ([[(fun (cur5:<t  'e2 >) -> inv1 cur5 i1)]]let
+                                                                    anf =
+                                                                     
                                                                     ! [array[(a10)||]|
-                                                                    t|] ar))[[
-                        (fun (old2:<t  'e2 >) ->
-                        (fun (cur6:<t  'e2 >) ->
-                        (fun (anon1:unit) -> inv1 cur6 (i1 + 1))))]])))}
+                                                                    t|] ar in
+                                                                    f1
+                                                                    (
+                                                                    get [a10||]
+                                                                    i1 anf)[[
+                         (fun (old2:<t  'e2 >) ->
+                         (fun (cur6:<t  'e2 >) ->
+                         (fun (anon1:unit) -> inv1 cur6 (i1 + 1))))]]))))}
                       let __start = 0 in
-                      let
-                      __end = (len [a10||] (! [array[(a10)||]| t|] ar)) - 1
-                      in
+                      let anf1 = ! [array[(a10)||]| t|] ar in
+                      let __end = (len [a10||] anf1) - 1 in
                       forto [|| {t  'e2 }]
                       (fun (i2:int) ->
                       (fun (cur7:<t  'e2 >) -> inv1 cur7 i2)) __start __end
-                      (fun (i2:int) ->
-                      {(fun (cur7:<t  'e2 >) ->
-                       ((__start <= i2) /\ (i2 <= __end)) /\ (inv1 cur7 i2))}
-                      f1 (get [a10||] i2 (! [array[(a10)||]| t|] ar))
+                      (fun (i3:int) ->
+                      {(fun (cur8:<t  'e2 >) ->
+                       ((__start <= i3) /\ (i3 <= __end)) /\ (inv1 cur8 i3))}
+                      let anf2 = ! [array[(a10)||]| t|] ar in
+                      f1 (get [a10||] i3 anf2)
                       {(fun (anon2:<t  'e2 >) ->
-                       (fun (cur7:<t  'e2 >) ->
-                       (fun (anon3:unit) -> inv1 cur7 (i2 + 1))))})
+                       (fun (cur9:<t  'e2 >) ->
+                       (fun (anon3:unit) -> inv1 cur9 (i3 + 1))))})
                       {(fun (old3:<t  'e2 >) ->
-                       (fun (cur8:<t  'e2 >) ->
+                       (fun (cur10:<t  'e2 >) ->
                        (fun (anon4:unit) ->
-                       inv1 cur8
+                       inv1 cur10
                        (len [a10||] (!! [array[(a10)||]| t| { 'e2 }] ar old3)))))}))) 

@@ -18,7 +18,8 @@ let rec ast' env = function
       App (ast env e1, ast env e2, f, List.map (rvar env) c)
   | I.Lam (x,t,cap,p,e,q) ->
       let env, nv = add_var env x in
-      Lam (nv,ty env t, List.map (rvar env) cap,  pre env p, ast env e, post env q)
+      Lam (nv,ty env t, List.map (rvar env) cap,  
+            (pre env p, ast env e, post env q))
   | I.Let (g,e1,x,e2,r) ->
       let env, nv, g , e1, r = letgen env x g e1 r in
       let e2 = ast env e2 in
@@ -45,10 +46,9 @@ let rec ast' env = function
   | I.Restrict (t,e) -> 
       let t = ast env t and e = effect env e in
       App (Ast.ParseT.var ~inst:[e] PL.restrict_var t.loc, t, `Prefix, [])
-  | I.HoareTriple (p,f,x,q) ->
-      let p = pre env p and q = post env q 
-      and f = ast env f and x = ast env x in
-      HoareTriple (p,f,x,q)
+  | I.HoareTriple (p,e,q) ->
+      let p = pre env p and q = post env q and e = ast env e in
+      HoareTriple (p,e,q)
 
 and post env x = 
   let env, old = add_var env "old" in

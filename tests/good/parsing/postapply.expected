@@ -6,12 +6,11 @@ logic snd ['a2 'b1||] : ((a2) * (b1)) -> b1
 logic !! ['a3|r|'e] : ref(r,a3) -> <r  'e > -> a3
 let
   := ['a4|r1|] = (fun (x:ref(r1,a4)) ->
-                 (fun (v:a4) ->  parameter(unit,{r1  }) {(!! x cur) = v})) 
+                 (fun (v:a4) -> {} parameter(unit,{r1  }) {(!! x cur) = v})) 
 let apply ['a5
   'b2||'e1] = (fun (f:(a5) ->{ 'e1 } b2) ->
-              (fun (x1:a5) -> {fst f x1 cur1} f x1
-              { k : snd f x1 old cur2 k})) 
+              (fun (x1:a5) -> {fst f x1 cur1} f x1 {k : snd f x1 old cur2 k})) 
 let
-  main [|r2|] = (fun (x2:ref(r2,int)) -> 
-                apply (fun (z:unit) ->  x2 := 0 {(!! x2 cur3) = 0}) tt
+  main [|r2|] = (fun (x2:ref(r2,int)) -> {}
+                apply (fun (z:unit) -> {} x2 := 0 {(!! x2 cur3) = 0}) tt
                 {(!! x2 cur4) = 0}) 

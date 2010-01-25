@@ -1,6 +1,6 @@
 logic = ['a||] : (a) -> (a) -> prop
 logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
 let
-  ref ['a2|r1|] = (fun (v:a2) ->cap r1  parameter(ref(r1,a2),{r1  })
-                  { x : (!! x cur) = v}) 
-let myref ['a3|r2|] = (fun (x1:a3) ->cap r2  ref{r2} x1 ) 
+  ref ['a2|r1|] = (fun (v:a2) ->allocates r1 {} parameter(ref(r1,a2),{r1  })
+                  {x : (!! x cur) = v}) 
+let myref ['a3|r2|] = (fun (x1:a3) ->allocates r2 {} ref{r2} x1 {}) 

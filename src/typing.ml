@@ -79,7 +79,7 @@ let rec formtyping' env loc = function
       let t = formtyping env e2 in
       fis_oftype env t e3;
       t
-  | Lam (x,t,cap,p,e,q) ->
+  | Lam (x,t,cap,(p,e,q)) ->
       let env = add_svar env x t in
       let t',eff, capreal = typing env e in
       if not (set_list_contained cap capreal) then 
@@ -96,10 +96,17 @@ let rec formtyping' env loc = function
       let t = formtyping env e2 in
       t
   | Annot (e,t) -> fis_oftype env t e; t
+  | HoareTriple (p,e,q) -> 
+      let t', eff, capreal = typing env e in
+      if not (RS.is_empty capreal) then
+        error loc "allocation is forbidden in hoaretriples"
+      else
+        pre env eff p;
+        post env eff t' q;
+        prop
   | Param _ -> error loc "effectful parameter in logic"
   | For _ -> assert false
   | LetReg _ -> assert false
-  | HoareTriple _ -> assert false
 and formtyping env (e : Ast.Recon.t) : Ty.t =
 (*   Myformat.printf "formtyping %a@." Ast.Recon.print e; *)
   let t = formtyping' env e.loc e.v in
@@ -155,7 +162,7 @@ and typing' env loc = function
             error loc "%s" (Error.ty_app_mismatch t2 ta) 
       | _ -> error loc "no function type"
       end
-  | Lam (x,t,cap,p,e,q) ->
+  | Lam (x,t,cap,(p,e,q)) ->
       let env = add_svar env x t in
       let t',eff,capreal = typing env e in
       if not (set_list_contained cap capreal) then 
@@ -219,7 +226,7 @@ and fis_oftype env t e =
       Ast.Recon.print e Ty.print t' Ty.print t
 
 and letgen env x g e r =
-  if not ( G.is_empty g || Recon.is_value_node e) then 
+  if not ( G.is_empty g || Recon.is_value e) then 
         error e.loc "generalization over non-value";
   let env' =
     match r with 

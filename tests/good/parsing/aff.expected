@@ -3,5 +3,5 @@ logic = ['a||] : (a) -> (a) -> prop
 logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
 let
   := ['a2|r1|] = (fun (x:ref(r1,a2)) ->
-                 (fun (v:a2) ->  parameter(unit,{r1  }) {(!! x cur) = v})) 
-let f [|r2|] = (fun (x1:ref(r2,int)) ->  x1 := 0 ) 
+                 (fun (v:a2) -> {} parameter(unit,{r1  }) {(!! x cur) = v})) 
+let f [|r2|] = (fun (x1:ref(r2,int)) -> {} x1 := 0 {}) 

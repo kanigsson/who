@@ -8,8 +8,8 @@ let no_prelude = ref false
 let outfile = ref ""
 let check_coq = ref false
 let input_annot = ref false
-let backend : [ `Coq | `Pangoline ] ref = ref `Coq
-let suffix = ref ".v"
+let backend : [ `Coq | `Pangoline ] ref = ref `Pangoline
+let suffix = ref ""
 let verbose = ref false
 let transform_only = ref false
 let no_check = ref false
@@ -55,4 +55,6 @@ let update () =
     match !filename with
     | None -> "base"
     | Some s -> Filename.chop_extension s in
+  let () = 
+    suffix := match !backend with | `Pangoline -> ".pge" | `Coq -> ".v" in
   if !outfile = "" then outfile := Myformat.sprintf "%s_who%s" base !suffix

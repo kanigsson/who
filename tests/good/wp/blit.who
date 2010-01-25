@@ -1,3 +1,6 @@
+type bool
+type unit
+logic tt : unit
 section basiclogic coq predefined
   pangoline predefined
    logic /\  : prop -> prop -> prop
@@ -50,7 +53,7 @@ section Whoref coq "WhoMap"
                     (fun (anon:unit) ->
                     (!! ['a9| r3| {r3  }] x1 cur3) =['a9||] v)))})) 
   let
-    ref ['a10|r4|] = (fun (v1:'a10) ->cap r4 {(fun (cur4:<r4  >) -> True)}
+    ref ['a10|r4|] = (fun (v1:'a10) ->allocates r4 {(fun (cur4:<r4  >) -> True)}
                      parameter(ref(r4,'a10),{r4  })
                      {(fun (old2:<r4  >) ->
                       (fun (cur5:<r4  >) ->
@@ -78,7 +81,7 @@ let
                       /\
                       (forall (n:< 'e1 >).
                        (post [int -> < 'e1 > -> prop,int -> < 'e1 > -> < 'e1
-                        > -> unit -> prop||] f i m n ())
+                        > -> unit -> prop||] f i m n tt)
                        -> (inv (i + 1) n))))))}
                   parameter(unit,{ 'e1 })
                   {(fun (old3:< 'e1 >) ->
@@ -100,7 +103,7 @@ let
                           /\
                           (forall (n1:< 'e2 >).
                            (post [int -> < 'e2 > -> prop,int -> < 'e2 > ->
-                            < 'e2 > -> unit -> prop||] f1 i1 m1 n1 ())
+                            < 'e2 > -> unit -> prop||] f1 i1 m1 n1 tt)
                            -> (inv1 (i1 - 1) n1))))))}
                       parameter(unit,{ 'e2 })
                       {(fun (old4:< 'e2 >) ->

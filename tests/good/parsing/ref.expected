@@ -5,6 +5,6 @@ logic fst ['a1 'b||] : ((a1) * (b)) -> a1
 logic snd ['a2 'b1||] : ((a2) * (b1)) -> b1
 logic !! ['a3|r|'e] : ref(r,a3) -> <r  'e > -> a3
 let
-  ! ['a4|r1|] = (fun (x:ref(r1,a4)) ->  parameter(a4,{r1  })
-                { r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))}) 
-let f ['a5|toto|] = (fun (x1:ref(toto,a5)) ->  ! x1 ) 
+  ! ['a4|r1|] = (fun (x:ref(r1,a4)) -> {} parameter(a4,{r1  })
+                {r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))}) 
+let f ['a5|toto|] = (fun (x1:ref(toto,a5)) -> {} ! x1 {}) 

@@ -22,6 +22,7 @@ type t' =
   | Ite of t * t * t
   | Annot of t * ty
   | Quant of [`FA | `EX ] * ty * var * t
+  | HoareTriple of t * t * t
   | Param of ty * effect
   | Gen of generalize * t
 and t = { v : t' ; loc : Loc.loc }

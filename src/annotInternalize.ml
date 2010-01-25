@@ -38,6 +38,9 @@ let rec term logic env (t : I.t) =
       R.caplam nv t (List.map (rvar env) cap) 
         (dummy, Some (term true env p)) (term false env e) 
         (dummy, dummy, PPlain (term true env q)) l
+  | I.HoareTriple (p,e,q) -> 
+      R.hoare_triple (dummy, Some (term true env p)) (term false env e)
+        (dummy, dummy, PPlain (term true env q)) l
   | I.Let (g,e1,x,e2,r) -> 
       let env, nv, g , e1, r = letgen env x g e1 r in
       let e2 = term logic env e2 in

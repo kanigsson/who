@@ -3,11 +3,11 @@ logic = ['a||] : (a) -> (a) -> prop
 logic /\  : prop -> prop -> prop
 logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
 let
-  ! ['a2|r1|] = (fun (x:ref(r1,a2)) ->  parameter(a2,{r1  })
-                { r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))}) 
+  ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {} parameter(a2,{r1  })
+                {r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))}) 
 let
-  ref ['a3|r3|] = (fun (v:a3) ->cap r3  parameter(ref(r3,a3),{r3  })
-                  { x1 : (!! x1 cur1) = v}) 
+  ref ['a3|r3|] = (fun (v:a3) ->allocates r3 {} parameter(ref(r3,a3),{r3  })
+                  {x1 : (!! x1 cur1) = v}) 
 let
-  main  = (fun (z:unit) ->  letregion rho in let x2 = ref{rho} 5 in ! x2
-          { r4 : r4 = 5}) 
+  main  = (fun (z:unit) -> {} letregion rho in let x2 = ref{rho} 5 in ! x2
+          {r4 : r4 = 5}) 

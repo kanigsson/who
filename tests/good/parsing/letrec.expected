@@ -5,4 +5,4 @@ let post ['a3 'b3||] = (fun (x1:(a3) * (b3)) -> snd x1)
 let rec(((a4) ->{ 'e } a4) -> (a4) ->{ 'e
   } a4) apply ['a4||'e] = (fun (g:(a4) ->{ 'e } a4) ->
                           (fun (x2:a4) -> {pre g x2 cur} g x2
-                          { r : post g x2 old cur1 r})) 
+                          {r : post g x2 old cur1 r})) 

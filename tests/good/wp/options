@@ -1,1 +1,1 @@
--input-annot -clear -wp -transform-only
+--input-annot --clear --wp --transform-only --no-prelude

@@ -1,2 +1,2 @@
 logic +  : int -> int -> int
-let f  = (fun (x:int) ->  x + 3 ) 
+let f  = (fun (x:int) -> {} x + 3 {}) 

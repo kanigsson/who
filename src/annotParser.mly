@@ -95,6 +95,9 @@ nterm:
     { mk_term (LetReg (strip_info l,t)) (embrace p t.loc) }
   | p = PARAMETER LPAREN t = ty COMMA e = sepeffect r = RPAREN
     { mk_term (Param (t,e)) (embrace p r) }
+  | l = DLBRACKET p = nterm DRBRACKET e = nterm DLBRACKET q = nterm r = DRBRACKET
+    { mk_term (HoareTriple (p,e,q)) (embrace l r) }
+    
 
 funcbody:
   cap = maycapdef p = spec e = nterm q = spec { cap, p,e,q }

@@ -183,18 +183,11 @@ and infer env (x : Ast.ParseT.t) : Ast.Infer.t =
         let body = check_type env U.unit body in
         let inv = pre env body.e inv l in
         For (dir, inv, i, s, e, body), U.unit, body.e
-    | HoareTriple (p,f,x,q) ->
-        let f' = infer {env with pm = false} f in
-        begin match Uf.desc f'.t with
-          | U.T Ty.Arrow (t1,t2,eff, _) -> 
-              let x = check_type env t1 x in
-              let p = pre env eff p l in
-              let q = post env eff t2 q l in
-              HoareTriple  (p,infer env f,x,q), U.prop, U.eff_empty
-          | _ -> 
-              error l "term %a is not a function, but of type %a@."
-              AI.print f' U.print_node f'.t
-        end
+    | HoareTriple (p,e,q) ->
+        let e = infer {env with pm = false} e in
+        let p = pre env e.e p l in
+        let q = post env e.e e.t q l in
+        HoareTriple (p,e,q), U.prop, U.eff_empty
     | Var (v,(_,_,el)) ->
 (*         Myformat.printf "treating var: %a@." Name.print v; *)
         let (_,_,evl) as m ,xt = 
@@ -213,13 +206,13 @@ and infer env (x : Ast.ParseT.t) : Ast.Infer.t =
         let env, e1 = letgen env x g e1 r in
         let e2 = infer env e2 in
         Let (g, e1,Name.close_bind x e2,r), e2.t, U.eff_union e1.e e2.e
-    | Lam (x,xt,cap,p,e,q) ->
+    | Lam (x,xt,cap,(p,e,q)) ->
         let nt = sto_uf_node xt in
         let env = add_svar env x xt in
         let e = infer {env with pm = false} e in
         let p = pre env e.e p l in
         let q = post env e.e e.t q l in
-        Lam (x,xt,cap,p,e,q), U.arrow nt e.t e.e (List.map to_uf_rnode cap),
+        Lam (x,xt,cap,(p,e,q)), U.arrow nt e.t e.e (List.map to_uf_rnode cap),
         U.eff_empty
   in
   { v = e ; t = t ; e  = eff ; loc = l }
@@ -283,9 +276,9 @@ let rec recon' = function
   | App (e1,e2,k,cap) -> App (recon e1, recon e2,k,cap)
   | PureFun (t,(s,x,e)) -> PureFun (t,(s,x, recon e))
   | Quant (k,t,(s,x,e)) -> Quant (k,t,(s,x, recon e))
-  | Lam (x,ot,cap,p,e,q) -> 
+  | Lam (x,ot,cap,(p,e,q)) -> 
       let e = recon e in
-      Lam (x,ot, cap, pre p, e, post q)
+      Lam (x,ot, cap, (pre p, e, post q))
   | Param (t,e) -> Param (t,e)
   | Let (g,e1,(_,x,e2),r) -> 
       Let (g, recon e1, Name.close_bind x (recon e2),r)
@@ -319,7 +312,8 @@ let rec recon' = function
       let bodyfun = lam i Ty.int (cur,Some pre) body (old,cur,PPlain post) l in
       (* forvar inv start end bodyfun *)
       (app2 (app2 (var dir ([],[],[e]) Ty.forty l) inv' sv l) ev bodyfun l).v
-  | HoareTriple (p,f,x,q) -> 
+  | HoareTriple (p,e,q) -> HoareTriple (pre p, recon e, post q)
+(*
       let f = recon f and x = recon x and p = get_pre p and q = get_post q in
       let l = f.loc in
       let _,t2, e = Ty.from_logic_tuple f.t in
@@ -330,6 +324,7 @@ let rec recon' = function
             impl (applist [AR.post f l; x; m ; n; r] l) (applist [q;m;n;r] l) l in
           and_ lhs rhs l) l) l) l in
       f.v
+*)
   | LetReg (vl,e) -> LetReg (vl,recon e)
   | Annot (e,t) -> Annot (recon e, t)
   | Gen (g,e) -> Gen (g,recon e)

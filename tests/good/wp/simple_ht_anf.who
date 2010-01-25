@@ -1,0 +1,19 @@
+type unit
+logic tt  : unit
+logic <  : int -> int -> prop
+logic ->  : prop -> prop -> prop
+logic /\  : prop -> prop -> prop
+logic , ['a 'b||] : (a) -> (b) -> (a) * (b)
+logic fst ['a1 'b1||] : ((a1) * (b1)) -> a1
+logic snd ['a2 'b2||] : ((a2) * (b2)) -> b2
+logic combine [||'e 'e1 'e2] : < 'e 'e1 > -> < 'e1 'e2 > -> < 'e 'e1 'e2 >
+logic restrict [||'e3 'e4] : < 'e3 'e4 > -> < 'e4 >
+logic empty  : < >
+let
+  f  = (fun (g:(unit) ->{ } unit) ->
+       {(fun (cur:< >) ->
+        [[(fun (cur1:< >) -> 0 < 5)]]g tt[[(fun (old:< >) ->
+                                           (fun (cur2:< >) ->
+                                           (fun (anon:unit) -> 3 < 6)))]])}
+       g tt
+       {(fun (old1:< >) -> (fun (cur3:< >) -> (fun (anon1:unit) -> 3 < 6)))}) 

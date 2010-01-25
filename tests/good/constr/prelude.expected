@@ -72,8 +72,9 @@ section Whoref coq "WhoMap"
                     (fun (cur3:<r3  >) ->
                     (fun (anon:unit) -> (!! [a9| r3| { }] x5 cur3) =[a9||] v)))})) 
   let
-    ref ['a10|r4|] = (fun (v1:a10) ->cap r4 {(fun (cur4:<r4  >) -> True)}
-                     parameter(ref(r4,a10),{r4  })
+    ref ['a10|r4|] = (fun (v1:a10) ->allocates r4
+                     {(fun (cur4:<r4  >) -> True)} parameter(ref(r4,a10),{r4
+                      })
                      {(fun (old2:<r4  >) ->
                       (fun (cur5:<r4  >) ->
                       (fun (x6:ref(r4,a10)) ->

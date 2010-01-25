@@ -1,3 +1,5 @@
+type unit
+logic tt : unit
 logic , ['a4 'b2||] : 'a4 -> 'b2 -> 'a4 * 'b2
 logic t : prop
 logic /\: prop -> prop -> prop
@@ -11,5 +13,5 @@ let ! [|r|] = (fun (x:unit) ->
   {fun (o:<r>) -> fun (c:<r>) -> fun (r2:unit) -> True}) 
 let blit [|s|] = fun (x:unit) -> 
    {fun (c:<s>) -> t /\ 9 =[int||] 0} 
-     ![|s|] () 
+     ![|s|] tt 
    {fun (a:<s>) -> fun (c:<s>) -> fun (a:unit) -> True}

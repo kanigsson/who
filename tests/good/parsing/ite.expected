@@ -1,2 +1,2 @@
 type bool
-let f  = (fun (b:bool) ->  if b then 5 else 3 ) 
+let f  = (fun (b:bool) -> {} if b then 5 else 3 {}) 

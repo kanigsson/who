@@ -58,16 +58,15 @@ let
                           (len [a10||]
                            (!! [array[(a10)||]| t| {|e2}] ar cur4))))
                         ->
-                        ([[{(fun (cur5:<t  'e2 >) -> inv1 cur5 i1)}]]f1 (
-                        get [a10||] i1
-                        (!! [array[(a10)||]| t| {|e2}] ar cur4))[[{(fun (old2:<t
-                                                                    'e2 >) ->
-                                                                   (fun (cur6:<t
-                                                                    'e2 >) ->
-                                                                   (fun (anon1:unit)
-                                                                   ->
-                                                                   inv1 cur6
-                                                                   (i1 + 1))))}]])))}
+                        ([[(fun (cur5:<t  'e2 >) -> inv1 cur5 i1)]]f1
+                                                                   (get [a10||]
+                                                                    i1
+                                                                    (
+                                                                    ! [array[(a10)||]|
+                                                                    t|] ar))[[
+                        (fun (old2:<t  'e2 >) ->
+                        (fun (cur6:<t  'e2 >) ->
+                        (fun (anon1:unit) -> inv1 cur6 (i1 + 1))))]])))}
                       let __start = 0 in
                       let
                       __end = (len [a10||] (! [array[(a10)||]| t|] ar)) - 1

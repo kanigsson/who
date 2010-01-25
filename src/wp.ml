@@ -21,48 +21,29 @@ let rec lift_value v =
       app ~kind (lift_value v1) (lift_value v2) l
   | PureFun (t,(_,x,e)) -> 
       plam x (ty t) (lift_value e) l
-  | Lam (x,t,_,p,e,q) ->
-      let t = ty t and eff = e.e in
-      let _,p = p and _,_,q = q in
+  | Lam (x,t,_,(p,_,q)) ->
+      let t = ty t and _,p = p and _,_,q = q in
       let p = 
         match p with 
-        | None -> plam x t (efflamho eff (fun _ -> ptrue_ l) l) l
-        | Some p -> plam x t p l 
+        | None -> assert false
+        | Some p -> plam x t (scan p) l 
       and q = 
         match q with
-        | PResult _ -> assert false
-        | PNone ->
-            plam x t (
-              efflamho eff (fun _ -> 
-                efflamho eff (fun _ -> 
-                  plamho (ty e.t) (fun _ -> ptrue_ l) l) l) l) l
-        | PPlain q -> plam x t q l in
+        | PResult _ | PNone _ -> assert false
+        | PPlain q -> plam x t (scan q) l in
       mk_tuple p q l
   | Let (g,e1,b,Const.LogicDef) -> 
       let x,f = sopen b in
       let_ g (lift_value e1) x (lift_value f) Const.LogicDef l
-
   | Let _ | LetReg _ | For _ | Gen _ | Param _ | Annot _ | Ite _ | HoareTriple _ -> 
       error (Myformat.sprintf "not a value: %a" print v) l
 
-let rec correct v = 
+and correct v = 
   let l = v.loc in
   match v.v with
   | Var _ | Const _ | Quant _ -> ptrue_ l
   | App (v1,v2,_,_) -> and_ (correct v1) (correct v2) l
-  | Lam (x,t,_,p,e,q) -> 
-      let lt = ty t and eff = e.e in
-      effFA eff (fun r ->
-        let p = match p with 
-                | _,None -> ptrue_ l
-                | _,Some f -> app f r l in
-        let q = match q with 
-                | _,_,PNone -> 
-                    efflamho eff (fun _ ->
-                      plamho (ty e.t) (fun _ -> ptrue_ l) l) l
-                | _,_,PResult _ -> assert false
-                | _,_,PPlain f -> app f r l in
-        sforall x lt (impl p (wp_node r q e) l) l) l
+  | Lam (x,t,_,(p,e,q)) -> sforall x (ty t) (bodyfun p e q) l
   | PureFun (t,(_,x,e)) -> sforall x (ty t) (correct e) l
   | Let (g,e1,b,Const.LogicDef) -> 
       let x,e2 = sopen b in
@@ -71,9 +52,25 @@ let rec correct v =
   | Let _ | LetReg _ | For _ | Gen _ | Param _ | Annot _ | Ite _ | HoareTriple _ -> 
       Myformat.printf "correct: not a value: %a@." print v;
       assert false
+and scan f = 
+  let termfun f = 
+    match f.v with
+    | HoareTriple (p,e,q) -> bodyfun p e q 
+    | _ -> f in
+  rebuild_map ~varfun:(fun _ _ def -> def) ~termfun f
+and bodyfun p e q = 
+  let l = e.loc in
+  effFA e.e (fun r -> 
+    let p = match p with 
+    | _,None -> assert false
+    | _,Some f -> app (scan f) r l in
+    let q = match q with 
+    | _,_,(PNone | PResult _) -> assert false
+    | _,_,PPlain f -> app (scan f) r l in
+    impl p (wp_node r q e) l) l
 and wp m q e = 
   let ft = ty e.t and l = e.loc in
-  if is_value_node e then
+  if is_value e then
     and_ (applist [q;m;lift_value e] l) (correct e) l
   else 
     match e.v with
@@ -100,7 +97,7 @@ and wp m q e =
     | Let (g,e1,b,r) -> 
         let x,e2 = sopen b in
         (* TODO recursive case *)
-        if is_value_node e1 then
+        if is_value e1 then
           let lv = lift_value e1 in
           let f = gen g (correct e1) l in
           let wp = wp_node m q e2 in
@@ -141,7 +138,7 @@ let rec decl d =
   | Logic _ | Formula _ | TypeDef _ | DLetReg _ 
   | Program (_,_,_,Const.LogicDef) -> [d]
   | Section (s,cl,dl) -> [Section (s,cl, theory dl)]
-  | Program (x,g,e,_) when is_value_node e ->
+  | Program (x,g,e,_) when is_value e ->
       (* TODO recursive functions *)
       let lv = lift_value e in
       let f = gen g (correct e) e.loc in

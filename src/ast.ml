@@ -9,8 +9,7 @@ type ('a,'b,'c) t'' =
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
   | App of ('a,'b,'c) t' * ('a,'b,'c) t' * [`Infix | `Prefix ] * Name.t list
-  | Lam of 
-      Name.t * Ty.t * Name.t list * ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post 
+  | Lam of Name.t * Ty.t * Name.t list * ('a,'b,'c) funcbody
   | Let of G.t * ('a,'b,'c) t' * ('a,'b,'c) t' Name.bind * isrec
   | PureFun of Ty.t * ('a,'b,'c) t' Name.bind
   | Ite of ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
@@ -19,8 +18,7 @@ type ('a,'b,'c) t'' =
   | Param of Ty.t * Effect.t
   | Gen of G.t *  ('a,'b,'c) t'
   | For of Name.t * ('a,'b,'c) pre * Name.t * Name.t * Name.t * ('a,'b,'c) t'
-  | HoareTriple of 
-     ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) post
+  | HoareTriple of ('a,'b,'c) funcbody
   | LetReg of Name.t list * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
 and ('a,'b,'c) post' = 
@@ -30,6 +28,8 @@ and ('a,'b,'c) post' =
 and ('a,'b,'c) pre = Name.t * ('a,'b,'c) t' option
 and ('a,'b,'c) post = Name.t * Name.t * ('a,'b,'c) post'
 and isrec = Ty.t Const.isrec
+and ('a,'b,'c) funcbody = 
+     ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post
 
 type ('a,'b,'c) decl = 
   | Logic of Name.t *  G.t * Ty.t
@@ -48,15 +48,17 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
     | Var (v,i) -> varfun v (Inst.map tyfun rvarfun effectfun i)
     | App (t1,t2,p,cap) -> App (aux t1, aux t2, p, List.map rvarfun cap)
     | Annot (e,t) -> Annot (aux e, tyfun t)
-    | Lam (x,t,cap,p,e,q) -> 
-        Lam (x,tyfun t, List.map rvarfun cap, pre p, aux e, post q)
+    | Lam (x,t,cap,b) -> 
+        Lam (x,tyfun t, List.map rvarfun cap, body b )
     | LetReg (l,e) -> LetReg (l,aux e)
-    | For _ | HoareTriple _ -> assert false
+    | For _ -> assert false
+    | HoareTriple b -> HoareTriple (body b)
     | Let (g,e1,b,r) -> Let (g,aux e1,varbindfun b, r)
     | PureFun (t,b) -> PureFun (tyfun t, varbindfun b)
     | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
     | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
     | Gen (g,e) -> Gen (g,aux e)
+  and body (p,e,q) = pre p, aux e, post q
   and pre (x,o) = (x, Misc.opt_map aux o)
   and post (x,y,f) = 
     let f = match f with
@@ -126,7 +128,7 @@ module Print = struct
 
   let maycaplist fmt l = 
     if l = [] then ()
-    else fprintf fmt "cap %a" (print_list space Name.print) l
+    else fprintf fmt "allocates %a" (print_list space Name.print) l
 
   let prrec fmt = function
     | Const.NoRec -> ()
@@ -191,15 +193,15 @@ module Print = struct
           fprintf fmt "parameter(%a,%a)" 
             typrint t Effect.print e
       | For (dir,inv,_,st,en,t) ->
-          fprintf fmt "%a (%a) %a %a (%a)" 
+          fprintf fmt "%a ({%a}) %a %a (%a)" 
             Name.print dir pre inv Name.print st Name.print en print t
-      | HoareTriple (p,f,x,q) ->
-          fprintf fmt "[[%a]]%a %a[[%a]]" pre p print f with_paren x post q
+      | HoareTriple (p,f,q) ->
+          fprintf fmt "[[%a]]%a[[%a]]" pre p print f post q
       | LetReg (v,t) -> 
           fprintf fmt "@[letregion %a in@ %a@]" 
             (print_list space Name.print) v print t
-      | Lam (x,t,cap,p,e,q) -> 
-          fprintf fmt "@[(fun %a@ ->%a@ %a@ %a@ %a)@]" 
+      | Lam (x,t,cap,(p,e,q)) -> 
+          fprintf fmt "@[(fun %a@ ->%a@ {%a}@ %a@ {%a})@]" 
             binder (x,t) maycaplist cap pre p print e post q
         
     and print fmt t = print' fmt t.v
@@ -211,12 +213,12 @@ module Print = struct
     and pre fmt (_,x) = 
       match x with
       | None -> ()
-      | Some x -> fprintf fmt "{%a}" print x
+      | Some x -> print fmt x
     and post fmt (_,_,x) = 
       match x with
       | PNone -> ()
-      | PPlain f -> fprintf fmt "{%a}" print f
-      | PResult (r,f) -> fprintf fmt "{ %a : %a}" Name.print r print f
+      | PPlain f -> fprintf fmt "%a" print f
+      | PResult (r,f) -> fprintf fmt "%a : %a" Name.print r print f
     and maycap fmt = function
       | [] -> ()
       | l -> fprintf fmt "{%a}" (print_list space Name.print) l
@@ -439,6 +441,8 @@ module Recon = struct
   let plam x t e loc = 
     mk_val (PureFun (t,Name.close_bind x e)) (Ty.parr t e.t) loc
 
+  let hoare_triple p e q l = mk_val (HoareTriple (p,e,q)) Ty.prop l
+
   let gen g e l = true_or e (mk (Gen (g, e)) e.t e.e l)
 
   let simple_app ?(kind=`Prefix) ?(cap=[]) t1 t2 l =
@@ -535,8 +539,14 @@ module Recon = struct
             squant k x t (aux f) l
         | Ite (e1,e2,e3) -> ite ~logic:false (aux e1) (aux e2) (aux e3) l
         | Gen (g,e) -> gen g (aux e) l
-        | For _ | LetReg _ | Param _ | Lam _ | HoareTriple _  -> assert false in
-      termfun t in
+        | HoareTriple (p,e,q) -> 
+            hoare_triple (pre p) (aux e) (post q) l
+        | For _ | LetReg _ | Param _ | Lam _ -> assert false in
+      termfun t 
+    and pre (cur,p) = cur, Opt.map aux p
+    and post (old,cur,p) = 
+      old, cur, (match p with | PPlain f -> PPlain (aux f) | _ -> assert false)
+    in
     aux t
   and impl h1 goal l = 
 (*     Myformat.printf "impl: %a and %a@." print h1 print goal; *)
@@ -665,9 +675,9 @@ module Recon = struct
   let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
   let efflam x eff e = plam x (Ty.map eff) e
   let lam x t p e q = 
-    mk_val (Lam (x,t,[],p,e,q)) (Ty.arrow t e.t e.e)
+    mk_val (Lam (x,t,[],(p,e,q))) (Ty.arrow t e.t e.e)
   let caplam x t cap p e q = 
-    mk_val (Lam (x,t,cap,p,e,q)) (Ty.caparrow t e.t e.e cap)
+    mk_val (Lam (x,t,cap,(p,e,q))) (Ty.caparrow t e.t e.e cap)
   let plus t1 t2 loc = appi (P.plus_t loc) t1 t2 loc
   let minus t1 t2 loc = appi (P.minus_t loc) t1 t2 loc
   let one = mk_val (Const (Const.Int Big_int.unit_big_int)) Ty.int 
@@ -693,15 +703,15 @@ module Recon = struct
     | a::b::rest ->
         List.fold_left (fun acc x -> and_ acc x loc) (and_ a b loc) rest
 
-  let rec is_value = function
-    | Const _ | Var _ | Lam _ | PureFun _ | Quant _ -> true
-    | Let _ | Ite _ | For _ | LetReg _ | Param _
-    | Annot _ | Gen _ | HoareTriple _  -> false
+  let rec is_value x = 
+    match x.v with
+    | Const _ | Var _ | Lam _ | PureFun _ | Quant _ | HoareTriple _ -> true
+    | Let _ | Ite _ | For _ | LetReg _ | Param _ -> false
+    | Annot (e,_) | Gen (_,e) -> is_value e
     | App (t1,_,_,_) -> 
         match t1.t with
         | Ty.C (Ty.PureArr _) -> true
         | _ -> false
-  and is_value_node x = is_value x.v
 
   let aquant k x t f loc = 
     match k with
@@ -735,7 +745,7 @@ module Recon = struct
   let rec is_param e = 
     match e.v with
     | Param _ -> true
-    | Lam (_,_,_,_,e,_) -> is_param e
+    | Lam (_,_,_,(_,e,_)) -> is_param e
     | PureFun (_,(_,_,e)) -> is_param e
     | _ -> false
 

@@ -108,9 +108,9 @@ nterm:
     en = DONE
     { forfunction dir i e1 e2 (snd p) e3 (embrace st en) }
   | l = DLBRACKET p = nterm? DRBRACKET 
-      f = aterm x = aterm 
+     e = nterm
     DLBRACKET q = postcond_int r = DRBRACKET
-    { mk (HoareTriple (p,f,x,q)) (embrace l r) }
+    { mk (HoareTriple (p,e,q)) (embrace l r) }
 
 todownto:
   | TO { "forto" }

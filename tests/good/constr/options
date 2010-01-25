@@ -1,1 +1,1 @@
---transform-only --clear
+--transform-only --clear --no-prelude

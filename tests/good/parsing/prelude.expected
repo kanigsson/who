@@ -54,14 +54,15 @@ section Whoref coq "WhoMap"
   pangoline predefined
    logic !! ['a7|r|'e] : ref(r,a7) -> <r  'e > -> a7
   let
-    ! ['a8|r1|] = (fun (x4:ref(r1,a8)) ->  parameter(a8,{r1  })
-                  { r2 : ((!! x4 cur) = r2) /\ ((!! x4 old) = (!! x4 cur))}) 
+    ! ['a8|r1|] = (fun (x4:ref(r1,a8)) -> {} parameter(a8,{r1  })
+                  {r2 : ((!! x4 cur) = r2) /\ ((!! x4 old) = (!! x4 cur))}) 
   let
     := ['a9|r3|] = (fun (x5:ref(r3,a9)) ->
-                   (fun (v:a9) ->  parameter(unit,{r3  }) {(!! x5 cur1) = v})) 
+                   (fun (v:a9) -> {} parameter(unit,{r3  })
+                   {(!! x5 cur1) = v})) 
   let
-    ref ['a10|r4|] = (fun (v1:a10) ->cap r4  parameter(ref(r4,a10),{r4  })
-                     { x6 : (!! x6 cur2) = v1}) 
+    ref ['a10|r4|] = (fun (v1:a10) ->allocates r4 {}
+                     parameter(ref(r4,a10),{r4  }) {x6 : (!! x6 cur2) = v1}) 
   logic combine [||'e1 'e2 'e3] : < 'e1 'e2 > -> < 'e2 'e3 > -> < 'e1 'e2 'e3
     >
   logic restrict [||'e4 'e5] : < 'e4 'e5 > -> < 'e5 >

@@ -13,4 +13,4 @@ axiom fact_step : forall (n:int).
 let
   rec(int ->{ } int) f  = (fun (x:int) -> {0 <= x}
                           if x == 0 then 1 else x * (f (x - 1))
-                          { r : r = (fact x)}) 
+                          {r : r = (fact x)}) 
