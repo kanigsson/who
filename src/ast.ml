@@ -508,15 +508,18 @@ module Recon = struct
 
   and reduce_bool t l = 
     let rec aux t =
-      match destruct_app2_var t with
-      | Some (op, i, arg1, arg2) ->
-          let v = boolcmp_to_propcmp op in
-          let arg1, arg2 = 
-            if Name.equal op PL.andb_var || Name.equal op PL.orb_var then 
-              aux arg1, aux arg2
-            else arg1, arg2 in
-          appi (v i l) arg1 arg2 l
-      | None -> raise Exit in
+      match t.v with
+      | Var (v,_) when Name.equal v PL.btrue_var -> ptrue_ l
+      | _ -> 
+          match destruct_app2_var t with
+          | Some (op, i, arg1, arg2) ->
+              let v = boolcmp_to_propcmp op in
+              let arg1, arg2 = 
+                if Name.equal op PL.andb_var || Name.equal op PL.orb_var then 
+                  aux arg1, aux arg2
+                else arg1, arg2 in
+              appi (v i l) arg1 arg2 l
+          | None -> raise Exit in
     aux t
   and rebuild_map ~varfun ~termfun t =
     (* this function is intended to be used with logic functions only *)
@@ -578,12 +581,13 @@ module Recon = struct
   and eq t1 t2 l = 
     if equal t1 t2 then ptrue_ l 
     else
-      match t2.v with
+      try match t2.v with
       | Var (v, ([], [], [])) when 
          Name.equal v PL.btrue_var || Name.equal v PL.bfalse_var ->
           let f = reduce_bool t1 l in
           if Name.equal v PL.btrue_var then f else neg f l
-      | _ -> simple_appi (P.eq_t ([t1.t],[],[]) l) t1 t2 l
+      | _ -> raise Exit
+      with Exit -> simple_appi (P.eq_t ([t1.t],[],[]) l) t1 t2 l
   and and_ t1 t2 l = 
     match t1.v,t2.v with
     | Const Const.Ptrue, _ -> t2
