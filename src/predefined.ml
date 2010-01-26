@@ -113,6 +113,8 @@ module Logic = struct
         not_var, "not" ; 
         and_var, "and" ; 
         or_var, "or" ; 
+        fst_var, "proj_2_0_tuple" ; 
+        snd_var, "proj_2_1_tuple" ; 
       ] in
     List.fold_left (fun acc (a,b) -> Name.M.add a b acc) Name.M.empty l
 
