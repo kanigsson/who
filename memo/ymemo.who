@@ -22,7 +22,7 @@ letregion t
 logic table : ref(t, (int,int) hmap)
 
 let realizes (f0 : int -> int) ( f : int ->{t|} int) =
-  forall (x : int). [[ stores f0 !!table]] f x [[ stores f0 !!table]]
+  forall (x : int). [[ stores f0 !!table]] f x [[ r : r = f0 x /\ stores f0 !!table]]
 
 let ymemo (f0 : int -> int) 
           (ff : (int ->{t|} int) ->{|} int ->{t|} int) = 
