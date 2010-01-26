@@ -49,7 +49,6 @@ section arith
   logic <> ['a||] : 'a -> 'a -> prop
   logic int_max : int -> int -> int
   logic int_min : int -> int -> int
-  logic mod_int : int -> int -> int
   logic band : bool -> bool -> bool
   logic bor : bool -> bool -> bool
 
