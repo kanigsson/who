@@ -38,6 +38,7 @@ type ('a,'b,'c) decl =
   | TypeDef of G.t * Ty.t option * Name.t
   | Program of Name.t * G.t * ('a,'b,'c) t' * isrec
   | DLetReg of Name.t list 
+  | DGen of G.t
 
 type ('a,'b,'c) theory = ('a,'b,'c) decl list
 
@@ -145,8 +146,13 @@ module Print = struct
     let rec print' fmt = function
       | Const c -> Const.print fmt c
       | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) -> 
-          fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 (name_print ~kind) v 
-            (Inst.print ~kind ~intype:false pra prb prc) i with_paren t2
+          begin match kind with
+          | `Pangoline when Name.equal v PL.tuple_var ->
+              fprintf fmt "(%a , %a)" annot t1 annot t2
+          | _ ->
+              fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 (name_print ~kind) v 
+              (Inst.print ~kind ~intype:false pra prb prc) i with_paren t2
+          end
       | App (t1,t2,_,cap) ->
             fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
       | Ite (e1,e2,e3) ->
@@ -205,6 +211,7 @@ module Print = struct
             binder (x,t) maycaplist cap pre p print e post q
         
     and print fmt t = print' fmt t.v
+    and annot fmt t = fprintf fmt "%a : %a" print t pra t.t
     and binder' par = 
       let p fmt (x,t) = fprintf fmt "%a:%a" 
         Name.print x typrint t in
@@ -252,6 +259,8 @@ module Print = struct
       | Program (x,g,t,r) ->
           fprintf fmt "@[<hov 2>let@ %a%a %a = %a @]" prrec r 
           Name.print x G.print g term t 
+      | DGen g -> 
+          fprintf fmt "@[INTROS %a@]" G.print g
     and decl_list fmt d = print_list newline decl fmt d in
     decl fmt d
 
@@ -780,7 +789,7 @@ module Recon = struct
   let rec decl_map ~varfun ~termfun ~declfun d : decl list =
     let d = 
       match d with
-      | Logic _ | TypeDef _ | DLetReg _ -> d
+      | Logic _ | TypeDef _ | DLetReg _ | DGen _ -> d
       | Formula (s,t,k) -> Formula (s,rebuild_map ~varfun ~termfun t, k)
       | Section (s,cl,th) -> 
           Section (s,cl,theory_map ~varfun ~termfun ~declfun th)

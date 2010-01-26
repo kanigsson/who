@@ -1,3 +1,4 @@
+type unit
 logic empty : < >
 logic fst ['a2 'b||] : ('a2 * 'b) -> 'a2
 axiom a :

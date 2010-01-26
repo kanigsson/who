@@ -1,5 +1,7 @@
+type unit
+type bool
+logic void  : unit
 logic <<  : int -> int -> bool
 let
-  blit  = (fun (d:int) -> {(fun (cur10:< >) -> True)}
-          if 0 << 0 then () else ()
+  blit  = (fun (d:int) -> {(fun (cur:< >) -> True)} if 0 << 0 then tt else tt
           {(fun (a:< >) -> (fun (b:< >) -> (fun (c:unit) -> True)))}) 

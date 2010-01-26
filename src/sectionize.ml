@@ -32,6 +32,7 @@ let to_section kind th =
   let rec decl_to_outdecl d = 
     match d with
     | DLetReg _ | Program _ -> assert false
+    | DGen g ->  [Gen g]
     | TypeDef (g,_,n) -> [Type (n,g)]
     | Formula (s,f, k) -> 
         begin match k with

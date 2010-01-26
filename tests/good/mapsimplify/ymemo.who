@@ -1,0 +1,12 @@
+logic ->  : prop -> prop -> prop
+logic = ['a||] : (a) -> (a) -> prop
+type bool
+logic true  : bool
+logic false  : bool
+type hmap['a26 'b3||]
+INTROS [|t4|]
+logic table  : ref(t4,hmap[int,int||])
+goal ymemo_correct : 
+    forall (s4:<t4  >).  
+      (forall (x11:int).  false =[bool||] true -> 0 =[int||] x11) 
+        -> 0 =[int||] 1

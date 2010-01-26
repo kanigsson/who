@@ -35,6 +35,7 @@ type decl =
   | TypeDef of generalize * ty option * tyvar
   | Program of var * generalize * t * ParseTypes.t Const.isrec
   | DLetReg of rvar list 
+  | DGen of generalize
 
 type theory = decl list
 

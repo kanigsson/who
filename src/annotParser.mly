@@ -33,6 +33,7 @@ decl:
     { Program (x,g,e,Rec t) }
   | LET LOGIC x = defprogvar_no_pos g = gen EQUAL t = nterm
     { Program (x,g,t,LogicDef) }
+  | INTROS g = gen { DGen g }
 
 one_binding:
   LPAREN x = IDENT COLON t = ty RPAREN

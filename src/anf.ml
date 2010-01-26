@@ -54,7 +54,7 @@ let term = normalize_term
 
 let rec decl d = 
   match d with
-  | Logic _ | TypeDef _ | DLetReg _ -> d 
+  | Logic _ | TypeDef _ | DLetReg _ | DGen _ -> d 
   | Formula (s,t,r) -> Formula (s, term t, r)
   | Section (s,cl, th) -> Section (s,cl, theory th)
   | Program (n,g,t,r) -> Program (n,g,term t, r)

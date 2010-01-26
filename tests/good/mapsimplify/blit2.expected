@@ -1,1 +1,1 @@
-goal blit_correct : forall (r2:prop). r2
+goal blit_correct : forall (r:prop). r

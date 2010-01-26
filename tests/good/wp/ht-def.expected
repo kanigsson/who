@@ -1,0 +1,63 @@
+type bool
+logic true  : bool
+logic false  : bool
+logic = ['a||] : (a) -> (a) -> prop
+logic /\  : prop -> prop -> prop
+logic \/  : prop -> prop -> prop
+logic ->  : prop -> prop -> prop
+logic , ['a1 'b||] : (a1) -> (b) -> (a1) * (b)
+logic fst ['a2 'b1||] : ((a2) * (b1)) -> a2
+logic snd ['a3 'b2||] : ((a3) * (b2)) -> b2
+type hmap['a4
+'b3||]
+logic hmem ['a5 'b4||] : (a5) -> (hmap[(a5),(b4)||]) -> bool
+logic hget ['a6 'b5||] : (a6) -> (hmap[(a6),(b5)||]) -> b5
+logic hset ['a7 'b6||] : (a7) -> (b6) -> (hmap[(a7),(b6)||]) ->
+  hmap[(a7),(b6)||]
+type unit
+logic tt  : unit
+logic !! ['a8|r|'e] : ref(r,a8) -> <r  'e > -> a8
+let
+  logic ! ['a9|r1|] = (fun (x:ref(r1,a9)) -> (fun (cur:<r1  >) -> True))
+                      ,[ref(r1,a9) -> <r1  > -> prop,ref(r1,a9) -> <r1  > ->
+                      <r1  > -> (a9) -> prop||]
+                      (fun (x:ref(r1,a9)) ->
+                      (fun (old:<r1  >) ->
+                      (fun (cur1:<r1  >) ->
+                      (fun (r2:a9) ->
+                      ((!! [a9| r1| { }] x cur1) =[a9||] r2) /\
+                      ((!! [a9| r1| { }] x old) =[a9||]
+                       (!! [a9| r1| { }] x cur1)))))) 
+let
+  logic := ['a10|r3|] = (fun (x1:ref(r3,a10)) ->
+                        (fun (v:a10) -> (fun (cur2:<r3  >) -> True))
+                        ,[(a10) -> <r3  > -> prop,(a10) -> <r3  > -> <r3
+                         > -> (unit) -> prop||]
+                        (fun (v:a10) ->
+                        (fun (old1:<r3  >) ->
+                        (fun (cur3:<r3  >) ->
+                        (fun (anon:unit) ->
+                        (!! [a10| r3| { }] x1 cur3) =[a10||] v))))) 
+let
+  logic stores  = (fun (f:int -> int) ->
+                  (fun (m:hmap[int,int||]) ->
+                  forall (x2:int).
+                  ((hmem [int,int||] x2 m) =[bool||] true) ->
+                  ((hget [int,int||] x2 m) =[int||] (f x2)))) 
+INTROS [|t|]
+logic table  : ref(t,hmap[int,int||])
+let
+  logic realizes  = (fun (f1:int -> int) ->
+                    (fun (f2:(int -> <t  > -> prop) * (int -> <t  > -> <t
+                     > -> int -> prop)) ->
+                    forall (x3:int).
+                    forall (s:<t  >).
+                    (stores f1 (!! [hmap[int,int||]| t| { }] table s)) ->
+                    ((fst [int -> <t  > -> prop,int -> <t  > -> <t  > ->
+                      int -> prop||] f2 x3 s)
+                     /\
+                     (forall (s1:<t  >).
+                      forall (anon1:int).
+                      (snd [int -> <t  > -> prop,int -> <t  > -> <t  > ->
+                       int -> prop||] f2 x3 s s1 anon1)
+                      -> (stores f1 (!! [hmap[int,int||]| t| { }] table s1)))))) 

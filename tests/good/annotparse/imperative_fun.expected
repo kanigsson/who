@@ -1,5 +1,6 @@
+type unit
 logic empty  : < >
-logic fst ['a2 'b||] : ('a2 * 'b) -> 'a2
-axiom a : forall . forall (f:int ->{ } int).
-                   fst [int -> < > -> prop,int -> < > -> < > -> int ->
-                   prop||] f 5 empty
+logic fst ['a 'b||] : ((a) * (b)) -> a
+axiom a : forall (f:int ->{ } int).
+          fst [int -> < > -> prop,int -> < > -> < > -> int -> prop||] f 5
+          empty

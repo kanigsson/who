@@ -138,8 +138,11 @@ let main e =
 
 let rec decl d = 
   match d with
-  | Logic _ | Formula _ | TypeDef _ | DLetReg _ 
-  | Program (_,_,_,Const.LogicDef) -> [d]
+  | Logic _ | Formula _ | TypeDef _ 
+  | Program (_,_,_,Const.LogicDef) | DGen _ -> [d]
+  | DLetReg rl -> 
+      (* FIXME is this correct? *)
+      [DGen ([],rl,[])]
   | Section (s,cl,dl) -> [Section (s,cl, theory dl)]
   | Program (x,g,e,_) when is_value e ->
       (* TODO recursive functions *)

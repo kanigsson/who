@@ -43,6 +43,9 @@ let rtype env n =
     (Myformat.sprintf "type not found for region: %a@." 
       Name.print n)
 
+let cannot_find_type n = 
+  error "finding no type for %a@." Name.print n
+
 (* [find_type] searches for a [tau ref(r)] in the given term *)
 let find_type rname x =
 (*   Myformat.printf "find_type: %a in %a@." Name.print rname print x; *)
@@ -64,9 +67,19 @@ let find_type rname x =
             begin try aux t1 
             with _ -> aux t2 end
         | _ -> assert false in
-  try aux x with e ->
-    Myformat.printf "finding no type for %a in %a@." Name.print rname print x;
-    raise e
+  try aux x with Assert_failure _ -> cannot_find_type rname
+
+let rec find_type_decl rname th = 
+  match th with
+  | [] -> cannot_find_type rname
+  | d::ds ->
+      match d with
+      | Logic (_,_,t) -> 
+          begin match Ty.find_type_of_r rname t with
+          | Some x -> x
+          | None -> find_type_decl rname ds
+          end
+      | _ -> cannot_find_type rname
 
 (* add the mapping (n1,n2) -> n3 to the environment for names
  * n1: region
@@ -146,11 +159,13 @@ let rec term env t =
       | App (f1,f2,k,c) -> 
           app ~kind:k ~cap:c (term env f1) (term env f2) l
       | Gen (g,t) -> 
-          let g,t = genbind g env t in
+          let env, g = genbind g env (fun r -> find_type r t) in
+          let t = term env t in
           gen g t env.l
       | Let (g ,e1,b,r) ->
           let x,e2 = vopen b in
-          let g,e1 = genbind g env e1 in
+          let env', g = genbind g env (fun r -> find_type r e1) in 
+          let e1 = term env' e1 in
           let_ g e1 x (term env e2) r l
       | PureFun (t,b) ->
           let x,e = vopen b in
@@ -161,14 +176,17 @@ let rec term env t =
       | Ite (e1,e2,e3) -> 
           ite (term env e1) (term env e2) (term env e3) l
       | Lam _ | Annot _ | For _ | LetReg _ | Param _ | HoareTriple _ -> assert false
-and genbind (tvl,rl,el) env t =
+and genbind (tvl,rl,el) env find_type =
     let env = List.fold_left (fun env r -> 
-      rtype_add r (find_type r t) env) env rl in
+      rtype_add r (find_type r) env) env rl in
     let env = List.fold_left (fun env e ->
       rtype_add e (Ty.var e) env) env el in
+    env, (tvl@el,[],[])
+(*
     let t = term env t in
     (* effect variables become type variables *)
     (tvl@el,[],[]), t
+*)
 and varbind env k x t e l = 
   if Ty.is_map t then
     let env, rl, el = add_effect env x (Ty.domain t) in
@@ -181,30 +199,32 @@ and varbind env k x t e l =
     if Ty.is_ref t then e
     else aquant k x (Ty.selim_map (rtype env) t) e l
 
-let rec decl env d = 
-  Format.printf "decl: %a@." print_decl d;
-  match d with
-  | Logic (n,_,_) when Name.S.mem n PL.effrec_set -> env, []
-  | Logic (s,((_,[],[]) as g),t) -> 
-(*       Myformat.printf "%a@." Name.print s; *)
-      env, [Logic (s,g,tyfun env t)]
-  | DLetReg _ -> 
-      (* TODO *)
-      env, [d]
-  | TypeDef _ -> env, [d]
-  | Formula (n,f,k) -> 
-      env, [Formula (n, term env f, k)]
-  | Section (s,cl,th) -> 
-      let env, th = theory env th in
-      env, if th = [] then [] else [Section (s,cl,th)]
-  | Program (n,g,t,LogicDef) -> 
-      let g,t = genbind g env t in
-      env, [Program (n,g,t,LogicDef)]
-  | Program _ | Logic _ -> assert false 
-and theory env th = 
-  let env, l = Misc.list_fold_map decl env th in
-  env, List.flatten l
-
+let rec theory env th = 
+  match th with 
+  | [] -> env, []
+  | d :: ds ->
+      let env, d = 
+        match d with
+        | Logic (n,_,_) when Name.S.mem n PL.effrec_set -> env, []
+        | Logic (s,((_,[],[]) as g),t) -> 
+            (*       Myformat.printf "%a@." Name.print s; *)
+            env, if Ty.is_ref t then [] else [Logic (s,g,tyfun env t)]
+        | DGen g ->
+            let env, g = genbind g env (fun r -> find_type_decl r ds) in
+            env, if G.is_empty g then [] else [DGen g]
+        | TypeDef _ -> env, [d]
+        | Formula (n,f,k) -> 
+            env, [Formula (n, term env f, k)]
+        | Section (s,cl,th) -> 
+            let env, th = theory env th in
+            env, if th = [] then [] else [Section (s,cl,th)]
+        | Program (n,g,t,LogicDef) -> 
+            let env', g = genbind g env (fun r -> find_type r t) in
+            let t = term env' t in
+            env, [Program (n,g,t,LogicDef)]
+        | Program _ | Logic _ | DLetReg _ -> assert false in
+      let env, th = theory env ds in
+      env, d @ th
 
 let theory th = 
   let _, th = theory empty th in

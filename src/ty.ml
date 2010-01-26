@@ -49,7 +49,7 @@ let print' ?(kind=`Who) pt pr pe is_c fmt x =
       begin match kind with
       | `Who -> fprintf fmt "ref(%a,%a)" pr r pt t
       | `Coq -> fprintf fmt "ref@ %a@ %a" mayp t pr r
-      | `Pangoline -> fprintf fmt "%a ref@" mayp t
+      | `Pangoline -> fprintf fmt "%a ref" mayp t
       end
   | App (v,i) -> 
       fprintf fmt "%a%a" Name.print v 

@@ -1,3 +1,6 @@
+type bool
+type unit
+logic void : unit
 section basiclogic coq predefined
   pangoline predefined
    logic /\  : prop -> prop -> prop
@@ -86,7 +89,7 @@ let
                              /\
                              (forall (n:< 'e11 >).
                               (post [int -> < 'e11 > -> prop,int -> < 'e11
-                               > -> < 'e11 > -> unit -> prop||] f i m n ())
+                               > -> < 'e11 > -> unit -> prop||] f i m n void)
                               -> (inv (i + 1) n))))))))
                          ,[((int -> < 'e11 > -> prop) * (int -> < 'e11 > ->
                          < 'e11 > -> unit -> prop)) -> < 'e11 > ->
@@ -118,7 +121,7 @@ let
                                  (forall (n1:< 'e21 >).
                                   (post [int -> < 'e21 > -> prop,int ->
                                    < 'e21 > -> < 'e21 > -> unit -> prop||] f1
-                                   i1 m1 n1 ())
+                                   i1 m1 n1 void)
                                   -> (inv1 (i1 - 1) n1))))))))
                              ,[((int -> < 'e21 > -> prop) * (int -> < 'e21
                              > -> < 'e21 > -> unit -> prop)) -> < 'e21 > ->
@@ -304,7 +307,7 @@ goal blit_correct : forall ['a31|r11
                                  ((:= [array['a31||]| r21|]) ar2)
                                  (set ['a31||] (ofs2 + i6)
                                   (get ['a31||] (ofs1 + i6) anon3) anon4)
-                                 s5 s6 ())
+                                 s5 s6 void)
                                 ->
                                 ((((!! [array['a31||]| r11| {r11 r21  }] ar1
                                     (combine [|| {r11  } {r21  } { }]
@@ -470,7 +473,7 @@ goal blit_correct : forall ['a31|r11
                            (!! [array['a31||]| r11| {r11 r21  }] ar1 cur115))))))))))
                       (combine [|| {r11  } {r21  } { }]
                        (combine [|| {r21  } {r11  } { }] s s1) s2)
-                      s7 ())
+                      s7 void)
                      ->
                      ((((!! [array['a31||]| r11| {r11 r21  }] ar1 s)
                         =[array['a31||]||]
@@ -560,7 +563,7 @@ goal blit_correct : forall ['a31|r11
                                  ((:= [array['a31||]| r21|]) ar2)
                                  (set ['a31||] (ofs2 + i7)
                                   (get ['a31||] (ofs1 + i7) anon5) anon6)
-                                 s10 s11 ())
+                                 s10 s11 void)
                                 ->
                                 ((((!! [array['a31||]| r11| {r11 r21  }] ar1
                                     (combine [|| {r11  } {r21  } { }]
@@ -726,7 +729,7 @@ goal blit_correct : forall ['a31|r11
                            (!! [array['a31||]| r11| {r11 r21  }] ar1 cur125))))))))))
                       (combine [|| {r11  } {r21  } { }]
                        (combine [|| {r21  } {r11  } { }] s s1) s2)
-                      s12 ())
+                      s12 void)
                      ->
                      ((((!! [array['a31||]| r11| {r11 r21  }] ar1 s)
                         =[array['a31||]||]

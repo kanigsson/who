@@ -258,6 +258,7 @@ let rec infer_th env d =
       let env = add_ty env n g t in
       env, TypeDef (g,t,n)
   | DLetReg rl -> env, DLetReg rl
+  | DGen g -> env, DGen g
   | Program (x,g,e,r) -> 
       let env,e = letgen env x g e r in
       env, Program (x,g,e,r)
@@ -358,4 +359,5 @@ let rec recon_decl x =
   | DLetReg rl -> DLetReg rl
   | TypeDef (g,t,n) -> TypeDef (g,t,n)
   | Program (n,g,t,r) -> Program (n,g,recon t, r)
+  | DGen g -> DGen g
 and recon_th l = List.map recon_decl l

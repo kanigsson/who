@@ -113,6 +113,9 @@ let rec decl env d =
   | I.Program (x,g,e,r) ->
       let env, nv, g , e, r = letgen env x g e r in
       env, Program (nv, g, e, r)
+  | I.DGen g ->
+      let env, g = add_gen env g in
+      env, DGen g
 and theory env th = Misc.list_fold_map decl env th
 
 

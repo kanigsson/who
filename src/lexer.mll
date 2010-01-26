@@ -50,6 +50,7 @@ let id_or_keyword =
         ("pangoline", fun _ -> PANGOLINE );
         ("end", fun i -> END (create_info i) );
         ("fun", fun i -> FUN (create_info i) );
+        ("INTROS", fun _ -> INTROS );
       ];
     fun s -> try Hashtbl.find h s with Not_found -> 
       fun i -> IDENT (Loc.mk (create_info i) s)
