@@ -16,11 +16,13 @@ let rec lift_value v =
   match v.v with
   | Var (_,_) -> 
       { v with t = ty v.t }
-  | Const _ | Quant _ -> v
+  | Const _ -> v
   | App (v1,v2,kind,_) -> 
       app ~kind (lift_value v1) (lift_value v2) l
   | PureFun (t,(_,x,e)) -> 
       plam x (ty t) (lift_value e) l
+  | Quant (k,t,(_,x,e)) ->
+      squant k x (ty t) (lift_value e) l
   | Lam (x,t,_,(p,_,q)) ->
       let t = ty t and _,p = p and _,_,q = q in
       let p = 
@@ -35,7 +37,8 @@ let rec lift_value v =
   | Let (g,e1,b,Const.LogicDef) -> 
       let x,f = sopen b in
       let_ g (lift_value e1) x (lift_value f) Const.LogicDef l
-  | Let _ | LetReg _ | For _ | Gen _ | Param _ | Annot _ | Ite _ | HoareTriple _ -> 
+  | HoareTriple (p,e,q) -> bodyfun p e q
+  | Let _ | LetReg _ | For _ | Gen _ | Param _ | Annot _ | Ite _ -> 
       error (Myformat.sprintf "not a value: %a" print v) l
 
 and correct v = 
@@ -57,7 +60,7 @@ and scan f =
     match f.v with
     | HoareTriple (p,e,q) -> bodyfun p e q 
     | _ -> f in
-  rebuild_map ~varfun:(fun _ _ def -> def) ~termfun f
+  rebuild_map ~varfun:(fun _ _ def -> def) ~termfun ~tyfun:ty f
 and bodyfun p e q = 
   let l = e.loc in
   effFA e.e (fun r -> 

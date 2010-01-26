@@ -5,6 +5,11 @@ module I = AnnotParseTree
 let dummy = Name.new_anon ()
 module R = Recon
 
+exception Error of string * Loc.loc
+
+let error loc s = 
+  Myformat.ksprintf (fun s -> raise (Error (s,loc))) s
+
 let inst env (tl,rl,el) = 
   List.map (ty env) tl, List.map (rvar env) rl, List.map (effect env) el
 
@@ -12,15 +17,22 @@ let only_add_type env x g =
   { env with typing = NM.add x g env.typing }
 let add_var env x g = 
   let env, x = add_var env x in
-  { env with typing = NM.add x g env.typing }, x
+  only_add_type env x g, x
+
+let add_ex_var env x g nv = 
+  let env = add_ex_var env x nv in
+  only_add_type env nv g
 
 let add_svar env x t = add_var env x (G.empty, t)
 
 let typed_var logic env x = 
-  let x = var env x in
-  let g,t = NM.find x env.typing in
-  let t = if logic then Ty.to_logic_type t else t in
-  x, (g,t)
+  try
+    let x = var env x in
+    let g,t = NM.find x env.typing in
+    let t = if logic then Ty.to_logic_type t else t in
+    x, (g,t)
+  with Not_found ->
+    error Loc.dummy "undefined var: %s@." x
 
 let rec term logic env (t : I.t) = 
   let l = t.I.loc in
@@ -70,10 +82,9 @@ and letgen env x g e r =
     match r with 
     | Const.NoRec -> env', false
     | Const.LogicDef -> env', true
-    | Const.Rec _ -> add_ex_var env' x nv, false in
+    | Const.Rec t -> add_ex_var env' x (G.empty, ty env t) nv, false in
   let e = term logic env' e in
-  let env = add_ex_var env x nv in
-  let env = only_add_type env nv (g,e.Ast.t) in
+  let env = add_ex_var env x (g,e.Ast.t) nv in
   let r = rec_ env' r in
   env, nv, g, e, r
 

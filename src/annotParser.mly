@@ -29,7 +29,7 @@ decl:
     { TypeDef (g, Some t, x.c ) }
   | LET x = defprogvar_no_pos g = gen EQUAL t = nterm
     { Program (x,g,t, NoRec) }
-  | LET REC x = defprogvar_no_pos g = gen COLON t = ty EQUAL e = nterm
+  | LET REC LPAREN t = ty RPAREN x = defprogvar_no_pos g = gen e = nterm
     { Program (x,g,e,Rec t) }
   | LET LOGIC x = defprogvar_no_pos g = gen EQUAL t = nterm
     { Program (x,g,t,LogicDef) }
@@ -88,7 +88,7 @@ nterm:
   | st = LET LOGIC x = defprogvar_no_pos g = gen EQUAL t1 = nterm 
      IN t2 = nterm %prec let_
     { mk_term (Let (g,t1,x,t2, LogicDef)) (embrace st t2.loc) }
-  | st = LET REC x = defprogvar_no_pos g = gen COLON t = ty 
+  | st = LET REC LPAREN t = ty RPAREN x = defprogvar_no_pos g = gen 
     EQUAL t1 = nterm IN t2 = nterm %prec let_
     { mk_term (Let (g,t1,x,t2, Rec t)) (embrace st t2.loc) }
   | p = LETREGION l = IDENT* IN t = nterm %prec let_

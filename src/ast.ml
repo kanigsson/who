@@ -521,25 +521,25 @@ module Recon = struct
               appi (v i l) arg1 arg2 l
           | None -> raise Exit in
     aux t
-  and rebuild_map ~varfun ~termfun t =
+  and rebuild_map ~varfun ~termfun ?(tyfun = (fun x -> x)) t =
     (* this function is intended to be used with logic functions only *)
     let l = t.loc in
     let rec aux t = 
       let t = 
         match t.v with
         | Const _ -> t
-        | Var (v,i) -> varfun v i t
+        | Var (v,i) -> varfun v (Inst.map tyfun Misc.id Misc.id i) t
         | App (t1,t2,p,cap) -> allapp (aux t1) (aux t2) p cap l
-        | Annot (e,t) -> annot (aux e) t
+        | Annot (e,t) -> annot (aux e) (tyfun t)
         | Let (g,e1,b,r) -> 
             let x,f = vopen b in 
             let_ g (aux e1) x (aux f) r l
         | PureFun (t,b) -> 
             let x,f = vopen b in 
-            plam x t (aux f) l
+            plam x (tyfun t) (aux f) l
         | Quant (k,t,b) -> 
             let x,f = vopen b in 
-            squant k x t (aux f) l
+            squant k x (tyfun t) (aux f) l
         | Ite (e1,e2,e3) -> ite ~logic:false (aux e1) (aux e2) (aux e3) l
         | Gen (g,e) -> gen g (aux e) l
         | HoareTriple (p,e,q) -> 
@@ -650,14 +650,16 @@ module Recon = struct
             print t Ty.print t.t
   and combine t1 t2 l = 
     let d1 = domain t1 and d2 = domain t2 in
-    let d1', d2', d3' = Effect.split d1 d2 in
-    if Effect.is_empty d1' then t2
-    else 
-      match destruct_app2_var t1 with
-      | Some (v,([],[],[e1;_;_]), _, db)
-        when Name.equal v PL.combine_var && Effect.sub_effect e1 d2' -> 
-          combine db t2 l
-      | _  -> simple_app2 (P.combine_t ([],[],[d1';d2';d3']) l) t1 t2 l
+    if Effect.is_empty d2 then t1
+    else
+      let d1', d2', d3' = Effect.split d1 d2 in
+      if Effect.is_empty d1' then t2
+      else 
+        match destruct_app2_var t1 with
+        | Some (v,([],[],[e1;_;_]), _, db)
+          when Name.equal v PL.combine_var && Effect.sub_effect e1 d2' -> 
+            combine db t2 l
+        | _  -> simple_app2 (P.combine_t ([],[],[d1';d2';d3']) l) t1 t2 l
 
   and restrict eff t l =
     let d = Effect.diff (domain t) eff in

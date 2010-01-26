@@ -1,1 +1,1 @@
--input-annot -clear -mapsimpl -transform-only -no-prelude
+--input-annot --clear --mapsimpl --transform-only --noprelude

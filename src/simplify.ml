@@ -182,6 +182,7 @@ and varbind env k x t e l =
     else aquant k x (Ty.selim_map (rtype env) t) e l
 
 let rec decl env d = 
+  Format.printf "decl: %a@." print_decl d;
   match d with
   | Logic (n,_,_) when Name.S.mem n PL.effrec_set -> env, []
   | Logic (s,((_,[],[]) as g),t) -> 
