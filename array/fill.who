@@ -1,47 +1,10 @@
-type 'a array
-
-logic get : forall 'a. int -> 'a array -> 'a
-logic set : forall 'a. int -> 'a -> 'a array -> 'a array
-logic length : forall 'a. 'a array -> int
-
-axiom update_length : 
-  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
-    length [| 'a|] t = length [|'a|] (set [|'a|] i z t)
-
-axiom get_set_eq : 
-  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
-    i < length [|'a|] t -> get [|'a|] i (set [|'a|] i z t) = z
-
-axiom get_set_neq : 
-  forall 'a. forall (t : 'a array) (i : int) (j : int) (z : 'a).
-    i < length [|'a|] t -> j < length [|'a|] t -> i <> j -> 
-    get [|'a|] i (set [|'a|] j z t) = get [|'a|] i t
-
-axiom length_nonnegative : 
-  forall 'a. forall (t : 'a array).  0 <= length [|'a|] t
-
-logic max : int -> int -> int
-parameter forfun [e||] 
-    (inv : <e> -> int -> prop)
-    (start : int) (end : int) (f : int ->{e} unit) : unit {e}
-    { inv cur start /\
-      forall (i : int). start <= i /\ i <= end ->
-      forall (m : <e>) . inv m i -> pre f i m /\
-      forall (n : <e>). post f i m n () -> inv n (i+1)
-    }
-    { inv cur (max start (end + 1))}
-let fill [|'a|(r  : 'a array)] (ar : ref(r)) (ofs : int) (len : int) (v:'a) =
-  {0 <= ofs /\ 0 <= len /\ ofs <= length [|'a|] ar - len }
-  let l = length [|'a|] !ar in
-  forfun [{ar}||] 
-    ({{ fun (s : <ar>) (i : int) ->
-      length [|'a|] ar|s = l /\
-      forall (k : int). ofs <= k -> k < i -> get [|'a|] k ar|s = v }})
-    ofs (ofs + len - 1)
-      (fun (i : int) -> 
-        { 0 <= i /\ i <= l - 1 /\ length [|'a|] ar = l}
-          ar := set [|'a|] i v !ar
-        { ar = set [|'a|] i v ar|old })
+let fill ['a|r|] (ar : ref(r,'a array)) (ofs : int) (lenf : int) (v:'a) =
+  {0 <= ofs /\ 0 <= lenf /\ ofs <= len !!ar - lenf }
+  let l = len !ar in
+  for i = ofs to (ofs + lenf - 1) do
+    {len !!ar = l /\
+      forall (k : int). ofs <= k -> k < i -> get k !!ar = v }
+    ar := set i v !ar
+  done
   {forall (i : int). 
-    ofs <= i -> i <= ofs + len - 1 -> 
-      get [|'a|] i ar = v }
+    ofs <= i -> i <= ofs + lenf - 1 -> get i !!ar = v }
