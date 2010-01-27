@@ -1,0 +1,98 @@
+In the following document, the symbols (,),+,?,*,| have a special sense. When we
+want to refer to the actual symbol, we write '(', ')' and so on.
+We use ( and ) to group subexpressions.
+We use +,?,*,| with the usual sense.
+
+We use list*(expr,symbol) or list+(expr,symbol) to describe lists of
+expressions separated by a symbol.
+Finally, we write list+(expr, ',') as : commasep+(expr)
+
+Everything else is "as is".
+
+An <id> is program identifier or a global type and is defined as: 
+  a word composed of [A-Za-z0-9']*, which starts with a [A-Za-z].
+
+A <region> is the same category.
+
+An <effectvar> or <tyvar> is defined as the same category, 
+but starting with a '.
+
+A file is a list of <declaration>s.
+
+A <declaration> is one of the following: 
+  axiom <id> <gen> : <term>
+  logic <id> <gen> : <type>
+  type <id> <gen> ( = <type>)?
+  letregion <id>*
+  parameter <id> <gen> <argslist> : <type>
+  parameter <id> <gen> <argslist> : <type>, <effect> 
+          = <allocdef> {<pre>} {<post>}
+  <letform>
+
+A letform <letform> is:
+  let <id> <gen> <argslist> = <term>
+  let <id> <gen> <argslist> = <allocdef> {<pre>} <term> {<post>}
+  let rec <gen> '(' <id> : <ty> ')' <argslist> 
+          = <allocdef> {<pre>} <term> {<post>}
+
+A generalisation <gen> is :
+  [ <tyvar>* '|' <region>* '|' <effectvar>* ]
+
+An argument list <argslist> is:
+  ( '(' <id>+ : <type> ')' )*
+
+An <allocdef> is:
+  ( allocates <region>* )?
+
+A precondition <pre> is: term?
+
+A postcondition <post> is: 
+  term? 
+  (<id> : )? term
+  
+
+A <type> is one of the following
+  int
+  prop
+  <tyvar>
+  '(' <type> ')'
+  <id> <inst>?
+  <type> <id>
+  '(' commasep(<type>) ')' <id>
+  <type> -> <type>
+  <type> '*' <type>
+  <type -><effect> <type>
+  '<' <effect> '>'
+  [[ <type> ]]
+  ref(<region>, <type>)
+
+<effect> is : { ( <id> | <effectvar> )* }
+
+an instantiation <inst> is : 
+    [ commasep*(<type>) '|' <region>* '|' <effect>* ]
+  
+
+A <term> is one of the following:
+ '(' ')'
+ ! <id>
+ !! <id> ( '|' <term> )
+ <id> <inst>?
+ '(' <term> ( : <type>)? ')'
+ <term> <term> ({{ <region>* }})?
+ <term> ; <term> 
+ <term> <infix> <term>
+ fun <argslist> -> <term>
+ fun <argslist> -> <allocdef> {<pre>} <term> {<post>}
+ ( forall | exists ) <argslist> . <term>
+ letregion <region>* in <term>
+ if <term> then <term> else <term>
+ <letform> in <term>
+ for <id> = <term> ( to | downto ) <term> do {<pre>} <term> done
+ [[ <pre> ]] <term> [[ <post> ]]
+
+
+
+
+
+
+

@@ -2,7 +2,8 @@ let id_bet ['a||] (a1 a2 : 'a array) (i j : int) (l : int) =
     i + l <= len a1 /\ j + l <= len a2 /\
     forall (k : int).  (0 <= k -> k < l -> get (i + k) a1 = get (j + k) a2)
 
-let append ['a|x y z|] (ar : ref(x,'a array)) (ar2 : ref(y,'a array)) = cap z
+let append ['a|x y z|] (ar : ref(x,'a array)) (ar2 : ref(y,'a array)) =
+  allocates z
   {}
   let l1 = len (!ar) in
   let l2 = len (!ar2) in
