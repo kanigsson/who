@@ -135,17 +135,19 @@ section Array
 
   axiom update_length ['a||] : 
     forall (t : 'a array) (i : int) (z : 'a).
-      len t = len (set i z t)
+    0 <= i /\\ i < len t -> len t = len (set i z t)
 
   axiom get_set_eq ['a||] : 
     forall (t : 'a array) (i : int) (z : 'a).
-      i < len t -> get i (set i z t) = z
+      0 <= i /\\ i < len t -> get i (set i z t) = z
 
   axiom length_empty ['a||] : len (ar_empty : 'a array) = 0
 
   axiom get_set_neq ['a||] : 
     forall (t : 'a array ) (i : int) (j : int) (z : 'a).
-      i < len t -> j < len t -> i <> j -> get i (set j z t) = get i t
+      (0 <= i /\\ i < len t) -> 
+      (0 <= j /\\ j < len t) -> 
+        i <> j -> get i (set j z t) = get i t
 
   axiom length_nonnegative ['a||] : 
     forall (t : array ['a||]).  0 <= len t
@@ -153,8 +155,9 @@ section Array
   axiom length_create ['a||] : 
     forall (l : int) (v : 'a). 0 <= l -> len (create l v) = l
 
-  axiom length_access ['a||] :
-    forall (i l : int) (v : 'a). 0 <= i -> i <= l -> get i (create l v) = v
+  axiom create_access ['a||] :
+    forall (i l : int) (v : 'a). 
+      0 <= i -> i < l -> get i (create l v) = v
 end
 
 section List

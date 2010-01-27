@@ -33,7 +33,6 @@ section arith coq "WhoArith"
   logic <> ['a4||] : (a4) -> (a4) -> prop
   logic int_max  : int -> int -> int
   logic int_min  : int -> int -> int
-  logic mod_int  : int -> int -> int
   logic band  : (bool) -> (bool) -> bool
   logic bor  : (bool) -> (bool) -> bool
   axiom int_max_is_ge : forall (x:int).
@@ -112,19 +111,20 @@ section Array coq "WhoArray"
   axiom update_length : forall ['a19||]. forall (t:array[(a19)||]).
                                          forall (i2:int).
                                          forall (z:a19).
-                                         (len t) = (len (set i2 z t))
+                                         ((0 <= i2) /\ (i2 < (len t))) ->
+                                         ((len t) = (len (set i2 z t)))
   axiom get_set_eq : forall ['a20||]. forall (t1:array[(a20)||]).
                                       forall (i3:int).
                                       forall (z1:a20).
-                                      (i3 < (len t1)) ->
+                                      ((0 <= i3) /\ (i3 < (len t1))) ->
                                       ((get i3 (set i3 z1 t1)) = z1)
   axiom length_empty : forall ['a21||]. (len (ar_empty : array[(a21)||])) = 0
   axiom get_set_neq : forall ['a22||]. forall (t2:array[(a22)||]).
                                        forall (i4:int).
                                        forall (j:int).
                                        forall (z2:a22).
-                                       (i4 < (len t2)) ->
-                                       ((j < (len t2)) ->
+                                       ((0 <= i4) /\ (i4 < (len t2))) ->
+                                       (((0 <= j) /\ (j < (len t2))) ->
                                         ((i4 <> j) ->
                                          ((get i4 (set j z2 t2)) =
                                           (get i4 t2))))
@@ -134,11 +134,11 @@ section Array coq "WhoArray"
                                          forall (v2:a24).
                                          (0 <= l) ->
                                          ((len (create l v2)) = l)
-  axiom length_access : forall ['a25||]. forall (i5:int).
+  axiom create_access : forall ['a25||]. forall (i5:int).
                                          forall (l1:int).
                                          forall (v3:a25).
                                          (0 <= i5) ->
-                                         ((i5 <= l1) ->
+                                         ((i5 < l1) ->
                                           ((get i5 (create l1 v3)) = v3)) end
 section List coq "WhoList"
   pangoline takeover
