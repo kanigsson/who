@@ -121,7 +121,12 @@ and infer env (x : Ast.ParseT.t) : Ast.Infer.t =
             let new_e = AP.app (AP.app (AP.var ~inst:[e] v l) ref l) map l in
             let e = infer env new_e in
             e.v, e.t, e.e
-        | _ -> assert false
+        | _, U.T Ty.Ref _  -> 
+            error l "using !! on term %a which is not a map but of type
+            %a@." AP.print map U.print_node map'.t
+        | _, _ -> 
+            error l "using !! on term %a which is not a reference but of type
+            %a@." AP.print ref U.print_node ref'.t
         end
     (* special case for restrict *)
     | App ({ v = Var (v,([],[],[e]))},m,`Prefix,[]) 
