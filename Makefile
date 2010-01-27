@@ -29,11 +29,11 @@ $(COQTARGETS): $(COQFILES)
 	make -C coq_files
 
 install: main.native $(COQTARGETS)
-	cp -f _build/main.native /usr/local/bin/pwho
+	cp -f _build/src/main.native /usr/local/bin/who-vcg
 	cp -f $(COQTARGETS) $(COQFILES) /usr/local/lib/coq/user-contrib/
 
 uninstall:
-	rm -f /usr/local/bin/pwho
+	rm -f /usr/local/bin/who-vcg
 	rm -f /usr/local/lib/coq/user-contrib/WhoMap.v*
 
 
