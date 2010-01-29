@@ -2,7 +2,6 @@ open Ocamlbuild_plugin
 open Command (*-- no longer needed for OCaml >= 3.10.2 *)
 
 module P = Ocamlbuild_pack
-open Ocamlbuild_plugin
 
 let notags=Ocamlbuild_pack.Tags.of_list []
 
