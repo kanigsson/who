@@ -187,7 +187,7 @@ module Print = struct
           if G.is_empty g then print fmt t else
             begin match kind with
             | `Coq -> 
-                fprintf fmt "forall@ %a@,@ %a " (lname "Type") tl print t
+                fprintf fmt "forall@ %a,@ %a " (lname "Type") tl print t
             | `Pangoline  -> 
                 fprintf fmt "forall type %a. %a" (print_list space Name.print) tl
                   print t

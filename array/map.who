@@ -11,20 +11,62 @@ let map f a =
 
 *)
 
+logic sub ['a||] : 'a array -> int -> 'a array
+
+axiom sub_equal ['a||] : 
+  forall (i k : int) (a : 'a array).
+    0 <= k  /\ k < i /\
+    0 <= k /\ k < len a ->
+    get k (sub a i) = get k a
+
+axiom sub_length_1 ['a||] : 
+  forall (i : int) (a : 'a array).
+    0 <= i /\ i <= len a -> len (sub a i) = i
+    
+axiom sub_length_2 ['a||] : 
+  forall (i : int) (a : 'a array).
+    i > len a -> len (sub a i) = len a
+
+axiom array_ext ['a||] :
+  forall (a b : 'a array).
+    (len a = len b /\
+    forall (i : int).
+      0 <= i /\ i < len a -> get i a = get i b) ->
+      a = b
+
 let map ['a 'b|in_ out|'e] 
-  (inv : <in_ 'e> -> int -> 'a array -> prop) 
+  (inv : <in_ 'e> -> 'a array -> int -> prop) 
   (ar : ref(in_, 'a array)) (f : 'a ->{in_ 'e} 'a)  = allocates out
-  { (forall (k : 'a array). inv cur|{in_ 'e} 0 k) /\ 
+  { 
+    (forall (k : 'a array). inv cur|{in_ 'e} k 0) /\
     forall (i:int) (k : 'a array) . 0 <= i /\ i < len (!!ar) ->
-    [[ inv cur i k ]] f (get i !ar) [[ r : inv cur (i+1) (set i r k) ]]
+    [[ inv cur (sub k i) i ]] f (get i !ar) 
+    [[ r : inv cur (sub (set i r k) (i+1)) (i+1) ]]
   }
   let l = len !ar in
   if l == 0 then ref{{out}} ar_empty
   else
     let r = ref{{out}} (create l (f (get 0 !ar))) in
     (for i = 1 to l - 1 do 
-      { inv cur|{in_ 'e} i !!r }
+      { inv cur|{in_ 'e} (sub !!r i) i }
       r := set i (f (get i !ar)) !r
     done) ;
     r
-  {r : inv cur|{in_ 'e} (len !!ar|old) !!r }
+  {r : inv cur|{in_ 'e} !!r (len !!ar|old) }
+
+
+(*
+predicate inv (k : int, a : int farray, b : int farray) =
+  forall i : int. 0 < i <= k -> sumarray(a,i) = access(b,i-1)
+
+let _ = 
+  let s = ref 0 in
+  Array.map 
+    (fun s i -> inv k a|s ??  )
+    (fun x -> 
+      {} 
+      s := !s + x; !s
+      {r : !s = !s|old + x /\ r = !s }) a
+  {}
+
+  *)
