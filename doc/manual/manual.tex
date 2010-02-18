@@ -53,7 +53,7 @@ A \catdef{Declaration} is one of the following:
   \item {\tt axiom} \cat{Id} \cat{Gen} {\tt :} \cat{Term}
   \item {\tt logic} \cat{Id} \cat{Gen} {\tt :} \cat{Type}
   \item {\tt type} \cat{Id} \cat{Gen}  ( = \cat{Type}){\tt ?}
-  \item {\tt letregion} \cat{Id}
+  \item {\tt letregion} \cat{Id}*
   \item {\tt parameter} \cat{Id} \cat{Gen} \cat{Argslist} {\tt :} \cat{Type}
   \item {\tt parameter} \cat{Id} \cat{Gen} \cat{Argslist} {\tt :} \cat{Type}
     {\tt ,} \cat{Effect} {\tt =} \cat{Allocdef} {\cat{Pre}} {\cat{Post}}
@@ -72,7 +72,7 @@ A \catdef{Letform} is:
 \paragraph{}
 A generalisation \catdef{Gen} is:
 \begin{itemize}
-  \item {\tt [} \cat{Tyvar}* '{\tt |}' \cat{Region} '{\tt |}' \cat{EffectVar}*
+  \item {\tt [} \cat{Tyvar}* '{\tt |}' \cat{Region}* '{\tt |}' \cat{EffectVar}*
     {\tt ]}
 \end{itemize}
 
@@ -85,7 +85,7 @@ An argument list \catdef{Argslist} is:
 \paragraph{}
 An \catdef{Allocdef} is:
 \begin{itemize}
-  \item ( allocates \cat{Region} ){\tt ?}
+  \item ( allocates \cat{Region}* ){\tt ?}
 \end{itemize}
 
 \paragraph{}
@@ -129,7 +129,7 @@ An \catdef{Effect} is:
 \paragraph{}
 An instantiation \catdef{Inst} is:
 \begin{itemize}
-  \item {\tt [} commasep*(\cat{Type}) '{\tt |}' \cat{Region} '{\tt |}' \cat{Effect}* {\tt
+  \item {\tt [} commasep*(\cat{Type}) '{\tt |}' \cat{Region}* '{\tt |}' \cat{Effect}* {\tt
     ]}
 \end{itemize}
   
@@ -142,13 +142,13 @@ A \catdef{Term} is one of the following:
   \item {\tt !!} \cat{Id} ( '{\tt |}' \cat{Term} )
   \item \cat{Id} \cat{Inst}?
   \item '{\tt (}' \cat{Term} ( {\tt :} \cat{Type})? '{\tt )}'
-  \item \cat{Term} ({\tt \{\{ } \cat{Region} {\tt \}\}} )? \cat{Term} 
+  \item \cat{Term} ({\tt \{\{ } \cat{Region}* {\tt \}\}} )? \cat{Term} 
   \item \cat{Term} {\tt ;} \cat{Term} 
   \item \cat{Term} \cat{Infix} \cat{Term}
   \item fun \cat{Argslist} {\tt ->} \cat{Term}
   \item fun \cat{Argslist} {\tt ->} \cat{Allocdef} {\cat{Pre}} \cat{Term} {\cat{Post}}
   \item ( {\tt forall} {\tt |} {\tt exists} ) \cat{Argslist} {\tt .} \cat{Term}
-  \item {\tt letregion} \cat{Region} {\tt in} \cat{Term}
+  \item {\tt letregion} \cat{Region}* {\tt in} \cat{Term}
   \item {\tt if} \cat{Term} {\tt then} \cat{Term} {\tt else} \cat{Term}
   \item \cat{Letform} {\tt in} \cat{Term}
   \item {\tt for} \cat{Id} = \cat{Term} ( {\tt to | downto} ) \cat{Term} {\tt
