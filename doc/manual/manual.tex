@@ -1,0 +1,140 @@
+\documentclass[a4paper]{scrreprt}
+
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage[usenames,dvipsnames]{xcolor}
+
+\newcommand{\cat}[1]{$<$\textcolor{Aquamarine}{#1}$>$}
+
+\begin{document}
+
+\chapter{Concrete Syntax}
+
+In this section, we describe formally the syntax of the input language.
+
+We describe the input language by a grammar, separated in several categories.
+By necessity, we have to mix concrete and abstract syntax. We use the syntax
+of the form \cat{Category} to refer to categories. Every other word or symbol
+is part of the concrete syntax, with the exception of the following symbols:
+\texttt{( ) + ? * |}. These symbols have the sense they usually have when
+talking about grammars and regular expressions: parentheses group expressions,
+{\tt *} stands for zero or more occurrences, {\tt +} for at least one
+occurrence, and {\tt ?} for an optional occurrence. Finally, {\tt |}
+represents a choice.  When we want to refer to the actual symbol, we write
+{\tt '('}, {\tt ')'} and so on.
+
+We write {\tt list*(expr,symbol)} or {\tt list+(expr,symbol)} to describe
+lists, possibly empty or containing at least one element, of expressions
+separated by a symbol. Finally, we abbreviate {\tt list+(expr, ',')} by {\tt
+commasep+(expr)}.
+
+An \cat{Id} is program identifier or a global type and is defined as: a word
+composed of {\tt [A-Za-z0-9']*}, which starts with a letter out ot {\tt
+[A-Za-z]}.
+
+A \cat{Region} is the same category.
+
+An \cat{EffectVar} or \cat{Tyvar} is defined as the same category, 
+but starting with a {\tt '}.
+
+A file is a list of \cat{Declaration}s.
+
+A \cat{Declaration} is one of the following: 
+\begin{itemize}
+  \item {\tt axiom} \cat{Id} \cat{Gen} {\tt :} \cat{Term}
+  \item {\tt logic} \cat{Id} \cat{Gen} {\tt :} \cat{Type}
+  \item {\tt type} \cat{Id} \cat{Gen}  ( = \cat{Type}){\tt ?}
+  \item {\tt letregion} \cat{Id}
+  \item {\tt parameter} \cat{Id} \cat{Gen} \cat{Argslist} {\tt :} \cat{Type}
+  \item {\tt parameter} \cat{Id} \cat{Gen} \cat{Argslist} {\tt :} \cat{Type}
+    {\tt ,} \cat{Effect} {\tt =} \cat{Allocdef} {\cat{Pre}} {\cat{Post}}
+  \item \cat{Letform}
+\end{itemize}
+
+A \cat{Letform} is:
+\begin{itemize}
+  \item {\tt let} \cat{Id} \cat{Gen} \cat{Argslist} {\tt =} \cat{Term}
+  \item {\tt let} \cat{Id} \cat{Gen} \cat{Argslist} {\tt =} \cat{Allocdef} {\cat{Pre}} \cat{Term} {\cat{Post}}
+  \item {\tt let rec} \cat{Gen} '{\tt (}' \cat{Id} {\tt :} \cat{ty} '{\tt )}'
+    \cat{Argslist} {\tt =} \cat{Allocdef} {\cat{Pre}} \cat{Term} {\cat{Post}}
+\end{itemize}
+
+A generalisation \cat{Gen} is:
+\begin{itemize}
+  \item {\tt [} \cat{Tyvar}* '{\tt |}' \cat{Region} '{\tt |}' \cat{EffectVar}*
+    {\tt ]}
+\end{itemize}
+
+An argument list \cat{Argslist} is:
+\begin{itemize}
+  \item ( '{\tt (}' \cat{Id} : \cat{Type} '{\tt )}' )*
+\end{itemize}
+
+An \cat{Allocdef} is:
+\begin{itemize}
+  \item ( allocates \cat{Region} ){\tt ?}
+\end{itemize}
+
+A precondition \cat{Pre} is: 
+\begin{itemize}
+  \item \cat{Term}{\tt ?}
+\end{itemize}
+
+A postcondition \cat{Post} is: 
+\begin{itemize}
+  \item \cat{Term}{\tt ?}? 
+  \item (\cat{Id} {\tt :} )? \cat{Term}
+\end{itemize}
+  
+
+A \cat{Type} is one of the following
+\begin{itemize}
+  \item {\tt int}
+  \item {\tt prop}
+  \item \cat{Tyvar}
+  \item '{\tt (}' \cat{Type} '{\tt )}'
+  \item \cat{Id} \cat{inst}?
+  \item \cat{Type} \cat{Id}
+  \item '{\tt (}' commasep(\cat{Type}) '{\tt )}' \cat{Id}
+  \item \cat{Type} {\tt ->} \cat{Type}
+  \item \cat{Type} '{\tt *}' \cat{Type}
+  \item \cat{Type -}\cat{Effect} \cat{Type}
+  \item '{\tt <}' \cat{Effect} '{\tt >}'
+  \item {\tt [[} \cat{Type} {\tt ]]}
+  \item {\tt ref} '{\tt (}'\cat{Region} \cat{Type}'{\tt )}'
+\end{itemize}
+
+An \cat{Effect} is: 
+\begin{itemize}
+  \item {\tt \{} ( \cat{Id} {\tt |} \cat{EffectVar} )* {\tt \}}
+\end{itemize}
+
+An instantiation \cat{inst} is:
+\begin{itemize}
+  \item {\tt [} commasep*(\cat{Type}) '{\tt |}' \cat{Region} '{\tt |}' \cat{Effect}* {\tt
+    ]}
+\end{itemize}
+  
+
+A \cat{Term} is one of the following:
+\begin{itemize}
+  \item '{\tt (}' '{\tt )}'
+  \item {\tt !} \cat{Id}
+  \item {\tt !!} \cat{Id} ( '{\tt |}' \cat{Term} )
+  \item \cat{Id} \cat{inst}?
+  \item '{\tt (}' \cat{Term} ( {\tt :} \cat{Type})? '{\tt )}'
+  \item \cat{Term} ({\tt \{\{ } \cat{Region} {\tt \}\}} )? \cat{Term} 
+  \item \cat{Term} {\tt ;} \cat{Term} 
+  \item \cat{Term} \cat{Infix} \cat{Term}
+  \item fun \cat{Argslist} {\tt ->} \cat{Term}
+  \item fun \cat{Argslist} {\tt ->} \cat{Allocdef} {\cat{Pre}} \cat{Term} {\cat{Post}}
+  \item ( {\tt forall} {\tt |} {\tt exists} ) \cat{Argslist} {\tt .} \cat{Term}
+  \item {\tt letregion} \cat{Region} {\tt in} \cat{Term}
+  \item {\tt if} \cat{Term} {\tt then} \cat{Term} {\tt else} \cat{Term}
+  \item \cat{Letform} {\tt in} \cat{Term}
+  \item {\tt for} \cat{Id} = \cat{Term} ( {\tt to | downto} ) \cat{Term} {\tt
+    do} {\cat{Pre}} \cat{Term} {\tt done}
+  \item {\tt [[} \cat{Pre} {\tt ]]} \cat{Term} {\tt [[} \cat{Post} {\tt ]]}
+\end{itemize}
+
+
+\end{document}
