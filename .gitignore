@@ -17,6 +17,9 @@ _build
 *.glob
 *.vo
 *.v.vd
+*.out
+*.pdf
+*.toc
 *.dvi
 *.swp
 TAGS

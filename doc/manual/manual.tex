@@ -2,6 +2,7 @@
 
 \usepackage[usenames,dvipsnames]{xcolor}
 \usepackage{xcolor}
+\usepackage{xspace}
 \definecolor{dablue}{rgb}{0.1,0.1,0.4}
 
 \usepackage[colorlinks=true,pdfborder={0,0,0,0},urlcolor=dablue,
@@ -9,17 +10,248 @@ linkcolor=dablue, pdftex]{hyperref}
 
 %\newcommand{\cat}[1]{$<$\textcolor{Aquamarine}{#1}$>$}
 \newcommand{\cat}[1]{$<$\hyperref[#1]{#1}$>$}
-\newcommand{\catdef}[1]{\label{#1}$<$\textcolor{Aquamarine}{#1}$>$}
+\newcommand{\likecat}[1]{$<$\textcolor{Aquamarine}{#1}$>$}
+\newcommand{\catdef}[1]{\label{#1}\likecat{#1}}
+\newcommand{\who}{Who\xspace}
+
+\usepackage{alltt}
 
 \begin{document}
 
+\title{Who - The Manual}
+\author{Johannes Kanig}
+
+\maketitle
+\tableofcontents
+
+\chapter{A walkthrough using Arrays}
+
+In this chapter, we aim to describe almost all syntactic elements of the
+\who~language.
+
+\section{Types, Axioms and Pure Functions}
+
+A type definition of a polymorphic type looks as follows:
+\begin{alltt}
+  type array ['a||]
+\end{alltt}
+Notice the two bars at the end to indicate empty region and effect parameters.
+Also note that despite the name, {\tt array} is {\em not} a mutable type.
+
+We can declare functions over this type in the following way:
+\begin{alltt}
+  logic create ['a||] :  int -> 'a -> 'a array
+  logic get ['a||] : int -> 'a array -> 'a
+  logic set ['a||]: int -> 'a -> 'a array -> 'a array 
+  logic len ['a||] :  'a array -> int
+\end{alltt}
+Again, notice that these are pure functions which act on {\em functional}
+arrays, for example {\tt set} returns a new, modified array.
+
+Now, we can declare properties of these functions in form of axioms:
+\begin{alltt}
+  axiom update_length ['a||] : 
+    forall (t : 'a array) (i : int) (z : 'a).
+    0 <= i \verb|/\| i < len t -> len t = len (set i z t)
+  axiom get_set_neq ['a||] : 
+    forall (t : 'a array ) (i : int) (j : int) (z : 'a).
+      (0 <= i \verb|/\| i < len t) -> 
+      (0 <= j \verb|/\| j < len t) -> 
+        i <> j -> get i (set j z t) = get i t
+  axiom get_set_eq ['a||] : 
+    forall (t : 'a array) (i : int) (z : 'a).
+      0 <= i \verb|/\| i < len t -> get i (set i z t) = z
+\end{alltt}
+
+Now, we can also {\em define} functions over those functional arrays:
+\begin{alltt}
+  let zeroset ['a||] (v : 'a) (a : 'a array) = set 0 v a
+\end{alltt}
+Here, we have defined a {\em pure} function {\tt zeroset} of type {\tt ['a||].
+int -> 'a array -> 'a array}. No effects take place, and nothing has to be
+proved.
+
+\section{Functions with Annotations}
+
+If we want to define a {\em calculatory function} which does the same, here we
+go:
+\begin{alltt}
+  let zerosetc ['a||] (v : 'a) (a : 'a array) = 
+    \{ \}
+    set 0 v a
+    \{ \}
+\end{alltt}
+Notice the additional curly brackets at the beginning and the end of the
+function body. The function {\tt zerosetc} has the type {\tt ['a||]. int -> 'a
+array ->{} 'a array}. We see that the last (and only the last) arrow has an
+effect annotation. In this case, this effect annotation is empty; no effect
+takes place, because {\tt set} returns a new function.
+
+Now, if we want to state anything about the return value of {\tt zerosetc}, we
+need to write a {\em postcondition}. For example, we would like to state that
+the returned array contains zero at position $i$:
+\begin{alltt}
+  let zerosetc ['a||] (v : 'a) (a : 'a array) = 
+    \{ \}
+    set 0 v a
+    \{ r : get 0 r = v \}
+\end{alltt}
+We use the syntax {\tt r : } to speak about the return value; {\tt r} is a
+name chosen by the user. This definition produces a proof obligation. In this
+case, this proof obligation is actually unprovable, because the array {\tt a}
+might be empty, in which case the axioms do not say anything of {\tt set 0 v a}.
+We have to give a {\em precondition}:
+\begin{alltt}
+  let zerosetc ['a||] (v : 'a) (a : 'a array) = 
+    \{ 0 < len a \}
+    set 0 v a
+    \{ r : get 0 r = v \}
+\end{alltt}
+And now we can prove this function.
+
+\section{References}
+
+To write an effectful function, we need references. A reference type on an
+array is written as follows:
+\begin{alltt}
+  ref(r,'a array)
+\end{alltt}
+where {\tt r} is a region name. Regions, as types, can be concrete or
+parameters of a function. Let us start with the case where it is a parameter.
+We want to define the same function as before, but in an imperative way. Here
+we go:
+\begin{alltt}
+  let zerosetc ['a|r|] (v : 'a) (a : ref(r,'a array)) = 
+    \{ 0 < len !!a \}
+    a := set 0 v !a
+    \{ get 0 !!a = v \}
+\end{alltt}
+There are several remarks here. First, we have to introduce the region name
+used with the reference {\tt a}; this is occurrence of {\tt r} between {\tt |}
+in the brackets. In programs, references are treated with {\tt :=} and {\tt !}
+as usual (there is currently no special syntax for arrays). In annotations, to
+access the contents of a reference, we write {\tt !!} (this is subject to
+change). The return type of this function is {\tt unit} and the overall type
+is:
+\begin{alltt}
+  ['a|r|]. 'a -> ref(r,'a array) ->{r} unit
+\end{alltt}
+We see that this function has an effect on {\tt r}.
+
+Let us write a function which increments the contents of the first cell of an
+array.
+\begin{alltt}
+  let zeroincr [|r|] (a : ref(r,int array)) = 
+    \{ 0 < len !!a \}
+    a := set 0 (get 0 a +1) a
+    \{ get 0 !!a = get 0 !!a|old + 1 \}
+\end{alltt}
+Here, we have used the syntax {\tt !!a|old} to speak of the {\em old} value of
+{\tt a}, before the execution of the function {\tt zeroincr}.
+
+To create references, we need an additional mechanism.
+\begin{alltt}
+  let zero_array [|r|] (l : int) = allocates r
+    \{ 0 <= l \}
+    if l == 0 then ref\{\{r\}\} ar_empty
+    else ref\{\{r\}\} (create l 0)
+    \{ x : forall i. 0 <= i \verb|/\| i < l -> get i !!x = 0 \}
+\end{alltt}
+To be able to create a reference inside this function, we need an {\tt
+allocates} declaration. This enables us to use a {\em allocation capacity}
+when calling {\tt ref}, using the syntax {\tt ref\{\{r\}\}}. Also notice the
+use {\tt ==} instead of {\tt =} in the test, to obtain a boolean return value.
+
+\section{Effect polymorphism}
+The last missing bit is effect polymorphism. Suppose we want to implement {\tt
+Array.iter} in \who. This can be easily done, at first without logical
+annotations:
+\begin{alltt}
+let iter ['a|t|'e] (ar : ref(t, 'a array)) (f : 'a ->\{t 'e\} unit)  =
+  \{  \}
+  for i = 0 to len !ar - 1 do 
+    \{ \}
+    f (get i !ar)
+  done
+  \{ \}
+\end{alltt}
+We use the syntax for {\tt for} loops here; one has to give the loop
+invariant, but for the moment we leave that empty. The only other new aspect
+is the use of {\em effect polymorphism}, for which is reserved the third field
+of the generalisation declaration {\tt ['a|out|'e]}. We generalize over a
+certain effect {\tt 'e} and say that the function argument {\tt f} has
+precisely this effect {\tt 'e} (see the type of {\tt f}).
+
+The specification of {\tt iter} is relatively complex; the reason is that any
+iterative higher-order function is basically a fold, because of the unknown
+effect of the function in argument.
+
+The entire code of {\tt iter} looks like this:
+\begin{alltt}
+let iter ['a|t|'e] 
+  (inv : <t 'e> -> int ->  prop) 
+  (ar : ref(t, 'a array)) (f : 'a ->\{t 'e\} unit)  =
+  \{ inv cur 0 \verb|/\| 
+    forall (i:int). 0 <= i \verb|/\| i < len (!!ar) ->
+    [[ inv cur i ]] f (get i !ar) [[inv cur (i+1)]]
+  \}
+  for i = 0 to len !ar - 1 do 
+    \{ inv cur i \}
+    f (get i !ar)
+  done
+  \{inv cur (len !!ar|old) \}
+\end{alltt}
+There are three new elements in this code, as well as a trick to specify this
+function. First keep in mind that {\tt iter} is basically a {\tt for} loop,
+this means that we need an invariant to specify it. Now, the trick is to take
+this invariant as an additional argument of {\tt iter}, called {\tt inv}. The
+first new element is hidden in the type of {\tt inv}, namely the type {\tt
+<'e>} of its first argument. Types in angle brackets {\tt < >} represent parts
+of the {\em state}, here we say that the invariant may talk about the state
+represented by {\tt 'e}. Just as {\tt old} is a keyword for the iter state of
+the function call, available in the postcondition, {\tt cur} is a keyword for
+the current state, and it is available in any annotation.  Now the
+postcondition simply states that we obtain the invariant of the final state
+over the entire array. The invariant of the {\tt for} loop states that we keep
+the invariant during the execution. Finally, the precondition states that the
+invariant holds for the index zero, and that the invariant is preserved by the
+function argument. This is expressed by the syntax
+\begin{alltt}
+    [[ inv cur i ]] f (get i !ar) [[inv cur (i+1)]]
+\end{alltt}
+which is basically a Hoare triple. 
+
+There are a few other syntactic points. First, Hoare Triples using the double
+bracket syntax are syntactic sugar for a more complex predicate. Assume that {\tt
+f} has the type {\tt t1 ->{e} t2} where {\tt e} is some effect, then the Hoare
+triple
+\begin{alltt}
+    [[ p cur x ]] f x [[r : q old cur x r]]
+\end{alltt}
+is a shortcut for
+\begin{alltt}
+  forall (m n : <e>) (r : t2). 
+    p cur x -> pre f x m /\
+    post f x m n r -> q m n x r
+\end{alltt}
+Here we have used the ability to quantify over the portion of a state
+described by an effect expression.
+
+Concerning state expressions, one can restrict a state expression {\tt s} to a
+smaller domain described by an effect using the syntax:
+\begin{alltt}
+s|\{e\}
+\end{alltt}
+
+\appendix
+
 \chapter{Concrete Syntax}
 
-In this section, we describe formally the syntax of the input language.
+In this appendix, we describe formally the syntax of the input language.
 
 We describe the input language by a grammar, separated in several categories.
 By necessity, we have to mix concrete and abstract syntax. We use the syntax
-of the form \cat{Category} to refer to categories. Every other word or symbol
+of the form \likecat{Category} to refer to categories. Every other word or symbol
 is part of the concrete syntax, with the exception of the following symbols:
 \texttt{( ) + ? * |}. These symbols have the sense they usually have when
 talking about grammars and regular expressions: parentheses group expressions,
@@ -65,7 +297,7 @@ A \catdef{Letform} is:
 \begin{itemize}
   \item {\tt let} \cat{Id} \cat{Gen} \cat{Argslist} {\tt =} \cat{Term}
   \item {\tt let} \cat{Id} \cat{Gen} \cat{Argslist} {\tt =} \cat{Allocdef} {\cat{Pre}} \cat{Term} {\cat{Post}}
-  \item {\tt let rec} \cat{Gen} '{\tt (}' \cat{Id} {\tt :} \cat{ty} '{\tt )}'
+  \item {\tt let rec} \cat{Gen} '{\tt (}' \cat{Id} {\tt :} \cat{Type} '{\tt )}'
     \cat{Argslist} {\tt =} \cat{Allocdef} {\cat{Pre}} \cat{Term} {\cat{Post}}
 \end{itemize}
 
@@ -114,16 +346,22 @@ A \catdef{Type} is one of the following
   \item '{\tt (}' commasep(\cat{Type}) '{\tt )}' \cat{Id}
   \item \cat{Type} {\tt ->} \cat{Type}
   \item \cat{Type} '{\tt *}' \cat{Type}
-  \item \cat{Type -}\cat{Effect} \cat{Type}
-  \item '{\tt <}' \cat{Effect} '{\tt >}'
+  \item \cat{Type} {\tt ->} \cat{Effect} \cat{Type}
+  \item '{\tt <}' \cat{EffectWithoutBraces} '{\tt >}'
   \item {\tt [[} \cat{Type} {\tt ]]}
   \item {\tt ref} '{\tt (}'\cat{Region} \cat{Type}'{\tt )}'
 \end{itemize}
 
 \paragraph{}
+An \catdef{EffectWithoutBraces} is: 
+\begin{itemize}
+  \item ( \cat{Id} {\tt |} \cat{EffectVar} )*
+\end{itemize}
+
+\paragraph{}
 An \catdef{Effect} is: 
 \begin{itemize}
-  \item {\tt \{} ( \cat{Id} {\tt |} \cat{EffectVar} )* {\tt \}}
+  \item {\tt \{} \cat{EffectWithoutBraces} {\tt \}}
 \end{itemize}
 
 \paragraph{}
@@ -133,7 +371,6 @@ An instantiation \catdef{Inst} is:
     ]}
 \end{itemize}
   
-
 \paragraph{}
 A \catdef{Term} is one of the following:
 \begin{itemize}
@@ -156,5 +393,16 @@ A \catdef{Term} is one of the following:
   \item {\tt [[} \cat{Pre} {\tt ]]} \cat{Term} {\tt [[} \cat{Post} {\tt ]]}
 \end{itemize}
 
+\paragraph{}
+The following \catdef{Infix} symbols are predefined: 
+  \begin{itemize}
+  \item the comparison operators of return type prop: {\tt <}, {\tt >}, {\tt
+  <=}, {\tt =>}, {\tt =}, {\tt <>}
+  \item the comparison operators of return type bool: {\tt <<}, {\tt >>}, {\tt
+  <<=}, {\tt >>=}, {\tt ==}, {\tt !=}
+  \item the logical connectives: \verb|/\|, \verb|\/|, {\tt ->}
+  \item arithmetic operations: {\tt +}, {\tt -}, {\tt *}
+  \item tuple construction: {\tt ,}
+  \end{itemize}
 
 \end{document}

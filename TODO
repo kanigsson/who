@@ -1,5 +1,4 @@
 IMPORTANT FEATURES
-Syntax for Hoare triples
 allow non-values at top-level
 
 MINOR ISSUES
@@ -13,3 +12,12 @@ COQ
 
 * Sections need a dot
 * void/ unit type
+
+INTERNAL
+
+* only inline effect polymorphic definitions
+
+* separate simplifications for effect records:
+  - inlining of effect polymorphic lets
+  - modelisation of effect vars by regions
+  - elimination of regions
