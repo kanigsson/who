@@ -1,10 +1,10 @@
-prefix=/usr/local
-datarootdir = ${prefix}/share
-datadir = ${datarootdir}
-COQPRESENT:=yes
-COQLIB:=/usr/local/lib/coq
-exec_prefix=${prefix}
-BINDIR=${exec_prefix}/bin
+prefix=@prefix@
+datarootdir = @datarootdir@
+datadir = @datadir@
+COQPRESENT:=@COQPRESENT@
+COQLIB:=@COQLIB@
+exec_prefix=@exec_prefix@
+BINDIR=@bindir@
 OCAMLBUILD := ocamlbuild -classic-display -X papers -tag debug
 COQVO := WhoMap.vo WhoArith.vo WhoArray.vo WhoList.vo
 COQV := $(COQVO:.vo=.v)

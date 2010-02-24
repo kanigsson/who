@@ -1,0 +1,19 @@
+AC_INIT(src/main.ml)
+
+WHOVERSION="0.2"
+
+AC_CHECK_PROG(COQPRESENT,coqc, yes, no) 
+
+if test $COQPRESENT=="yes"; then
+  COQLIB=$(coqc -where)
+  else
+    echo "Did not find Coq, will do without."
+fi
+
+AC_SUBST(WHOVERSION)
+AC_SUBST(COQPRESENT)
+AC_SUBST(COQLIB)
+
+AC_OUTPUT(version.ml Makefile)
+chmod a-w Makefile
+chmod a-w version.ml

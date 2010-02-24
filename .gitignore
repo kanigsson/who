@@ -23,3 +23,8 @@ _build
 *.dvi
 *.swp
 TAGS
+autom4te.cache
+config.status
+configure
+Makefile
+version.ml
