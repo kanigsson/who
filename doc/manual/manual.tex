@@ -24,6 +24,8 @@ linkcolor=dablue, pdftex]{hyperref}
 \maketitle
 \tableofcontents
 
+\chapter{The command line tool}
+
 \chapter{A walkthrough using Arrays}
 
 In this chapter, we aim to describe almost all syntactic elements of the
@@ -42,7 +44,7 @@ We can declare functions over this type in the following way:
 \begin{alltt}
   logic create ['a||] :  int -> 'a -> 'a array
   logic get ['a||] : int -> 'a array -> 'a
-  logic set ['a||]: int -> 'a -> 'a array -> 'a array 
+  logic set ['a||]: int -> 'a -> 'a array -> 'a array
   logic len ['a||] :  'a array -> int
 \end{alltt}
 Again, notice that these are pure functions which act on {\em functional}
@@ -50,15 +52,15 @@ arrays, for example {\tt set} returns a new, modified array.
 
 Now, we can declare properties of these functions in form of axioms:
 \begin{alltt}
-  axiom update_length ['a||] : 
+  axiom update_length ['a||] :
     forall (t : 'a array) (i : int) (z : 'a).
     0 <= i \verb|/\| i < len t -> len t = len (set i z t)
-  axiom get_set_neq ['a||] : 
+  axiom get_set_neq ['a||] :
     forall (t : 'a array ) (i : int) (j : int) (z : 'a).
-      (0 <= i \verb|/\| i < len t) -> 
-      (0 <= j \verb|/\| j < len t) -> 
+      (0 <= i \verb|/\| i < len t) ->
+      (0 <= j \verb|/\| j < len t) ->
         i <> j -> get i (set j z t) = get i t
-  axiom get_set_eq ['a||] : 
+  axiom get_set_eq ['a||] :
     forall (t : 'a array) (i : int) (z : 'a).
       0 <= i \verb|/\| i < len t -> get i (set i z t) = z
 \end{alltt}
@@ -76,7 +78,7 @@ proved.
 If we want to define a {\em calculatory function} which does the same, here we
 go:
 \begin{alltt}
-  let zerosetc ['a||] (v : 'a) (a : 'a array) = 
+  let zerosetc ['a||] (v : 'a) (a : 'a array) =
     \{ \}
     set 0 v a
     \{ \}
@@ -91,7 +93,7 @@ Now, if we want to state anything about the return value of {\tt zerosetc}, we
 need to write a {\em postcondition}. For example, we would like to state that
 the returned array contains zero at position $i$:
 \begin{alltt}
-  let zerosetc ['a||] (v : 'a) (a : 'a array) = 
+  let zerosetc ['a||] (v : 'a) (a : 'a array) =
     \{ \}
     set 0 v a
     \{ r : get 0 r = v \}
@@ -102,7 +104,7 @@ case, this proof obligation is actually unprovable, because the array {\tt a}
 might be empty, in which case the axioms do not say anything of {\tt set 0 v a}.
 We have to give a {\em precondition}:
 \begin{alltt}
-  let zerosetc ['a||] (v : 'a) (a : 'a array) = 
+  let zerosetc ['a||] (v : 'a) (a : 'a array) =
     \{ 0 < len a \}
     set 0 v a
     \{ r : get 0 r = v \}
@@ -121,7 +123,7 @@ parameters of a function. Let us start with the case where it is a parameter.
 We want to define the same function as before, but in an imperative way. Here
 we go:
 \begin{alltt}
-  let zerosetc ['a|r|] (v : 'a) (a : ref(r,'a array)) = 
+  let zerosetc ['a|r|] (v : 'a) (a : ref(r,'a array)) =
     \{ 0 < len !!a \}
     a := set 0 v !a
     \{ get 0 !!a = v \}
@@ -141,7 +143,7 @@ We see that this function has an effect on {\tt r}.
 Let us write a function which increments the contents of the first cell of an
 array.
 \begin{alltt}
-  let zeroincr [|r|] (a : ref(r,int array)) = 
+  let zeroincr [|r|] (a : ref(r,int array)) =
     \{ 0 < len !!a \}
     a := set 0 (get 0 a +1) a
     \{ get 0 !!a = get 0 !!a|old + 1 \}
@@ -169,7 +171,7 @@ annotations:
 \begin{alltt}
 let iter ['a|t|'e] (ar : ref(t, 'a array)) (f : 'a ->\{t 'e\} unit)  =
   \{  \}
-  for i = 0 to len !ar - 1 do 
+  for i = 0 to len !ar - 1 do
     \{ \}
     f (get i !ar)
   done
@@ -188,14 +190,14 @@ effect of the function in argument.
 
 The entire code of {\tt iter} looks like this:
 \begin{alltt}
-let iter ['a|t|'e] 
-  (inv : <t 'e> -> int ->  prop) 
+let iter ['a|t|'e]
+  (inv : <t 'e> -> int ->  prop)
   (ar : ref(t, 'a array)) (f : 'a ->\{t 'e\} unit)  =
-  \{ inv cur 0 \verb|/\| 
+  \{ inv cur 0 \verb|/\|
     forall (i:int). 0 <= i \verb|/\| i < len (!!ar) ->
     [[ inv cur i ]] f (get i !ar) [[inv cur (i+1)]]
   \}
-  for i = 0 to len !ar - 1 do 
+  for i = 0 to len !ar - 1 do
     \{ inv cur i \}
     f (get i !ar)
   done
@@ -219,7 +221,7 @@ function argument. This is expressed by the syntax
 \begin{alltt}
     [[ inv cur i ]] f (get i !ar) [[inv cur (i+1)]]
 \end{alltt}
-which is basically a Hoare triple. 
+which is basically a Hoare triple.
 
 There are a few other syntactic points. First, Hoare Triples using the double
 bracket syntax are syntactic sugar for a more complex predicate. Assume that {\tt
@@ -230,7 +232,7 @@ triple
 \end{alltt}
 is a shortcut for
 \begin{alltt}
-  forall (m n : <e>) (r : t2). 
+  forall (m n : <e>) (r : t2).
     p cur x -> pre f x m /\
     post f x m n r -> q m n x r
 \end{alltt}
@@ -274,13 +276,13 @@ composed of {\tt [A-Za-z0-9']*}, which starts with a letter out ot {\tt
 A \catdef{Region} is the same category.
 
 \paragraph{}
-An \catdef{EffectVar} or \catdef{Tyvar} is defined as the same category, 
+An \catdef{EffectVar} or \catdef{Tyvar} is defined as the same category,
 but starting with a {\tt '}.
 
 A file is a list of \cat{Declaration}s.
 
 \paragraph{}
-A \catdef{Declaration} is one of the following: 
+A \catdef{Declaration} is one of the following:
 \begin{itemize}
   \item {\tt axiom} \cat{Id} \cat{Gen} {\tt :} \cat{Term}
   \item {\tt logic} \cat{Id} \cat{Gen} {\tt :} \cat{Type}
@@ -321,18 +323,18 @@ An \catdef{Allocdef} is:
 \end{itemize}
 
 \paragraph{}
-A precondition \catdef{Pre} is: 
+A precondition \catdef{Pre} is:
 \begin{itemize}
   \item \cat{Term}{\tt ?}
 \end{itemize}
 
 \paragraph{}
-A postcondition \catdef{Post} is: 
+A postcondition \catdef{Post} is:
 \begin{itemize}
-  \item \cat{Term}{\tt ?}? 
+  \item \cat{Term}{\tt ?}?
   \item (\cat{Id} {\tt :} )? \cat{Term}
 \end{itemize}
-  
+
 
 \paragraph{}
 A \catdef{Type} is one of the following
@@ -353,13 +355,13 @@ A \catdef{Type} is one of the following
 \end{itemize}
 
 \paragraph{}
-An \catdef{EffectWithoutBraces} is: 
+An \catdef{EffectWithoutBraces} is:
 \begin{itemize}
   \item ( \cat{Id} {\tt |} \cat{EffectVar} )*
 \end{itemize}
 
 \paragraph{}
-An \catdef{Effect} is: 
+An \catdef{Effect} is:
 \begin{itemize}
   \item {\tt \{} \cat{EffectWithoutBraces} {\tt \}}
 \end{itemize}
@@ -370,7 +372,7 @@ An instantiation \catdef{Inst} is:
   \item {\tt [} commasep*(\cat{Type}) '{\tt |}' \cat{Region}* '{\tt |}' \cat{Effect}* {\tt
     ]}
 \end{itemize}
-  
+
 \paragraph{}
 A \catdef{Term} is one of the following:
 \begin{itemize}
@@ -379,8 +381,8 @@ A \catdef{Term} is one of the following:
   \item {\tt !!} \cat{Id} ( '{\tt |}' \cat{Term} )
   \item \cat{Id} \cat{Inst}?
   \item '{\tt (}' \cat{Term} ( {\tt :} \cat{Type})? '{\tt )}'
-  \item \cat{Term} ({\tt \{\{ } \cat{Region}* {\tt \}\}} )? \cat{Term} 
-  \item \cat{Term} {\tt ;} \cat{Term} 
+  \item \cat{Term} ({\tt \{\{ } \cat{Region}* {\tt \}\}} )? \cat{Term}
+  \item \cat{Term} {\tt ;} \cat{Term}
   \item \cat{Term} \cat{Infix} \cat{Term}
   \item fun \cat{Argslist} {\tt ->} \cat{Term}
   \item fun \cat{Argslist} {\tt ->} \cat{Allocdef} {\cat{Pre}} \cat{Term} {\cat{Post}}
@@ -394,7 +396,7 @@ A \catdef{Term} is one of the following:
 \end{itemize}
 
 \paragraph{}
-The following \catdef{Infix} symbols are predefined: 
+The following \catdef{Infix} symbols are predefined:
   \begin{itemize}
   \item the comparison operators of return type prop: {\tt <}, {\tt >}, {\tt
   <=}, {\tt =>}, {\tt =}, {\tt <>}
