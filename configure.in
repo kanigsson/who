@@ -1,6 +1,6 @@
 AC_INIT(src/main.ml)
 
-WHOVERSION="0.2"
+WHOVERSION="0.3-dev"
 
 AC_CHECK_PROG(COQPRESENT,coqc, yes, no) 
 
