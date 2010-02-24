@@ -22,7 +22,7 @@ let append_trans x () = transforms := x :: !transforms
 let clear () = transforms := []
 
 let print_version () =
-  Format.printf "%s" Version.version; exit 0
+  Format.printf "%s@." Version.version; exit 0
 
 let opt_spec =
   Arg.align
