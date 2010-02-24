@@ -2,7 +2,7 @@ AC_INIT(src/main.ml)
 
 WHOVERSION="0.3-dev"
 
-AC_CHECK_PROG(COQPRESENT,coqc, yes, no) 
+AC_CHECK_PROG(COQPRESENT,coqc, yes, no)
 
 if test $COQPRESENT=="yes"; then
   COQLIB=$(coqc -where)
