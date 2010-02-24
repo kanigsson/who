@@ -563,7 +563,8 @@ module Recon = struct
   and impl h1 goal l = 
 (*     Myformat.printf "impl: %a and %a@." print h1 print goal; *)
     try match destruct_app2_var h1 with
-    | Some (v, _, ha, hb) when Name.equal v PL.and_var -> impl ha (impl hb goal l) l
+    | Some (v, _, ha, hb) when Name.equal v PL.and_var -> 
+        impl ha (impl hb goal l) l
     | _ ->
         match destruct_app2_var goal with
         | Some (v, _, h2, goal) when Name.equal v PL.impl_var ->
