@@ -7,6 +7,7 @@ exec_prefix=@exec_prefix@
 BINDIR=@bindir@
 OCAMLBUILD := ocamlbuild -classic-display -X papers -tag debug
 COQVO := WhoMap.vo WhoArith.vo WhoArray.vo WhoList.vo
+HEADACHE:= headache
 COQV := $(COQVO:.vo=.v)
 COQTARGETS := $(addprefix coq_files/, $(COQVO))
 COQFILES := $(addprefix coq_files/, $(COQV))
@@ -69,3 +70,9 @@ configure: configure.in
 dist-clean: clean
 	rm -f Makefile configure config.status version.ml
 	rm -rf autom4te.cache
+
+headers:
+	for i in src/*.ml src/*.mli src/*.mly src/*.mll; do \
+	   $(HEADACHE) -h header -c headache.cfg $$i; \
+        done
+
