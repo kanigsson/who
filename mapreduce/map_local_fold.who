@@ -1,0 +1,27 @@
+parameter master ['a 'b 'c||'e]
+    (f : 'a -> 'b)
+    (handle : 'a * 'c -> 'b ->{'e} ('a * 'c) list)
+    (l : ('a * 'c) list) : unit,{'e} =
+  { }
+  { }
+
+parameter list_map ['a 'b||'e]
+  (f : 'a ->{'e} 'b) (l : 'a list) : 'b list, {'e} =
+  { }
+  { }
+
+let map_local_fold ['a 'b 'c||]
+    (map : 'a -> 'b)
+    (fold : 'c -> 'b -> 'c) (acc : 'c) (l : 'a list) =
+  { }
+  letregion r in
+  let acc_ = ref{{r}} acc in
+  master [{r}] map
+    (fun (x : 'a * unit) (r : 'b) ->
+      {}
+      (acc_ := fold !acc_ r);
+      (nil : ('a * unit) list)
+      {})
+    (list_map [{}] (fun (x : 'a) -> {} x, () {}) l);
+  !acc_
+  { }
