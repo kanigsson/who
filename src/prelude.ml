@@ -75,21 +75,21 @@ section arith
   logic band : bool -> bool -> bool
   logic bor : bool -> bool -> bool
 
-  axiom int_max_is_ge :  
+  axiom int_max_is_ge :
     forall (x y :int).
       int_max x y >= x /\\ int_max x y >= y
 
-  axiom int_max_is_some :  
+  axiom int_max_is_some :
     forall (x y : int).
-      int_max x y = x \\/ int_max x y = y 
+      int_max x y = x \\/ int_max x y = y
 
-  axiom int_min_is_le :  
+  axiom int_min_is_le :
     forall (x y : int).
       int_min x y <= x /\\ int_min x y <= y
 
-  axiom int_min_is_some :  
+  axiom int_min_is_some :
     forall (x y : int).
-      int_min x y = x \\/ int_min x y = y 
+      int_min x y = x \\/ int_min x y = y
 
 end
 
@@ -126,17 +126,17 @@ section Whoref
   let post ['a 'b||] (x : 'a * 'b) = snd x
 end
 
-parameter forto [||'e] (inv : int -> <'e> -> prop) (start end_ : int) 
+parameter forto [||'e] (inv : int -> <'e> -> prop) (start end_ : int)
   (f : int ->{'e} unit) : unit, {'e} =
     { inv start cur /\\
           forall (i : int). start <= i /\\ i <= end_ ->
           forall (m : <'e>) . inv i m -> pre f i m /\\
           forall (n : <'e>). post f i m n () -> inv (i+1) n
     }
-    { inv (int_max start (end_ + 1)) cur} 
+    { inv (int_max start (end_ + 1)) cur}
 
 
-parameter fordownto [||'e] (inv :  int -> <'e> -> prop) (start end_ : int) 
+parameter fordownto [||'e] (inv :  int -> <'e> -> prop) (start end_ : int)
   (f : int ->{'e} unit) : unit, {'e} =
     { inv start cur /\\
           forall (i : int). end_ <= i /\\ i <= start ->
@@ -152,34 +152,34 @@ section Array
 
   logic ar_empty ['a||] : 'a array
   logic get ['a||] : int -> 'a array -> 'a
-  logic set ['a||]: int -> 'a -> 'a array -> 'a array 
+  logic set ['a||]: int -> 'a -> 'a array -> 'a array
   logic len ['a||] :  'a array -> int
   logic create ['a||] :  int -> 'a -> 'a array
 
-  axiom update_length ['a||] : 
+  axiom update_length ['a||] :
     forall (t : 'a array) (i : int) (z : 'a).
     0 <= i /\\ i < len t -> len t = len (set i z t)
 
-  axiom get_set_eq ['a||] : 
+  axiom get_set_eq ['a||] :
     forall (t : 'a array) (i : int) (z : 'a).
       0 <= i /\\ i < len t -> get i (set i z t) = z
 
   axiom length_empty ['a||] : len (ar_empty : 'a array) = 0
 
-  axiom get_set_neq ['a||] : 
+  axiom get_set_neq ['a||] :
     forall (t : 'a array ) (i : int) (j : int) (z : 'a).
-      (0 <= i /\\ i < len t) -> 
-      (0 <= j /\\ j < len t) -> 
+      (0 <= i /\\ i < len t) ->
+      (0 <= j /\\ j < len t) ->
         i <> j -> get i (set j z t) = get i t
 
-  axiom length_nonnegative ['a||] : 
+  axiom length_nonnegative ['a||] :
     forall (t : array ['a||]).  0 <= len t
 
-  axiom length_create ['a||] : 
+  axiom length_create ['a||] :
     forall (l : int) (v : 'a). 0 <= l -> len (create l v) = l
 
   axiom create_access ['a||] :
-    forall (i l : int) (v : 'a). 
+    forall (i l : int) (v : 'a).
       0 <= i -> i < l -> get i (create l v) = v
 end
 

@@ -20,24 +20,24 @@ type array ['a||]
 logic len ['a||] :  'a array -> int
 logic get ['a||] : int -> 'a array -> 'a
 
-parameter forto [||'e] (inv : int -> <'e> -> prop) (start end_ : int) 
+parameter forto [||'e] (inv : int -> <'e> -> prop) (start end_ : int)
   (f : int ->{'e} unit) : unit, {'e} =
     { inv start cur /\
           forall (i : int). start <= i /\ i <= end_ ->
           forall (m : <'e>) . inv i m -> pre f i m /\
           forall (n : <'e>). post f i m n () -> inv (i+1) n
     }
-    { inv (int_max start (end_ + 1)) cur} 
+    { inv (int_max start (end_ + 1)) cur}
 
 
-let iter ['a|t|'e] 
-  (inv : <t 'e> -> int ->  prop) 
+let iter ['a|t|'e]
+  (inv : <t 'e> -> int ->  prop)
   (ar : ref(t, 'a array)) (f : 'a ->{t 'e} unit)  =
-  { inv cur 0 /\ 
+  { inv cur 0 /\
     forall (i:int). 0 <= i /\ i < len (!!ar) ->
     [[ inv cur i]] f (get i !ar) [[inv cur (i+1)]]
     }
-  for i = 0 to len !ar - 1 do 
+  for i = 0 to len !ar - 1 do
     { inv cur i }
     f (get i !ar)
   done
