@@ -78,21 +78,6 @@
 (* basic terms *)
 
 protected_nterm:
-(*
-  | sp = FORALL l = arglist DOT e = nterm
-    { mk_quant `FA l e (embrace sp e.loc) }
-  | sp = EXISTS l = arglist DOT e = nterm
-    { mk_quant `EX l e (embrace sp e.loc) }
-  | p = LETREGION l = IDENT* IN t = nterm
-    { mk (LetReg (strip_info l,t)) p }
-*)
-  (* a local let is like a global one, but with an IN following *)
-  | st = IF it = nterm THEN tb = nterm ELSE eb = nterm
-    { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
-(*
-  | f = alllet IN e2 = nterm
-    { let g, e, x, r = f in let_ g e x e2 r e2.loc }
-*)
   | l = LPAREN t = nterm e = RPAREN { mk t.v (embrace l e) }
   | l = LPAREN e = nterm COLON t = ty r = RPAREN
     { mk (Annot (e,t)) (embrace l r) }
@@ -127,6 +112,15 @@ infix_term:
   | t = appterm { t }
   | t1 = infix_term i = infix t2 = infix_term
     { appi (snd i) t1 t2 (embrace t1.loc t2.loc) }
+  | sp = FORALL l = arglist DOT e = infix_term %prec forall
+    { mk_quant `FA l e (embrace sp e.loc) }
+  | sp = EXISTS l = arglist DOT e = infix_term %prec forall
+    { mk_quant `EX l e (embrace sp e.loc) }
+  | l = DLBRACKET p = nterm? DRBRACKET
+     e = nterm
+    DLBRACKET q = postcond_int r = DRBRACKET
+    { mk (HoareTriple (p,e,q)) (embrace l r) }
+
 
 seq_term:
   | t = infix_term { t }
@@ -141,16 +135,18 @@ nterm:
       mk_efflam l cap (snd p) e (snd q) (embrace sp (fst q)) }
   | sp = FUN l = arglist ARROW e = nterm
     { mk_pure_lam l e (embrace sp e.loc) }
+  | st = IF it = nterm THEN tb = nterm ELSE eb = nterm
+    { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
+  (* a local let is like a global one, but with an IN following *)
+  | f = alllet IN e2 = nterm
+    { let g, e, x, r = f in let_ g e x e2 r e2.loc }
+  | p = LETREGION l = IDENT* IN t = nterm
+    { mk (LetReg (strip_info l,t)) p }
   | st = FOR i = IDENT EQUAL e1 = nterm dir = todownto e2 = nterm DO
        p = precond
        e3 = nterm
     en = DONE
     { forfunction dir i e1 e2 (snd p) e3 (embrace st en) }
-  | l = DLBRACKET p = nterm? DRBRACKET
-     e = nterm
-    DLBRACKET q = postcond_int r = DRBRACKET
-    { mk (HoareTriple (p,e,q)) (embrace l r) }
-
 todownto:
   | TO { "forto" }
   | DOWNTO { "fordownto" }

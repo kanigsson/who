@@ -92,15 +92,18 @@ infix_term:
     { appi (snd i) t1 t2 (embrace t1.loc t2.loc) }
   | t1 = infix_term i = infix inst = inst t2 = infix_term
     { appi ~inst (snd i) t1 t2 (embrace t1.loc t2.loc) }
+  | sp = FORALL g = gen DOT e = infix_term %prec forall
+    { mk_term (Gen (g,e)) (embrace sp e.loc) }
+  | sp = EXISTS l = one_binding DOT e = infix_term %prec forall
+    { let x,t = l in mk_term (Quant (`EX,t,x,e)) (embrace sp e.loc) }
+  | sp = FORALL l = one_binding DOT e = infix_term %prec forall
+    { let x,t = l in mk_term (Quant (`FA,t,x,e)) (embrace sp e.loc) }
+  | l = DLBRACKET p = nterm DRBRACKET e = nterm DLBRACKET q = nterm r = DRBRACKET
+    { mk_term (HoareTriple (p,e,q)) (embrace l r) }
+
 
 nterm:
   | t = infix_term { t }
-  | sp = FORALL l = one_binding DOT e = nterm
-    { let x,t = l in mk_term (Quant (`FA,t,x,e)) (embrace sp e.loc) }
-  | sp = FORALL g = gen DOT e = nterm
-    { mk_term (Gen (g,e)) (embrace sp e.loc) }
-  | sp = EXISTS l = one_binding DOT e = nterm
-    { let x,t = l in mk_term (Quant (`EX,t,x,e)) (embrace sp e.loc) }
   | sp = FUN l = one_binding ARROW e = nterm
     { let x,t = l in mk_term (PureFun (t,x,e)) (embrace sp e.loc) }
   | sp = FUN l = one_binding ARROW body = funcbody
@@ -122,9 +125,6 @@ nterm:
     { mk_term (LetReg (strip_info l,t)) (embrace p t.loc) }
   | p = PARAMETER LPAREN t = ty COMMA e = sepeffect r = RPAREN
     { mk_term (Param (t,e)) (embrace p r) }
-  | l = DLBRACKET p = nterm DRBRACKET e = nterm DLBRACKET q = nterm r = DRBRACKET
-    { mk_term (HoareTriple (p,e,q)) (embrace l r) }
-
 
 funcbody:
   cap = maycapdef p = spec e = nterm q = spec { cap, p,e,q }
