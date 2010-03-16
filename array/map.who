@@ -27,6 +27,9 @@ axiom sub_length_2 ['a||] :
   forall (i : int) (a : 'a array).
     i > len a -> len (sub a i) = len a
 
+axiom sub_ident ['a||] :
+  forall (a : 'a array).  sub a (len a) = a
+
 axiom array_ext ['a||] :
   forall (a b : 'a array).
     (len a = len b /\
