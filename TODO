@@ -21,3 +21,8 @@ INTERNAL
   - inlining of effect polymorphic lets
   - modelisation of effect vars by regions
   - elimination of regions
+
+BUGS
+
+* find bug with "nil"
+* correct precedence of ";"
