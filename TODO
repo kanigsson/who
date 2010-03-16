@@ -25,4 +25,3 @@ INTERNAL
 BUGS
 
 * find bug with "nil"
-* correct precedence of ";"

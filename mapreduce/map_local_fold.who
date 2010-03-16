@@ -19,8 +19,7 @@ let map_local_fold ['a 'b 'c||]
   master [{r}] map
     (fun (x : 'a * unit) (r : 'b) ->
       {}
-      (acc_ := fold !acc_ r);
-      (nil : ('a * unit) list)
+      acc_ := fold !acc_ r; (nil : ('a * unit) list)
       {})
     (list_map [{}] (fun (x : 'a) -> {} x, () {}) l);
   !acc_
