@@ -163,7 +163,8 @@ let to_ty, to_eff, to_r =
     try H.find h x
     with Not_found ->
       match Unionfind.desc x with
-      | U -> assert false
+      | U -> 
+          failwith "cannot determine the type of some object, please help me"
       | T t ->
           let r = ty' t in
           H.add h x r; r
@@ -173,4 +174,25 @@ let to_ty, to_eff, to_r =
     | RT s -> s
   and eff (r,e) = Effect.from_u_effect (List.map rv r) e in
   ty, eff, rv
+
+let base_pre_ty eff = parr (map eff) prop
+let base_post_ty eff t = parr (map eff) (parr (map eff) (parr t prop))
+let pretype a e = parr a (base_pre_ty e)
+let posttype a b e = parr a (base_post_ty e b)
+let prepost_type a b e = tuple (pretype a e) (posttype a b e)
+
+let to_logic_type t =
+  let rec aux t =
+    match Uf.desc t with
+    | U -> t
+    | T ty ->
+        match ty with
+        | (Ty.Const _ | Ty.Map _) -> t
+        | Ty.Tuple (t1,t2) -> tuple (aux t1) (aux t2)
+        | Ty.PureArr (t1,t2) -> parr (aux t1) (aux t2)
+        | Ty.Arrow (t1,t2,e,_) -> prepost_type (aux t1) (aux t2) e
+        | Ty.Ref (x,t) -> ref_ x (aux t)
+        | Ty.App (v,i) -> app v (Inst.map aux Misc.id Misc.id i)
+  in
+  aux t
 

@@ -66,13 +66,6 @@ let bh f l =
   let h = Hashtbl.create 3 in
   List.map (fun x -> let n = f () in Hashtbl.add h x n; n) l,h
 
-let base_pre_ty eff = U.parr (U.map eff) U.prop
-let base_post_ty eff t =
-  U.parr (U.map eff) (U.parr (U.map eff) (U.parr t U.prop))
-let prety t eff = U.parr t (base_pre_ty eff)
-let postty t eff t2 = U.parr t (base_post_ty eff t2)
-let prepost_type t1 t2 e = U.tuple (prety t1 e) (postty t1 e t2)
-
 exception FindFirst of Name.t
 
 let to_uf_node (tl,rl,evl) el (x : Ty.t ) =
@@ -104,8 +97,6 @@ let to_uf_enode ef =
   List.map to_uf_rnode rl, e
 
 let sto_uf_node x = fst (to_uf_node G.empty [] x)
-
-let to_logic_ty t = sto_uf_node (Ty.to_logic_type (U.to_ty t))
 
 let pref eff cur (p : ParseT.t) =
   Ast.ParseT.pure_lam cur (Ty.map (U.to_eff eff)) p p.loc
@@ -248,16 +239,22 @@ and pre env eff (cur,x) l : AI.pre' =
   let f = match x with
   | None -> ParseT.ptrue l
   | Some f -> f in
-  cur, Some (check_type {env with pm = true} (base_pre_ty eff) (pref eff cur f))
+  let res =
+    check_type {env with pm = true} (U.base_pre_ty eff) (pref eff cur f) in
+  cur, Some res
+
 and post env eff t (old,cur,x) l =
-  let t = to_logic_ty t in
-  let bp = base_post_ty eff t in
+  let t = U.to_logic_type t in
+  let bp = U.base_post_ty eff t in
   let r, f =
     match x with
     | PNone -> Name.new_anon (), ParseT.ptrue l
     | PPlain f -> Name.new_anon (), f
     | PResult (r,f) -> r, f in
-  old, cur, PPlain (check_type {env with pm = true} bp (postf eff t old cur r f))
+  let p = postf eff t old cur r f in
+  let res = check_type {env with pm = true} bp p in
+  old, cur, PPlain res
+
 and letgen env x g e r =
   let env' =
     match r with
