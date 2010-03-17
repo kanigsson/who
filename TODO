@@ -24,5 +24,4 @@ INTERNAL
 
 BUGS
 
-* find bug with "nil"
-* correct precedence of ";"
+* find bug with "nil" - postponed
