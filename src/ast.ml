@@ -270,9 +270,10 @@ module Print = struct
           fprintf fmt "@[<hov 2>goal %s : %a@]" s term t
       | TypeDef (g,t,x) -> 
           begin match t with
-          | None -> fprintf fmt "type %a%a" Name.print x G.print g
+          | None -> fprintf fmt "@[type %a%a@]" Name.print x G.print g
           | Some t -> 
-              fprintf fmt "type %a%a =@ %a" Name.print x G.print g typrint t
+              fprintf fmt "@[<hov 2>type %a%a =@ %a@]" 
+                Name.print x G.print g typrint t
           end
       | DLetReg l ->
           fprintf fmt "@[letregion %a@]" (print_list space Name.print) l
