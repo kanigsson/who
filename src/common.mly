@@ -69,7 +69,6 @@
   | p = NEQ        { p,"<>" }
   | p = AND        { p,"/\\" }
   | p = OR        { p,"\\/" }
-  | p = COMMA      { p,"," }
   | p = ARROW      { p,"->" }
   | p = BLE         { p,"<<=" }
   | p = BGE         { p,">>=" }

@@ -121,9 +121,18 @@ infix_term:
     DLBRACKET q = postcond_int r = DRBRACKET
     { mk (HoareTriple (p,e,q)) (embrace l r) }
 
+tuple_list:
+  | t1 = infix_term COMMA t2 = infix_term { [t1; t2] }
+  | t1 = infix_term COMMA tl = tuple_list { t1 :: tl }
+
 
 seq_term:
   | t = infix_term { t }
+  | tl = tuple_list
+    { 
+      let n = List.length tl in
+      appni (Predefined.Identifier.mk_tuple_id n) tl (List.hd tl).loc
+    }
   | t1 = seq_term SEMICOLON t2 = seq_term
     { mk (Seq (t1,t2)) (embrace t1.loc t2.loc) }
 

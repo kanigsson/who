@@ -30,12 +30,23 @@ section basiclogic
   logic -> : prop -> prop -> prop
   logic ~ : prop -> prop
   logic = ['a||] : 'a -> 'a -> prop
-  logic , ['a 'b||] : 'a -> 'b -> 'a * 'b
 end
 
-section pairs
+section tuples
   coq predefined
   pangoline takeover
+
+  logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
+  logic mk_3tuple ['a 'b 'c||] : 'a -> 'b -> 'c -> 'a * 'b * 'c
+  logic mk_4tuple ['a 'b 'c 'd||] : 
+    'a -> 'b -> 'c -> 'd -> 'a * 'b * 'c * 'd
+  logic mk_5tuple ['a 'b 'c 'd 'e||] : 
+    'a -> 'b -> 'c -> 'd -> 'e -> 'a * 'b * 'c * 'd * 'e
+  logic mk_6tuple ['a 'b 'c 'd 'e 'f||] : 
+    'a -> 'b -> 'c -> 'd -> 'e -> 'f-> 'a * 'b * 'c * 'd * 'e * 'f
+  logic mk_7tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+    'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'a * 'b * 'c * 'd * 'e * 'f * 'g
+
   logic fst ['a 'b||] : 'a * 'b -> 'a
   logic snd ['a 'b||] : 'a * 'b -> 'b
 end

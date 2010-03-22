@@ -43,7 +43,6 @@
 %nonassoc LE LT GE GT BLE BLT BGT BGE
 %nonassoc ASSIGN
 %right EQUAL NEQ BEQUAL BNEQ
-%right COMMA
 %left PLUS MINUS
 %right STAR
 

@@ -170,7 +170,7 @@ module Print = struct
       | Const c -> Const.print fmt c
       | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) -> 
           begin match kind with
-          | `Pangoline when Name.equal v PL.tuple_var ->
+          | `Pangoline when Name.equal v PL.pair_var ->
               fprintf fmt "(%a , %a)" annot t1 annot t2
           | _ ->
               fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 (name_print ~kind) v 
@@ -440,7 +440,7 @@ module Recon = struct
     let or_t = svar PL.or_var PT.prop_3
     let impl_t = svar PL.impl_var PT.prop_3
 
-    let mkpair_t i = var PL.tuple_var i PT.mk_pair
+    let mkpair_t i = var PL.pair_var i PT.mk_pair
     let fst_t i = var PL.fst_var i PT.fst
     let snd_t i = var PL.snd_var i PT.snd
 
@@ -662,7 +662,7 @@ module Recon = struct
 
   and pre t l = 
     match destruct_app2_var t with
-    | Some (v,_,a,_) when Name.equal v PL.tuple_var -> a
+    | Some (v,_,a,_) when Name.equal v PL.pair_var -> a
     | _ -> 
         try 
           let t1, t2 = Ty.destr_pair t.t in
@@ -674,7 +674,7 @@ module Recon = struct
 
   and post t l = 
     match destruct_app2_var t with
-    | Some (v,_,_,b) when Name.equal v PL.tuple_var -> b
+    | Some (v,_,_,b) when Name.equal v PL.pair_var -> b
     | _ -> 
         try
           let t1, t2 = Ty.destr_pair t.t in

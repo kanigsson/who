@@ -110,6 +110,13 @@ let list_fold_map f init l =
   in
     flm init [] l
 
+let repeat ?(from=0) n f = 
+  let rec loop i accu = 
+    if i = n then List.rev accu 
+    else loop (i + 1) (f i :: accu)
+  in
+    loop from []
+
 let opt_map f = function
   | None -> None
   | Some x -> Some (f x)

@@ -23,6 +23,8 @@
 
 module SM = Misc.StringMap
 
+let preinstantiated_tuple = 7
+
 module Identifier = struct
   let equal_id = "="
   let empty_id = "empty"
@@ -44,7 +46,6 @@ module Identifier = struct
   let or_id = "\\/"
   let impl_id = "->"
 
-  let tuple_id = ","
   let fst_id = "fst"
   let snd_id = "snd"
 
@@ -63,6 +64,8 @@ module Identifier = struct
 
   let unit_id = "unit"
   let void_id = "tt"
+
+  let mk_tuple_id n = "mk_" ^ string_of_int n ^ "tuple"
 
 end
 
@@ -87,7 +90,6 @@ module Logic = struct
   let and_var = Name.from_string and_id
   let or_var = Name.from_string or_id
   let impl_var = Name.from_string impl_id
-  let tuple_var = Name.from_string tuple_id
   let fst_var = Name.from_string fst_id
   let snd_var = Name.from_string snd_id
 
@@ -104,14 +106,23 @@ module Logic = struct
 
   let void_var = Name.from_string void_id
 
+  let mk_tuple_var =
+    let map = Array.init preinstantiated_tuple (fun i -> 
+      Name.from_string (mk_tuple_id (i + 1))) in
+    fun n -> 
+      try map.(n)
+      with Invalid_argument _ -> invalid_arg "mk_tuple_var"
+
+  let pair_var = mk_tuple_var 2
+
   let allvars = [ equal_var ; empty_var ; not_var ; equal_var
       ; empty_var ; not_var ; leb_var ; ltb_var ; gtb_var 
       ; geb_var ; eqb_var ; neqb_var ; andb_var ; orb_var 
       ; le_var  ; lt_var  ; ge_var  ; gt_var  ; neq_var 
-      ; and_var ; or_var ; impl_var ; tuple_var ; fst_var ; snd_var ;
+      ; and_var ; or_var ; impl_var ; fst_var ; snd_var ;
       plus_var ; minus_var ; combine_var ; restrict_var ; get_var;
       store_var ; btrue_var ; bfalse_var ; void_var
-  ]
+  ] @ Misc.repeat preinstantiated_tuple mk_tuple_var
 
   let map =
     List.fold_left (fun acc x ->
@@ -121,7 +132,7 @@ module Logic = struct
     let infix_vars = 
       [equal_var ; leb_var ; ltb_var ; gtb_var ; geb_var ; eqb_var
       ; neqb_var ; andb_var ; orb_var ; le_var ; lt_var ; ge_var 
-      ; gt_var ; neq_var ; and_var ; or_var ; impl_var ; tuple_var
+      ; gt_var ; neq_var ; and_var ; or_var ; impl_var 
       ; plus_var ; minus_var ; store_var ] in
     List.fold_right Name.S.add infix_vars Name.S.empty
 
