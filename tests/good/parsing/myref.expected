@@ -1,4 +1,4 @@
-logic = ['a||] : (a) -> (a) -> prop
+logic = ['a||] : a -> a -> prop
 logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
 let
   ref ['a2|r1|] = (fun (v:a2) ->allocates r1 {} parameter(ref(r1,a2),{r1  })

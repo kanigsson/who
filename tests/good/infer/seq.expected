@@ -1,6 +1,6 @@
 type unit
 logic tt  : unit
-logic = ['a||] : (a) -> (a) -> prop
+logic = ['a||] : a -> a -> prop
 logic /\  : prop -> prop -> prop
 logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
 let
@@ -12,8 +12,8 @@ let
                  ((!! [a2| r1| {|}] x cur1) =[a2||] r2) /\
                  ((!! [a2| r1| {|}] x old) =[a2||] (!! [a2| r1| {|}] x cur1)))))}) 
 let seq ['a3 'b 'c||'e1
-  'e2] = (fun (f:(a3) ->{ 'e1 } b) ->
-         (fun (g:(b) ->{ 'e2 } c) ->
+  'e2] = (fun (f:a3 ->{ 'e1 } b) ->
+         (fun (g:b ->{ 'e2 } c) ->
          (fun (x1:a3) -> {(fun (cur2:< 'e1 'e2 >) -> True)} g (f x1)
          {(fun (old1:< 'e1 'e2 >) ->
           (fun (cur3:< 'e1 'e2 >) -> (fun (anon:c) -> True)))}))) 

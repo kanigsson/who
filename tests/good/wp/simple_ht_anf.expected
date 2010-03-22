@@ -3,44 +3,43 @@ logic tt  : unit
 logic <  : int -> int -> prop
 logic ->  : prop -> prop -> prop
 logic /\  : prop -> prop -> prop
-logic , ['a 'b||] : (a) -> (b) -> (a) * (b)
-logic fst ['a1 'b1||] : ((a1) * (b1)) -> a1
-logic snd ['a2 'b2||] : ((a2) * (b2)) -> b2
+logic , ['a 'b||] : a -> b -> a * b
+logic fst ['a1 'b1||] : (a1 * b1) -> a1
+logic snd ['a2 'b2||] : (a2 * b2) -> b2
 logic combine [||'e 'e1 'e2] : < 'e 'e1 > -> < 'e1 'e2 > -> < 'e 'e1 'e2 >
 logic restrict [||'e3 'e4] : < 'e3 'e4 > -> < 'e4 >
 logic empty  : < >
-goal f_correct : forall (g:((unit) -> < > -> prop) * ((unit) -> < > -> < > ->
-                 (unit) -> prop)).
+goal f_correct : forall (g:(unit -> < > -> prop) * (unit -> < > -> < > ->
+                 unit -> prop)).
                  ((0 < 5) ->
-                  ((fst [(unit) -> < > -> prop,(unit) -> < > -> < > ->
-                    (unit) -> prop||] g tt empty)
+                  ((fst [unit -> < > -> prop,unit -> < > -> < > -> unit ->
+                    prop||] g tt empty)
                    /\
-                   ((snd [(unit) -> < > -> prop,(unit) -> < > -> < > ->
-                     (unit) -> prop||] g tt empty empty tt)
+                   ((snd [unit -> < > -> prop,unit -> < > -> < > -> unit ->
+                     prop||] g tt empty empty tt)
                     -> (3 < 6))))
                  ->
-                 ((fst [(unit) -> < > -> prop,(unit) -> < > -> < > ->
-                   (unit) -> prop||] g tt empty)
+                 ((fst [unit -> < > -> prop,unit -> < > -> < > -> unit ->
+                   prop||] g tt empty)
                   /\
-                  ((snd [(unit) -> < > -> prop,(unit) -> < > -> < > ->
-                    (unit) -> prop||] g tt empty empty tt)
+                  ((snd [unit -> < > -> prop,unit -> < > -> < > -> unit ->
+                    prop||] g tt empty empty tt)
                    -> (3 < 6)))
 let
-  logic f  = (fun (g:((unit) -> < > -> prop) * ((unit) -> < > -> < > ->
-             (unit) -> prop)) ->
+  logic f  = (fun (g:(unit -> < > -> prop) * (unit -> < > -> < > -> unit ->
+             prop)) ->
              (fun (cur:< >) ->
              (0 < 5) ->
-             ((fst [(unit) -> < > -> prop,(unit) -> < > -> < > -> (unit) ->
-               prop||] g tt empty)
+             ((fst [unit -> < > -> prop,unit -> < > -> < > -> unit -> prop||]
+               g tt empty)
               /\
-              ((snd [(unit) -> < > -> prop,(unit) -> < > -> < > -> (unit) ->
+              ((snd [unit -> < > -> prop,unit -> < > -> < > -> unit ->
                 prop||] g tt empty empty tt)
                -> (3 < 6)))))
-             ,[(((unit) -> < > -> prop) * ((unit) -> < > -> < > -> (unit) ->
-             prop)) -> < > -> prop,(((unit) -> < > -> prop) * ((unit) ->
-             < > -> < > -> (unit) -> prop)) -> < > -> < > -> (unit) ->
-             prop||]
-             (fun (g:((unit) -> < > -> prop) * ((unit) -> < > -> < > ->
-             (unit) -> prop)) ->
+             ,[((unit -> < > -> prop) * (unit -> < > -> < > -> unit ->
+             prop)) -> < > -> prop,((unit -> < > -> prop) * (unit -> < > ->
+             < > -> unit -> prop)) -> < > -> < > -> unit -> prop||]
+             (fun (g:(unit -> < > -> prop) * (unit -> < > -> < > -> unit ->
+             prop)) ->
              (fun (old:< >) ->
              (fun (cur1:< >) -> (fun (anon:unit) -> 3 < 6)))) 

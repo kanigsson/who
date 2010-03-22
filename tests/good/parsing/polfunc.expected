@@ -1,5 +1,5 @@
-logic fst ['a 'b||] : ((a) * (b)) -> a
-logic snd ['a1 'b1||] : ((a1) * (b1)) -> b1
+logic fst ['a 'b||] : (a * b) -> a
+logic snd ['a1 'b1||] : (a1 * b1) -> b1
 let
   f [||'e] = (fun (g:int ->{ 'e } int) -> {fst g 5 cur} g 5
              {r : snd g 5 old cur1 r}) 

@@ -37,7 +37,7 @@ and effect = rnode list * Name.S.t
 let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh (T t)
 let arrow t1 t2 e c = mkt (Ty.Arrow (t1,t2,e,c))
-let tuple t1 t2 = mkt (Ty.Tuple (t1,t2))
+let tuple tl = mkt (Ty.Tuple tl)
 let ref_ r t = mkt (Ty.Ref (r,t))
 let mkr r = Uf.fresh (RT r)
 let new_r () = Uf.fresh RU
@@ -109,8 +109,7 @@ let rec unify a b =
       | Ty.Const c1, Ty.Const c2 when c1 = c2 -> ()
       | Ty.PureArr (ta1,ta2), Ty.PureArr (tb1,tb2)
       | Ty.Arrow (ta1,ta2,_,_), Ty.PureArr (tb1,tb2)
-      | Ty.PureArr (ta1,ta2), Ty.Arrow (tb1,tb2,_,_)
-      | Ty.Tuple (ta1,ta2), Ty.Tuple (tb1,tb2) ->
+      | Ty.PureArr (ta1,ta2), Ty.Arrow (tb1,tb2,_,_) ->
           unify ta1 tb1;
           unify ta2 tb2
       | Ty.Arrow (ta1,ta2,e1,c1), Ty.Arrow (tb1,tb2,e2,c2) ->
@@ -118,6 +117,8 @@ let rec unify a b =
           unify ta2 tb2;
           eunify e1 e2;
           List.iter2 runify c1 c2;
+      | Ty.Tuple tl1, Ty.Tuple tl2 when List.length tl1 = List.length tl2 ->
+          List.iter2 unify tl1 tl2
       | Ty.Ref (r1,t1), Ty.Ref (r2,t2) -> runify r1 r2; unify t1 t2
       | Ty.Map e1, Ty.Map e2 -> eunify e1 e2
       | Ty.App (v1,i1), Ty.App (v2,i2) when v1 = v2 ->
@@ -153,7 +154,7 @@ let to_ty, to_eff, to_r =
   let rec ty' : (node, rnode, effect) Ty.t' -> Ty.t = function
     | Ty.Arrow (t1,t2,e,cap) ->
         Ty.caparrow (ty t1) (ty t2) (eff e) (List.map rv cap)
-    | Ty.Tuple (t1,t2) -> Ty.tuple (ty t1) (ty t2)
+    | Ty.Tuple tl -> Ty.tuple (List.map ty tl)
     | Ty.Const c -> Ty.const c
     | Ty.Ref (r,t) -> Ty.ref_ (rv r) (ty t)
     | Ty.Map e -> Ty.map (eff e)
@@ -179,7 +180,7 @@ let base_pre_ty eff = parr (map eff) prop
 let base_post_ty eff t = parr (map eff) (parr (map eff) (parr t prop))
 let pretype a e = parr a (base_pre_ty e)
 let posttype a b e = parr a (base_post_ty e b)
-let prepost_type a b e = tuple (pretype a e) (posttype a b e)
+let prepost_type a b e = tuple [ pretype a e ; posttype a b e ]
 
 let to_logic_type t =
   let rec aux t =
@@ -188,7 +189,7 @@ let to_logic_type t =
     | T ty ->
         match ty with
         | (Ty.Const _ | Ty.Map _) -> t
-        | Ty.Tuple (t1,t2) -> tuple (aux t1) (aux t2)
+        | Ty.Tuple tl -> tuple (List.map aux tl)
         | Ty.PureArr (t1,t2) -> parr (aux t1) (aux t2)
         | Ty.Arrow (t1,t2,e,_) -> prepost_type (aux t1) (aux t2) e
         | Ty.Ref (x,t) -> ref_ x (aux t)

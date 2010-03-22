@@ -141,7 +141,7 @@ effect: | l = rvar_or_effectvar* {partition_effect l }
   | t1 = ty ARROW t2 = ty { PureArr (t1, t2) }
   | t1 = ty ARROW e = sepcreateeffect t2 = ty %prec ARROW 
     { let rl,el,cl = e in Arrow (t1,t2,(rl,el),cl) }
-  | t1 = ty STAR t2 = ty { Tuple (t1, t2) }
+  | t1 = ty STAR t2 = ty { Tuple [t1;t2] }
   | LT e = effect GT { Map e }
   | DLBRACKET t = ty DRBRACKET { ToLogic t }
   | REF LPAREN id = IDENT COMMA t = ty  RPAREN { Ref (id.c,t) }

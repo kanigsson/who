@@ -23,7 +23,7 @@
 
 type ('a,'b,'c) t' = 
   | Const of Const.ty
-  | Tuple of 'a * 'a
+  | Tuple of 'a list
   | Arrow of 'a * 'a * 'c * 'b list
   | PureArr of 'a * 'a
   | App of Name.t * ('a,'b,'c) Inst.t
@@ -52,7 +52,7 @@ val const : Const.ty -> t
 val arrow : t -> t -> Effect.t -> t
 val caparrow : t -> t -> Effect.t -> Name.t list -> t
 val parr : t -> t -> t
-val tuple : t -> t -> t
+val tuple : t list -> t
 val ref_ : Name.t -> t -> t
 val map : Effect.t -> t
 val unit : t
@@ -68,10 +68,10 @@ val latent_effect : t -> Effect.t
 val domain : t -> Effect.t
 val is_map : t -> bool
 val is_ref : t -> bool
-val destr_tuple : t -> t * t
+val destr_pair : t -> t * t
 
 val to_logic_type : t -> t
-val from_logic_tuple : t -> t * t * Effect.t
+val from_logic_pair : t -> t * t * Effect.t
 
 val tlsubst : Name.t list -> t list -> t -> t
 val rlsubst : Name.t list -> Name.t list -> t -> t
@@ -123,7 +123,7 @@ module Predef : sig
   val iib : t
   val aap : Generalize.t * t
   val aab : Generalize.t * t
-  val mk_tuple : Generalize.t * t
+  val mk_pair : Generalize.t * t
 
   val fst : Generalize.t * t
   val snd : Generalize.t * t

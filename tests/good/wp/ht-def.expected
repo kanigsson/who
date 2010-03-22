@@ -1,26 +1,25 @@
 type bool
 logic true  : bool
 logic false  : bool
-logic = ['a||] : (a) -> (a) -> prop
+logic = ['a||] : a -> a -> prop
 logic /\  : prop -> prop -> prop
 logic \/  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
-logic , ['a1 'b||] : (a1) -> (b) -> (a1) * (b)
-logic fst ['a2 'b1||] : ((a2) * (b1)) -> a2
-logic snd ['a3 'b2||] : ((a3) * (b2)) -> b2
+logic , ['a1 'b||] : a1 -> b -> a1 * b
+logic fst ['a2 'b1||] : (a2 * b1) -> a2
+logic snd ['a3 'b2||] : (a3 * b2) -> b2
 type hmap['a4
 'b3||]
-logic hmem ['a5 'b4||] : (a5) -> (hmap[(a5),(b4)||]) -> bool
-logic hget ['a6 'b5||] : (a6) -> (hmap[(a6),(b5)||]) -> b5
-logic hset ['a7 'b6||] : (a7) -> (b6) -> (hmap[(a7),(b6)||]) ->
-  hmap[(a7),(b6)||]
+logic hmem ['a5 'b4||] : a5 -> hmap[a5,b4||] -> bool
+logic hget ['a6 'b5||] : a6 -> hmap[a6,b5||] -> b5
+logic hset ['a7 'b6||] : a7 -> b6 -> hmap[a7,b6||] -> hmap[a7,b6||]
 type unit
 logic tt  : unit
 logic !! ['a8|r|'e] : ref(r,a8) -> <r  'e > -> a8
 let
   logic ! ['a9|r1|] = (fun (x:ref(r1,a9)) -> (fun (cur:<r1  >) -> True))
                       ,[ref(r1,a9) -> <r1  > -> prop,ref(r1,a9) -> <r1  > ->
-                      <r1  > -> (a9) -> prop||]
+                      <r1  > -> a9 -> prop||]
                       (fun (x:ref(r1,a9)) ->
                       (fun (old:<r1  >) ->
                       (fun (cur1:<r1  >) ->
@@ -30,9 +29,9 @@ let
                        (!! [a9| r1| { }] x cur1)))))) 
 let
   logic := ['a10|r3|] = (fun (x1:ref(r3,a10)) ->
-                        (fun (v:a10) -> (fun (cur2:<r3  >) -> True))
-                        ,[(a10) -> <r3  > -> prop,(a10) -> <r3  > -> <r3
-                         > -> (unit) -> prop||]
+                        (fun (v:a10) -> (fun (cur2:<r3  >) -> True)) ,[a10 ->
+                        <r3  > -> prop,a10 -> <r3  > -> <r3  > -> unit ->
+                        prop||]
                         (fun (v:a10) ->
                         (fun (old1:<r3  >) ->
                         (fun (cur3:<r3  >) ->

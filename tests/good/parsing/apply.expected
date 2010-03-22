@@ -1,11 +1,11 @@
-logic = ['a||] : (a) -> (a) -> prop
+logic = ['a||] : a -> a -> prop
 logic /\  : prop -> prop -> prop
 logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
 let
   ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {} parameter(a2,{r1  })
                 {r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))}) 
 let apply ['a3
-  'b||'e1] = (fun (f:(a3) ->{ 'e1 } b) -> (fun (x1:a3) -> {} f x1 {})) 
+  'b||'e1] = (fun (f:a3 ->{ 'e1 } b) -> (fun (x1:a3) -> {} f x1 {})) 
 let
   h [|r3|] = (fun (x2:ref(r3,int)) -> {} apply (fun (z:int) -> {} ! x2 {}) 5
              {}) 

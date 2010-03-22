@@ -112,7 +112,7 @@ let ty env t =
   let rec aux = function
     | IT.TVar v -> Ty.var (tyvar env v)
     | IT.TConst c -> Ty.const c
-    | IT.Tuple (t1,t2) -> Ty.tuple (aux t1) (aux t2)
+    | IT.Tuple tl -> Ty.tuple (List.map aux tl)
     | IT.Arrow (t1,t2,e,cap) -> 
         Ty.caparrow (aux t1) (aux t2) (effect env e) (List.map (rvar env) cap)
     | IT.PureArr (t1,t2) -> Ty.parr (aux t1) (aux t2)

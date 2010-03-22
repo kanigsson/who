@@ -1,7 +1,7 @@
 type bool
 logic true  : bool
 logic false  : bool
-logic == ['a||] : (a) -> (a) -> bool
+logic == ['a||] : a -> a -> bool
 let f ['a1||] = (fun (x:a1) -> (fun (y:a1) -> {} x == y {})) 
 let f1 ['a2||] = (fun (x1:a2) -> {} true {}) 
 let g  = f1 true 

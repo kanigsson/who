@@ -1,19 +1,18 @@
 type bool
 logic true  : bool
 logic false  : bool
-logic = ['a||] : (a) -> (a) -> prop
+logic = ['a||] : a -> a -> prop
 logic /\  : prop -> prop -> prop
 logic \/  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
-logic , ['a1 'b||] : (a1) -> (b) -> (a1) * (b)
-logic fst ['a2 'b1||] : ((a2) * (b1)) -> a2
-logic snd ['a3 'b2||] : ((a3) * (b2)) -> b2
+logic , ['a1 'b||] : a1 -> b -> a1 * b
+logic fst ['a2 'b1||] : (a2 * b1) -> a2
+logic snd ['a3 'b2||] : (a3 * b2) -> b2
 type hmap['a4
 'b3||]
-logic hmem ['a5 'b4||] : (a5) -> (hmap[(a5),(b4)||]) -> bool
-logic hget ['a6 'b5||] : (a6) -> (hmap[(a6),(b5)||]) -> b5
-logic hset ['a7 'b6||] : (a7) -> (b6) -> (hmap[(a7),(b6)||]) ->
-  hmap[(a7),(b6)||]
+logic hmem ['a5 'b4||] : a5 -> hmap[a5,b4||] -> bool
+logic hget ['a6 'b5||] : a6 -> hmap[a6,b5||] -> b5
+logic hset ['a7 'b6||] : a7 -> b6 -> hmap[a7,b6||] -> hmap[a7,b6||]
 type unit
 logic tt  : unit
 logic combine [||'e 'e1 'e2] : < 'e 'e1 > -> < 'e1 'e2 > -> < 'e 'e1 'e2 >
@@ -23,7 +22,7 @@ logic !! ['a8|r|'e5] : ref(r,a8) -> <r  'e5 > -> a8
 let
   logic ! ['a9|r1|] = (fun (x:ref(r1,a9)) -> (fun (cur:<r1  >) -> True))
                       ,[ref(r1,a9) -> <r1  > -> prop,ref(r1,a9) -> <r1  > ->
-                      <r1  > -> (a9) -> prop||]
+                      <r1  > -> a9 -> prop||]
                       (fun (x:ref(r1,a9)) ->
                       (fun (old:<r1  >) ->
                       (fun (cur1:<r1  >) ->
@@ -33,9 +32,9 @@ let
                        (!! [a9| r1| { }] x cur1)))))) 
 let
   logic := ['a10|r3|] = (fun (x1:ref(r3,a10)) ->
-                        (fun (v:a10) -> (fun (cur2:<r3  >) -> True))
-                        ,[(a10) -> <r3  > -> prop,(a10) -> <r3  > -> <r3
-                         > -> (unit) -> prop||]
+                        (fun (v:a10) -> (fun (cur2:<r3  >) -> True)) ,[a10 ->
+                        <r3  > -> prop,a10 -> <r3  > -> <r3  > -> unit ->
+                        prop||]
                         (fun (v:a10) ->
                         (fun (old1:<r3  >) ->
                         (fun (cur3:<r3  >) ->
@@ -110,27 +109,27 @@ goal ymemo_correct : forall (f3:int -> int).
                        (stores f3 (!! [hmap[int,int||]| t| { }] table s2)) ->
                        ((fst [ref(t,hmap[int,int||]) -> <t  > ->
                          prop,ref(t,hmap[int,int||]) -> <t  > -> <t  > ->
-                         (hmap[int,int||]) -> prop||] ! [hmap[int,int||]| t|]
+                         hmap[int,int||] -> prop||] ! [hmap[int,int||]| t|]
                          table s2)
                         /\
                         (forall (s3:<t  >).
                          forall (anon3:hmap[int,int||]).
                          (snd [ref(t,hmap[int,int||]) -> <t  > ->
                           prop,ref(t,hmap[int,int||]) -> <t  > -> <t  > ->
-                          (hmap[int,int||]) -> prop||] ! [hmap[int,int||]|
-                          t|] table s2 s3 anon3)
+                          hmap[int,int||] -> prop||] ! [hmap[int,int||]| t|]
+                          table s2 s3 anon3)
                          ->
                          ((((hmem [int,int||] x4 anon3) =[bool||] true) ->
                            ((fst [ref(t,hmap[int,int||]) -> <t  > ->
                              prop,ref(t,hmap[int,int||]) -> <t  > -> <t  > ->
-                             (hmap[int,int||]) -> prop||] ! [hmap[int,int||]|
+                             hmap[int,int||] -> prop||] ! [hmap[int,int||]|
                              t|] table s3)
                             /\
                             (forall (s4:<t  >).
                              forall (anon4:hmap[int,int||]).
                              (snd [ref(t,hmap[int,int||]) -> <t  > ->
                               prop,ref(t,hmap[int,int||]) -> <t  > -> <t
-                               > -> (hmap[int,int||]) -> prop||]
+                               > -> hmap[int,int||] -> prop||]
                               ! [hmap[int,int||]| t|] table s3 s4 anon4)
                              ->
                              (((hget [int,int||] x4 anon4) =[int||] (f3 x4))
@@ -167,26 +166,26 @@ goal ymemo_correct : forall (f3:int -> int).
                                ->
                                ((fst [ref(t,hmap[int,int||]) -> <t  > ->
                                  prop,ref(t,hmap[int,int||]) -> <t  > -> <t
-                                  > -> (hmap[int,int||]) -> prop||]
+                                  > -> hmap[int,int||] -> prop||]
                                  ! [hmap[int,int||]| t|] table s5)
                                 /\
                                 (forall (s6:<t  >).
                                  forall (anon7:hmap[int,int||]).
                                  (snd [ref(t,hmap[int,int||]) -> <t  > ->
                                   prop,ref(t,hmap[int,int||]) -> <t  > -> <t
-                                   > -> (hmap[int,int||]) -> prop||]
+                                   > -> hmap[int,int||] -> prop||]
                                   ! [hmap[int,int||]| t|] table s5 s6 anon7)
                                  ->
-                                 ((fst [(hmap[int,int||]) -> <t  > ->
-                                   prop,(hmap[int,int||]) -> <t  > -> <t
-                                    > -> (unit) -> prop||]
+                                 ((fst [hmap[int,int||] -> <t  > ->
+                                   prop,hmap[int,int||] -> <t  > -> <t  > ->
+                                   unit -> prop||]
                                    ((:= [hmap[int,int||]| t|]) table)
                                    (hset [int,int||] x4 anon6 anon7) s6)
                                   /\
                                   (forall (s7:<t  >).
-                                   (snd [(hmap[int,int||]) -> <t  > ->
-                                    prop,(hmap[int,int||]) -> <t  > -> <t
-                                     > -> (unit) -> prop||]
+                                   (snd [hmap[int,int||] -> <t  > ->
+                                    prop,hmap[int,int||] -> <t  > -> <t  > ->
+                                    unit -> prop||]
                                     ((:= [hmap[int,int||]| t|]) table)
                                     (hset [int,int||] x4 anon6 anon7) s6 s7
                                     tt)

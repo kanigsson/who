@@ -1,7 +1,7 @@
-logic = ['a||] : (a) -> (a) -> prop
+logic = ['a||] : a -> a -> prop
 type array['a1||]
-logic get ['a2||] : int -> (array[(a2)||]) -> a2
-logic set ['a3||] : int -> (a3) -> (array[(a3)||]) -> array[(a3)||]
-axiom get_set_eq : forall ['a4||]. forall (t:array[(a4)||]).
+logic get ['a2||] : int -> array[a2||] -> a2
+logic set ['a3||] : int -> a3 -> array[a3||] -> array[a3||]
+axiom get_set_eq : forall ['a4||]. forall (t:array[a4||]).
                                    forall (i:int).
                                    forall (z:a4). (get i (set i z t)) = z

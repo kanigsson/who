@@ -26,7 +26,7 @@ type effect = string list * string list
 type t = 
   | TVar of string
   | TConst of Const.ty
-  | Tuple of t * t
+  | Tuple of t list
   | Arrow of t * t * effect * string list
   | PureArr of t * t
   | TApp of string * (t,string,effect) Inst.t
@@ -40,7 +40,7 @@ let print fmt t =
   let rec pt fmt = function
   | TVar v -> pp_print_string fmt v
   | TConst c -> Const.print_ty `Who fmt c
-  | Tuple (t1,t2) -> fprintf fmt "(%a * %a)" pt t1 pt t2
+  | Tuple tl -> paren (print_list (fun fmt () -> fprintf fmt " *@ ") pt) fmt tl
   | PureArr (t1,t2) -> fprintf fmt "(%a -> %a)" pt t1 pt t2
   | Arrow (t1,t2,_,_) -> fprintf fmt "(%a ->{...} %a)" pt t1 pt t2
   | Ref _ -> pp_print_string fmt "ref(...)"

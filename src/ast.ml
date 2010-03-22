@@ -439,7 +439,7 @@ module Recon = struct
     let or_t = svar PL.or_var PT.prop_3
     let impl_t = svar PL.impl_var PT.prop_3
 
-    let tuple_t i = var PL.tuple_var i PT.mk_tuple
+    let mkpair_t i = var PL.tuple_var i PT.mk_pair
     let fst_t i = var PL.fst_var i PT.fst
     let snd_t i = var PL.snd_var i PT.snd
 
@@ -664,7 +664,7 @@ module Recon = struct
     | Some (v,_,a,_) when Name.equal v PL.tuple_var -> a
     | _ -> 
         try 
-          let t1, t2 = Ty.destr_tuple t.t in
+          let t1, t2 = Ty.destr_pair t.t in
           simple_app (P.fst_t ([t1;t2],[],[]) l) t l
         with Invalid_argument "Ty.destr_tuple" ->
           error t.loc "term %a is not of tuple type, but of type %a@." 
@@ -676,7 +676,7 @@ module Recon = struct
     | Some (v,_,_,b) when Name.equal v PL.tuple_var -> b
     | _ -> 
         try
-          let t1, t2 = Ty.destr_tuple t.t in
+          let t1, t2 = Ty.destr_pair t.t in
           simple_app (P.snd_t ([t1;t2],[],[]) l) t l
         with Invalid_argument "Ty.destr_tuple" ->
           error t.loc "term %a is not of tuple type, but of type %a@." 
@@ -726,7 +726,7 @@ module Recon = struct
   let param t e = mk (Param (t,e)) t e
 
   let mk_tuple t1 t2 loc = 
-    appi (P.tuple_t ([t1.t;t2.t],[],[]) loc) t1 t2 loc
+    appi (P.mkpair_t ([t1.t;t2.t],[],[]) loc) t1 t2 loc
 
 
   let letreg l e = mk (LetReg (l,e)) e.t (Effect.rremove e.e l)

@@ -7,11 +7,11 @@ section basiclogic coq predefined
   logic \/  : prop -> prop -> prop
   logic ->  : prop -> prop -> prop
   logic ~  : prop -> prop
-  logic = ['a||] : (a) -> (a) -> prop
-  logic <> ['a1||] : (a1) -> (a1) -> prop
-  logic fst ['a2 'b||] : ((a2) * (b)) -> a2
-  logic snd ['a3 'b1||] : ((a3) * (b1)) -> b1
-  logic , ['a4 'b2||] : (a4) -> (b2) -> (a4) * (b2) end
+  logic = ['a||] : a -> a -> prop
+  logic <> ['a1||] : a1 -> a1 -> prop
+  logic fst ['a2 'b||] : (a2 * b) -> a2
+  logic snd ['a3 'b1||] : (a3 * b1) -> b1
+  logic , ['a4 'b2||] : a4 -> b2 -> a4 * b2 end
 section arith coq "WhoArith"
   pangoline predefined
    logic +  : int -> int -> int
@@ -28,10 +28,10 @@ section arith coq "WhoArith"
   logic max  : int -> int -> int
   logic min  : int -> int -> int
   logic mod  : int -> int -> int
-  logic band  : (bool) -> (bool) -> bool
-  logic bor  : (bool) -> (bool) -> bool end
-logic == ['a5||] : (a5) -> (a5) -> bool
-logic != ['a6||] : (a6) -> (a6) -> bool
+  logic band  : bool -> bool -> bool
+  logic bor  : bool -> bool -> bool end
+logic == ['a5||] : a5 -> a5 -> bool
+logic != ['a6||] : a6 -> a6 -> bool
 section Whoref coq "WhoMap"
   pangoline predefined
    logic !! ['a7|r|'e] : ref(r,a7) -> < 'e > -> a7
@@ -42,17 +42,17 @@ section Whoref coq "WhoMap"
 section Array coq "WhoArray"
   pangoline takeover
    type array['a8||]
-  logic ar_empty ['a9||] : array[(a9)||]
-  logic get ['a10||] : int -> (array[(a10)||]) -> a10
-  logic set ['a11||] : int -> (a11) -> (array[(a11)||]) -> array[(a11)||]
-  logic len ['a12||] : (array[(a12)||]) -> int
-  logic create ['a13||] : int -> (a13) -> array[(a13)||]
-  axiom update_length : forall ['a14||]. forall (t:array[(a14)||]).
+  logic ar_empty ['a9||] : array[a9||]
+  logic get ['a10||] : int -> array[a10||] -> a10
+  logic set ['a11||] : int -> a11 -> array[a11||] -> array[a11||]
+  logic len ['a12||] : array[a12||] -> int
+  logic create ['a13||] : int -> a13 -> array[a13||]
+  axiom update_length : forall ['a14||]. forall (t:array[a14||]).
                                          forall (i:int).
                                          forall (z:a14).
                                          (len [a14||] t) =[int||]
                                          (len [a14||] (set [a14||] i z t))
-  axiom get_set_eq : forall ['a15||]. forall (t1:array[(a15)||]).
+  axiom get_set_eq : forall ['a15||]. forall (t1:array[a15||]).
                                       forall (i1:int).
                                       forall (z1:a15).
                                       (i1 < (len [a15||] t1)) ->
@@ -60,7 +60,7 @@ section Array coq "WhoArray"
                                        =[a15||] z1)
   axiom length_empty : forall ['a16||]. (len [a16||] ar_empty [a16||])
                                         =[int||] 0
-  axiom get_set_neq : forall ['a17||]. forall (t2:array[(a17)||]).
+  axiom get_set_neq : forall ['a17||]. forall (t2:array[a17||]).
                                        forall (i2:int).
                                        forall (j:int).
                                        forall (z2:a17).
@@ -70,7 +70,7 @@ section Array coq "WhoArray"
                                          ((get [a17||] i2
                                            (set [a17||] j z2 t2))
                                           =[a17||] (get [a17||] i2 t2))))
-  axiom length_nonnegative : forall ['a18||]. forall (t3:array[(a18)||]).
+  axiom length_nonnegative : forall ['a18||]. forall (t3:array[a18||]).
                                               0 <= (len [a18||] t3)
   axiom length_create : forall ['a19||]. forall (l:int).
                                          forall (v:a19).
@@ -88,13 +88,13 @@ section Array coq "WhoArray"
 section List coq "WhoList"
   pangoline takeover
    type list['a21||]
-  logic nil ['a22||] : list[(a22)||]
-  logic cons ['a23||] : (a23) -> (list[(a23)||]) -> list[(a23)||]
-  logic is_nil ['a24||] : (list[(a24)||]) -> bool
-  logic l_in ['a25||] : (a25) -> (list[(a25)||]) -> prop end
+  logic nil ['a22||] : list[a22||]
+  logic cons ['a23||] : a23 -> list[a23||] -> list[a23||]
+  logic is_nil ['a24||] : list[a24||] -> bool
+  logic l_in ['a25||] : a25 -> list[a25||] -> prop end
 goal blit_correct : forall ['a26|r1
-  r2|]. forall (ar:ref(r1,array[(a26)||])).
-        forall (ar1:ref(r2,array[(a26)||])).
+  r2|]. forall (ar:ref(r1,array[a26||])).
+        forall (ar1:ref(r2,array[a26||])).
         forall (ofs:int).
         forall (ofs1:int).
         forall (s:<r1 r2  >).
@@ -103,493 +103,482 @@ goal blit_correct : forall ['a26|r1
         ((0 <= ofs) ->
          ((0 <= ofs1) ->
           ((ofs <=
-            ((len [a26||] (!! [array[(a26)||]| r1| {r1 r2  }] ar s)) - l2))
+            ((len [a26||] (!! [array[a26||]| r1| {r1 r2  }] ar s)) - l2))
            ->
            ((ofs1 <=
-             ((len [a26||] (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s)) - l2))
+             ((len [a26||] (!! [array[a26||]| r2| {r1 r2  }] ar1 s)) - l2))
             ->
             (forall (s1:<r1  >).
-             ((!! [array[(a26)||]| r1| {r1  }] ar
+             ((!! [array[a26||]| r1| {r1  }] ar
                (restrict [|| {r2  } {r1  }] s))
-              =[array[(a26)||]||] (!! [array[(a26)||]| r1| {r1  }] ar s1))
+              =[array[a26||]||] (!! [array[a26||]| r1| {r1  }] ar s1))
              ->
              (forall (s2:<r2  >).
-              ((!! [array[(a26)||]| r2| {r2  }] ar1
+              ((!! [array[a26||]| r2| {r2  }] ar1
                 (restrict [|| {r1  } {r2  }] s))
-               =[array[(a26)||]||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+               =[array[a26||]||] (!! [array[a26||]| r2| {r2  }] ar1 s2))
               ->
               (((ofs < ofs1) ->
                 (((forall (s3:<r1 r2  >).
                    forall (i4:int).
-                   ((!! [array[(a26)||]| r1| {r1 r2  }] ar s3)
-                    =[array[(a26)||]||]
-                    (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                   ((!! [array[a26||]| r1| {r1 r2  }] ar s3)
+                    =[array[a26||]||] (!! [array[a26||]| r1| {r1  }] ar s1))
                    ->
-                   (((len [a26||] (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s3))
+                   (((len [a26||] (!! [array[a26||]| r2| {r1 r2  }] ar1 s3))
                      =[int||]
-                     (len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2)))
+                     (len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2)))
                     ->
                     ((0 <= i4) ->
                      ((i4 <=
-                       ((len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                       ((len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2))
                         - 1))
                       ->
                       ((forall (k:int).
                         (i4 < k) ->
                         ((k <=
                           ((len [a26||]
-                            (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                            (!! [array[a26||]| r2| {r2  }] ar1 s2))
                            - 1))
                          ->
                          ((get [a26||] (ofs1 + k)
-                           (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s3))
+                           (!! [array[a26||]| r2| {r1 r2  }] ar1 s3))
                           =[a26||]
                           (get [a26||] (ofs + k)
-                           (!! [array[(a26)||]| r1| {r1 r2  }] ar s3)))))
+                           (!! [array[a26||]| r1| {r1 r2  }] ar s3)))))
                        ->
                        (forall (s4:<r1  >).
-                        ((!! [array[(a26)||]| r1| {r1  }] ar
+                        ((!! [array[a26||]| r1| {r1  }] ar
                           (restrict [|| {r2  } {r1  }] s3))
-                         =[array[(a26)||]||]
-                         (!! [array[(a26)||]| r1| {r1  }] ar s4))
+                         =[array[a26||]||]
+                         (!! [array[a26||]| r1| {r1  }] ar s4))
                         ->
                         (forall (s5:<r2  >).
-                         ((!! [array[(a26)||]| r2| {r2  }] ar1
+                         ((!! [array[a26||]| r2| {r2  }] ar1
                            (restrict [|| {r1  } {r2  }] s3))
-                          =[array[(a26)||]||]
-                          (!! [array[(a26)||]| r2| {r2  }] ar1 s5))
+                          =[array[a26||]||]
+                          (!! [array[a26||]| r2| {r2  }] ar1 s5))
                          ->
                          (forall (s6:<r2  >).
-                          ((!! [array[(a26)||]| r2| {r2  }] ar1 s6)
-                           =[array[(a26)||]||]
+                          ((!! [array[a26||]| r2| {r2  }] ar1 s6)
+                           =[array[a26||]||]
                            (set [a26||] (ofs1 + i4)
                             (get [a26||] (ofs + i4)
-                             (!! [array[(a26)||]| r1| {r1  }] ar s4))
-                            (!! [array[(a26)||]| r2| {r2  }] ar1 s5)))
+                             (!! [array[a26||]| r1| {r1  }] ar s4))
+                            (!! [array[a26||]| r2| {r2  }] ar1 s5)))
                           ->
-                          ((((!! [array[(a26)||]| r1| {r1 r2  }] ar
+                          ((((!! [array[a26||]| r1| {r1 r2  }] ar
                               (combine [|| {r1  } { } {r2  }] s4 s6))
-                             =[array[(a26)||]||]
-                             (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                             =[array[a26||]||]
+                             (!! [array[a26||]| r1| {r1  }] ar s1))
                             /\
                             ((len [a26||]
-                              (!! [array[(a26)||]| r2| {r1 r2  }] ar1
+                              (!! [array[a26||]| r2| {r1 r2  }] ar1
                                (combine [|| {r1  } { } {r2  }] s4 s6)))
                              =[int||]
                              (len [a26||]
-                              (!! [array[(a26)||]| r2| {r2  }] ar1 s2))))
+                              (!! [array[a26||]| r2| {r2  }] ar1 s2))))
                            /\
                            (forall (k1:int).
                             ((i4 - 1) < k1) ->
                             ((k1 <=
                               ((len [a26||]
-                                (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                                (!! [array[a26||]| r2| {r2  }] ar1 s2))
                                - 1))
                              ->
                              ((get [a26||] (ofs1 + k1)
-                               (!! [array[(a26)||]| r2| {r1 r2  }] ar1
+                               (!! [array[a26||]| r2| {r1 r2  }] ar1
                                 (combine [|| {r1  } { } {r2  }] s4 s6)))
                               =[a26||]
                               (get [a26||] (ofs + k1)
-                               (!! [array[(a26)||]| r1| {r1 r2  }] ar
+                               (!! [array[a26||]| r1| {r1 r2  }] ar
                                 (combine [|| {r1  } { } {r2  }] s4 s6)))))))))))))))
                   /\
-                  (((((!! [array[(a26)||]| r1| {r1 r2  }] ar
+                  (((((!! [array[a26||]| r1| {r1 r2  }] ar
                        (combine [|| {r1  } { } {r2  }] s1 s2))
-                      =[array[(a26)||]||]
-                      (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                      =[array[a26||]||] (!! [array[a26||]| r1| {r1  }] ar s1))
                      /\
                      ((len [a26||]
-                       (!! [array[(a26)||]| r2| {r1 r2  }] ar1
+                       (!! [array[a26||]| r2| {r1 r2  }] ar1
                         (combine [|| {r1  } { } {r2  }] s1 s2)))
                       =[int||]
-                      (len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2))))
+                      (len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2))))
                     /\
                     (forall (k2:int).
-                     (((len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
-                       - 1)
+                     (((len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2)) -
+                       1)
                       < k2)
                      ->
                      ((k2 <=
-                       ((len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                       ((len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2))
                         - 1))
                       ->
                       ((get [a26||] (ofs1 + k2)
-                        (!! [array[(a26)||]| r2| {r1 r2  }] ar1
+                        (!! [array[a26||]| r2| {r1 r2  }] ar1
                          (combine [|| {r1  } { } {r2  }] s1 s2)))
                        =[a26||]
                        (get [a26||] (ofs + k2)
-                        (!! [array[(a26)||]| r1| {r1 r2  }] ar
+                        (!! [array[a26||]| r1| {r1 r2  }] ar
                          (combine [|| {r1  } { } {r2  }] s1 s2)))))))
                    /\
                    (forall (i5:int).
                     (0 <= i5) ->
                     ((i5 <=
-                      ((len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
-                       - 1))
+                      ((len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2)) -
+                       1))
                      ->
                      (forall (m:<r1 r2  >).
-                      ((!! [array[(a26)||]| r1| {r1 r2  }] ar m)
-                       =[array[(a26)||]||]
-                       (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                      ((!! [array[a26||]| r1| {r1 r2  }] ar m)
+                       =[array[a26||]||]
+                       (!! [array[a26||]| r1| {r1  }] ar s1))
                       ->
-                      (((len [a26||]
-                         (!! [array[(a26)||]| r2| {r1 r2  }] ar1 m))
+                      (((len [a26||] (!! [array[a26||]| r2| {r1 r2  }] ar1 m))
                         =[int||]
-                        (len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2)))
+                        (len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2)))
                        ->
                        ((forall (k3:int).
                          (i5 < k3) ->
                          ((k3 <=
                            ((len [a26||]
-                             (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                             (!! [array[a26||]| r2| {r2  }] ar1 s2))
                             - 1))
                           ->
                           ((get [a26||] (ofs1 + k3)
-                            (!! [array[(a26)||]| r2| {r1 r2  }] ar1 m))
+                            (!! [array[a26||]| r2| {r1 r2  }] ar1 m))
                            =[a26||]
                            (get [a26||] (ofs + k3)
-                            (!! [array[(a26)||]| r1| {r1 r2  }] ar m)))))
+                            (!! [array[a26||]| r1| {r1 r2  }] ar m)))))
                         ->
                         ((((0 <= i5) /\
                            (i5 <=
                             ((len [a26||]
-                              (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                              (!! [array[a26||]| r2| {r2  }] ar1 s2))
                              - 1)))
                           /\
-                          ((((!! [array[(a26)||]| r1| {r1 r2  }] ar m)
-                             =[array[(a26)||]||]
-                             (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                          ((((!! [array[a26||]| r1| {r1 r2  }] ar m)
+                             =[array[a26||]||]
+                             (!! [array[a26||]| r1| {r1  }] ar s1))
                             /\
                             ((len [a26||]
-                              (!! [array[(a26)||]| r2| {r1 r2  }] ar1 m))
+                              (!! [array[a26||]| r2| {r1 r2  }] ar1 m))
                              =[int||]
                              (len [a26||]
-                              (!! [array[(a26)||]| r2| {r2  }] ar1 s2))))
+                              (!! [array[a26||]| r2| {r2  }] ar1 s2))))
                            /\
                            (forall (k4:int).
                             (i5 < k4) ->
                             ((k4 <=
                               ((len [a26||]
-                                (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                                (!! [array[a26||]| r2| {r2  }] ar1 s2))
                                - 1))
                              ->
                              ((get [a26||] (ofs1 + k4)
-                               (!! [array[(a26)||]| r2| {r1 r2  }] ar1 m))
+                               (!! [array[a26||]| r2| {r1 r2  }] ar1 m))
                               =[a26||]
                               (get [a26||] (ofs + k4)
-                               (!! [array[(a26)||]| r1| {r1 r2  }] ar m)))))))
+                               (!! [array[a26||]| r1| {r1 r2  }] ar m)))))))
                          /\
                          (forall (n:<r1 r2  >).
-                          ((!! [array[(a26)||]| r1| {r1 r2  }] ar n)
-                           =[array[(a26)||]||]
-                           (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                          ((!! [array[a26||]| r1| {r1 r2  }] ar n)
+                           =[array[a26||]||]
+                           (!! [array[a26||]| r1| {r1  }] ar s1))
                           ->
                           (((len [a26||]
-                             (!! [array[(a26)||]| r2| {r1 r2  }] ar1 n))
+                             (!! [array[a26||]| r2| {r1 r2  }] ar1 n))
                             =[int||]
                             (len [a26||]
-                             (!! [array[(a26)||]| r2| {r2  }] ar1 s2)))
+                             (!! [array[a26||]| r2| {r2  }] ar1 s2)))
                            ->
                            ((forall (k5:int).
                              ((i5 - 1) < k5) ->
                              ((k5 <=
                                ((len [a26||]
-                                 (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                                 (!! [array[a26||]| r2| {r2  }] ar1 s2))
                                 - 1))
                               ->
                               ((get [a26||] (ofs1 + k5)
-                                (!! [array[(a26)||]| r2| {r1 r2  }] ar1 n))
+                                (!! [array[a26||]| r2| {r1 r2  }] ar1 n))
                                =[a26||]
                                (get [a26||] (ofs + k5)
-                                (!! [array[(a26)||]| r1| {r1 r2  }] ar n)))))
+                                (!! [array[a26||]| r1| {r1 r2  }] ar n)))))
                             ->
-                            ((((!! [array[(a26)||]| r1| {r1 r2  }] ar n)
-                               =[array[(a26)||]||]
-                               (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                            ((((!! [array[a26||]| r1| {r1 r2  }] ar n)
+                               =[array[a26||]||]
+                               (!! [array[a26||]| r1| {r1  }] ar s1))
                               /\
                               ((len [a26||]
-                                (!! [array[(a26)||]| r2| {r1 r2  }] ar1 n))
+                                (!! [array[a26||]| r2| {r1 r2  }] ar1 n))
                                =[int||]
                                (len [a26||]
-                                (!! [array[(a26)||]| r2| {r2  }] ar1 s2))))
+                                (!! [array[a26||]| r2| {r2  }] ar1 s2))))
                              /\
                              (forall (k6:int).
                               ((i5 - 1) < k6) ->
                               ((k6 <=
                                 ((len [a26||]
-                                  (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                                  (!! [array[a26||]| r2| {r2  }] ar1 s2))
                                  - 1))
                                ->
                                ((get [a26||] (ofs1 + k6)
-                                 (!! [array[(a26)||]| r2| {r1 r2  }] ar1 n))
+                                 (!! [array[a26||]| r2| {r1 r2  }] ar1 n))
                                 =[a26||]
                                 (get [a26||] (ofs + k6)
-                                 (!! [array[(a26)||]| r1| {r1 r2  }] ar n)))))))))))))))))
+                                 (!! [array[a26||]| r1| {r1 r2  }] ar n)))))))))))))))))
                  /\
                  (forall (s7:<r1 r2  >).
-                  ((!! [array[(a26)||]| r1| {r1 r2  }] ar s7)
-                   =[array[(a26)||]||]
-                   (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                  ((!! [array[a26||]| r1| {r1 r2  }] ar s7) =[array[a26||]||]
+                   (!! [array[a26||]| r1| {r1  }] ar s1))
                   ->
-                  (((len [a26||] (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s7))
+                  (((len [a26||] (!! [array[a26||]| r2| {r1 r2  }] ar1 s7))
                     =[int||]
-                    (len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2)))
+                    (len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2)))
                    ->
                    ((forall (k7:int).
                      ((min
-                       ((len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                       ((len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2))
                         - 1)
                        (0 - 1))
                       < k7)
                      ->
                      ((k7 <=
-                       ((len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                       ((len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2))
                         - 1))
                       ->
                       ((get [a26||] (ofs1 + k7)
-                        (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s7))
+                        (!! [array[a26||]| r2| {r1 r2  }] ar1 s7))
                        =[a26||]
                        (get [a26||] (ofs + k7)
-                        (!! [array[(a26)||]| r1| {r1 r2  }] ar s7)))))
+                        (!! [array[a26||]| r1| {r1 r2  }] ar s7)))))
                     ->
-                    ((((!! [array[(a26)||]| r1| {r1 r2  }] ar s)
-                       =[array[(a26)||]||]
-                       (!! [array[(a26)||]| r1| {r1 r2  }] ar s7))
+                    ((((!! [array[a26||]| r1| {r1 r2  }] ar s)
+                       =[array[a26||]||]
+                       (!! [array[a26||]| r1| {r1 r2  }] ar s7))
                       /\
-                      ((len [a26||]
-                        (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s7))
+                      ((len [a26||] (!! [array[a26||]| r2| {r1 r2  }] ar1 s7))
                        =[int||]
-                       (len [a26||]
-                        (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s))))
+                       (len [a26||] (!! [array[a26||]| r2| {r1 r2  }] ar1 s))))
                      /\
                      (forall (k8:int).
                       (0 <= k8) ->
                       ((k8 < l2) ->
                        ((get [a26||] (ofs1 + k8)
-                         (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s7))
+                         (!! [array[a26||]| r2| {r1 r2  }] ar1 s7))
                         =[a26||]
                         (get [a26||] (ofs + k8)
-                         (!! [array[(a26)||]| r1| {r1 r2  }] ar s7)))))))))))
+                         (!! [array[a26||]| r1| {r1 r2  }] ar s7)))))))))))
                /\
                ((~ (ofs < ofs1)) ->
                 (((forall (s8:<r1 r2  >).
                    forall (i6:int).
-                   ((!! [array[(a26)||]| r1| {r1 r2  }] ar s8)
-                    =[array[(a26)||]||]
-                    (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                   ((!! [array[a26||]| r1| {r1 r2  }] ar s8)
+                    =[array[a26||]||] (!! [array[a26||]| r1| {r1  }] ar s1))
                    ->
-                   (((len [a26||] (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s8))
+                   (((len [a26||] (!! [array[a26||]| r2| {r1 r2  }] ar1 s8))
                      =[int||]
-                     (len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2)))
+                     (len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2)))
                     ->
                     ((0 <= i6) ->
                      ((i6 <=
-                       ((len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                       ((len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2))
                         - 1))
                       ->
                       ((forall (k9:int).
                         (0 <= k9) ->
                         ((k9 < i6) ->
                          ((get [a26||] (ofs1 + k9)
-                           (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s8))
+                           (!! [array[a26||]| r2| {r1 r2  }] ar1 s8))
                           =[a26||]
                           (get [a26||] (ofs + k9)
-                           (!! [array[(a26)||]| r1| {r1 r2  }] ar s8)))))
+                           (!! [array[a26||]| r1| {r1 r2  }] ar s8)))))
                        ->
                        (forall (s9:<r1  >).
-                        ((!! [array[(a26)||]| r1| {r1  }] ar
+                        ((!! [array[a26||]| r1| {r1  }] ar
                           (restrict [|| {r2  } {r1  }] s8))
-                         =[array[(a26)||]||]
-                         (!! [array[(a26)||]| r1| {r1  }] ar s9))
+                         =[array[a26||]||]
+                         (!! [array[a26||]| r1| {r1  }] ar s9))
                         ->
                         (forall (s10:<r2  >).
-                         ((!! [array[(a26)||]| r2| {r2  }] ar1
+                         ((!! [array[a26||]| r2| {r2  }] ar1
                            (restrict [|| {r1  } {r2  }] s8))
-                          =[array[(a26)||]||]
-                          (!! [array[(a26)||]| r2| {r2  }] ar1 s10))
+                          =[array[a26||]||]
+                          (!! [array[a26||]| r2| {r2  }] ar1 s10))
                          ->
                          (forall (s11:<r2  >).
-                          ((!! [array[(a26)||]| r2| {r2  }] ar1 s11)
-                           =[array[(a26)||]||]
+                          ((!! [array[a26||]| r2| {r2  }] ar1 s11)
+                           =[array[a26||]||]
                            (set [a26||] (ofs1 + i6)
                             (get [a26||] (ofs + i6)
-                             (!! [array[(a26)||]| r1| {r1  }] ar s9))
-                            (!! [array[(a26)||]| r2| {r2  }] ar1 s10)))
+                             (!! [array[a26||]| r1| {r1  }] ar s9))
+                            (!! [array[a26||]| r2| {r2  }] ar1 s10)))
                           ->
-                          ((((!! [array[(a26)||]| r1| {r1 r2  }] ar
+                          ((((!! [array[a26||]| r1| {r1 r2  }] ar
                               (combine [|| {r1  } { } {r2  }] s9 s11))
-                             =[array[(a26)||]||]
-                             (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                             =[array[a26||]||]
+                             (!! [array[a26||]| r1| {r1  }] ar s1))
                             /\
                             ((len [a26||]
-                              (!! [array[(a26)||]| r2| {r1 r2  }] ar1
+                              (!! [array[a26||]| r2| {r1 r2  }] ar1
                                (combine [|| {r1  } { } {r2  }] s9 s11)))
                              =[int||]
                              (len [a26||]
-                              (!! [array[(a26)||]| r2| {r2  }] ar1 s2))))
+                              (!! [array[a26||]| r2| {r2  }] ar1 s2))))
                            /\
                            (forall (k10:int).
                             (0 <= k10) ->
                             ((k10 < (i6 + 1)) ->
                              ((get [a26||] (ofs1 + k10)
-                               (!! [array[(a26)||]| r2| {r1 r2  }] ar1
+                               (!! [array[a26||]| r2| {r1 r2  }] ar1
                                 (combine [|| {r1  } { } {r2  }] s9 s11)))
                               =[a26||]
                               (get [a26||] (ofs + k10)
-                               (!! [array[(a26)||]| r1| {r1 r2  }] ar
+                               (!! [array[a26||]| r1| {r1 r2  }] ar
                                 (combine [|| {r1  } { } {r2  }] s9 s11)))))))))))))))
                   /\
-                  (((((!! [array[(a26)||]| r1| {r1 r2  }] ar
+                  (((((!! [array[a26||]| r1| {r1 r2  }] ar
                        (combine [|| {r1  } { } {r2  }] s1 s2))
-                      =[array[(a26)||]||]
-                      (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                      =[array[a26||]||] (!! [array[a26||]| r1| {r1  }] ar s1))
                      /\
                      ((len [a26||]
-                       (!! [array[(a26)||]| r2| {r1 r2  }] ar1
+                       (!! [array[a26||]| r2| {r1 r2  }] ar1
                         (combine [|| {r1  } { } {r2  }] s1 s2)))
                       =[int||]
-                      (len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2))))
+                      (len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2))))
                     /\
                     (forall (k11:int).
                      (0 <= k11) ->
                      ((k11 < 0) ->
                       ((get [a26||] (ofs1 + k11)
-                        (!! [array[(a26)||]| r2| {r1 r2  }] ar1
+                        (!! [array[a26||]| r2| {r1 r2  }] ar1
                          (combine [|| {r1  } { } {r2  }] s1 s2)))
                        =[a26||]
                        (get [a26||] (ofs + k11)
-                        (!! [array[(a26)||]| r1| {r1 r2  }] ar
+                        (!! [array[a26||]| r1| {r1 r2  }] ar
                          (combine [|| {r1  } { } {r2  }] s1 s2)))))))
                    /\
                    (forall (i7:int).
                     (0 <= i7) ->
                     ((i7 <=
-                      ((len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
-                       - 1))
+                      ((len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2)) -
+                       1))
                      ->
                      (forall (m1:<r1 r2  >).
-                      ((!! [array[(a26)||]| r1| {r1 r2  }] ar m1)
-                       =[array[(a26)||]||]
-                       (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                      ((!! [array[a26||]| r1| {r1 r2  }] ar m1)
+                       =[array[a26||]||]
+                       (!! [array[a26||]| r1| {r1  }] ar s1))
                       ->
                       (((len [a26||]
-                         (!! [array[(a26)||]| r2| {r1 r2  }] ar1 m1))
+                         (!! [array[a26||]| r2| {r1 r2  }] ar1 m1))
                         =[int||]
-                        (len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2)))
+                        (len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2)))
                        ->
                        ((forall (k12:int).
                          (0 <= k12) ->
                          ((k12 < i7) ->
                           ((get [a26||] (ofs1 + k12)
-                            (!! [array[(a26)||]| r2| {r1 r2  }] ar1 m1))
+                            (!! [array[a26||]| r2| {r1 r2  }] ar1 m1))
                            =[a26||]
                            (get [a26||] (ofs + k12)
-                            (!! [array[(a26)||]| r1| {r1 r2  }] ar m1)))))
+                            (!! [array[a26||]| r1| {r1 r2  }] ar m1)))))
                         ->
                         ((((0 <= i7) /\
                            (i7 <=
                             ((len [a26||]
-                              (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                              (!! [array[a26||]| r2| {r2  }] ar1 s2))
                              - 1)))
                           /\
-                          ((((!! [array[(a26)||]| r1| {r1 r2  }] ar m1)
-                             =[array[(a26)||]||]
-                             (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                          ((((!! [array[a26||]| r1| {r1 r2  }] ar m1)
+                             =[array[a26||]||]
+                             (!! [array[a26||]| r1| {r1  }] ar s1))
                             /\
                             ((len [a26||]
-                              (!! [array[(a26)||]| r2| {r1 r2  }] ar1 m1))
+                              (!! [array[a26||]| r2| {r1 r2  }] ar1 m1))
                              =[int||]
                              (len [a26||]
-                              (!! [array[(a26)||]| r2| {r2  }] ar1 s2))))
+                              (!! [array[a26||]| r2| {r2  }] ar1 s2))))
                            /\
                            (forall (k13:int).
                             (0 <= k13) ->
                             ((k13 < i7) ->
                              ((get [a26||] (ofs1 + k13)
-                               (!! [array[(a26)||]| r2| {r1 r2  }] ar1 m1))
+                               (!! [array[a26||]| r2| {r1 r2  }] ar1 m1))
                               =[a26||]
                               (get [a26||] (ofs + k13)
-                               (!! [array[(a26)||]| r1| {r1 r2  }] ar m1)))))))
+                               (!! [array[a26||]| r1| {r1 r2  }] ar m1)))))))
                          /\
                          (forall (n1:<r1 r2  >).
-                          ((!! [array[(a26)||]| r1| {r1 r2  }] ar n1)
-                           =[array[(a26)||]||]
-                           (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                          ((!! [array[a26||]| r1| {r1 r2  }] ar n1)
+                           =[array[a26||]||]
+                           (!! [array[a26||]| r1| {r1  }] ar s1))
                           ->
                           (((len [a26||]
-                             (!! [array[(a26)||]| r2| {r1 r2  }] ar1 n1))
+                             (!! [array[a26||]| r2| {r1 r2  }] ar1 n1))
                             =[int||]
                             (len [a26||]
-                             (!! [array[(a26)||]| r2| {r2  }] ar1 s2)))
+                             (!! [array[a26||]| r2| {r2  }] ar1 s2)))
                            ->
                            ((forall (k14:int).
                              (0 <= k14) ->
                              ((k14 < (i7 + 1)) ->
                               ((get [a26||] (ofs1 + k14)
-                                (!! [array[(a26)||]| r2| {r1 r2  }] ar1 n1))
+                                (!! [array[a26||]| r2| {r1 r2  }] ar1 n1))
                                =[a26||]
                                (get [a26||] (ofs + k14)
-                                (!! [array[(a26)||]| r1| {r1 r2  }] ar n1)))))
+                                (!! [array[a26||]| r1| {r1 r2  }] ar n1)))))
                             ->
-                            ((((!! [array[(a26)||]| r1| {r1 r2  }] ar n1)
-                               =[array[(a26)||]||]
-                               (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                            ((((!! [array[a26||]| r1| {r1 r2  }] ar n1)
+                               =[array[a26||]||]
+                               (!! [array[a26||]| r1| {r1  }] ar s1))
                               /\
                               ((len [a26||]
-                                (!! [array[(a26)||]| r2| {r1 r2  }] ar1 n1))
+                                (!! [array[a26||]| r2| {r1 r2  }] ar1 n1))
                                =[int||]
                                (len [a26||]
-                                (!! [array[(a26)||]| r2| {r2  }] ar1 s2))))
+                                (!! [array[a26||]| r2| {r2  }] ar1 s2))))
                              /\
                              (forall (k15:int).
                               (0 <= k15) ->
                               ((k15 < (i7 + 1)) ->
                                ((get [a26||] (ofs1 + k15)
-                                 (!! [array[(a26)||]| r2| {r1 r2  }] ar1 n1))
+                                 (!! [array[a26||]| r2| {r1 r2  }] ar1 n1))
                                 =[a26||]
                                 (get [a26||] (ofs + k15)
-                                 (!! [array[(a26)||]| r1| {r1 r2  }] ar n1)))))))))))))))))
+                                 (!! [array[a26||]| r1| {r1 r2  }] ar n1)))))))))))))))))
                  /\
                  (forall (s12:<r1 r2  >).
-                  ((!! [array[(a26)||]| r1| {r1 r2  }] ar s12)
-                   =[array[(a26)||]||]
-                   (!! [array[(a26)||]| r1| {r1  }] ar s1))
+                  ((!! [array[a26||]| r1| {r1 r2  }] ar s12)
+                   =[array[a26||]||] (!! [array[a26||]| r1| {r1  }] ar s1))
                   ->
-                  (((len [a26||] (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s12))
+                  (((len [a26||] (!! [array[a26||]| r2| {r1 r2  }] ar1 s12))
                     =[int||]
-                    (len [a26||] (!! [array[(a26)||]| r2| {r2  }] ar1 s2)))
+                    (len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2)))
                    ->
                    ((forall (k16:int).
                      (0 <= k16) ->
                      ((k16 <
                        (max 0
-                        (((len [a26||]
-                           (!! [array[(a26)||]| r2| {r2  }] ar1 s2))
+                        (((len [a26||] (!! [array[a26||]| r2| {r2  }] ar1 s2))
                           - 1)
                          + 1)))
                       ->
                       ((get [a26||] (ofs1 + k16)
-                        (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s12))
+                        (!! [array[a26||]| r2| {r1 r2  }] ar1 s12))
                        =[a26||]
                        (get [a26||] (ofs + k16)
-                        (!! [array[(a26)||]| r1| {r1 r2  }] ar s12)))))
+                        (!! [array[a26||]| r1| {r1 r2  }] ar s12)))))
                     ->
-                    ((((!! [array[(a26)||]| r1| {r1 r2  }] ar s)
-                       =[array[(a26)||]||]
-                       (!! [array[(a26)||]| r1| {r1 r2  }] ar s12))
+                    ((((!! [array[a26||]| r1| {r1 r2  }] ar s)
+                       =[array[a26||]||]
+                       (!! [array[a26||]| r1| {r1 r2  }] ar s12))
                       /\
                       ((len [a26||]
-                        (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s12))
+                        (!! [array[a26||]| r2| {r1 r2  }] ar1 s12))
                        =[int||]
-                       (len [a26||]
-                        (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s))))
+                       (len [a26||] (!! [array[a26||]| r2| {r1 r2  }] ar1 s))))
                      /\
                      (forall (k17:int).
                       (0 <= k17) ->
                       ((k17 < l2) ->
                        ((get [a26||] (ofs1 + k17)
-                         (!! [array[(a26)||]| r2| {r1 r2  }] ar1 s12))
+                         (!! [array[a26||]| r2| {r1 r2  }] ar1 s12))
                         =[a26||]
                         (get [a26||] (ofs + k17)
-                         (!! [array[(a26)||]| r1| {r1 r2  }] ar s12))))))))))))))))))
+                         (!! [array[a26||]| r1| {r1 r2  }] ar s12))))))))))))))))))

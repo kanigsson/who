@@ -4,12 +4,12 @@ section basiclogic coq predefined
   logic \/  : prop -> prop -> prop
   logic ->  : prop -> prop -> prop
   logic ~  : prop -> prop
-  logic = ['a||] : (a) -> (a) -> prop
-  logic , ['a1 'b||] : (a1) -> (b) -> (a1) * (b) end
+  logic = ['a||] : a -> a -> prop
+  logic , ['a1 'b||] : a1 -> b -> a1 * b end
 section pairs coq predefined
   pangoline takeover
-   logic fst ['a2 'b1||] : ((a2) * (b1)) -> a2
-  logic snd ['a3 'b2||] : ((a3) * (b2)) -> b2 end
+   logic fst ['a2 'b1||] : (a2 * b1) -> a2
+  logic snd ['a3 'b2||] : (a3 * b2) -> b2 end
 section boolean coq predefined
   pangoline takeover type bool
   logic true  : bool
@@ -30,11 +30,11 @@ section arith coq "WhoArith"
   logic <<=  : int -> int -> bool
   logic >>  : int -> int -> bool
   logic >>=  : int -> int -> bool
-  logic <> ['a4||] : (a4) -> (a4) -> prop
+  logic <> ['a4||] : a4 -> a4 -> prop
   logic int_max  : int -> int -> int
   logic int_min  : int -> int -> int
-  logic band  : (bool) -> (bool) -> bool
-  logic bor  : (bool) -> (bool) -> bool
+  logic band  : bool -> bool -> bool
+  logic bor  : bool -> bool -> bool
   axiom int_max_is_ge : forall (x:int).
                         forall (y:int).
                         ((int_max x y) >= x) /\ ((int_max x y) >= y)
@@ -49,8 +49,8 @@ section arith coq "WhoArith"
                           ((int_min x3 y3) = x3) \/ ((int_min x3 y3) = y3) end
 section beq coq predefined
   pangoline takeover
-   logic == ['a5||] : (a5) -> (a5) -> bool
-  logic != ['a6||] : (a6) -> (a6) -> bool end
+   logic == ['a5||] : a5 -> a5 -> bool
+  logic != ['a6||] : a6 -> a6 -> bool end
 section Whoref coq "WhoMap"
   pangoline predefined
    logic !! ['a7|r|'e] : ref(r,a7) -> <r  'e > -> a7
@@ -68,8 +68,8 @@ section Whoref coq "WhoMap"
     >
   logic restrict [||'e4 'e5] : < 'e4 'e5 > -> < 'e5 >
   logic empty  : < >
-  let pre ['a11 'b3||] = (fun (x7:(a11) * (b3)) -> fst x7) 
-  let post ['a12 'b4||] = (fun (x8:(a12) * (b4)) -> snd x8)  end
+  let pre ['a11 'b3||] = (fun (x7:a11 * b3) -> fst x7) 
+  let post ['a12 'b4||] = (fun (x8:a12 * b4) -> snd x8)  end
 let
   forto [||'e6] = (fun (inv:int -> < 'e6 > -> prop) ->
                   (fun (start:int) ->
@@ -103,23 +103,23 @@ let
 section Array coq "WhoArray"
   pangoline takeover
    type array['a13||]
-  logic ar_empty ['a14||] : array[(a14)||]
-  logic get ['a15||] : int -> (array[(a15)||]) -> a15
-  logic set ['a16||] : int -> (a16) -> (array[(a16)||]) -> array[(a16)||]
-  logic len ['a17||] : (array[(a17)||]) -> int
-  logic create ['a18||] : int -> (a18) -> array[(a18)||]
-  axiom update_length : forall ['a19||]. forall (t:array[(a19)||]).
+  logic ar_empty ['a14||] : array[a14||]
+  logic get ['a15||] : int -> array[a15||] -> a15
+  logic set ['a16||] : int -> a16 -> array[a16||] -> array[a16||]
+  logic len ['a17||] : array[a17||] -> int
+  logic create ['a18||] : int -> a18 -> array[a18||]
+  axiom update_length : forall ['a19||]. forall (t:array[a19||]).
                                          forall (i2:int).
                                          forall (z:a19).
                                          ((0 <= i2) /\ (i2 < (len t))) ->
                                          ((len t) = (len (set i2 z t)))
-  axiom get_set_eq : forall ['a20||]. forall (t1:array[(a20)||]).
+  axiom get_set_eq : forall ['a20||]. forall (t1:array[a20||]).
                                       forall (i3:int).
                                       forall (z1:a20).
                                       ((0 <= i3) /\ (i3 < (len t1))) ->
                                       ((get i3 (set i3 z1 t1)) = z1)
-  axiom length_empty : forall ['a21||]. (len (ar_empty : array[(a21)||])) = 0
-  axiom get_set_neq : forall ['a22||]. forall (t2:array[(a22)||]).
+  axiom length_empty : forall ['a21||]. (len (ar_empty : array[a21||])) = 0
+  axiom get_set_neq : forall ['a22||]. forall (t2:array[a22||]).
                                        forall (i4:int).
                                        forall (j:int).
                                        forall (z2:a22).
@@ -128,7 +128,7 @@ section Array coq "WhoArray"
                                         ((i4 <> j) ->
                                          ((get i4 (set j z2 t2)) =
                                           (get i4 t2))))
-  axiom length_nonnegative : forall ['a23||]. forall (t3:array[(a23)||]).
+  axiom length_nonnegative : forall ['a23||]. forall (t3:array[a23||]).
                                               0 <= (len t3)
   axiom length_create : forall ['a24||]. forall (l:int).
                                          forall (v2:a24).
@@ -143,7 +143,7 @@ section Array coq "WhoArray"
 section List coq "WhoList"
   pangoline takeover
    type list['a26||]
-  logic nil ['a27||] : list[(a27)||]
-  logic cons ['a28||] : (a28) -> (list[(a28)||]) -> list[(a28)||]
-  logic is_nil ['a29||] : (list[(a29)||]) -> bool
-  logic l_in ['a30||] : (a30) -> (list[(a30)||]) -> prop end
+  logic nil ['a27||] : list[a27||]
+  logic cons ['a28||] : a28 -> list[a28||] -> list[a28||]
+  logic is_nil ['a29||] : list[a29||] -> bool
+  logic l_in ['a30||] : a30 -> list[a30||] -> prop end

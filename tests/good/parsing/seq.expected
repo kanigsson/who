@@ -1,12 +1,12 @@
-logic = ['a||] : (a) -> (a) -> prop
+logic = ['a||] : a -> a -> prop
 logic /\  : prop -> prop -> prop
 logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
 let
   ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {} parameter(a2,{r1  })
                 {r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))}) 
 let seq ['a3 'b 'c||'e1
-  'e2] = (fun (f:(a3) ->{ 'e1 } b) ->
-         (fun (g:(b) ->{ 'e2 } c) -> (fun (x1:a3) -> {} g (f x1) {}))) 
+  'e2] = (fun (f:a3 ->{ 'e1 } b) ->
+         (fun (g:b ->{ 'e2 } c) -> (fun (x1:a3) -> {} g (f x1) {}))) 
 let h [|r3
   r4|] = (fun (x2:ref(r3,int)) ->
          (fun (y:ref(r4,int)) -> {}

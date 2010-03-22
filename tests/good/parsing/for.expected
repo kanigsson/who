@@ -1,16 +1,16 @@
 type unit
 logic tt  : unit
-logic = ['a||] : (a) -> (a) -> prop
+logic = ['a||] : a -> a -> prop
 logic /\  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
 logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
 let
   ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {} parameter(a2,{r1  })
                 {r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))}) 
-logic fst ['a3 'b||] : ((a3) * (b)) -> a3
-logic snd ['a4 'b1||] : ((a4) * (b1)) -> b1
-let pre ['a5 'b2||] = (fun (x1:(a5) * (b2)) -> fst x1) 
-let post ['a6 'b3||] = (fun (x2:(a6) * (b3)) -> snd x2) 
+logic fst ['a3 'b||] : (a3 * b) -> a3
+logic snd ['a4 'b1||] : (a4 * b1) -> b1
+let pre ['a5 'b2||] = (fun (x1:a5 * b2) -> fst x1) 
+let post ['a6 'b3||] = (fun (x2:a6 * b3) -> snd x2) 
 logic <=  : int -> int -> prop
 logic <  : int -> int -> prop
 logic +  : int -> int -> int

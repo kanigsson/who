@@ -25,7 +25,7 @@ module PT = Predefined.Ty
 
 type ('a,'b,'c) t' = 
   | Const of Const.ty
-  | Tuple of 'a * 'a
+  | Tuple of 'a list
   | Arrow of 'a * 'a * 'c * 'b list
   | PureArr of 'a * 'a
   | App of Name.t * ('a,'b,'c) Inst.t
@@ -36,8 +36,8 @@ type t = C of (t,Name.t,Effect.t) t'
 open Myformat
 
 let is_compound = function
-  | Const _ | Ref _ | Map _ -> false
-  | Tuple _ | Arrow _ | PureArr _ | App _ -> true
+  | Const _ | Ref _ | Map _ | App _ -> false
+  | Tuple _ | Arrow _ | PureArr _ -> true
 
 let maycap pr fmt = function
   | [] -> ()
@@ -57,8 +57,9 @@ let print' ?(kind=`Who) pt pr pe is_c fmt x =
       fprintf fmt "%a ->{%a%a} %a" mayp t1 pe eff (maycap pr) cap pt t2
   | Map e -> fprintf fmt "<%a>" pe e
   | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 pt t2
-  | Tuple (t1,t2) -> 
-      fprintf fmt "%a *@ %a" mayp t1 mayp t2
+  | Tuple tl -> 
+      print_list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
+(*       fprintf fmt "%a *@ %a" mayp t1 mayp t2 *)
 (*
       begin match kind with
       | `Who | `Coq -> fprintf fmt "%a *@ %a" mayp t1 mayp t2
@@ -92,7 +93,7 @@ let print_list sep fmt t =
 let arrow t1 t2 eff = C (Arrow (t1,t2,eff,[]))
 let caparrow t1 t2 eff cap = C (Arrow (t1,t2,eff,cap))
 let parr t1 t2 = C (PureArr (t1,t2))
-let tuple t1 t2 = C (Tuple (t1,t2))
+let tuple tl = C (Tuple tl)
 let const c = C (Const c)
 let ref_ r t = C (Ref (r,t))
 let map e = C (Map e)
@@ -105,10 +106,10 @@ let unit = var PT.unit_var
 let int = const (Const.TInt)
 let emptymap = map (Effect.empty)
 
-let destr_tuple (C t) = 
+let destr_pair (C t) = 
   match t with
-  | Tuple (t1,t2) -> t1,t2
-  | _ ->  invalid_arg "Ty.destr_tuple"
+  | Tuple [t1;t2] -> t1,t2
+  | _ ->  invalid_arg "Ty.destr_pair"
 
 let latent_effect = function
   | C (Arrow (_,_,e,_)) -> e
@@ -137,12 +138,12 @@ let is_ref = function
 
 let pretype a e = parr a (parr (map e) prop)
 let posttype a b e = parr a (parr (map e) (parr (map e) (parr b prop)))
-let prepost_type a b e = tuple (pretype a e) (posttype a b e)
+let prepost_type a b e = tuple [pretype a e ; posttype a b e ]
 
 let to_logic_type t = 
   let rec aux' = function
     | (Const _ | Map _) as t -> C t
-    | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
+    | Tuple tl -> tuple (List.map aux tl)
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)
     | Arrow (t1,t2,e,_) -> prepost_type (aux t1) (aux t2) e 
     | Ref (x,t) -> ref_ x (aux t)
@@ -165,7 +166,7 @@ let tlsubst xl tl target =
         begin try let C t = Name.M.find y map in t
         with Not_found -> t end
     | (Const _ | Map _ ) as x -> x
-    | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
+    | Tuple tl -> Tuple (List.map aux tl)
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
     | Arrow (t1,t2,eff,cap) -> Arrow (aux t1, aux t2,eff, cap) 
     | Ref (r,t) -> Ref (r, aux t)
@@ -189,7 +190,7 @@ let rlsubst rvl rl target =
   let map = build_rvar_map rvl rl in
   let rec aux' = function
     | Const _ as x -> x
-    | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
+    | Tuple tl -> Tuple (List.map aux tl)
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
     | Arrow (t1,t2,eff, cap) -> 
         Arrow (aux t1, aux t2,effsubst eff, List.map auxr cap) 
@@ -211,7 +212,7 @@ let rsubst rvl rl r =
 let elsubst evl effl target = 
   let rec aux' = function
     | Const _ as x -> x
-    | Tuple (t1,t2) -> Tuple (aux t1, aux t2) 
+    | Tuple tl -> Tuple (List.map aux tl)
     | PureArr (t1,t2) -> PureArr (aux t1, aux t2) 
     | Arrow (t1,t2,eff',cap) -> Arrow (aux t1, aux t2,effsubst eff' ,cap) 
     | Map eff' -> Map (effsubst eff')
@@ -268,9 +269,10 @@ let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target =
 let rec equal' eff t1 t2 = 
   match t1, t2 with
   | Const x1, Const x2 -> x1 = x2
-  | Tuple (ta1,ta2), Tuple (tb1,tb2)
   | PureArr (ta1,ta2), PureArr (tb1,tb2) -> 
       equal eff ta1 tb1 && equal eff ta2 tb2
+  | Tuple tl1, Tuple tl2 when List.length tl1 = List.length tl2 ->
+      List.for_all2 (equal eff) tl1 tl2
   | Arrow (ta1,ta2,e1, cap1), Arrow (tb1,tb2,e2, cap2) -> 
       equal eff ta1 tb1 && equal eff ta2 tb2 && eff e1 e2 &&
       Misc.list_equal Name.compare cap1 cap2
@@ -298,11 +300,12 @@ let find_type_of_r name x =
   let rec aux' = function
     | Const _ | Map _ -> None
     | Ref (n,t) -> if Name.equal n name then Some t else aux t
-    | Tuple (t1,t2) | Arrow (t1,t2,_,_) | PureArr (t1,t2) -> 
+    | Arrow (t1,t2,_,_) | PureArr (t1,t2) -> 
         begin match aux t1 with
         | (Some _) as r -> r
         | None -> aux t2
         end
+    | Tuple tl
     | App (_,(tl,_,_)) ->
         try List.iter
           (fun t -> 
@@ -322,7 +325,7 @@ let selim_map get_rtype t =
   let rec aux' = function
     | Const _ as t -> C t
     | Map _ -> assert false
-    | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
+    | Tuple tl -> tuple (List.map aux tl)
     | PureArr (C (Map e), t) ->
         let t = Effect.efold (fun e acc -> parr (get_rtype e) acc) (aux t) e in
         Effect.rfold (fun r acc -> parr (get_rtype r) acc) t e
@@ -334,17 +337,17 @@ let selim_map get_rtype t =
 (*   Myformat.printf "converting type: %a@." print t; *)
   aux t
 
-let from_logic_tuple t = 
+let from_logic_pair t = 
   match t with
-  | C Tuple (_,C PureArr (t1,C PureArr (C Map e, C PureArr (_, C PureArr (t2,
-  _))))) -> t1, t2, e
+  | C Tuple [_;C PureArr (t1,C PureArr (C Map e, C PureArr (_, C PureArr (t2,
+  _))))] -> t1, t2, e
   | _ -> assert false
 
 let selim_map_log t = 
   let rec aux' = function
     | Const _ as t -> C t
     | Map _ -> assert false
-    | Tuple (t1,t2) -> tuple (aux t1) (aux t2)
+    | Tuple tl -> tuple (List.map aux tl)
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)    
     | Arrow (t1,t2,e,_) -> prepost_type (aux t1) (aux t2) e
     | Ref (r,t) -> ref_ r (aux t)
@@ -359,14 +362,14 @@ module Predef = struct
   let int_3 = parr int (parr int int)
   let iip = parr int (parr int prop)
   let iib = parr int (parr int bool)
-  let aap, aab, mk_tuple, fst, snd = 
+  let aap, aab, mk_pair, fst, snd = 
     let a = Name.from_string "a" and b = Name.from_string "b" in
     let ta = var a and tb = var b in
     (([a],[],[]), parr ta (parr ta prop)),
     (([a],[],[]), parr ta (parr ta bool)),
-    (([a;b],[],[]), parr ta (parr tb (tuple ta tb))),
-    (([a;b],[],[]), parr (tuple ta tb) ta),
-    (([a;b],[],[]), parr (tuple ta tb) tb)
+    (([a;b],[],[]), parr ta (parr tb (tuple [ta; tb]))),
+    (([a;b],[],[]), parr (tuple [ta;tb]) ta),
+    (([a;b],[],[]), parr (tuple [ta;tb]) tb)
 
   let combine, restrict, get =
     let es = Effect.esingleton and nf = Name.from_string in

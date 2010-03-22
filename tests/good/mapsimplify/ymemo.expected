@@ -1,5 +1,5 @@
 logic ->  : prop -> prop -> prop
-logic = ['a||] : (a) -> (a) -> prop
+logic = ['a||] : a -> a -> prop
 type bool
 logic true  : bool
 logic false  : bool
