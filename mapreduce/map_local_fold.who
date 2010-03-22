@@ -1,9 +1,11 @@
+logic handled ['a||'e] : 'a list -> <'e> -> <'e> -> prop
+
 parameter master ['a 'b 'c||'e]
     (f : 'a -> 'b)
     (handle : 'a * 'c -> 'b ->{'e} ('a * 'c) list)
     (l : ('a * 'c) list) : unit,{'e} =
   { }
-  { }
+  { handled [{'e}] l old cur }
 
 parameter list_map ['a 'b||'e]
   (f : 'a ->{'e} 'b) (l : 'a list) : 'b list, {'e} =

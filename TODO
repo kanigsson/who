@@ -25,3 +25,5 @@ INTERNAL
 BUGS
 
 * find bug with "nil" - postponed
+
+* implement "reordering"
