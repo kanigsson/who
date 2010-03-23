@@ -21,3 +21,32 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
+module Env : sig
+  type t
+  val empty : t
+
+  val rlookup : t -> Name.t -> Ty.t
+  val elookup : t -> Name.t -> Ty.t
+end = struct
+
+  module M = Name.M
+  type t =
+    { r : Ty.t M.t ; e : Ty.t M.t }
+
+  let empty =
+    { r = M.empty ; e = M.empty }
+
+  let rlookup env t = M.find t env.r
+  let elookup env t = M.find t env.e
+
+end
+
+open Ast
+open Recon
+
+let effect_to_tuple_type env eff =
+  let rl,el = Effect.to_lists eff in
+  let rt = List.map (Env.rlookup env) rl in
+  let et = List.map (Env.elookup env) el in
+  Ty.tuple (rt@et)
+

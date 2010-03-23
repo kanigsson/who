@@ -34,93 +34,93 @@ let efflamho = efflamho ~s:"s"
 let plamho = plamho ~s:"r"
 let effFA = effFA ~s:"s"
 
-let rec lift_value v = 
+let rec lift_value v =
   let l = v.loc in
   match v.v with
-  | Var (_,_) -> 
+  | Var (_,_) ->
       { v with t = ty v.t }
   | Const _ -> v
-  | App (v1,v2,kind,_) -> 
+  | App (v1,v2,kind,_) ->
       app ~kind (lift_value v1) (lift_value v2) l
-  | PureFun (t,(_,x,e)) -> 
+  | PureFun (t,(_,x,e)) ->
       plam x (ty t) (lift_value e) l
   | Quant (k,t,(_,x,e)) ->
       squant k x (ty t) (lift_value e) l
   | Lam (x,t,_,(p,_,q)) ->
       let t = ty t and _,p = p and _,_,q = q in
-      let p = 
-        match p with 
+      let p =
+        match p with
         | None -> assert false
-        | Some p -> plam x t (scan p) l 
-      and q = 
+        | Some p -> plam x t (scan p) l
+      and q =
         match q with
         | PResult _ | PNone _ -> assert false
         | PPlain q -> plam x t (scan q) l in
       mk_tuple p q l
-  | Let (g,e1,b,Const.LogicDef) -> 
+  | Let (g,e1,b,Const.LogicDef) ->
       let x,f = sopen b in
       let_ g (lift_value e1) x (lift_value f) Const.LogicDef l
   | HoareTriple (p,e,q) -> bodyfun p e q
-  | Let _ | LetReg _ | For _ | Gen _ | Param _ | Annot _ | Ite _ -> 
+  | Let _ | LetReg _ | For _ | Gen _ | Param _ | Annot _ | Ite _ ->
       error (Myformat.sprintf "not a value: %a" print v) l
 
-and correct v = 
+and correct v =
   let l = v.loc in
   match v.v with
   | Var _ | Const _ | Quant _ -> ptrue_ l
   | App (v1,v2,_,_) -> and_ (correct v1) (correct v2) l
   | Lam (x,t,_,(p,e,q)) -> sforall x (ty t) (bodyfun p e q) l
   | PureFun (t,(_,x,e)) -> sforall x (ty t) (correct e) l
-  | Let (g,e1,b,Const.LogicDef) -> 
+  | Let (g,e1,b,Const.LogicDef) ->
       let x,e2 = sopen b in
       and_ (gen g (correct e1) l)
         (let_ g (lift_value e1) x (correct e2) Const.LogicDef l) l
-  | Let _ | LetReg _ | For _ | Gen _ | Param _ | Annot _ | Ite _ | HoareTriple _ -> 
+  | Let _ | LetReg _ | For _ | Gen _ | Param _ | Annot _ | Ite _ | HoareTriple _ ->
       Myformat.printf "correct: not a value: %a@." print v;
       assert false
-and scan f = 
-  let termfun f = 
+and scan f =
+  let termfun f =
     match f.v with
-    | HoareTriple (p,e,q) -> bodyfun p e q 
+    | HoareTriple (p,e,q) -> bodyfun p e q
     | _ -> f in
   rebuild_map ~varfun:(fun _ _ def -> def) ~termfun ~tyfun:ty f
-and bodyfun p e q = 
+and bodyfun p e q =
   let l = e.loc in
-  effFA e.e (fun r -> 
-    let p = match p with 
+  effFA e.e (fun r ->
+    let p = match p with
     | _,None -> assert false
     | _,Some f -> app (scan f) r l in
-    let q = match q with 
+    let q = match q with
     | _,_,(PNone | PResult _) -> assert false
     | _,_,PPlain f -> app (scan f) r l in
     impl p (wp_node r q e) l) l
-and wp m q e = 
+and wp m q e =
   let ft = ty e.t and l = e.loc in
   if is_value e then
     and_ (applist [q;m;lift_value e] l) (correct e) l
-  else 
+  else
     match e.v with
-    | LetReg (rl,se) -> 
+    | LetReg (rl,se) ->
         let ef = Effect.from_lists rl [] in
-        rgen rl 
+        rgen rl
         (effFA ef (fun cur ->
           wp_node (combine m cur l)
-            (efflamho (Effect.union se.e ef) (fun s -> 
+            (efflamho (Effect.union se.e ef) (fun s ->
               app q (restrict e.e s l) l) l) se) l) l
-    | App (v1,v2,_,_) -> 
+    | App (v1,v2,_,_) ->
         let lv1 = lift_value v1 and lv2 = lift_value v2 in
-        andlist 
+        andlist
         [ correct v1; correct v2;
           applist [pre lv1 l; lv2; m ] l;
-          effFA e.e (fun m2 -> 
+          effFA e.e (fun m2 ->
             forall ft (fun x ->
               impl (applist [post lv1 l; lv2; m; m2; x] l)
-                (applist [q;m2; x] l) l) l) l ] l 
+                (applist [q;m2; x] l) l) l) l ] l
     | Let (g,e1,b,Const.LogicDef) ->
         let x,e2 = sopen b in
         let f = wp_node m q e2 in
         let_ g e1 x f (Const.LogicDef) l
-    | Let (g,e1,b,r) -> 
+    | Let (g,e1,b,r) ->
         let x,e2 = sopen b in
         (* TODO recursive case *)
         if is_value e1 then
@@ -140,30 +140,30 @@ and wp m q e =
     | Ite (c,th,el) -> ite (lift_value c) (wp_node m q th) (wp_node m q el) l
     | Param _ -> ptrue_ l
     | _ -> assert false
-and wp_node m q e = 
+and wp_node m q e =
 (*   Myformat.printf "wp:%a@." print e; *)
-  let r = 
+  let r =
   if Effect.equal (domain m) e.e then wp m q e
   else begin
     let l = e.loc in
-    wp (restrict e.e m l) 
-      (efflamho e.e (fun m2 -> app q (combine m m2 l) l) l) 
+    wp (restrict e.e m l)
+      (efflamho e.e (fun m2 -> app q (combine m m2 l) l) l)
       e
   end in
 (*   Myformat.printf "--end@.";  *)
   r
 
-let main e = 
+let main e =
   let l = e.loc in
   let q = efflamho e.e (fun _ -> plamho e.t (fun _ -> ptrue_ l) l) l in
     effFA e.e (fun m -> (wp_node m q e)) l
 
 
-let rec decl d = 
+let rec decl d =
   match d with
-  | Logic _ | Formula _ | TypeDef _ 
+  | Logic _ | Formula _ | TypeDef _
   | Program (_,_,_,Const.LogicDef) | DGen _ -> [d]
-  | DLetReg rl -> 
+  | DLetReg rl ->
       (* FIXME is this correct? *)
       [DGen ([],rl,[])]
   | Section (s,cl,dl) -> [Section (s,cl, theory dl)]
@@ -179,6 +179,6 @@ let rec decl d =
   | Program _ -> assert false
 
 
-and theory th = 
+and theory th =
   List.flatten (List.map decl th)
 
