@@ -212,10 +212,11 @@ module Print = struct
             | `Coq -> 
                 fprintf fmt "forall@ %a,@ %a " (lname "Type") tl print t
             | `Pangoline  -> 
-                fprintf fmt "forall type %a. %a" (print_list space Name.print) tl
-                  print t
+                fprintf fmt "forall type %a. %a" 
+                  (print_list space Name.print) tl print t
             | `Who -> 
-                fprintf fmt "forall %a%a %a" G.print g Const.quantsep kind print t
+                fprintf fmt "forall %a%a %a" 
+                  G.print g Const.quantsep kind print t
             end
       (* specific to Who, will not be printed in backends *)
       | Param (t,e) -> 
@@ -791,7 +792,8 @@ module Recon = struct
 
   let destruct_restrict' x = 
     match destruct_app' x with
-    | Some ({v = Var (v,([],[],[e1;e2]))},map) when Name.equal v PL.restrict_var ->
+    | Some ({v = Var (v,([],[],[e1;e2]))},map) 
+      when Name.equal v PL.restrict_var ->
         Some (map,e1,e2)
     | _ -> None
 
