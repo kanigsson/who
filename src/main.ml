@@ -30,7 +30,7 @@ let parse p buf close fn =
   prog
 
 let maybe_abort r print f =
-  if !r then begin Myformat.printf "%a@." print f; exit 0; end
+  if r then begin Myformat.printf "%a@." print f; exit 0; end
 
 let parse_file p fn =
   let ch, close =
@@ -42,9 +42,9 @@ let parse_file p fn =
   let buf = Lexing.from_channel ch in
   parse p buf close fn
 
-let parse_string p ?(string="prelude") s =
+let parse_string p s =
   let buf = Lexing.from_string s in
-  parse p buf (fun () -> ()) (Some string)
+  parse p buf (fun () -> ()) (Some "prelude")
 
 let annotparser abort fn token buf =
   try AnnotParser.main token buf
@@ -78,8 +78,19 @@ let apply_all_trans t =
   let t =
     if !Options.transforms = [] then begin Typing.theory t; t end
     else List.fold_right apply_one_trans !Options.transforms t in
-  maybe_abort Options.transform_only Ast.Recon.print_theory t;
+  maybe_abort !Options.transform_only Ast.Recon.print_theory t;
   t
+
+let import parse_only infer_only input =
+  let ast =
+    match input with
+    | `File fn -> parse_file infer_parser fn
+    | `String s -> parse_string infer_parser s in
+  let ast = Internalize.theory ast in
+  maybe_abort parse_only Ast.ParseT.print_theory ast;
+  let ast = Infer.infer_th ast in
+  maybe_abort infer_only Ast.Infer.print_theory ast;
+  Infer.recon_th ast
 
 let _ =
   Options.update ();
@@ -88,20 +99,16 @@ let _ =
       if !Options.input_annot then
         let p = parse_file annotparser !Options.filename in
         let p = AnnotInternalize.theory p in
-        maybe_abort Options.parse_only Ast.Recon.print_theory p;
+        maybe_abort !Options.parse_only Ast.Recon.print_theory p;
         p
       else
         let prelude =
           if !Options.no_prelude then []
-          else parse_string infer_parser Prelude.prelude in
-        let ast = parse_file infer_parser !Options.filename in
-        let p = prelude@ ast in
-        let p = Internalize.theory p in
-        maybe_abort Options.parse_only Ast.ParseT.print_theory p;
-        let p = Infer.infer_th p in
-        maybe_abort Options.infer_only Ast.Infer.print_theory p;
-        let p = Infer.recon_th p in
-        p
+          else import false false (`String Prelude.prelude) in
+        let user_input =
+          import !Options.parse_only !Options.infer_only
+            (`File !Options.filename) in
+        prelude @ user_input
     in
     let p = apply_all_trans p in
     let kind = !Options.backend in
