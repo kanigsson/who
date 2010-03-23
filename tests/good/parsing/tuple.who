@@ -1,5 +1,4 @@
 type t = int * int * int
 
-logic mk_3tuple ['a 'b 'c||] : 'a -> 'b -> 'c -> 'a * 'b * 'c
-
 let x = 1,2,3
+let g = get_3_1_tuple x
