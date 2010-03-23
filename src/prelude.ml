@@ -34,7 +34,7 @@ end
 
 section tuples
   coq predefined
-  pangoline takeover
+  pangoline predefined
 
   logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
   logic mk_3tuple ['a 'b 'c||] : 'a -> 'b -> 'c -> 'a * 'b * 'c
@@ -46,6 +46,46 @@ section tuples
     'a -> 'b -> 'c -> 'd -> 'e -> 'f-> 'a * 'b * 'c * 'd * 'e * 'f
   logic mk_7tuple ['a 'b 'c 'd 'e 'f 'g||] : 
     'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'a * 'b * 'c * 'd * 'e * 'f * 'g
+
+  logic get_2_1_tuple ['a 'b||] : 'a * 'b -> 'a
+  logic get_2_2_tuple ['a 'b||] : 'a * 'b -> 'b
+
+  logic get_3_1_tuple ['a 'b 'c||] : 'a * 'b * 'c -> 'a
+  logic get_3_2_tuple ['a 'b 'c||] : 'a * 'b * 'c -> 'b
+  logic get_3_3_tuple ['a 'b 'c||] : 'a * 'b * 'c -> 'c
+
+  logic get_4_1_tuple ['a 'b 'c 'd||] : 'a * 'b * 'c * 'd -> 'a
+  logic get_4_2_tuple ['a 'b 'c 'd||] : 'a * 'b * 'c * 'd -> 'b
+  logic get_4_3_tuple ['a 'b 'c 'd||] : 'a * 'b * 'c * 'd -> 'c
+  logic get_4_4_tuple ['a 'b 'c 'd||] : 'a * 'b * 'c * 'd -> 'd
+
+  logic get_5_1_tuple ['a 'b 'c 'd 'e||] : 'a * 'b * 'c * 'd * 'e -> 'a
+  logic get_5_2_tuple ['a 'b 'c 'd 'e||] : 'a * 'b * 'c * 'd * 'e -> 'b
+  logic get_5_3_tuple ['a 'b 'c 'd 'e||] : 'a * 'b * 'c * 'd * 'e -> 'c
+  logic get_5_4_tuple ['a 'b 'c 'd 'e||] : 'a * 'b * 'c * 'd * 'e -> 'd
+  logic get_5_5_tuple ['a 'b 'c 'd 'e||] : 'a * 'b * 'c * 'd * 'e -> 'e
+
+  logic get_6_1_tuple ['a 'b 'c 'd 'e 'f||] : 'a * 'b * 'c * 'd * 'e * 'f -> 'a
+  logic get_6_2_tuple ['a 'b 'c 'd 'e 'f||] : 'a * 'b * 'c * 'd * 'e * 'f -> 'b
+  logic get_6_3_tuple ['a 'b 'c 'd 'e 'f||] : 'a * 'b * 'c * 'd * 'e * 'f -> 'c
+  logic get_6_4_tuple ['a 'b 'c 'd 'e 'f||] : 'a * 'b * 'c * 'd * 'e * 'f -> 'd
+  logic get_6_5_tuple ['a 'b 'c 'd 'e 'f||] : 'a * 'b * 'c * 'd * 'e * 'f -> 'e
+  logic get_6_6_tuple ['a 'b 'c 'd 'e 'f||] : 'a * 'b * 'c * 'd * 'e * 'f -> 'f
+
+  logic get_7_1_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+      'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'a
+  logic get_7_2_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+      'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'b
+  logic get_7_3_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+      'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'c
+  logic get_7_4_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+      'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'd
+  logic get_7_5_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+      'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'e
+  logic get_7_6_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+      'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'f
+  logic get_7_7_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+      'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'g
 
   logic fst ['a 'b||] : 'a * 'b -> 'a
   logic snd ['a 'b||] : 'a * 'b -> 'b
