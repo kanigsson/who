@@ -81,15 +81,13 @@ let apply_all_trans t =
   maybe_abort !Options.transform_only Ast.Recon.print_theory t;
   t
 
-let import parse_only infer_only input =
+let import input =
   let ast =
     match input with
     | `File fn -> parse_file infer_parser fn
     | `String s -> parse_string infer_parser s in
   let ast = Internalize.theory ast in
-  maybe_abort parse_only Ast.ParseT.print_theory ast;
   let ast = Infer.theory ast in
-  maybe_abort infer_only Ast.Infer.print_theory ast;
   Recon.theory ast
 
 let _ =
@@ -102,9 +100,7 @@ let _ =
         maybe_abort !Options.parse_only Ast.Recon.print_theory p;
         Recon.prelude @ p
       else
-        Recon.prelude @
-        import !Options.parse_only !Options.infer_only (`File !Options.filename)
-    in
+        Recon.prelude @ import (`File !Options.filename) in
     let p = apply_all_trans p in
     let kind = !Options.backend in
     let s = Sectionize.to_section kind p in

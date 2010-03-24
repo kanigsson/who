@@ -1,0 +1,54 @@
+module G = Ty.Generalize
+
+(** TODO declare some type annotations as optional *)
+
+type t' =
+  | Const of Const.t
+  | Var of Name.t * Effect.t list
+  (* app (f,x,_,r) - r is the list of region names this execution creates -
+  obligatory *)
+  | App of t * t * [`Infix | `Prefix ] * Name.t list
+  | Lam of Name.t * Ty.t * Name.t list * funcbody
+  | Let of G.t * t * t Name.bind * isrec
+  | PureFun of MutableType.t * t Name.bind
+  | Ite of t * t * t
+  | Annot of t * Ty.t
+  | Quant of [`FA | `EX ] * MutableType.t * t Name.bind
+  | Param of Ty.t * Effect.t
+  | Gen of G.t * t
+  | For of Name.t * pre * Name.t * Name.t * Name.t * t
+  | HoareTriple of funcbody
+  | LetReg of Name.t list * t
+  | Restrict of t * Effect.t
+and t = { v : t' ; loc : Loc.loc }
+and post' =
+  | PNone
+  | PPlain of t
+  | PResult of Name.t * t
+and pre = Name.t * t option
+and post = Name.t * Name.t * post'
+and isrec = Ty.t Const.isrec
+and funcbody = pre * t * post
+
+type decl =
+  | Logic of Name.t * G.t * Ty.t
+  | Formula of string * t * [ `Proved | `Assumed ]
+  | Section of string * Const.takeover list * decl list
+  | TypeDef of G.t * Ty.t option * Name.t
+  | Program of Name.t * G.t * t * isrec
+  | DLetReg of Name.t list
+  | DGen of G.t
+
+type theory = decl list
+
+let mk t l = { v = t ; loc = l }
+let annot e t = mk (Annot (e,t))
+let gen g t = mk (Gen (g,t))
+
+let app t1 t2 = mk (App (t1,t2,`Infix,[]))
+let var ?(inst=[]) v = mk (Var (v,inst))
+
+let print _ _ = assert false (* TODO *)
+
+let ptrue l = mk (Const Const.Ptrue) l
+let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))

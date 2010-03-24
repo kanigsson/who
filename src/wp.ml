@@ -47,15 +47,8 @@ let rec lift_value v =
   | Quant (k,t,(_,x,e)) ->
       squant k x (ty t) (lift_value e) l
   | Lam (x,t,_,(p,_,q)) ->
-      let t = ty t and _,p = p and _,_,q = q in
-      let p =
-        match p with
-        | None -> assert false
-        | Some p -> plam x t (scan p) l
-      and q =
-        match q with
-        | PResult _ | PNone _ -> assert false
-        | PPlain q -> plam x t (scan q) l in
+      let t = ty t in
+      let p = plam x t (scan p) l and q = plam x t (scan q) l in
       mk_tuple p q l
   | Let (g,e1,b,Const.LogicDef) ->
       let x,f = sopen b in
@@ -75,7 +68,8 @@ and correct v =
       let x,e2 = sopen b in
       and_ (gen g (correct e1) l)
         (let_ g (lift_value e1) x (correct e2) Const.LogicDef l) l
-  | Let _ | LetReg _ | For _ | Gen _ | Param _ | Annot _ | Ite _ | HoareTriple _ ->
+  | Let _ | LetReg _ | For _ | Gen _ | Param _
+  | Annot _ | Ite _ | HoareTriple _ ->
       Myformat.printf "correct: not a value: %a@." print v;
       assert false
 and scan f =
@@ -87,12 +81,7 @@ and scan f =
 and bodyfun p e q =
   let l = e.loc in
   effFA e.e (fun r ->
-    let p = match p with
-    | _,None -> assert false
-    | _,Some f -> app (scan f) r l in
-    let q = match q with
-    | _,_,(PNone | PResult _) -> assert false
-    | _,_,PPlain f -> app (scan f) r l in
+    let p = app (scan p) r l and q = app (scan q) r l in
     impl p (wp_node r q e) l) l
 and wp m q e =
   let ft = ty e.t and l = e.loc in

@@ -23,6 +23,6 @@
 
 exception Error of string * Loc.loc
 
-val theory : Ast.ParseT.theory -> Ast.Infer.theory
+val theory : InternalParseTree.theory -> InferTree.theory
 
-val prelude : Ast.Infer.theory
+val prelude : InferTree.theory

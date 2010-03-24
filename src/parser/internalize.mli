@@ -22,6 +22,6 @@
 (******************************************************************************)
 
 type env = CommonInternalize.Env.t
-val theory : ParseTree.theory -> Ast.ParseT.theory
-val prelude : Ast.ParseT.theory
+val theory : ParseTree.theory -> InternalParseTree.theory
+val prelude : InternalParseTree.theory
 val prelude_env : env

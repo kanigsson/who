@@ -41,7 +41,7 @@ type ('a,'b,'c) t'' =
   | Quant of [`FA | `EX ] * Ty.t * ('a,'b,'c) t' Name.bind
   | Param of Ty.t * Effect.t
   | Gen of G.t *  ('a,'b,'c) t'
-  | For of Name.t * ('a,'b,'c) pre * Name.t * Name.t * Name.t * ('a,'b,'c) t'
+  | For of Name.t * ('a,'b,'c) t' * Name.t * Name.t * Name.t * ('a,'b,'c) t'
   | HoareTriple of ('a,'b,'c) funcbody
   | LetReg of Name.t list * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
@@ -53,7 +53,7 @@ and ('a,'b,'c) pre = Name.t * ('a,'b,'c) t' option
 and ('a,'b,'c) post = Name.t * Name.t * ('a,'b,'c) post'
 and isrec = Ty.t Const.isrec
 and ('a,'b,'c) funcbody =
-     ('a,'b,'c) pre * ('a,'b,'c) t' * ('a,'b,'c) post
+     ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
 
 type ('a,'b,'c) decl =
   | Logic of Name.t *  G.t * Ty.t
@@ -83,14 +83,7 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
     | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
     | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
     | Gen (g,e) -> Gen (g,aux e)
-  and body (p,e,q) = pre p, aux e, post q
-  and pre (x,o) = (x, Misc.opt_map aux o)
-  and post (x,y,f) =
-    let f = match f with
-    | PNone -> PNone
-    | PPlain f -> PPlain (aux f)
-    | PResult (r,f) -> PResult (r,aux f) in
-    x, y, f
+  and body (p,e,q) = aux p, aux e, aux q
   and aux t = {t with v = aux' t.v; t = tyfun t.t} in
   aux f
 
@@ -219,15 +212,15 @@ module Print = struct
             typrint t Effect.print e
       | For (dir,inv,_,st,en,t) ->
           fprintf fmt "%a ({%a}) %a %a (%a)"
-            Name.print dir pre inv Name.print st Name.print en print t
+            Name.print dir print inv Name.print st Name.print en print t
       | HoareTriple (p,f,q) ->
-          fprintf fmt "[[%a]]%a[[%a]]" pre p print f post q
+          fprintf fmt "[[%a]]%a[[%a]]" print p print f print q
       | LetReg (v,t) ->
           fprintf fmt "@[letregion %a in@ %a@]"
             (print_list space Name.print) v print t
       | Lam (x,t,cap,(p,e,q)) ->
           fprintf fmt "@[(fun %a@ ->%a@ {%a}@ %a@ {%a})@]"
-            binder (x,t) maycaplist cap pre p print e post q
+            binder (x,t) maycaplist cap print p print e print q
 
     and print fmt t = print' fmt t.v
     and binder' par =
@@ -235,15 +228,6 @@ module Print = struct
         Name.print x typrint t in
       if par then paren p else p
     and binder fmt b = binder' true fmt b
-    and pre fmt (_,x) =
-      match x with
-      | None -> ()
-      | Some x -> print fmt x
-    and post fmt (_,_,x) =
-      match x with
-      | PNone -> ()
-      | PPlain f -> fprintf fmt "%a" print f
-      | PResult (r,f) -> fprintf fmt "%a : %a" Name.print r print f
     and maycap fmt = function
       | [] -> ()
       | l -> fprintf fmt "{%a}" (print_list space Name.print) l
@@ -285,25 +269,6 @@ module Print = struct
 
   let theory ?kind pra prb prc open_ fmt t =
     print_list newline (decl ?kind pra prb prc open_) fmt t
-end
-
-module Infer = struct
-  type t = (U.node, U.rnode, U.effect) t'
-  type pre' = (U.node, U.rnode, U.effect) pre
-  type th' = (U.node, U.rnode, U.effect) theory
-  type theory = th'
-
-  let mk v t e loc = { v = v; t = t; e = e; loc = loc }
-  let mk_val v t = mk v t U.eff_empty
-  let const c = mk_val (Const c) (U.const (Const.type_of_constant c))
-  let print fmt t =
-    Print.term ~kind:`Who U.print_node U.prvar U.preff
-      (fun (_,x,e) -> x,e) fmt t
-
-  let print_theory fmt t =
-    Print.theory ~kind:`Who U.print_node U.prvar U.preff
-      (fun (_,x,e) -> x,e) fmt t
-
 end
 
 module N = Name
@@ -551,12 +516,9 @@ module Recon = struct
         | Ite (e1,e2,e3) -> ite ~logic:false (aux e1) (aux e2) (aux e3) l
         | Gen (g,e) -> gen g (aux e) l
         | HoareTriple (p,e,q) ->
-            hoare_triple (pre p) (aux e) (post q) l
+            hoare_triple (aux p) (aux e) (aux q) l
         | For _ | LetReg _ | Param _ | Lam _ -> assert false in
       termfun t
-    and pre (cur,p) = cur, Opt.map aux p
-    and post (old,cur,p) =
-      old, cur, (match p with | PPlain f -> PPlain (aux f) | _ -> assert false)
     in
     aux t
   and impl h1 goal l =
@@ -820,24 +782,4 @@ module Recon = struct
     in
     theory M.empty th
 
-end
-
-module ParseT = struct
-  type t = (unit,unit, Effect.t) t'
-  type theory' = (unit, unit, Effect.t) theory
-  type theory = theory'
-
-  let nothing _ _ = ()
-  let print fmt t =
-    Print.term nothing nothing Effect.print (fun (_,x,e) -> x,e) fmt t
-  let print_theory fmt t =
-    Print.theory nothing nothing Effect.print (fun (_,x,e) -> x,e) fmt t
-  let mk v loc = { v = v; t = (); e = Effect.empty; loc = loc }
-  let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
-  let var ?(inst = []) v = mk (Var (v,([],[],inst)))
-  let annot e t = mk (Annot (e,t))
-  let gen g e = mk (Gen (g,e)) e.loc
-  let ptrue l = mk (Const Const.Ptrue) l
-
-  let app t1 t2 = mk (App (t1,t2,`Prefix, []))
 end

@@ -39,6 +39,7 @@ module Logic : sig
 
   val get_pangoline_id : Name.t -> string
   val var_and_type : string -> Name.t * (Ty.Generalize.t * Ty.t)
+  val var : string -> Name.t
 
   val equal : Name.t -> string -> bool
   

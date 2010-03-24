@@ -23,4 +23,4 @@
 
 val prelude : Ast.Recon.theory
 val prelude_table : (Ty.Generalize.t * Ty.t) Name.M.t
-val theory : Ast.Infer.theory -> Ast.Recon.theory
+val theory : InferTree.theory -> Ast.Recon.theory
