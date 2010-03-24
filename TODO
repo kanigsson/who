@@ -28,3 +28,4 @@ BUGS
 
 * implement "reordering"
 * remove option "no-prelude"
+* clean up tests
