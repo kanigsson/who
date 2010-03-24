@@ -1,6 +1,2 @@
-<annotParser.ml> : pkg_menhirLib
-<parser.ml> : pkg_menhirLib
-<common.ml> : pkg_menhirLib
 <main.*> : pkg_unix, pkg_num, pkg_menhirLib
-<tokens.mly> : only_tokens
-<parser.mly> or <annotParser.mly> or <common.mly> : use_tokens
+<parser> : include

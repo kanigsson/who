@@ -1,0 +1,5 @@
+<parser.ml> : pkg_menhirLib
+<common.ml> : pkg_menhirLib
+<tokens.mly> : only_tokens
+<annotParser.ml> : pkg_menhirLib
+<parser.mly> or <annotParser.mly> or <common.mly> : use_tokens
