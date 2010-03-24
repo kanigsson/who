@@ -25,6 +25,7 @@ module U = Unify
 module C = Const
 module G = Ty.Generalize
 module PL = Predefined.Logic
+module PI = Predefined.Identifier
 
 type ('a,'b,'c) t'' =
   | Const of Const.t
@@ -145,7 +146,7 @@ module Print = struct
     match kind with
     | `Pangoline ->
         begin try
-          let s = Name.M.find x PL.pangoline_map in
+          let s = PL.get_pangoline_id x in
           pp_print_string fmt s
         with Not_found -> Name.print fmt x end
     | `Coq | `Who -> Name.print fmt x
@@ -169,13 +170,8 @@ module Print = struct
     let rec print' fmt = function
       | Const c -> Const.print fmt c
       | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) ->
-          begin match kind with
-          | `Pangoline when Name.equal v PL.pair_var ->
-              fprintf fmt "(%a , %a)" annot t1 annot t2
-          | _ ->
-              fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 (name_print ~kind) v
-              (Inst.print ~kind ~intype:false pra prb prc) i with_paren t2
-          end
+          fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 (name_print ~kind) v
+            (Inst.print ~kind ~intype:false pra prb prc) i with_paren t2
       | App (t1,t2,_,cap) ->
             fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
       | Ite (e1,e2,e3) ->
@@ -196,8 +192,7 @@ module Print = struct
                 else fprintf fmt "%a %a" (name_print ~kind) v
                   (Inst.print ~kind ~intype:false pra prb prc) i
               in
-              if Name.S.mem v PL.infix_set then Myformat.paren pr fmt ()
-              else pr fmt ()
+              pr fmt ()
           | `Coq -> Name.print fmt v
           end
       | Annot (e,t) -> fprintf fmt "(%a : %a)" print e typrint t
@@ -235,7 +230,6 @@ module Print = struct
             binder (x,t) maycaplist cap pre p print e post q
 
     and print fmt t = print' fmt t.v
-    and annot fmt t = fprintf fmt "%a : %a" print t pra t.t
     and binder' par =
       let p fmt (x,t) = fprintf fmt "%a:%a"
         Name.print x typrint t in
@@ -404,10 +398,15 @@ module Recon = struct
   let const c =
     mk_val (Const c) (Ty.const (Const.type_of_constant c))
 
-  let mempty = mk_val (Var (PL.empty_var, Inst.empty)) Ty.emptymap
-  let btrue_ = mk_val (Var (PL.btrue_var, Inst.empty)) Ty.bool
-  let bfalse_ = mk_val (Var (PL.bfalse_var, Inst.empty)) Ty.bool
-  let void loc = mk_val (Var (PL.void_var, Inst.empty)) Ty.unit loc
+  let simple_var v t = mk_val (Var (v, Inst.empty)) t
+  let simple_var_id s =
+    let x, (_,t) = PL.var_and_type s in
+    simple_var x t
+
+  let mempty l = simple_var_id PI.empty_id l
+  let btrue_ l = simple_var_id PI.btrue_id l
+  let bfalse_ l = simple_var_id PI.bfalse_id l
+  let void l = simple_var_id PI.void_id l
 
   let var s inst (g,t) =
     let nt = (Ty.allsubst g inst t) in
@@ -418,42 +417,13 @@ module Recon = struct
   let var_i s inst t = mk_val (Var (s,inst)) t
   let svar s t = var s Inst.empty (G.empty, t)
 
-  module Predef = struct
-    let neg_t = svar PL.not_var PT.prop_2
+  let predef s i = 
+    let x, t = PL.var_and_type s in
+    var x i t 
 
-    let leb_t = svar PL.leb_var PT.iib
-    let ltb_t = svar PL.ltb_var PT.iib
-    let gtb_t = svar PL.gtb_var PT.iib
-    let geb_t = svar PL.geb_var PT.iib
-    let eqb_t i = var PL.eqb_var i PT.aab
-    let neqb_t i = var PL.neqb_var i PT.aab
-    let andb_t = svar PL.andb_var PT.bool_3
-    let orb_t = svar PL.orb_var PT.bool_3
-
-    let le_t = svar PL.le_var PT.iip
-    let lt_t = svar PL.lt_var PT.iip
-    let ge_t = svar PL.ge_var PT.iip
-    let gt_t = svar PL.gt_var PT.iip
-    let neq_t i = var PL.neq_var i PT.aap
-    let eq_t i = var PL.equal_var i PT.aap
-
-    let and_t = svar PL.and_var PT.prop_3
-    let or_t = svar PL.or_var PT.prop_3
-    let impl_t = svar PL.impl_var PT.prop_3
-
-    let mkpair_t i = var PL.pair_var i PT.mk_pair
-    let fst_t i = var PL.fst_var i PT.fst
-    let snd_t i = var PL.snd_var i PT.snd
-
-    let plus_t = svar PL.plus_var PT.int_3
-    let minus_t = svar PL.minus_var PT.int_3
-
-    let combine_t i = var PL.combine_var i PT.combine
-    let restrict_t i = var PL.restrict_var i PT.restrict
-    let get_t i = var PL.get_var i PT.get
-  end
-
-  module P = Predef
+  let spredef s = 
+    let x, (_,t) = PL.var_and_type s in
+    svar x t 
 
   let true_or e v =
     match e.v with
@@ -493,16 +463,16 @@ module Recon = struct
 
 
   let boolcmp_to_propcmp x =
-    let eq = Name.equal in
+    let eq = Predefined.Logic.equal in
     match x with
-    | x when eq x PL.leb_var -> fun _ -> P.le_t
-    | x when eq x PL.ltb_var -> fun _ -> P.lt_t
-    | x when eq x PL.geb_var -> fun _ -> P.ge_t
-    | x when eq x PL.gtb_var -> fun _ -> P.gt_t
-    | x when eq x PL.eqb_var -> P.eq_t
-    | x when eq x PL.neqb_var -> P.neq_t
-    | x when eq x PL.andb_var -> fun _ -> P.and_t
-    | x when eq x PL.orb_var -> fun _ -> P.or_t
+    | x when eq x PI.leb_id -> fun _ -> spredef PI.le_id
+    | x when eq x PI.ltb_id -> fun _ -> spredef PI.lt_id
+    | x when eq x PI.geb_id -> fun _ -> spredef PI.ge_id
+    | x when eq x PI.gtb_id -> fun _ -> spredef PI.gt_id
+    | x when eq x PI.eqb_id -> predef PI.equal_id
+    | x when eq x PI.neqb_id -> predef PI.neq_id
+    | x when eq x PI.andb_id -> fun _ -> spredef PI.and_id
+    | x when eq x PI.orb_id -> fun _ -> spredef PI.or_id
     | _ -> raise Exit
 
   let rec app ?kind ?cap t1 t2 l : t =
@@ -515,19 +485,19 @@ module Recon = struct
       (* double application, check if we are not in a simplification case *)
       | App (op,t1,_,_) ->
           begin match destruct_varname op with
-          | Some (v,_) when Name.equal v PL.and_var -> and_ t1 t2 l
-          | Some (v,_) when Name.equal v PL.impl_var -> impl t1 t2 l
-          | Some (v,_) when Name.equal v PL.equal_var -> eq t1 t2 l
-          | Some (v,_) when Name.equal v PL.combine_var -> combine t1 t2 l
+          | Some (v,_) when PL.equal v PI.and_id -> and_ t1 t2 l
+          | Some (v,_) when PL.equal v PI.impl_id -> impl t1 t2 l
+          | Some (v,_) when PL.equal v PI.equal_id -> eq t1 t2 l
+          | Some (v,_) when PL.equal v PI.combine_id -> combine t1 t2 l
           | _ -> raise Exit
           end
       | _ ->
       (* simple application *)
           match destruct_varname t1 with
-          | Some (v,_) when Name.equal v PL.not_var -> neg t2 l
-          | Some (v, _) when Name.equal v PL.fst_var -> pre t2 l
-          | Some (v, _) when Name.equal v PL.snd_var -> post t2 l
-          | Some (v, ([],[],[_;b])) when Name.equal v PL.restrict_var ->
+          | Some (v,_) when PL.equal v PI.not_id -> neg t2 l
+          | Some (v, _) when PL.equal v PI.fst_id -> pre t2 l
+          | Some (v, _) when PL.equal v PI.snd_id -> post t2 l
+          | Some (v, ([],[],[_;b])) when PL.equal v PI.restrict_id ->
               restrict b t2 l
           | _ -> raise Exit
       with Exit -> simple_app ?kind ?cap t1 t2 l
@@ -542,18 +512,18 @@ module Recon = struct
     match f.v with
     | Const Const.Ptrue -> pfalse_ l
     | Const Const.Pfalse -> ptrue_ l
-    | _ -> simple_app (P.neg_t l) f l
+    | _ -> simple_app (spredef PI.not_id l) f l
 
   and reduce_bool t l =
     let rec aux t =
       match t.v with
-      | Var (v,_) when Name.equal v PL.btrue_var -> ptrue_ l
+      | Var (v,_) when PL.equal v PI.btrue_id -> ptrue_ l
       | _ ->
           match destruct_app2_var t with
           | Some (op, i, arg1, arg2) ->
               let v = boolcmp_to_propcmp op in
               let arg1, arg2 =
-                if Name.equal op PL.andb_var || Name.equal op PL.orb_var then
+                if PL.equal op PI.andb_id || PL.equal op PI.orb_id then
                   aux arg1, aux arg2
                 else arg1, arg2 in
               appi (v i l) arg1 arg2 l
@@ -592,14 +562,14 @@ module Recon = struct
   and impl h1 goal l =
 (*     Myformat.printf "impl: %a and %a@." print h1 print goal; *)
     try match destruct_app2_var h1 with
-    | Some (v, _, ha, hb) when Name.equal v PL.and_var ->
+    | Some (v, _, ha, hb) when PL.equal v PI.and_id ->
         impl ha (impl hb goal l) l
     | _ ->
         match destruct_app2_var goal with
-        | Some (v, _, h2, goal) when Name.equal v PL.impl_var ->
+        | Some (v, _, h2, goal) when PL.equal v PI.and_id ->
             begin match destruct_app2_var h1,destruct_app2_var h2 with
-            | Some ( v, _,_, _), _ when Name.equal v PL.equal_var -> raise Exit
-            | _, Some (v, _,_, _) when Name.equal v PL.equal_var ->
+            | Some ( v, _,_, _), _ when PL.equal v PI.and_id -> raise Exit
+            | _, Some (v, _,_, _) when PL.equal v PI.equal_id ->
                 impl h2 (impl h1 goal l) l
             | _ -> raise Exit
             end
@@ -611,7 +581,7 @@ module Recon = struct
              | _, _ when equal h1 goal -> ptrue_ l
              | _ -> raise Exit
             end
-    with Exit -> simple_appi (P.impl_t l) h1 goal l
+    with Exit -> simple_appi (spredef PI.impl_id l) h1 goal l
   and ite ?(logic=true) e1 e2 e3 l =
     let im b c = impl (eq e1 (b l) l) c l in
     if logic then and_ (im btrue_ e2) (im bfalse_ e3) l
@@ -622,18 +592,18 @@ module Recon = struct
     else
       try match t2.v with
       | Var (v, ([], [], [])) when
-         Name.equal v PL.btrue_var || Name.equal v PL.bfalse_var ->
+         PL.equal v PI.btrue_id || PL.equal v PI.bfalse_id ->
           let f = reduce_bool t1 l in
-          if Name.equal v PL.btrue_var then f else neg f l
+          if PL.equal v PI.btrue_id then f else neg f l
       | _ -> raise Exit
-      with Exit -> simple_appi (P.eq_t ([t1.t],[],[]) l) t1 t2 l
+      with Exit -> simple_appi (predef PI.equal_id ([t1.t],[],[]) l) t1 t2 l
   and and_ t1 t2 l =
     match t1.v,t2.v with
     | Const Const.Ptrue, _ -> t2
     | _, Const Const.Ptrue -> t1
     | Const Const.Pfalse, _ -> t1
     | _, Const Const.Pfalse -> t2
-    | _ -> simple_appi (P.and_t l) t1 t2 l
+    | _ -> simple_appi (spredef PI.and_id l) t1 t2 l
   and subst x v e =
 (*     Myformat.printf "subst: %a@." Name.print x ; *)
     rebuild_map
@@ -645,18 +615,18 @@ module Recon = struct
     if Ty.equal t Ty.unit || Ty.equal t Ty.emptymap then f
     else (
       try match destruct_app2_var f with
-      | Some (i, _, t1,f) when Name.equal i PL.impl_var ->
+      | Some (i, _, t1,f) when PL.equal i PI.impl_id ->
           begin match destruct_app2_var t1 with
           | Some (e, _,({v= Var(y,_)} as t1), ({v = Var (z,_)} as t2) )
-            when Name.equal e PL.equal_var ->
+            when PL.equal e PI.equal_id ->
               if Name.equal x y then subst x (fun _ -> t2) f
               else if Name.equal x z then subst z (fun _ -> t1) f
               else raise Exit
           | Some (e, _,{v= Var(y,_)}, def)
-              when Name.equal e PL.equal_var ->
+              when PL.equal e PI.equal_id ->
               if Name.equal x y then subst x (fun _ -> def) f else raise Exit
           | Some (e, _,def,{v = Var (y,_)})
-              when Name.equal e PL.equal_var ->
+              when PL.equal e PI.equal_id ->
               if Name.equal x y then subst x (fun _ -> def) f else raise Exit
           | _ ->
               raise Exit
@@ -667,11 +637,11 @@ module Recon = struct
 
   and pre t l =
     match destruct_app2_var t with
-    | Some (v,_,a,_) when Name.equal v PL.pair_var -> a
+    | Some (v,_,a,_) when PL.equal v (PI.mk_tuple_id 2) -> a
     | _ ->
         try
           let t1, t2 = Ty.destr_pair t.t in
-          simple_app (P.fst_t ([t1;t2],[],[]) l) t l
+          simple_app (predef PI.fst_id ([t1;t2],[],[]) l) t l
         with Invalid_argument "Ty.destr_tuple" ->
           error t.loc "term %a is not of tuple type, but of type %a@."
             print t Ty.print t.t
@@ -679,11 +649,11 @@ module Recon = struct
 
   and post t l =
     match destruct_app2_var t with
-    | Some (v,_,_,b) when Name.equal v PL.pair_var -> b
+    | Some (v,_,_,b) when PL.equal v (PI.mk_tuple_id 2) -> b
     | _ ->
         try
           let t1, t2 = Ty.destr_pair t.t in
-          simple_app (P.snd_t ([t1;t2],[],[]) l) t l
+          simple_app (predef PI.snd_id ([t1;t2],[],[]) l) t l
         with Invalid_argument "Ty.destr_tuple" ->
           error t.loc "term %a is not of tuple type, but of type %a@."
             print t Ty.print t.t
@@ -696,9 +666,10 @@ module Recon = struct
       else
         match destruct_app2_var t1 with
         | Some (v,([],[],[e1;_;_]), _, db)
-          when Name.equal v PL.combine_var && Effect.sub_effect e1 d2' ->
+          when PL.equal v PI.combine_id && Effect.sub_effect e1 d2' ->
             combine db t2 l
-        | _  -> simple_app2 (P.combine_t ([],[],[d1';d2';d3']) l) t1 t2 l
+        | _  -> 
+            simple_app2 (predef PI.combine_id ([],[],[d1';d2';d3']) l) t1 t2 l
 
   and restrict eff t l =
     let d = Effect.diff (domain t) eff in
@@ -706,16 +677,16 @@ module Recon = struct
     try
       match destruct_app2_var t with
       | Some (v,([],[],[e1;_;e3]), m1, m2)
-        when Name.equal v PL.combine_var  ->
+        when PL.equal v PI.combine_id  ->
           if Effect.sub_effect eff e3 then restrict eff m2 l
           else if Effect.sub_effect eff e1 then restrict eff m1 l
           else raise Exit
       | _ -> raise Exit
-    with Exit -> simple_app (P.restrict_t ([],[],[d; eff]) l) t l
+    with Exit -> simple_app (predef PI.restrict_id ([],[],[d; eff]) l) t l
 
 
   let svar s t = var s Inst.empty (G.empty,t)
-  let le t1 t2 loc = simple_appi (P.le_t loc) t1 t2 loc
+  let le t1 t2 loc = simple_appi (spredef PI.le_id loc) t1 t2 loc
 
   let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
   let efflam x eff e = plam x (Ty.map eff) e
@@ -723,8 +694,8 @@ module Recon = struct
     mk_val (Lam (x,t,[],(p,e,q))) (Ty.arrow t e.t e.e)
   let caplam x t cap p e q =
     mk_val (Lam (x,t,cap,(p,e,q))) (Ty.caparrow t e.t e.e cap)
-  let plus t1 t2 loc = appi (P.plus_t loc) t1 t2 loc
-  let minus t1 t2 loc = appi (P.minus_t loc) t1 t2 loc
+  let plus t1 t2 loc = appi (spredef PI.plus_id loc) t1 t2 loc
+  let minus t1 t2 loc = appi (spredef PI.minus_id loc) t1 t2 loc
   let one = mk_val (Const (Const.Int Big_int.unit_big_int)) Ty.int
   let succ t loc = plus t (one loc) loc
   let prev t loc = minus t (one loc) loc
@@ -732,7 +703,7 @@ module Recon = struct
   let param t e = mk (Param (t,e)) t e
 
   let mk_tuple t1 t2 loc =
-    appi (P.mkpair_t ([t1.t;t2.t],[],[]) loc) t1 t2 loc
+    appi (predef (PI.mk_tuple_id 2) ([t1.t;t2.t],[],[]) loc) t1 t2 loc
 
 
   let letreg l e = mk (LetReg (l,e)) e.t (Effect.rremove e.e l)
@@ -797,13 +768,13 @@ module Recon = struct
   let destruct_restrict' x =
     match destruct_app' x with
     | Some ({v = Var (v,([],[],[e1;e2]))},map)
-      when Name.equal v PL.restrict_var ->
+      when PL.equal v PI.restrict_id ->
         Some (map,e1,e2)
     | _ -> None
 
   let destruct_get' x =
     match destruct_app2_var' x with
-    | Some (v, ([t],[reg],[e]), r,map) when Name.equal v PL.get_var ->
+    | Some (v, ([t],[reg],[e]), r,map) when PL.equal v PI.get_id ->
         Some (t,r,reg,Effect.radd e reg,map)
     | _ -> None
 
@@ -814,7 +785,7 @@ module Recon = struct
     | Ty.C (Ty.Ref (r,t)) ->
         let d = domain map in
         let d = Effect.rremove d [r] in
-        simple_app2 (P.get_t ([t],[r],[d]) l) ref map l
+        simple_app2 (predef PI.get_id ([t],[r],[d]) l) ref map l
     | _ -> assert false
 
   let rec decl_map ~varfun ~termfun ~declfun d : decl list =
@@ -841,8 +812,8 @@ module Recon = struct
   let build_symbol_table th = 
     let rec decl env d = 
       match d with
-      | Logic (n,g,t) -> M.add n (G.close g t) env
-      | Program (n,g,e,_) -> M.add n (G.close g e.t) env
+      | Logic (n,g,t) -> M.add n (g, t) env
+      | Program (n,g,e,_) -> M.add n (g, e.t) env
       | Section (_,_,th) -> theory env th
       | _ -> env
     and theory env th = List.fold_left decl env th

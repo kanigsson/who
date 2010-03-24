@@ -69,109 +69,59 @@ module Identifier = struct
   let get_tuple_id i j =
     "get_" ^ string_of_int i ^ "_" ^ string_of_int j ^ "_tuple"
 
+  let unsafe_equal v id = 
+    Name.unsafe_to_string v = id
+
 end
 
 module Logic = struct
-  open Identifier
-  let equal_var = Name.from_string equal_id
-  let empty_var = Name.from_string empty_id
-  let not_var = Name.from_string not_id
-  let leb_var = Name.from_string leb_id
-  let ltb_var = Name.from_string ltb_id
-  let gtb_var = Name.from_string gtb_id
-  let geb_var = Name.from_string geb_id
-  let eqb_var = Name.from_string eqb_id
-  let neqb_var = Name.from_string neqb_id
-  let andb_var = Name.from_string andb_id
-  let orb_var = Name.from_string orb_id
-  let le_var = Name.from_string le_id
-  let lt_var = Name.from_string lt_id
-  let ge_var = Name.from_string ge_id
-  let gt_var = Name.from_string gt_id
-  let neq_var = Name.from_string neq_id
-  let and_var = Name.from_string and_id
-  let or_var = Name.from_string or_id
-  let impl_var = Name.from_string impl_id
-  let fst_var = Name.from_string fst_id
-  let snd_var = Name.from_string snd_id
-
-  let plus_var = Name.from_string plus_id
-  let minus_var = Name.from_string minus_id
-
-  let combine_var = Name.from_string combine_id
-  let restrict_var = Name.from_string restrict_id
-  let get_var = Name.from_string get_id
-  let store_var = Name.from_string store_id
-
-  let btrue_var = Name.from_string btrue_id
-  let bfalse_var = Name.from_string bfalse_id
-
-  let void_var = Name.from_string void_id
-
-  let mk_tuple_var =
-    let map = Array.init preinstantiated_tuple (fun i ->
-      Name.from_string (mk_tuple_id (i + 1))) in
-    fun n ->
-      try map.(n)
-      with Invalid_argument _ -> invalid_arg "mk_tuple_var"
-
-  let get_tuple_var =
-    let map = Array.init preinstantiated_tuple (fun i ->
-      Array.init i (fun j -> Name.from_string (get_tuple_id i j))) in
-    fun i j ->
-      try map.(i).(j)
-      with Invalid_argument _ -> invalid_arg "get_tuple_var"
-
-  let pair_var = mk_tuple_var 2
-
-  let allvars = [ equal_var ; empty_var ; not_var ; equal_var
-      ; empty_var ; not_var ; leb_var ; ltb_var ; gtb_var
-      ; geb_var ; eqb_var ; neqb_var ; andb_var ; orb_var
-      ; le_var  ; lt_var  ; ge_var  ; gt_var  ; neq_var
-      ; and_var ; or_var ; impl_var ; fst_var ; snd_var ;
-      plus_var ; minus_var ; combine_var ; restrict_var ; get_var;
-      store_var ; btrue_var ; bfalse_var ; void_var
-  ] @ Misc.repeat preinstantiated_tuple mk_tuple_var
-
-  let map =
-    List.fold_left (fun acc x ->
-      SM.add (Name.unsafe_to_string x) x acc) SM.empty allvars
-
-  let infix_set =
-    let infix_vars =
-      [equal_var ; leb_var ; ltb_var ; gtb_var ; geb_var ; eqb_var
-      ; neqb_var ; andb_var ; orb_var ; le_var ; lt_var ; ge_var
-      ; gt_var ; neq_var ; and_var ; or_var ; impl_var
-      ; plus_var ; minus_var ; store_var ] in
-    List.fold_right Name.S.add infix_vars Name.S.empty
-
-  let effrec_set =
-    let effrec_vars = [ combine_var ; restrict_var ; empty_var ; get_var ] in
-    List.fold_right Name.S.add effrec_vars Name.S.empty
-
-  let pangoline_map =
-    let l =
-      [
-        impl_var, "=>" ;
-        not_var, "not" ;
-        and_var, "and" ;
-        or_var, "or" ;
-        fst_var, "proj_2_0_tuple" ;
-        snd_var, "proj_2_1_tuple" ;
-      ] in
-    List.fold_left (fun acc (a,b) -> Name.M.add a b acc) Name.M.empty l
-
-end
-
-module Ty = struct
 
   open Identifier
 
-  let bool_var = Name.from_string bool_id
-  let unit_var = Name.from_string unit_id
+  let ty_map : (Ty.Generalize.t * Ty.t) Name.M.t ref = ref Name.M.empty
+  let name_map : Name.t Misc.StringMap.t ref = ref Misc.StringMap.empty
+  let pangoline_map : string Name.M.t ref = ref Name.M.empty
 
-  let allvars = [ bool_var ; unit_var ]
-  let map =
-    List.fold_left (fun acc x ->
-      SM.add (Name.unsafe_to_string x) x acc) SM.empty allvars
+  let pangoline_predefined =
+    [
+      impl_id, "=>" ;
+      not_id, "not" ;
+      and_id, "and" ;
+      or_id, "or" ;
+      fst_id, "proj_2_0_tuple" ;
+      snd_id, "proj_2_1_tuple" ;
+    ]
+
+  let init m = 
+    ty_map := m;
+    name_map := 
+      Name.M.fold (fun x _ acc -> 
+        Misc.StringMap.add (Name.unsafe_to_string x) x acc) m 
+        Misc.StringMap.empty;
+    pangoline_map :=
+      List.fold_left (fun acc (id,pid) -> 
+        Name.M.add (Misc.StringMap.find id !name_map) pid acc) Name.M.empty
+        pangoline_predefined
+
+  let type_of_var v = Name.M.find v !ty_map
+  
+  let var s = 
+    try Misc.StringMap.find s !name_map
+    with Not_found -> failwith s
+  let type_of_id s = type_of_var (var s)
+
+  let var_and_type s = 
+    let v = var s in
+    let t = type_of_var v in
+    v, t
+
+  let get_pangoline_id x = 
+    Name.M.find x !pangoline_map
+
+  let equal x id = 
+    let y = var id in
+    Name.equal x y
+
+  let belongs_to var id_list = List.exists (equal var) id_list
+
 end

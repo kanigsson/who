@@ -68,7 +68,8 @@ let rec ast' env = function
            Name.close_bind (Name.new_anon ()) (ast env e2), Const.NoRec)
   | I.Restrict (t,e) -> 
       let t = ast env t and e = effect env e in
-      App (Ast.ParseT.var ~inst:[e] PL.restrict_var t.loc, t, `Prefix, [])
+      let v = var env Predefined.Identifier.restrict_id in
+      App (Ast.ParseT.var ~inst:[e] v t.loc, t, `Prefix, [])
   | I.HoareTriple (p,e,q) ->
       let p = pre env p and q = post env q and e = ast env e in
       HoareTriple (p,e,q)

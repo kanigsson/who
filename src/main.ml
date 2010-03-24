@@ -104,7 +104,10 @@ let _ =
       else
         let prelude =
           if !Options.no_prelude then []
-          else import false false (`String Prelude.prelude) in
+          else
+            let p = import false false (`String Prelude.prelude) in
+            Predefined.Logic.init (Ast.Recon.build_symbol_table p);
+            p in
         let user_input =
           import !Options.parse_only !Options.infer_only
             (`File !Options.filename) in

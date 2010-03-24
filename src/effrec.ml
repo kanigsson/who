@@ -24,6 +24,7 @@
 open Ast
 open Ast.Recon
 module PL = Predefined.Logic
+module PI = Predefined.Identifier
 module N = Name
 module M = N.M
 
@@ -44,11 +45,11 @@ let get_reg x (rm,_) = M.find x rm
 let rec from_form d x = 
 (*   Myformat.printf "finding effrec for %a@." print' x; *)
   match destruct_app2_var x with
-  | Some (v,_, m1,m2) when N.equal v PL.combine_var ->
+  | Some (v,_, m1,m2) when PL.equal v PI.combine_id ->
       e_combine (from_form_t m1.t m1) (from_form_t m2.t m2)
   | None | Some _ -> 
       match destruct_app x with
-      | Some ({v = Var (v,([],[],[_;e2]))}, m) when N.equal v PL.restrict_var ->
+      | Some ({v = Var (v,([],[],[_;e2]))}, m) when PL.equal v PI.restrict_id ->
           e_restrict e2 (from_form_t m.t m)
       | None | Some _ ->
           match x.v with

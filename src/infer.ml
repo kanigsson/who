@@ -125,7 +125,7 @@ and infer env (x : Ast.ParseT.t) : Ast.Infer.t =
     (* special case for !! *)
     | App ({ v = App ({ v = Var (v,([],[],[])) }, ref,`Prefix,[]) },
       map, `Prefix, [])
-      when Name.equal v PL.get_var ->
+      when PI.unsafe_equal v PI.get_id ->
         let map' = infer env map in
         let ref' = infer env ref in
         begin match Uf.desc map'.t, Uf.desc ref'.t with
@@ -144,7 +144,7 @@ and infer env (x : Ast.ParseT.t) : Ast.Infer.t =
         end
     (* special case for restrict *)
     | App ({ v = Var (v,([],[],[e]))},m,`Prefix,[])
-        when Name.equal v PL.restrict_var ->
+        when PI.unsafe_equal v PI.restrict_id ->
           let map' = infer env m in
           begin match Uf.desc map'.t with
           | U.T Ty.Map em ->

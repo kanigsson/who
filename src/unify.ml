@@ -22,7 +22,7 @@
 (******************************************************************************)
 
 module Uf = Unionfind
-module PT = Predefined.Ty
+module PT = Predefty
 
 type ty =
   | U

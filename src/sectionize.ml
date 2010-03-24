@@ -85,7 +85,7 @@ let to_section kind th =
           else aux ((Gen g)::acc) f
       | f' -> 
           match destruct_app2_var' f' with
-          | Some (v,_,f1,f2) when Name.equal v PL.impl_var  -> 
+          | Some (v,_,f1,f2) when PL.equal v PI.impl_id  -> 
               aux (Axiom (Name.from_string "H", f1)::acc) f2
           | _ -> List.rev acc, f in
     aux [] f
@@ -96,8 +96,8 @@ let to_section kind th =
           mk_Section f @ acc
       | f' ->
           match destruct_app2_var' f' with
-          | Some (v,_,_,_) when Name.equal v PL.impl_var -> mk_Section f @ acc
-          | Some (v,_,f1,f2) when Name.equal v PL.and_var -> aux (aux acc f2) f1
+          | Some (v,_,_,_) when PL.equal v PI.impl_id -> mk_Section f @ acc
+          | Some (v,_,f1,f2) when PL.equal v PI.and_id -> aux (aux acc f2) f1
           | _ -> PO (Name.from_string namehint, f) :: acc
     in
     aux [] f

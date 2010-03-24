@@ -54,12 +54,8 @@ let tyvar env = gen_var "type" env.t
 let rvar env = gen_var "region" env.r
 let effvar env = gen_var "effect" env.e
 
-let var_from_string x = 
-  try SM.find x Predefined.Logic.map
-  with Not_found -> Name.from_string x
-
 let add_var env x = 
-  let y = var_from_string x in
+  let y = Name.from_string x in
   { env with v = SM.add x y env.v }, y
 
 let add_ex_var env x y = 
@@ -67,7 +63,7 @@ let add_ex_var env x y =
 
 let add_tvar env x g t = 
   let y = 
-    try SM.find x Predefined.Ty.map
+    try SM.find x Predefty.map
     with Not_found -> Name.from_string x in
   { env with t = SM.add x y env.t;
     tyrepl = 

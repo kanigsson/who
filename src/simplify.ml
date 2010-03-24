@@ -26,6 +26,7 @@ open Const
 open Ast
 open Recon
 module PL = Predefined.Logic
+module PI = Predefined.Identifier
 
 exception Error of string
 
@@ -223,13 +224,15 @@ and varbind env k x t e l =
     if Ty.is_ref t then e
     else aquant k x (Ty.selim_map (rtype env) t) e l
 
+let effrec_set = [ PI.empty_id ; PI.restrict_id ; PI.get_id ; PI.combine_id ]
+
 let rec theory env th =
   match th with
   | [] -> env, []
   | d :: ds ->
       let env, d =
         match d with
-        | Logic (n,_,_) when Name.S.mem n PL.effrec_set -> env, []
+        | Logic (n,_,_) when PL.belongs_to n effrec_set -> env, []
         | Logic (s,((_,[],[]) as g),t) ->
             (*       Myformat.printf "%a@." Name.print s; *)
             env, if Ty.is_ref t then [] else [Logic (s,g,tyfun env t)]

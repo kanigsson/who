@@ -21,7 +21,7 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-module PT = Predefined.Ty
+module PT = Predefty
 
 type ('a,'b,'c) t' = 
   | Const of Const.ty
