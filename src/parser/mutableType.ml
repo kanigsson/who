@@ -93,7 +93,14 @@ module HBty = struct
   let equal = equal_ty
 end
 
+module HBe = struct
+  type t = effect
+  let hash = hash_effect
+  let equal = equal_effect
+end
+
 module Hty = Hashtbl.Make(HBty)
+module He = Hashtbl.Make(HBe)
 
 let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh t
@@ -146,19 +153,6 @@ let bool = var Predefty.bool_var
 let unit = var Predefty.unit_var
 let int = const Const.TInt
 
-let bh f l =
-  let h = Hashtbl.create 3 in
-  List.map (fun x -> let n = f () in Hashtbl.add h x n; n) l,h
-
-let ymemo ff =
-  let h = Hashtbl.create 17 in
-  let rec f x =
-    try Hashtbl.find h x
-    with Not_found ->
-      let z = ff f x in
-      Hashtbl.add h x z; z in
-  f
-
 let rec from_ty (Ty.C x : Ty.t) =
   match x with
   | Ty.Const c -> const c
@@ -173,60 +167,98 @@ and from_effect eff =
   let rl, e = Effect.to_u_effect eff in
   List.map from_region rl, e
 
-let to_uf_node (tl,rl,evl) el (x : Ty.t ) =
-  let x = Ty.elsubst evl el x in
-  let tn,th = bh new_ty tl and rn,rh = bh new_r rl in
-  let rec aux f (x : Ty.t) : t =
-    let Ty.C x = x in
-    match x with
-    | Ty.Const c -> const c
-    | Ty.Arrow (t1,t2,e, c) ->
-        arrow (f t1) (f t2) (eff e) (List.map auxr c)
-    | Ty.Tuple tl -> tuple (List.map f tl)
-    | Ty.Ref (r,t) -> ref_ (auxr r) (f t)
-    | Ty.Map e -> map (eff e)
-    | Ty.PureArr (t1,t2) -> parr (f t1) (f t2)
-    | Ty.App (v,([],[],[])) ->
-        begin try Hashtbl.find th v with Not_found -> var v end
-    | Ty.App (v,i) -> app v (Inst.map f auxr eff i)
-  and real x = ymemo aux x
-  and auxr r = try Hashtbl.find rh r with Not_found -> from_region r
-  and eff (ef : Effect.t) : effect =
-    let rl, e = Effect.to_u_effect ef in
-    List.map auxr rl, e in
-  real x, (tn, rn, List.map eff el)
+let node_map ~f ~eff_fun ~rfun t : t =
+  let rec aux t =
+    let t = match Uf.desc t with
+    | U | Const _ -> t
+    | Tuple t -> tuple (List.map aux t)
+    | PureArr (t1,t2) -> parr (aux t1) (aux t2)
+    | Ref (r,t) -> ref_ (rfun r) (aux t)
+    | Map e -> map (eff_fun e)
+    | Arrow (t1,t2,e,rl) -> arrow (aux t1) (aux t2) (eff_fun e) rl
+    | App (n,i) -> app n (Inst.map aux Misc.id eff_fun i) in
+    f t in
+  aux t
 
-module H = Hashtbl.Make (struct
-                           type t' = t
-                           type t = t'
-                           let equal a b = Uf.tag a = Uf.tag b
-                           let hash = Uf.tag
-                         end)
+let effect_subst h acc =
+  (* substitute effect variables for effects in effects *)
+  Name.H.fold (fun k v ((rl,e) as acc) ->
+    if Name.S.mem k e then
+      let e = Name.S.remove k e in
+      eff_union v (rl,e)
+    else acc
+  ) h acc
 
-let to_ty, to_effect, to_region =
-  let h = H.create 127 in
-  let rec ty' = function
-    | U ->
-        failwith "cannot determine the type of some object, please help me"
-    | Arrow (t1,t2,e,cap) ->
-        Ty.caparrow (ty t1) (ty t2) (eff e) (List.map rv cap)
-    | Tuple tl -> Ty.tuple (List.map ty tl)
-    | Const c -> Ty.const c
-    | Ref (r,t) -> Ty.ref_ (rv r) (ty t)
-    | Map e -> Ty.map (eff e)
-    | PureArr (t1,t2) -> Ty.parr (ty t1) (ty t2)
-    | App (v,i) -> Ty.app v (Inst.map ty rv eff i)
-  and ty x =
-    try H.find h x
+let esubst evl el t =
+  let table = Name.H.create 17 in
+  begin try List.iter2 (fun v e -> Name.H.add table v e) evl el
+  with Invalid_argument _ ->
+    failwith "not the right number of effect instantiations" end;
+  node_map ~f:Misc.id ~eff_fun:(effect_subst table) ~rfun:Misc.id t
+
+let bh f l =
+  let h = Name.H.create 3 in
+  List.map (fun x -> let n = f () in Name.H.add h x n; n) l,h
+
+let refresh (tvl, rvl, evl) el t =
+  let tn, th = bh new_ty tvl and rn, rh = bh new_r rvl in
+  let el = List.map from_effect el in
+  let t = esubst evl el t in
+  let f x =
+    match Uf.desc x with
+    | App (v,i) when Inst.is_empty i ->
+        begin try Name.H.find th v
+        with Not_found -> x end
+    | _ -> x in
+  let rfun n =
+    match Uf.desc n with
+    | RT r -> begin try Name.H.find rh r with Not_found -> n end
+    | _ -> n in
+  let ersubst (rl,s) = List.map rfun rl, s in
+  node_map ~f ~eff_fun:ersubst ~rfun t, (tn,rn,el)
+
+module HBt = struct
+  type t' = t
+  type t = t'
+  let equal a b = Uf.tag a = Uf.tag b
+  let hash = Uf.tag
+end
+
+module HBr = struct
+  type t = r
+  let equal a b = Uf.tag a = Uf.tag b
+  let hash = Uf.tag
+end
+
+module Ht = Hashtbl.Make(HBt)
+
+let to_region r =
+  match Uf.desc r with
+  | RU ->
+      failwith "cannot determine the type of some object, please help me"
+  | RT s -> s
+let to_effect (r,e) = Effect.from_u_effect (List.map to_region r) e
+
+let rec to_ty =
+  let h = Ht.create 17 in
+  fun t ->
+    try Ht.find h t
     with Not_found ->
-      let r = ty' (Uf.desc x) in
-      H.add h x r; r
-  and rv r =
-    match Uf.desc r with
-    | RU -> assert false
-    | RT s -> s
-  and eff (r,e) = Effect.from_u_effect (List.map rv r) e in
-  ty, eff, rv
+      let r =
+        match Uf.desc t with
+        | U ->
+            failwith "cannot determine the type of some object, please help me"
+        | Arrow (t1,t2,e,cap) ->
+            Ty.caparrow (to_ty t1) (to_ty t2)
+              (to_effect e) (List.map to_region cap)
+        | Tuple tl -> Ty.tuple (List.map to_ty tl)
+        | Const c -> Ty.const c
+        | Ref (r,t) -> Ty.ref_ (to_region r) (to_ty t)
+        | Map e -> Ty.map (to_effect e)
+        | PureArr (t1,t2) -> Ty.parr (to_ty t1) (to_ty t2)
+        | App (v,i) -> Ty.app v (Inst.map to_ty to_region to_effect i) in
+      Ht.add h t r;
+      r
 
 let base_pre_ty eff = parr (map eff) prop
 let base_post_ty eff t = parr (map eff) (parr (map eff) (parr t prop))
@@ -235,38 +267,13 @@ let posttype a b e = parr a (base_post_ty e b)
 let prepost_type a b e = tuple [ pretype a e ; posttype a b e ]
 
 let to_logic_type t =
-  let rec aux t =
+  node_map ~rfun:Misc.id ~eff_fun:Misc.id ~f:(fun t ->
     match Uf.desc t with
-    | U -> t
-    | (Const _ | Map _) -> t
-    | Tuple tl -> tuple (List.map aux tl)
-    | PureArr (t1,t2) -> parr (aux t1) (aux t2)
-    | Arrow (t1,t2,e,_) -> prepost_type (aux t1) (aux t2) e
-    | Ref (x,t) -> ref_ x (aux t)
-    | App (v,i) -> app v (Inst.map aux Misc.id Misc.id i)
-  in
-  aux t
-
-
-let refresh (tvl, rvl, evl) el t = assert false
+    | Arrow (t1,t2,e,_) -> prepost_type t1 t2 e
+    | _ -> t) t
 
 open Myformat
 let rec print_node fmt x =
   match Uf.desc x with
   | U -> fprintf fmt "%d" (Uf.tag x)
   | _ -> (* FIXME *) assert false
-(*
-and is_c x =
-  match Uf.desc x with
-  | U -> false
-  | T t -> Ty.is_compound t
-and prvar fmt x =
-  match Uf.desc x with
-  | RU -> fprintf fmt "%d" (Uf.tag x)
-  | RT x -> Name.print fmt x
-and preff fmt (rl,el) =
-  fprintf fmt "{%a|" (print_list space prvar) rl;
-  Name.S.iter (Name.print fmt) el;
-  pp_print_string fmt "}"
-*)
-
