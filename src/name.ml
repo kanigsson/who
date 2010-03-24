@@ -28,6 +28,7 @@ type 'a listbind = subst * t list * 'a
 
 let compare a b = Pervasives.compare a.n b.n
 let equal a b = compare a b = 0
+let hash a = a.n
 
 let default_string = "anon"
 let new_name =
@@ -141,3 +142,5 @@ let print_list fmt x = print_list space print fmt x
 let print_set fmt s = 
   S.iter (fun x -> print fmt x ; space fmt ()) s
 
+let hash_set s = 
+  S.fold (fun x acc -> Hash.combine (hash x) acc) s 2

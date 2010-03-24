@@ -7,3 +7,7 @@ let compare cmpa cmpb (a1,b1) (a2,b2) =
 let equal eqa eqb (a1,b1) (a2,b2) = 
   eqa a1 a2 && eqb b1 b2
 
+let hash h1 h2 (a,b) = 
+  Hash.combine (h1 a) (h2 b)
+
+let hash1 h (a,b) = Hash.combine (h a) (h b)

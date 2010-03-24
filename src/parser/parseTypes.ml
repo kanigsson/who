@@ -21,9 +21,9 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-type effect = string list * string list 
+type effect = string list * string list
 
-type t = 
+type t =
   | TVar of string
   | TConst of Const.ty
   | Tuple of t list
@@ -36,7 +36,7 @@ type t =
 
 open Myformat
 
-let print fmt t = 
+let print fmt t =
   let rec pt fmt = function
   | TVar v -> pp_print_string fmt v
   | TConst c -> Const.print_ty `Who fmt c

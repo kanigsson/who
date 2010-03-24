@@ -27,6 +27,7 @@
 type t = private { name : string option ; n : int }
 val compare : t -> t -> int
 val equal : t -> t -> bool
+val hash : t -> int
 val new_name : t -> t
 val new_anon : unit -> t
 val to_string : t -> string
@@ -71,6 +72,9 @@ val list_open_with : (subst -> 'a -> 'a) -> t list -> 'a listbind -> 'a
 module M : Map.S with type key = t
 module S : Set.S with type elt = t
 val print_set : S.t Myformat.fmt
+
+val hash_set : S.t -> int
+
 val reset : unit -> unit
 
 val list_to_set : t list -> S.t

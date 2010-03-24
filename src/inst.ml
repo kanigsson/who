@@ -23,6 +23,9 @@
 
 type ('a,'b,'c) t = 'a list * 'b list * 'c list 
 
+let hash h1 h2 h3 (l1,l2,l3) = 
+  ExtList.hash h1 (ExtList.hash h2 (ExtList.hash h3 7 l3) l2) l1
+
 let empty = [],[],[]
 let is_empty x = x = empty
 

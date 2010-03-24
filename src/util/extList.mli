@@ -9,3 +9,5 @@ val union : 'a eq -> 'a t -> 'a t -> 'a t
 val equal_unsorted : 'a eq -> 'a t -> 'a t -> bool
 
 val fold_map : ('a  -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+
+val hash : ('a -> int) -> int -> 'a list -> int

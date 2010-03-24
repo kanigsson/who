@@ -91,3 +91,4 @@ let compare a b =
   | Int i1, Int i2 -> Big_int.compare_big_int i1 i2
   | _, _ -> Pervasives.compare a b
 
+let hash_t x = Hashtbl.hash x

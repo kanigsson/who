@@ -59,3 +59,5 @@ let repeat ?(from=0) n f =
     else loop (i + 1) (f i :: accu)
   in
     loop from []
+
+let hash = Hash.combine_list
