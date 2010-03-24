@@ -71,6 +71,7 @@ val list_open_with : (subst -> 'a -> 'a) -> t list -> 'a listbind -> 'a
 
 module M : Map.S with type key = t
 module S : Set.S with type elt = t
+module H : Hashtbl.S with type key = t
 val print_set : S.t Myformat.fmt
 
 val hash_set : S.t -> int

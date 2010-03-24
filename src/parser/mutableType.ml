@@ -87,40 +87,45 @@ let equal_ty t1 t2 =
       Uf.equal t1a t2a && Uf.equal t1b t2b
   | _, _ -> false
 
-module HB = struct
+module HBty = struct
   type t = ty
   let hash = hash_ty
   let equal = equal_ty
 end
-module Hty = Hashtbl.Make(HB)
+
+module Hty = Hashtbl.Make(HBty)
 
 let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh t
-let arrow t1 t2 e c = mkt (Arrow (t1,t2,e,c))
-let tuple tl = mkt (Tuple tl)
-let ref_ r t = mkt (Ref (r,t))
-let mkr r = Uf.fresh (RT r)
-let new_r () = Uf.fresh RU
-let var s = mkt (App (s,([],[],[])))
-let map e = mkt (Map e)
-let app v i = mkt (App (v,i))
-let parr =
+
+let memo =
   let h = Hty.create 17 in
-  fun t1 t2 ->
-    let t = PureArr (t1,t2) in
+  fun t ->
     try Uf.find (Hty.find h t)
     with Not_found ->
       let n = mkt t in
       Hty.add h t n; n
 
+let parr t1 t2 = memo (PureArr (t1,t2))
+let arrow t1 t2 e c = memo (Arrow (t1,t2,e,c))
+let tuple tl = memo (Tuple tl)
+let ref_ r t = memo (Ref (r,t))
+let var s = memo (App (s,([],[],[])))
+let map e = memo (Map e)
+let app v i = memo (App (v,i))
+
 let eff_empty = [], Name.S.empty
 
-(* FIXME use physical equality when hash-consing is there *)
-let r_equal r1 r2 =
-  match Uf.desc r1, Uf.desc r2 with
-  | RU, RU -> Uf.equal r1 r2
-  | RU, RT _ | RT _, RU -> false
-  | RT n1, RT n2 -> Name.equal n1 n2
+let new_r () = Uf.fresh RU
+let mkr =
+  let h = Name.H.create 17 in
+  fun r ->
+    try Name.H.find h r
+    with Not_found ->
+      let n = Uf.fresh (RT r) in
+      Name.H.add h r n; n
+
+let r_equal a = Uf.tag a = Uf.tag b
 
 let rremove (r,e) rl =
   List.filter (fun x -> not (ExtList.mem r_equal x rl)) r, e
@@ -140,8 +145,6 @@ let prop = const Const.TProp
 let bool = var Predefty.bool_var
 let unit = var Predefty.unit_var
 let int = const Const.TInt
-
-module HT = Hashtbl
 
 let bh f l =
   let h = Hashtbl.create 3 in
@@ -170,10 +173,10 @@ let to_uf_node (tl,rl,evl) el (x : Ty.t ) =
     | Ty.Map e -> map (eff e)
     | Ty.PureArr (t1,t2) -> parr (f t1) (f t2)
     | Ty.App (v,([],[],[])) ->
-        begin try HT.find th v with Not_found -> var v end
+        begin try Hashtbl.find th v with Not_found -> var v end
     | Ty.App (v,i) -> app v (Inst.map f auxr eff i)
   and real x = ymemo aux x
-  and auxr r = try HT.find rh r with Not_found -> mkr r
+  and auxr r = try Hashtbl.find rh r with Not_found -> mkr r
   and eff (ef : Effect.t) : effect =
     let rl, e = Effect.to_u_effect ef in
     List.map auxr rl, e in
