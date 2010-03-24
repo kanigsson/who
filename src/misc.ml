@@ -21,8 +21,6 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-open Format
-
 let lineno = ref 0
 let newlinepos = ref 0
 
@@ -116,10 +114,6 @@ let repeat ?(from=0) n f =
     else loop (i + 1) (f i :: accu)
   in
     loop from []
-
-let opt_map f = function
-  | None -> None
-  | Some x -> Some (f x)
 
 let find_first p iter t def =
   let x = ref def in

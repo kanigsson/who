@@ -134,7 +134,7 @@ let rec decl env d =
       env, Section (s,cl,dl)
   | I.TypeDef (g,t,n) ->
       let env', g = Env.add_gen env g in
-      let t = Misc.opt_map (ty env') t in
+      let t = Opt.map (ty env') t in
       let env,nv = Env.add_tvar env n g t in
       env, TypeDef (g, t, nv)
   | I.DLetReg rl ->

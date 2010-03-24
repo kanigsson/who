@@ -21,6 +21,8 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
+type 'a t = 'a option
+
 let get def x = 
   match x with
   | None -> def
