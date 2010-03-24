@@ -836,6 +836,19 @@ module Recon = struct
 
   let mk_goal n f = mk_formula n f `Proved
 
+  module M = Name.M
+
+  let build_symbol_table th = 
+    let rec decl env d = 
+      match d with
+      | Logic (n,g,t) -> M.add n (G.close g t) env
+      | Program (n,g,e,_) -> M.add n (G.close g e.t) env
+      | Section (_,_,th) -> theory env th
+      | _ -> env
+    and theory env th = List.fold_left decl env th
+    in
+    theory M.empty th
+
 end
 
 module ParseT = struct

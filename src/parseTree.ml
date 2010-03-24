@@ -21,8 +21,7 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-(* This module represents the parse tree and is there uniquely to simplify the
-  parser *)
+(* This module represents the parse tree *)
 module C = Const
 type var = string
 type rvar = string
