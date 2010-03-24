@@ -30,10 +30,6 @@ let pair_compare cmpa cmpb (a1,b1) (a2,b2) =
 
 let pair_equal eqa eqb (a1,b1) (a2,b2) = eqa a1 a2 && eqb b1 b2
 
-let cnt =
-  let x = ref 0 in
-    fun () -> incr x ; !x
-
 let rec list_compare cmp l1 l2 = 
   match l1,l2 with
   | [],[] -> 0
@@ -45,11 +41,6 @@ let rec list_compare cmp l1 l2 =
       else list_compare cmp r1 r2
 
 let list_equal cmp l1 l2 = list_compare cmp l1 l2 = 0
-let opt_equal eq o1 o2 = 
-  match o1, o2 with
-  | None, None -> true
-  | Some t1, Some t2 -> eq t1 t2
-  | _, _ -> false
 
 let list_mem eq x l = List.exists (fun b -> eq x b) l
 let list_contained eq l1 l2 = 

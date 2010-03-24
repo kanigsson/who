@@ -1,2 +1,3 @@
 <main.*> : pkg_unix, pkg_num, pkg_menhirLib
 <parser> : include
+<util> : include
