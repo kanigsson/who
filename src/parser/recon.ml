@@ -87,8 +87,8 @@ and get_pre (_,x) =
   | None -> assert false
   | Some x -> recon x
 and recon (t : InferTree.t) : Ast.Recon.t =
-  { v = recon' t.I.v; t = M.to_ty t.I.t; e = M.to_eff t.I.e; loc = t.I.loc }
-and inst i = Inst.map M.to_ty M.to_r M.to_eff i
+  { v = recon' t.I.v; t = M.to_ty t.I.t; e = M.to_effect t.I.e; loc = t.I.loc }
+and inst i = Inst.map M.to_ty M.to_region M.to_effect i
 let rec recon_decl x =
   match x with
   | I.Logic (x,g,t) -> Logic (x,g,t)

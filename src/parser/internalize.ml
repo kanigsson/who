@@ -50,11 +50,11 @@ let rec ast' env = function
       Let (g, e1,Name.close_bind nv e2, r)
   | I.PureFun (x,t,e) ->
       let env, x = Env.add_var env x in
-      PureFun (MutableType.sto_uf_node (ty env t), 
+      PureFun (MutableType.from_ty (ty env t),
                Name.close_bind x (ast env e))
   | I.Quant (k,x,t,e) ->
       let env, x = Env.add_var env x in
-      Quant (k, MutableType.sto_uf_node (ty env t), 
+      Quant (k, MutableType.from_ty (ty env t),
              Name.close_bind x (ast env e))
   | I.Ite (e1,e2,e3) -> Ite (ast env e1, ast env e2, ast env e3)
   | I.Annot (e,t) -> Annot (ast env e, ty env t)

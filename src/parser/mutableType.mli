@@ -21,52 +21,54 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-module Identifier : sig
-  val empty_id : string
-  val btrue_id : string
-  val bfalse_id : string
-  val void_id : string
-  val leb_id  : string
-  val ltb_id  : string
-  val geb_id  : string
-  val gtb_id  : string
-  val eqb_id  : string
-  val neqb_id : string
-  val andb_id : string
-  val orb_id  : string
-  val le_id : string
-  val lt_id : string
-  val ge_id : string
-  val gt_id : string
-  val equal_id : string
-  val neq_id : string
-  val or_id : string
-  val and_id : string
-  val impl_id : string
-  val combine_id : string
-  val get_id : string
-  val fst_id : string
-  val snd_id : string
-  val not_id : string
-  val restrict_id : string
-  
-  val plus_id : string
-  val minus_id : string
+type ty =
+  | U
+  | Const of Const.ty
+  | Tuple of t list
+  | Arrow of t * t * effect * r list
+  | PureArr of t * t
+  | App of Name.t * (t,r,effect) Inst.t
+  | Ref of r * t
+  | Map of effect
+and t = ty Unionfind.t
+and r = rnode Unionfind.t
+and rnode =
+  | RU
+  | RT of Name.t
+and effect = r list * Name.S.t
 
-  val mk_tuple_id : int -> string
+val eff_empty : effect
+val const : Const.ty -> t
+val prop : t
+val bool : t
+val int : t
+val unit : t
+val parr : t -> t -> t
+val arrow : t -> t -> effect -> r list -> t
+val map : effect -> t
 
-  val unsafe_equal : Name.t -> string -> bool
-end
+val r_equal : r -> r -> bool
 
-module Logic : sig 
+(** conversion functions *)
+val from_ty : Ty.t -> t
+val from_region : Name.t -> r
+val from_effect : Effect.t -> effect
 
-  val get_pangoline_id : Name.t -> string
-  val var_and_type : string -> Name.t * (Ty.Generalize.t * Ty.t)
-  val var : string -> Name.t
+val to_effect : effect -> Effect.t
+val to_ty : t -> Ty.t
+val to_region : r -> Name.t
 
-  val equal : Name.t -> string -> bool
-  
-  val init : (Ty.Generalize.t * Ty.t) Name.M.t -> unit
+(* util functions *)
 
-  val belongs_to : Name.t -> string list -> bool
-end
+val to_logic_type : t -> t
+val base_pre_ty : effect -> t
+val base_post_ty : effect -> t -> t
+
+val refresh :
+  Ty.Generalize.t -> Effect.t list -> t -> t * (t, r, effect) Inst.t
+
+
+
+val rremove : effect -> r list -> effect
+val eff_union : effect -> effect -> effect
+val eff_union3 : effect -> effect -> effect -> effect

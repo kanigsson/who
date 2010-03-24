@@ -1,11 +1,41 @@
+(******************************************************************************)
+(*                                                                            *)
+(*                      Who                                                   *)
+(*                                                                            *)
+(*       A simple VCGen for higher-order programs.                            *)
+(*                                                                            *)
+(*  Copyright (C) 2009, 2010, Johannes Kanig                                  *)
+(*  Contact: kanig@lri.fr                                                     *)
+(*                                                                            *)
+(*  Who is free software: you can redistribute it and/or modify it under the  *)
+(*  terms of the GNU Lesser General Public License as published by the Free   *)
+(*  Software Foundation, either version 3 of the License, or any later        *)
+(*  version.                                                                  *)
+(*                                                                            *)
+(*  Who is distributed in the hope that it will be useful, but WITHOUT ANY    *)
+(*  WARRANTY; without even the implied warranty of MERCHANTABILITY or         *)
+(*  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public      *)
+(*  License for more details.                                                 *)
+(*                                                                            *)
+(*  You should have received a copy of the GNU Lesser General Public License  *)
+(*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
+(******************************************************************************)
+
 module Uf = Unionfind
 (* TODO Hash-consing *)
 (* TODO rewrite so that this type is a reimplemenation, no recursive knot *)
 (* TODO separate functionality for refresh and from_ty *)
+(* TODO rewrite types and functions in Ast and Ty without type arguments *)
 
 type ty =
   | U
-  | T of (t,r, effect) Ty.t'
+  | Const of Const.ty
+  | Tuple of t list
+  | Arrow of t * t * effect * r list
+  | PureArr of t * t
+  | App of Name.t * (t,r,effect) Inst.t
+  | Ref of r * t
+  | Map of effect
 and t = ty Uf.t
 and r = rnode Uf.t
 and rnode =
@@ -14,19 +44,20 @@ and rnode =
 and effect = r list * Name.S.t
 
 let new_ty () = Uf.fresh U
-let mkt t = Uf.fresh (T t)
-let arrow t1 t2 e c = mkt (Ty.Arrow (t1,t2,e,c))
-let tuple tl = mkt (Ty.Tuple tl)
-let ref_ r t = mkt (Ty.Ref (r,t))
+let mkt t = Uf.fresh t
+let arrow t1 t2 e c = mkt (Arrow (t1,t2,e,c))
+let tuple tl = mkt (Tuple tl)
+let ref_ r t = mkt (Ref (r,t))
 let mkr r = Uf.fresh (RT r)
 let new_r () = Uf.fresh RU
-let var s = mkt (Ty.App (s,([],[],[])))
-let map e = mkt (Ty.Map e)
-let app v i = mkt (Ty.App (v,i))
-let parr t1 t2 = mkt (Ty.PureArr (t1,t2))
+let var s = mkt (App (s,([],[],[])))
+let map e = mkt (Map e)
+let app v i = mkt (App (v,i))
+let parr t1 t2 = mkt (PureArr (t1,t2))
 
 let eff_empty = [], Name.S.empty
 
+(* FIXME use physical equality when hash-consing is there *)
 let r_equal r1 r2 =
   match Uf.desc r1, Uf.desc r2 with
   | RU, RU -> Uf.equal r1 r2
@@ -43,7 +74,7 @@ let eff_union3 a b c = eff_union a (eff_union b c)
 
 let const =
   let h = Hashtbl.create 5 in
-  List.iter (fun c -> Hashtbl.add h c (mkt (Ty.Const c)))
+  List.iter (fun c -> Hashtbl.add h c (mkt (Const c)))
   [ Const.TInt ; Const.TProp ];
   fun c -> Hashtbl.find h c
 
@@ -104,26 +135,24 @@ module H = Hashtbl.Make (struct
                            let hash = Uf.tag
                          end)
 
-let to_ty, to_eff, to_r =
+let to_ty, to_effect, to_region =
   let h = H.create 127 in
   let rec ty' = function
-    | Ty.Arrow (t1,t2,e,cap) ->
+    | U ->
+        failwith "cannot determine the type of some object, please help me"
+    | Arrow (t1,t2,e,cap) ->
         Ty.caparrow (ty t1) (ty t2) (eff e) (List.map rv cap)
-    | Ty.Tuple tl -> Ty.tuple (List.map ty tl)
-    | Ty.Const c -> Ty.const c
-    | Ty.Ref (r,t) -> Ty.ref_ (rv r) (ty t)
-    | Ty.Map e -> Ty.map (eff e)
-    | Ty.PureArr (t1,t2) -> Ty.parr (ty t1) (ty t2)
-    | Ty.App (v,i) -> Ty.app v (Inst.map ty rv eff i)
+    | Tuple tl -> Ty.tuple (List.map ty tl)
+    | Const c -> Ty.const c
+    | Ref (r,t) -> Ty.ref_ (rv r) (ty t)
+    | Map e -> Ty.map (eff e)
+    | PureArr (t1,t2) -> Ty.parr (ty t1) (ty t2)
+    | App (v,i) -> Ty.app v (Inst.map ty rv eff i)
   and ty x =
     try H.find h x
     with Not_found ->
-      match Unionfind.desc x with
-      | U ->
-          failwith "cannot determine the type of some object, please help me"
-      | T t ->
-          let r = ty' t in
-          H.add h x r; r
+      let r = ty' (Uf.desc x) in
+      H.add h x r; r
   and rv r =
     match Uf.desc r with
     | RU -> assert false
@@ -141,17 +170,40 @@ let to_logic_type t =
   let rec aux t =
     match Uf.desc t with
     | U -> t
-    | T ty ->
-        match ty with
-        | (Ty.Const _ | Ty.Map _) -> t
-        | Ty.Tuple tl -> tuple (List.map aux tl)
-        | Ty.PureArr (t1,t2) -> parr (aux t1) (aux t2)
-        | Ty.Arrow (t1,t2,e,_) -> prepost_type (aux t1) (aux t2) e
-        | Ty.Ref (x,t) -> ref_ x (aux t)
-        | Ty.App (v,i) -> app v (Inst.map aux Misc.id Misc.id i)
+    | (Const _ | Map _) -> t
+    | Tuple tl -> tuple (List.map aux tl)
+    | PureArr (t1,t2) -> parr (aux t1) (aux t2)
+    | Arrow (t1,t2,e,_) -> prepost_type (aux t1) (aux t2) e
+    | Ref (x,t) -> ref_ x (aux t)
+    | App (v,i) -> app v (Inst.map aux Misc.id Misc.id i)
   in
   aux t
 
 
 let refresh (tvl, rvl, evl) el t = assert false
+
+(* FIXME reimplement simpler *)
+let from_ty = sto_uf_node
+let from_region = to_uf_rnode
+let from_effect = to_uf_enode
+
+open Myformat
+let rec print_node fmt x =
+  match Uf.desc x with
+  | U -> fprintf fmt "%d" (Uf.tag x)
+  | _ -> (* FIXME *) assert false
+(*
+and is_c x =
+  match Uf.desc x with
+  | U -> false
+  | T t -> Ty.is_compound t
+and prvar fmt x =
+  match Uf.desc x with
+  | RU -> fprintf fmt "%d" (Uf.tag x)
+  | RT x -> Name.print fmt x
+and preff fmt (rl,el) =
+  fprintf fmt "{%a|" (print_list space prvar) rl;
+  Name.S.iter (Name.print fmt) el;
+  pp_print_string fmt "}"
+*)
 

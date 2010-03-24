@@ -71,8 +71,11 @@ let error loc s =
 let unify t1 t2 loc =
   try U.unify t1 t2
   with U.CannotUnify ->
+    (* FIXME *) assert false
+(*
     error loc "Inference: type mismatch between %a and %a"
       U.print_node t1 U.print_node t2
+*)
 
 exception FindFirst of Name.t
 
@@ -90,19 +93,22 @@ let rec check_type env t (x : I.t) =
   let e = infer env x in
   begin try U.unify t e.t
   with U.CannotUnify ->
+    (* FIXME *) assert false
+(*
     error e.loc "type error: term has type %a but expected type %a@."
       U.print_node e.t U.print_node t
+*)
   end ;
   e
 and infer env (x : I.t) =
   let l = x.I.loc in
   let e,t,eff =
     match x.I.v with
-    | I.Restrict (m,e) -> 
+    | I.Restrict (m,e) ->
         let map' = infer env m in
         begin match Uf.desc map'.t with
-          | M.T Ty.Map em ->
-              let em = M.to_eff em in
+          | M.Map em ->
+              let em = M.to_effect em in
               let v = PL.var PI.restrict_id in
               let new_e =
                 I.app (I.var ~inst:[Effect.diff em e; e] v l) m l in
@@ -118,35 +124,44 @@ and infer env (x : I.t) =
         let map' = infer env map in
         let ref' = infer env ref in
         begin match Uf.desc map'.t, Uf.desc ref'.t with
-        | M.T Ty.Map e, M.T Ty.Ref (r,_) ->
+        | M.Map e, M.Ref (r,_) ->
             let e = M.rremove e [r] in
-            let e = M.to_eff e in
+            let e = M.to_effect e in
             let new_e = I.app (I.app (I.var ~inst:[e] v l) ref l) map l in
             let e = infer env new_e in
             e.v, e.t, e.e
-        | _, M.T Ty.Ref _  ->
+        | _, M.Ref _  ->
+           (* FIXME *) assert false
+(*
             error l "using !! on term %a which is not a map but of type
             %a@." I.print map U.print_node map'.t
+*)
         | _, _ ->
+           (* FIXME *) assert false
+(*
             error l "using !! on term %a which is not a reference but of type
             %a@." I.print ref U.print_node ref'.t
+*)
         end
     | I.App (e1,e2, k, cap) ->
         let e1 = infer env e1 in
         let t1,t2, eff =
           match Uf.desc e1.t with
-          | M.T Ty.Arrow (t1,t2, eff, cap') ->
-              List.iter2 (fun a b -> U.runify a (M.to_uf_rnode b)) cap' cap;
+          | M.Arrow (t1,t2, eff, cap') ->
+              List.iter2 (fun a b -> U.runify a (M.from_region b)) cap' cap;
               t1,t2, eff
-          | M.T Ty.PureArr (t1,t2) -> t1, t2, M.eff_empty
+          | M.PureArr (t1,t2) -> t1, t2, M.eff_empty
           | _ ->
+              (* FIXME *) assert false
+(*
               error l "term is expected to be a function but is of type %a"
                 U.print_node e1.t
+*)
         in
         let e2 = check_type env t1 e2 in
         App (e1,e2,k, cap), t2, M.eff_union3 e1.e e2.e eff
     | I.Annot (e,t) ->
-        let t' = M.sto_uf_node t in
+        let t' = M.from_ty t in
         let e = check_type env t' e in
         Annot (e,t), t', e.e
     | I.Const c -> Const c, M.const (Const.type_of_constant c), M.eff_empty
@@ -160,7 +175,7 @@ and infer env (x : I.t) =
         Quant (k, nt, Name.close_bind x e), M.prop, M.eff_empty
     | I.LetReg (rl,e) ->
         let e = infer env e in
-        let eff = M.rremove e.e (List.map M.to_uf_rnode rl) in
+        let eff = M.rremove e.e (List.map M.from_region rl) in
         LetReg (rl,e), e.t, eff
     | I.Ite (e1,e2,e3) ->
         let e1 = check_type env M.bool e1 in
@@ -171,7 +186,7 @@ and infer env (x : I.t) =
         let e = infer env e in
         Gen (g,e), e.t, e.e
     | I.Param (t,eff) ->
-        Param (t,eff), M.sto_uf_node t, M.to_uf_enode eff
+        Param (t,eff), M.from_ty t, M.from_effect eff
     | I.For (dir,inv,i,s,e,body) ->
         let env = Env.add_svar env i M.int in
         let body = check_type env M.unit body in
@@ -201,12 +216,12 @@ and infer env (x : I.t) =
         let e2 = infer env e2 in
         Let (g, e1,Name.close_bind x e2,r), e2.t, M.eff_union e1.e e2.e
     | I.Lam (x,xt,cap,(p,e,q)) ->
-        let nt = M.sto_uf_node xt in
+        let nt = M.from_ty xt in
         let env = Env.add_svar env x nt in
         let e = infer (Env.to_program_env env) e in
         let p = pre env e.e p l in
         let q = post env e.e e.t q l in
-        Lam (x,xt,cap,(p,e,q)), M.arrow nt e.t e.e (List.map M.to_uf_rnode cap),
+        Lam (x,xt,cap,(p,e,q)), M.arrow nt e.t e.e (List.map M.from_region cap),
         M.eff_empty
   in
   { v = e ; t = t ; e  = eff ; loc = l }
@@ -231,7 +246,7 @@ and letgen env x g e r =
   let env' =
     match r with
     | Const.NoRec | Const.LogicDef -> env
-    | Const.Rec ty -> Env.add_svar env x (M.sto_uf_node ty) in
+    | Const.Rec ty -> Env.add_svar env x (M.from_ty ty) in
   let e = infer env' e in
   Env.add_var env x g e.t, e
 
@@ -242,7 +257,7 @@ let rec infer_th env d =
       let env, dl = theory env th in
       env, Section (s,cl,dl)
   | I.Logic (n,g,t) ->
-      let env = Env.add_var env n g (M.sto_uf_node t) in
+      let env = Env.add_var env n g (M.from_ty t) in
 (*       Myformat.printf "added: %a : %a@." Name.print n Ty.print t; *)
       env, Logic (n,g,t)
   | I.TypeDef (g,t,n) ->
