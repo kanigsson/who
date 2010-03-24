@@ -58,6 +58,41 @@ let hash_ty t =
   | Arrow (t1,t2,e,rl) ->
       Hash.combine3 4 (Uf.hash t1) (Uf.hash t2)
         (ExtList.hash Uf.hash (hash_effect e) rl)
+  | PureArr (t1,t2) ->
+      Hash.combine2 5 (Uf.hash t1) (Uf.hash t2)
+
+let equal_r r1 r2 =
+  match Uf.desc r1, Uf.desc r2 with
+  | RU, RU -> Uf.equal r1 r2
+  | RU, RT _ | RT _, RU -> false
+  | RT n1, RT n2 -> Name.equal n1 n2
+
+let equal_effect (r1,e1) (r2,e2) =
+  Effect.s_equal e1 e2 && ExtList.equal_unsorted equal_r r1 r2
+
+let equal_ty t1 t2 =
+  match t1, t2 with
+  (* two unification variables are always different *)
+  | U, U -> false
+  | Const c1, Const c2 -> Const.equal_t c1 c2
+  | Tuple l1, Tuple l2 -> ExtList.equal Uf.equal l1 l2
+  | Ref (r1,t1), Ref (r2,t2) -> Uf.equal r1 r2 && Uf.equal t1 t2
+  | Map e1, Map e2 -> equal_effect e1 e2
+  | App (n1,i1), App (n2,i2) ->
+      Name.equal n1 n2 && Inst.equal Uf.equal Uf.equal equal_effect i1 i2
+  | Arrow (t1a, t1b, e1, rl1), Arrow (t2a, t2b, e2, rl2) ->
+      Uf.equal t1a t2a && Uf.equal t1b t2b && ExtList.equal Uf.equal rl1 rl2 &&
+        equal_effect e1 e2
+  | PureArr (t1a, t1b), PureArr (t2a, t2b) ->
+      Uf.equal t1a t2a && Uf.equal t1b t2b
+  | _, _ -> false
+
+module HB = struct
+  type t = ty
+  let hash = hash_ty
+  let equal = equal_ty
+end
+module Hty = Hashtbl.Make(HB)
 
 let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh t
@@ -70,9 +105,13 @@ let var s = mkt (App (s,([],[],[])))
 let map e = mkt (Map e)
 let app v i = mkt (App (v,i))
 let parr =
-  let _ = Hashtbl.create 17 in
+  let h = Hty.create 17 in
   fun t1 t2 ->
-  mkt (PureArr (t1,t2))
+    let t = PureArr (t1,t2) in
+    try Uf.find (Hty.find h t)
+    with Not_found ->
+      let n = mkt t in
+      Hty.add h t n; n
 
 let eff_empty = [], Name.S.empty
 

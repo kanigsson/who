@@ -31,6 +31,7 @@ type t =
   | Ptrue
   | Pfalse
 
+val equal_t : ty -> ty -> bool
 val hash_t : ty -> int
 
 val compare : t -> t -> int

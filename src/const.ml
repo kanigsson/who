@@ -92,3 +92,4 @@ let compare a b =
   | _, _ -> Pervasives.compare a b
 
 let hash_t x = Hashtbl.hash x
+let equal_t = (=)
