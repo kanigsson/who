@@ -53,7 +53,8 @@ let new_r () = Uf.fresh RU
 let var s = mkt (App (s,([],[],[])))
 let map e = mkt (Map e)
 let app v i = mkt (App (v,i))
-let parr t1 t2 = mkt (PureArr (t1,t2))
+let parr t1 t2 =
+  mkt (PureArr (t1,t2))
 
 let eff_empty = [], Name.S.empty
 
