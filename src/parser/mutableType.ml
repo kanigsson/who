@@ -117,7 +117,7 @@ let app v i = memo (App (v,i))
 let eff_empty = [], Name.S.empty
 
 let new_r () = Uf.fresh RU
-let mkr =
+let from_region =
   let h = Name.H.create 17 in
   fun r ->
     try Name.H.find h r
@@ -125,7 +125,7 @@ let mkr =
       let n = Uf.fresh (RT r) in
       Name.H.add h r n; n
 
-let r_equal a = Uf.tag a = Uf.tag b
+let r_equal a b = Uf.tag a = Uf.tag b
 
 let rremove (r,e) rl =
   List.filter (fun x -> not (ExtList.mem r_equal x rl)) r, e
@@ -159,6 +159,20 @@ let ymemo ff =
       Hashtbl.add h x z; z in
   f
 
+let rec from_ty (Ty.C x : Ty.t) =
+  match x with
+  | Ty.Const c -> const c
+  | Ty.Arrow (t1,t2,e, c) ->
+      arrow (from_ty t1) (from_ty t2) (from_effect e) (List.map from_region c)
+  | Ty.Tuple tl -> tuple (List.map from_ty tl)
+  | Ty.Ref (r,t) -> ref_ (from_region r) (from_ty t)
+  | Ty.Map e -> map (from_effect e)
+  | Ty.PureArr (t1,t2) -> parr (from_ty t1) (from_ty t2)
+  | Ty.App (v,i) -> app v (Inst.map from_ty from_region from_effect i)
+and from_effect eff =
+  let rl, e = Effect.to_u_effect eff in
+  List.map from_region rl, e
+
 let to_uf_node (tl,rl,evl) el (x : Ty.t ) =
   let x = Ty.elsubst evl el x in
   let tn,th = bh new_ty tl and rn,rh = bh new_r rl in
@@ -176,18 +190,11 @@ let to_uf_node (tl,rl,evl) el (x : Ty.t ) =
         begin try Hashtbl.find th v with Not_found -> var v end
     | Ty.App (v,i) -> app v (Inst.map f auxr eff i)
   and real x = ymemo aux x
-  and auxr r = try Hashtbl.find rh r with Not_found -> mkr r
+  and auxr r = try Hashtbl.find rh r with Not_found -> from_region r
   and eff (ef : Effect.t) : effect =
     let rl, e = Effect.to_u_effect ef in
     List.map auxr rl, e in
   real x, (tn, rn, List.map eff el)
-
-let to_uf_rnode r = mkr r
-let to_uf_enode ef =
-  let rl, e = Effect.to_u_effect ef in
-  List.map to_uf_rnode rl, e
-
-let sto_uf_node x = fst (to_uf_node Ty.Generalize.empty [] x)
 
 module H = Hashtbl.Make (struct
                            type t' = t
@@ -242,11 +249,6 @@ let to_logic_type t =
 
 
 let refresh (tvl, rvl, evl) el t = assert false
-
-(* FIXME reimplement simpler *)
-let from_ty = sto_uf_node
-let from_region = to_uf_rnode
-let from_effect = to_uf_enode
 
 open Myformat
 let rec print_node fmt x =
