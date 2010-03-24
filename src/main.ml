@@ -88,9 +88,9 @@ let import parse_only infer_only input =
     | `String s -> parse_string infer_parser s in
   let ast = Internalize.theory ast in
   maybe_abort parse_only Ast.ParseT.print_theory ast;
-  let ast = Infer.infer_th ast in
+  let ast = Infer.theory ast in
   maybe_abort infer_only Ast.Infer.print_theory ast;
-  Infer.recon_th ast
+  Recon.theory ast
 
 let _ =
   Options.update ();
@@ -100,18 +100,10 @@ let _ =
         let p = parse_file annotparser !Options.filename in
         let p = AnnotInternalize.theory p in
         maybe_abort !Options.parse_only Ast.Recon.print_theory p;
-        p
+        Recon.prelude @ p
       else
-        let prelude =
-          if !Options.no_prelude then []
-          else
-            let p = import false false (`String Prelude.prelude) in
-            Predefined.Logic.init (Ast.Recon.build_symbol_table p);
-            p in
-        let user_input =
-          import !Options.parse_only !Options.infer_only
-            (`File !Options.filename) in
-        prelude @ user_input
+        Recon.prelude @
+        import !Options.parse_only !Options.infer_only (`File !Options.filename)
     in
     let p = apply_all_trans p in
     let kind = !Options.backend in

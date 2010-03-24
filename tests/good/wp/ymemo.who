@@ -1,13 +1,3 @@
-type bool
-logic true  : bool
-logic false  : bool
-logic = ['a||] : (a) -> (a) -> prop
-logic /\  : prop -> prop -> prop
-logic \/  : prop -> prop -> prop
-logic ->  : prop -> prop -> prop
-logic , ['a 'b||] : 'a -> 'b -> 'a * 'b
-logic fst ['a 'b||] : 'a * 'b -> 'a
-logic snd ['a 'b||] : 'a * 'b -> 'b
 type hmap['a1
 'b||]
 logic hmem ['a2 'b1||] : (a2) -> (hmap[(a2),(b1)||]) -> bool
@@ -20,22 +10,6 @@ logic combine [||'e1 'e2 'e3] : <'e1 'e2> -> <'e2 'e3> -> <'e1 'e2 'e3>
 logic restrict [||'e1 'e2] : <'e1 'e2> -> <'e2>
 logic empty : < >
 
-logic !! ['a5|r|'e] : ref(r,a5) -> <r  'e > -> a5
-let
-  ! ['a6|r1|] = (fun (x:ref(r1,a6)) -> {(fun (cur:<r1  >) -> True)}
-                parameter(a6,{r1  })
-                {(fun (old:<r1  >) ->
-                 (fun (cur1:<r1  >) ->
-                 (fun (r2:a6) ->
-                 ((!! [a6| r1| { }] x cur1) =[a6||] r2) /\
-                 ((!! [a6| r1| { }] x old) =[a6||] (!! [a6| r1| { }] x cur1)))))}) 
-let
-  := ['a7|r3|] = (fun (x1:ref(r3,a7)) ->
-                 (fun (v:a7) -> {(fun (cur2:<r3  >) -> True)}
-                 parameter(unit,{r3  })
-                 {(fun (old1:<r3  >) ->
-                  (fun (cur3:<r3  >) ->
-                  (fun (anon:unit) -> (!! [a7| r3| { }] x1 cur3) =[a7||] v)))})) 
 let
   stores  = (fun (f:int -> int) ->
             (fun (m:hmap[int,int||]) ->

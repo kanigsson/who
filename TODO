@@ -27,3 +27,4 @@ BUGS
 * find bug with "nil" - postponed
 
 * implement "reordering"
+* remove option "no-prelude"

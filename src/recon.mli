@@ -21,8 +21,6 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-exception Error of string * Loc.loc
-
-val theory : Ast.ParseT.theory -> Ast.Infer.theory
-
-val prelude : Ast.Infer.theory
+val prelude : Ast.Recon.theory
+val prelude_table : (Ty.Generalize.t * Ty.t) Name.M.t
+val theory : Ast.Infer.theory -> Ast.Recon.theory

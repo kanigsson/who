@@ -30,20 +30,49 @@ module S = Name.S
 module AI = Ast.Infer
 module PL = Predefined.Logic
 
-type env = {
-  vars : (G.t * Ty.t) Name.M.t ;
-  types : (G.t * Ty.t option) Name.M.t;
-  pm : bool;
-  }
+module Env : sig
+  type t
+
+  val empty : t
+
+  val add_var : t -> Name.t -> G.t -> Ty.t -> t
+  val add_svar : t -> Name.t -> Ty.t -> t
+
+  val lookup : t -> Name.t -> G.t * Ty.t
+
+  val add_ty : t -> Name.t -> G.t -> Ty.t option -> t
+
+  val to_logic_env : t -> t
+  val to_program_env : t -> t
+  val is_logic_env : t -> bool
+
+end = struct
+  type t = {
+    vars : (G.t * Ty.t) Name.M.t ;
+    types : (G.t * Ty.t option) Name.M.t;
+    pm : bool;
+    }
+
+  let empty = { vars = Name.M.empty; pm = false; types = Name.M.empty; }
+  let add_var env x g t =
+    { env with vars = Name.M.add x (g,t) env.vars }
+  let add_svar env x t =
+    add_var env x G.empty t
+  let add_ty env x g t =
+    { env with types = Name.M.add x (g,t) env.types }
+
+  let to_logic_env env = { env with pm = true }
+  let to_program_env env = { env with pm = false }
+  let is_logic_env env = env.pm
+
+  let lookup env v = Name.M.find v env.vars
+
+end
 
 exception Error of string * Loc.loc
 
 let error loc s =
   Myformat.ksprintf (fun s -> raise (Error (s,loc))) s
-
-let add_var env x g t = { env with vars = Name.M.add x (g,t) env.vars }
-let add_svar env x t = add_var env x G.empty t
-let add_ty env x g t = { env with types = Name.M.add x (g,t) env.types }
 
 let ymemo ff =
   let h = Hashtbl.create 17 in
@@ -176,11 +205,11 @@ and infer env (x : Ast.ParseT.t) : Ast.Infer.t =
     | Const c -> Const c, U.const (Const.type_of_constant c), U.eff_empty
     | PureFun (xt,(_,x,e)) ->
         let nt = sto_uf_node xt in
-        let env = add_svar env x xt in
+        let env = Env.add_svar env x xt in
         let e = infer env e in
         PureFun (xt, Name.close_bind x e), U.parr nt e.t, U.eff_empty
     | Quant (k,xt,(_,x,e)) ->
-        let env = add_svar env x xt in
+        let env = Env.add_svar env x xt in
         let e = check_type env U.prop e in
         Quant (k, xt, Name.close_bind x e), U.prop, U.eff_empty
     | LetReg (rl,e) ->
@@ -198,21 +227,21 @@ and infer env (x : Ast.ParseT.t) : Ast.Infer.t =
     | Param (t,eff) ->
         Param (t,eff), sto_uf_node t, to_uf_enode eff
     | For (dir,inv,i,s,e,body) ->
-        let env = add_svar env i Ty.int in
+        let env = Env.add_svar env i Ty.int in
         let body = check_type env U.unit body in
         let inv = pre env body.e inv l in
         For (dir, inv, i, s, e, body), U.unit, body.e
     | HoareTriple (p,e,q) ->
-        let e = infer {env with pm = false} e in
+        let e = infer (Env.to_program_env env) e in
         let p = pre env e.e p l in
         let q = post env e.e e.t q l in
         HoareTriple (p,e,q), U.prop, U.eff_empty
     | Var (v,(_,_,el)) ->
 (*         Myformat.printf "treating var: %a@." Name.print v; *)
         let (_,_,evl) as m ,xt =
-          try Name.M.find v env.vars
+          try Env.lookup env v
           with Not_found -> error l "variable %a not found" Name.print v in
-        let xt = if env.pm then Ty.to_logic_type xt else xt in
+        let xt = if Env.is_logic_env env then Ty.to_logic_type xt else xt in
         let nt,i =
           try to_uf_node m el xt
           with Invalid_argument "List.fold_left2" ->
@@ -227,8 +256,8 @@ and infer env (x : Ast.ParseT.t) : Ast.Infer.t =
         Let (g, e1,Name.close_bind x e2,r), e2.t, U.eff_union e1.e e2.e
     | Lam (x,xt,cap,(p,e,q)) ->
         let nt = sto_uf_node xt in
-        let env = add_svar env x xt in
-        let e = infer {env with pm = false} e in
+        let env = Env.add_svar env x xt in
+        let e = infer (Env.to_program_env env) e in
         let p = pre env e.e p l in
         let q = post env e.e e.t q l in
         Lam (x,xt,cap,(p,e,q)), U.arrow nt e.t e.e (List.map to_uf_rnode cap),
@@ -240,7 +269,7 @@ and pre env eff (cur,x) l : AI.pre' =
   | None -> ParseT.ptrue l
   | Some f -> f in
   let res =
-    check_type {env with pm = true} (U.base_pre_ty eff) (pref eff cur f) in
+    check_type (Env.to_logic_env env) (U.base_pre_ty eff) (pref eff cur f) in
   cur, Some res
 
 and post env eff t (old,cur,x) l =
@@ -252,137 +281,45 @@ and post env eff t (old,cur,x) l =
     | PPlain f -> Name.new_anon (), f
     | PResult (r,f) -> r, f in
   let p = postf eff t old cur r f in
-  let res = check_type {env with pm = true} bp p in
+  let res = check_type (Env.to_logic_env env) bp p in
   old, cur, PPlain res
 
 and letgen env x g e r =
   let env' =
     match r with
     | Const.NoRec | Const.LogicDef -> env
-    | Const.Rec ty -> add_svar env x ty in
+    | Const.Rec ty -> Env.add_svar env x ty in
   let e = infer env' e in
   let xt =
     try U.to_ty e.t
     with Assert_failure _ ->
       error e.loc "could not determine the type of: %a : %a@." Name.print x
         U.print_node e.t in
-  add_var env x g xt, e
+  Env.add_var env x g xt, e
 
 let rec infer_th env d =
   match d with
   | Formula (s,e,k) -> env, Formula (s,check_type env U.prop e, k)
-  | Section (s,cl,dl) ->
-      let env, dl =
-        Misc.list_fold_map infer_th env dl in
+  | Section (s,cl,th) ->
+      let env, dl = theory env th in
       env, Section (s,cl,dl)
   | Logic (n,g,t) ->
-      let env = add_var env n g t in
+      let env = Env.add_var env n g t in
 (*       Myformat.printf "added: %a : %a@." Name.print n Ty.print t; *)
       env, Logic (n,g,t)
   | TypeDef (g,t,n) ->
-      let env = add_ty env n g t in
+      let env = Env.add_ty env n g t in
       env, TypeDef (g,t,n)
   | DLetReg rl -> env, DLetReg rl
   | DGen g -> env, DGen g
   | Program (x,g,e,r) ->
       let env,e = letgen env x g e r in
       env, Program (x,g,e,r)
+and theory env th = Misc.list_fold_map infer_th env th
 
-let initial = { vars = Name.M.empty; pm = false; types = Name.M.empty; }
-let infer_th th =
-  let _, dl = Misc.list_fold_map infer_th initial th in
-  dl
+let prelude_env, prelude =
+  theory Env.empty Internalize.prelude
 
-module AR = Ast.Recon
-open AR
-
-let rec recon' = function
-  | Var (x,i) -> Var (x,inst i)
-  | Const c -> Const c
-  | App (e1,e2,k,cap) -> App (recon e1, recon e2,k,cap)
-  | PureFun (t,(s,x,e)) -> PureFun (t,(s,x, recon e))
-  | Quant (k,t,(s,x,e)) -> Quant (k,t,(s,x, recon e))
-  | Lam (x,ot,cap,(p,e,q)) ->
-      let e = recon e in
-      Lam (x,ot, cap, (pre p, e, post q))
-  | Param (t,e) -> Param (t,e)
-  | Let (g,e1,(_,x,e2),r) ->
-      Let (g, recon e1, Name.close_bind x (recon e2),r)
-  | Ite (e1,e2,e3) -> Ite (recon e1, recon e2, recon e3)
-  | For (dir,inv,i,st,en,body) ->
-      let bdir = match dir with {Name.name = Some "forto"} -> true|_ -> false in
-      let body = recon body in
-      let e = body.e and l = body.loc in
-      let cur,inv = pre inv in
-      let inv = match inv with | None -> ptrue_ l | Some f -> f in
-      let inv' = plam i Ty.int inv l in
-      let intvar s = svar s Ty.int l in
-      let curvar = svar cur (Ty.map e) l in
-      let sv = intvar st and ev = intvar en and iv = intvar i in
-      let pre =
-        if bdir then
-        (* forto: λcur. start <= i /\ i <= end_ /\ inv *)
-          efflam cur e (and_ (encl sv iv ev l) (app inv curvar l) l) l
-        else
-        (* fordownto: λcur. end_ <= i /\ i <= start /\ inv *)
-          efflam cur e (and_ (encl ev iv sv l) (app inv curvar l) l) l in
-      let old = Name.new_anon () in
-      let post =
-        let next = if bdir then succ iv l else prev iv l in
-        (* forto : λold.λcurλ(). inv (i+1) cur *)
-        (* fordownto : λold.λcurλ(). inv (i-1) cur *)
-        efflam old e
-          (efflam cur e
-            (plam (Name.new_anon ()) Ty.unit
-              (app2 inv' next curvar l) l) l) l in
-      let bodyfun = lam i Ty.int (cur,Some pre) body (old,cur,PPlain post) l in
-      (* forvar inv start end bodyfun *)
-      (app2 (app2 (var dir ([],[],[e]) Ty.forty l) inv' sv l) ev bodyfun l).v
-  | HoareTriple (p,e,q) -> HoareTriple (pre p, recon e, post q)
-(*
-      let f = recon f and x = recon x and p = get_pre p and q = get_post q in
-      let l = f.loc in
-      let _,t2, e = Ty.from_logic_tuple f.t in
-      let f =
-        effFA e (fun m -> effFA e (fun n -> forall t2 (fun r ->
-          let lhs = impl (app p m l) (applist [AR.pre f l; x; m] l) l in
-          let rhs =
-            impl (applist [AR.post f l; x; m ; n; r] l) (applist [q;m;n;r] l) l in
-          and_ lhs rhs l) l) l) l in
-      f.v
-*)
-  | LetReg (vl,e) -> LetReg (vl,recon e)
-  | Annot (e,t) -> Annot (recon e, t)
-  | Gen (g,e) -> Gen (g,recon e)
-and pre (cur,x) =
-  match x with
-  | None ->  assert false
-  | Some x -> cur, Some (recon x)
-and get_pre (_,x) =
-  match x with
-  | None -> assert false
-  | Some x -> recon x
-and get_post (_,_,x) =
-  match x with
-  | PPlain f -> recon f
-  | _ -> assert false
-and recon (t : Ast.Infer.t) : Ast.Recon.t =
-  { v = recon' t.v; t = U.to_ty t.t; e = U.to_eff t.e; loc = t.loc }
-and inst i = Inst.map U.to_ty U.to_r U.to_eff i
-and post (old,cur,x) =
-  let p = match x with
-  | PNone -> assert false
-  | PPlain f -> PPlain (recon f)
-  | _ -> assert false in
-  old, cur, p
-
-let rec recon_decl x =
-  match x with
-  | Logic (x,g,t) -> Logic (x,g,t)
-  | Formula (s,t,k) -> Formula (s, recon t, k)
-  | Section (s,cl, dl) -> Section (s,cl, recon_th dl)
-  | DLetReg rl -> DLetReg rl
-  | TypeDef (g,t,n) -> TypeDef (g,t,n)
-  | Program (n,g,t,r) -> Program (n,g,recon t, r)
-  | DGen g -> DGen g
-and recon_th l = List.map recon_decl l
+let theory th =
+  let _, th = theory prelude_env th in
+  th

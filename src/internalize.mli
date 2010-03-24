@@ -21,4 +21,7 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
+type env = CommonInternalize.Env.t
 val theory : ParseTree.theory -> Ast.ParseT.theory
+val prelude : Ast.ParseT.theory
+val prelude_env : env
