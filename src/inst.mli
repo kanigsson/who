@@ -21,11 +21,25 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-let combine acc n = n * 65599 + acc
-let combine2 acc n1 n2 = combine acc (combine n1 n2)
-let combine3 acc n1 n2 n3 = combine acc (combine n1 (combine n2 n3))
-let combine_list f = List.fold_left (fun acc x -> combine acc (f x))
-let combine_option h = function
-  | None -> 0
-  | Some s -> (h s) + 1
-let combine_pair h1 h2 (a1,a2) = combine (h1 a1) (h2 a2)
+type ('a,'b,'c) t = 'a list * 'b list * 'c list
+
+val empty : ('a,'b,'c) t
+
+val is_empty : ('a,'b,'c) t -> bool
+
+val equal : 
+  ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> ('c -> 'c -> bool) ->
+    ('a,'b,'c) t -> ('a,'b,'c) t -> bool
+
+val map : ('a -> 'd) -> ('b -> 'e) -> ('c -> 'f) -> ('a,'b,'c) t -> ('d,'e,'f) t
+
+val iter2 : 
+  ('a -> 'd -> unit) -> ('b -> 'e -> unit) -> ('c -> 'f -> unit) ->
+    ('a,'b,'c) t -> ('d,'e,'f) t -> unit
+
+val hash : ('a -> int) -> ('b -> int) -> ('c -> int) -> ('a,'b,'c) t -> int
+
+val print : ?kind:[`Who | `Pangoline | `Coq ] -> intype:bool ->
+  'a Myformat.fmt -> 'b Myformat.fmt -> 'c Myformat.fmt -> 
+      ('a,'b,'c) t Myformat.fmt
+

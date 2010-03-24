@@ -43,7 +43,7 @@ and rnode =
   | RT of Name.t
 and effect = r list * Name.S.t
 
-let hash_effect (rl,s) = 
+let hash_effect (rl,s) =
   ExtList.hash Uf.hash (Name.hash_set s) rl
 
 let hash_ty t =
@@ -53,12 +53,11 @@ let hash_ty t =
   | Tuple l -> ExtList.hash Uf.hash 1 l
   | Ref (r,t) -> Hash.combine2 2 (Uf.hash r) (Uf.hash t)
   | Map e -> hash_effect e
-  | App (n,i) -> 
+  | App (n,i) ->
       Hash.combine2 3 (Name.hash n) (Inst.hash Uf.hash Uf.hash hash_effect i)
-  | Arrow (t1,t2,e,rl) -> 
+  | Arrow (t1,t2,e,rl) ->
       Hash.combine3 4 (Uf.hash t1) (Uf.hash t2)
         (ExtList.hash Uf.hash (hash_effect e) rl)
-  | _ -> assert false
 
 let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh t
