@@ -130,7 +130,7 @@ let rec decl env d =
   | I.Program (x,g,e,r) ->
       let env, nv, g , e, r = letgen env x g e r in
       env, Program (nv, g, e, r)
-and theory x = Misc.list_fold_map decl x
+and theory x = ExtList.fold_map decl x
 
 let prelude_env, prelude =
   theory Env.empty

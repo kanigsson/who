@@ -146,7 +146,7 @@ let rec decl env d =
   | I.DGen g ->
       let env, g = Env.add_gen env g in
       env, DGen g
-and theory env th = Misc.list_fold_map decl env th
+and theory env th = ExtList.fold_map decl env th
 
 
 let theory th =

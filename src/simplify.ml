@@ -34,7 +34,7 @@ let error s = Myformat.ksprintf (fun s -> raise (Error s)) s
 
 module NPair = struct
   type t = Name.t * Name.t
-  let compare = Misc.pair_compare Name.compare Name.compare
+  let compare = Pair.compare Name.compare Name.compare
 end
 
 module NPM = Map.Make(NPair)

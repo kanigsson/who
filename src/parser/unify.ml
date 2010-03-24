@@ -70,6 +70,6 @@ and runify a b =
 (*       printf "runify: %a and %a@." prvar a prvar b; *)
       raise CannotUnify
 and eunify (r1,e1) (r2,e2) =
-  if Effect.s_equal e1 e2 && Misc.list_equal_unsorted r_equal r1 r2 then ()
+  if Effect.s_equal e1 e2 && ExtList.equal_unsorted r_equal r1 r2 then ()
   else raise CannotUnify
 

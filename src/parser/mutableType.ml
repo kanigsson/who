@@ -65,9 +65,9 @@ let r_equal r1 r2 =
   | RT n1, RT n2 -> Name.equal n1 n2
 
 let rremove (r,e) rl =
-  List.filter (fun x -> not (Misc.list_mem r_equal x rl)) r, e
+  List.filter (fun x -> not (ExtList.mem r_equal x rl)) r, e
 let eff_union (r1,e1) (r2,e2) =
-  Misc.list_union r_equal r1 r2, Name.S.union e1 e2
+  ExtList.union r_equal r1 r2, Name.S.union e1 e2
 
 let eff_union3 a b c = eff_union a (eff_union b c)
 

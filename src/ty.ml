@@ -252,7 +252,7 @@ module Generalize = struct
     Name.close_listbind tl (Name.close_listbind rl (Name.close_listbind el a))
 
   let equal =
-    let eq = Misc.list_equal Name.compare in
+    let eq = ExtList.equal Name.equal in
     fun (tl1,rl1,el1) (tl2,rl2,el2) ->
       eq tl1 tl2 && eq rl1 rl2 && eq el1 el2
 
@@ -275,7 +275,7 @@ let rec equal' eff t1 t2 =
       List.for_all2 (equal eff) tl1 tl2
   | Arrow (ta1,ta2,e1, cap1), Arrow (tb1,tb2,e2, cap2) -> 
       equal eff ta1 tb1 && equal eff ta2 tb2 && eff e1 e2 &&
-      Misc.list_equal Name.compare cap1 cap2
+      ExtList.equal Name.equal cap1 cap2
   | Ref (r1,t1), Ref (r2,t2) -> Name.equal r1 r2 && equal eff t1 t2
   | Map e1, Map e2 -> eff e1 e2
   | App (v1,i1), App (v2,i2) -> 

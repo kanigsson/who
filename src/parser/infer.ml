@@ -267,7 +267,7 @@ let rec infer_th env d =
   | I.Program (x,g,e,r) ->
       let env,e = letgen env x g e r in
       env, Program (x,g,e,r)
-and theory env th = Misc.list_fold_map infer_th env th
+and theory env th = ExtList.fold_map infer_th env th
 
 let prelude_env, prelude =
   theory Env.empty Internalize.prelude

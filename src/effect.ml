@@ -82,7 +82,7 @@ let lsubst el effl (rt,et) =
   S.union rt nrt, ne
 
 let s_equal a b = 
-  Misc.list_equal Name.compare (S.elements a) (S.elements b)
+  ExtList.equal Name.equal (S.elements a) (S.elements b)
 let equal (r1,e1) (r2, e2) = s_equal r1 r2 && s_equal e1 e2
 
 open Myformat

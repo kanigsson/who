@@ -87,7 +87,8 @@ let rec formtyping' env loc = function
       | C (Arrow _) -> error loc "effectful application not allowed in logic"
       | C (PureArr (ta,tb)) ->
           if Ty.equal ta t2 then tb else
-            (Myformat.printf "here@."; error loc "%s" (Error.ty_app_mismatch t2 ta))
+            (Myformat.printf "here@."; error loc "%s"
+              (Error.ty_app_mismatch t2 ta))
       | _ -> error loc "no function type"
       end
   | PureFun (t,b) ->
@@ -164,11 +165,12 @@ and typing' env loc = function
       begin match t1 with
       | C (Arrow (ta,tb,eff,caparg)) ->
           if Ty.equal ta t2 then
-            if Misc.list_equal Name.compare capapp caparg then
+            if ExtList.equal Name.equal capapp caparg then
               tb, Effect.union eff effi,
               disj_union3 loc cap1 cap2 (Name.list_to_set caparg)
             else
-              error loc "mismatch on creation permissions: expected %a, given %a"
+              error loc "mismatch on creation permissions: \
+                 expected %a, given %a"
                  Name.print_list caparg Name.print_list capapp
           else error loc "%s" (Error.ty_app_mismatch t2 ta)
       | C (PureArr (ta,tb)) ->
