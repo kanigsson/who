@@ -147,7 +147,8 @@ module Print = struct
     fprintf fmt "(%a :@ %s)" (print_list space Name.print) l s
 
   let inst ~kind = 
-    Inst.print ~kind ~intype:false Ty.print Name.print Effect.print
+    Inst.print ~kind ~intype:false 
+      (Ty.gen_print ~kind) Name.print Effect.print
 
   (* TODO factorize the different branches *)
   let term ?(kind : sup =`Who) open_ fmt t =
