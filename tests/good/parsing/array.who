@@ -2,8 +2,8 @@ logic = ['a||] : 'a -> 'a -> prop
 type array ['a||]
 
 logic get ['a||] : int -> array ['a||] -> 'a
-logic set ['a||] : int -> 'a ->  array ['a||] -> array ['a||] 
+logic set ['a||] : int -> 'a ->  array ['a||] -> array ['a||]
 
-axiom get_set_eq ['a||] : 
+axiom get_set_eq ['a||] :
   forall (t : array ['a||]) (i : int) (z : 'a).  get i (set i z t) = z
 

@@ -74,3 +74,7 @@ val refresh :
 val rremove : effect -> r list -> effect
 val eff_union : effect -> effect -> effect
 val eff_union3 : effect -> effect -> effect -> effect
+
+val print : t Myformat.fmt
+val print_region : r Myformat.fmt
+val region_list : r list Myformat.fmt

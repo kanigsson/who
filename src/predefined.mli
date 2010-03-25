@@ -21,6 +21,12 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
+type error
+
+exception Error of error
+
+val explain : error -> string
+
 module Identifier : sig
   val empty_id : string
   val btrue_id : string
@@ -49,7 +55,7 @@ module Identifier : sig
   val snd_id : string
   val not_id : string
   val restrict_id : string
-  
+
   val plus_id : string
   val minus_id : string
 
@@ -58,15 +64,16 @@ module Identifier : sig
   val unsafe_equal : Name.t -> string -> bool
 end
 
-module Logic : sig 
+module Logic : sig
 
   val get_pangoline_id : Name.t -> string
   val var_and_type : string -> Name.t * (Ty.Generalize.t * Ty.t)
   val var : string -> Name.t
 
   val equal : Name.t -> string -> bool
-  
-  val add_symbol : Name.t -> (Ty.Generalize.t * Ty.t) -> unit
+
+  val add_binding : Name.t -> (Ty.Generalize.t * Ty.t) -> unit
+  val add_symbol : string -> Name.t -> unit
 
   val belongs_to : Name.t -> string list -> bool
 end

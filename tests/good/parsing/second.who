@@ -2,9 +2,9 @@ type bool
 logic true : bool
 logic false : bool
 logic == ['a||] : 'a -> 'a -> bool
-let f ['a||] (x y : 'a) = 
-  {} 
-  x == y 
+let f ['a||] (x y : 'a) =
+  {}
+  x == y
   {}
 
 let f ['a||] (x : 'a) = {} true {}

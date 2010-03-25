@@ -2,8 +2,8 @@ logic fst ['a 'b||] : 'a * 'b -> 'a
 logic snd ['a 'b||] : 'a * 'b -> 'b
 let pre ['a 'b||] (x : 'a * 'b) = fst x
 let post ['a 'b||] (x : 'a * 'b) = snd x
-let rec ['a||'e] (apply : ('a ->{'e} 'a) -> 'a ->{'e} 'a) 
-                ( g : 'a ->{'e} 'a) ( x : 'a) = 
+let rec ['a||'e] (apply : ('a ->{'e} 'a) -> 'a ->{'e} 'a)
+                ( g : 'a ->{'e} 'a) ( x : 'a) =
   { pre g x cur }
   g x
   { r : post g x old cur r }

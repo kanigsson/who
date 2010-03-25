@@ -109,7 +109,8 @@ let _ =
     if !Options.backend = `Coq then Regen2.main s else Pangoline.out s
   with
   | Sys_error e -> Error.bad e
-  | Infer.Error (s,loc)
-  | Typing.Error (s,loc)
-      -> Error.with_loc s loc
+  | Typing.Error (s,loc) -> Error.with_loc s loc
+  | Infer.Error (loc,e) ->
+      Error.with_loc (Infer.explain e) loc
+  | Predefined.Error e -> Error.bad (Predefined.explain e)
 

@@ -21,6 +21,8 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-exception Error of string * Loc.loc
+type error
+exception Error of Loc.loc * error
+val explain : error -> string
 
 val theory : InternalParseTree.theory -> InferTree.theory

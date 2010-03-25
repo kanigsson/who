@@ -9,7 +9,7 @@ parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r} = allocates r
   {}
   { x : !!x = v }
 
-let main (z : unit) = 
+let main (z : unit) =
   { }
   letregion rho in
   let x = ref{{rho}} 5 in

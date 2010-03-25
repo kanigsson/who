@@ -5,11 +5,11 @@ parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
   {}
   {r : !!x = r /\ !!x|old = !!x}
 let seq ['a 'b 'c||'e1 'e2] (f : 'a ->{'e1} 'b) (g : 'b ->{'e2} 'c) (x : 'a) =
-{} 
-g (f x) 
+{}
+g (f x)
 {}
 
 let h [|r1 r2|] (x : ref(r1,int)) (y : ref(r2,int)) =
   {}
-  seq (fun (z : int) -> {} !x {}) (fun (z : int) -> {} !y {}) 
+  seq [{r1}  {r2}] (fun (z : int) -> {} !x {}) (fun (z : int) -> {} !y {})
   {}

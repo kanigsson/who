@@ -106,6 +106,39 @@ module He = Hashtbl.Make(HBe)
 let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh t
 
+module Print = struct
+  open Myformat
+
+  let rec inst fmt i =
+    Inst.print ~kind:`Who ~intype:true ty region effect fmt i
+
+  and ty fmt (x : t) =
+    let mayp fmt t = if is_compound t then paren ty fmt t else ty fmt t in
+    match Uf.desc x with
+    | U -> fprintf fmt "%d" (Uf.tag x)
+    | Tuple tl ->
+        print_list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
+    | Ref (r,t) -> fprintf fmt "ref(%a,%a)" region r ty t
+    | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 ty t2
+    | Map e -> fprintf fmt "<%a>" effect e
+    | Const c -> Const.print_ty `Who fmt c
+    | App (v,i) -> fprintf fmt "%a%a" Name.print v inst i
+    | Arrow (t1,t2,eff,cap) ->
+        fprintf fmt "%a ->{%a%a} %a" mayp t1 effect eff maycap cap ty t2
+  and maycap fmt = function
+    | [] -> ()
+    | l -> fprintf fmt "|%a" region_list l
+  and region fmt x =
+    match Uf.desc x with
+    | RU -> fprintf fmt "%d" (Uf.tag x)
+    | RT n -> Name.print fmt n
+  and region_list fmt l = print_list space region fmt l
+  and effect fmt (rl,el) =
+    fprintf fmt "{%a|" region_list rl;
+    Name.S.iter (Name.print fmt) el;
+    pp_print_string fmt "}"
+end
+
 let memo =
   let h = Hty.create 17 in
   fun t ->
@@ -176,7 +209,8 @@ let node_map ~f ~eff_fun ~rfun t : t =
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)
     | Ref (r,t) -> ref_ (rfun r) (aux t)
     | Map e -> map (eff_fun e)
-    | Arrow (t1,t2,e,rl) -> arrow (aux t1) (aux t2) (eff_fun e) rl
+    | Arrow (t1,t2,e,rl) -> 
+        arrow (aux t1) (aux t2) (eff_fun e) (List.map rfun rl)
     | App (n,i) -> app n (Inst.map aux Misc.id eff_fun i) in
     f t in
   aux t
@@ -216,7 +250,8 @@ let refresh (tvl, rvl, evl) el t =
     | RT r -> begin try Name.H.find rh r with Not_found -> n end
     | _ -> n in
   let ersubst (rl,s) = List.map rfun rl, s in
-  node_map ~f ~eff_fun:ersubst ~rfun t, (tn,rn,el)
+  let nt = node_map ~f ~eff_fun:ersubst ~rfun t in
+  nt, (tn,rn,el)
 
 module HBt = struct
   type t' = t
@@ -273,33 +308,6 @@ let to_logic_type t =
     | Arrow (t1,t2,e,_) -> prepost_type t1 t2 e
     | _ -> t) t
 
-open Myformat
-
-let rec inst fmt i =
-  Inst.print ~kind:`Who ~intype:true print print_region print_effect fmt i
-
-and print fmt (x : t) =
-  let mayp fmt t = if is_compound t then paren print fmt t else print fmt t in
-  match Uf.desc x with
-  | U -> fprintf fmt "%d" (Uf.tag x)
-  | Tuple tl ->
-      print_list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
-  | Ref (r,t) -> fprintf fmt "ref(%a,%a)" print_region r print t
-  | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 print t2
-  | Map e -> fprintf fmt "<%a>" print_effect e
-  | Const c -> Const.print_ty `Who fmt c
-  | App (v,i) -> fprintf fmt "%a%a" Name.print v inst i
-  | Arrow (t1,t2,eff,cap) ->
-      fprintf fmt "%a ->{%a%a} %a" mayp t1 print_effect eff maycap cap print t2
-and maycap fmt = function
-  | [] -> ()
-  | l -> fprintf fmt "|%a" region_list l
-and print_region fmt x =
-  match Uf.desc x with
-  | RU -> fprintf fmt "%d" (Uf.tag x)
-  | RT n -> Name.print fmt n
-and region_list fmt l = print_list space print_region fmt l
-and print_effect fmt (rl,el) =
-  fprintf fmt "{%a|" region_list rl;
-  Name.S.iter (Name.print fmt) el;
-  pp_print_string fmt "}"
+let print = Print.ty
+let print_region = Print.region
+let region_list = Print.region_list

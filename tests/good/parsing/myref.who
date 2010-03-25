@@ -6,5 +6,5 @@ parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r} = allocates r
 
 let myref ['a|r|] (x : 'a) = allocates r
   {}
-  ref{{r}} x 
+  ref{{r}} x
   {}

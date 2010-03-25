@@ -8,13 +8,13 @@ parameter := ['a|r|] (x : ref(r,'a)) (v : 'a) : unit, {r} =
   {}
   { !!x = v}
 
-let apply ['a 'b ||'e] (f : 'a ->{'e} 'b) (x : 'a) = 
-  {fst f x cur} 
-  f x 
+let apply ['a 'b ||'e] (f : 'a ->{'e} 'b) (x : 'a) =
+  {fst f x cur}
+  f x
   { k : snd f x old cur k }
 
 let main [|r|] (x:ref(r,int)) =
   {}
-  apply (fun (z : unit) -> {} x := 0 { !! x = 0 } ) ()
+  apply [{r}] (fun (z : unit) -> {} x := 0 { !! x = 0 } ) ()
   { !! x = 0 }
 

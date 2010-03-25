@@ -63,19 +63,38 @@ end = struct
 
 end
 
-exception Error of string * Loc.loc
+type error =
+  | Basic of string
+  | WrongRegionCap
+  | WrongRegionCapNumber
+  | NotAFunction of M.t
+  | WrongNumberEffects of Name.t * int * int
 
-let error loc s =
-  Myformat.ksprintf (fun s -> raise (Error (s,loc))) s
+exception Error of Loc.loc * error
+
+let errorm loc s =
+  Myformat.ksprintf (fun s -> raise (Error (loc,Basic s))) s
+
+let explain e =
+  match e with
+  | Basic s -> s
+  | WrongRegionCap -> "region capacity is not the one expected here"
+  | WrongRegionCapNumber ->
+      "the number of region capacities is not the one expected here"
+  | WrongNumberEffects(v,l1,l2) ->
+      Myformat.sprintf "not the right number of effect vars: %a@.\
+      I expected %d variables, but you gave %d effects.@." Name.print v l1 l2
+  | NotAFunction t ->
+      Myformat.sprintf "term is expected to be a function but is of type %a"
+        M.print t
+
+let error l e = raise (Error (l,e))
 
 let unify t1 t2 loc =
   try U.unify t1 t2
   with U.CannotUnify ->
-    (* FIXME *) assert false
-(*
-    error loc "Inference: type mismatch between %a and %a"
-      U.print_node t1 U.print_node t2
-*)
+    errorm loc "Inference: type mismatch between %a and %a"
+      M.print t1 M.print t2
 
 exception FindFirst of Name.t
 
@@ -93,11 +112,8 @@ let rec check_type env t (x : I.t) =
   let e = infer env x in
   begin try U.unify t e.t
   with U.CannotUnify ->
-    (* FIXME *) assert false
-(*
-    error e.loc "type error: term has type %a but expected type %a@."
-      U.print_node e.t U.print_node t
-*)
+    errorm e.loc "type error: term has type %a but expected type %a@."
+      M.print e.t M.print t
   end ;
   e
 and infer env (x : I.t) =
@@ -117,46 +133,38 @@ and infer env (x : I.t) =
           | _ -> assert false
         end
     (* special case for !! *)
-    (** TODO special construct in this case *)
-    | I.App ({ I.v = I.App ({ I.v = I.Var (v,[]) }, ref,`Prefix,[]) },
-      map, `Prefix, [])
-      when PI.unsafe_equal v PI.get_id ->
+    | I.Get (ref, map) ->
         let map' = infer env map in
         let ref' = infer env ref in
         begin match Uf.desc map'.t, Uf.desc ref'.t with
         | M.Map e, M.Ref (r,_) ->
             let e = M.rremove e [r] in
             let e = M.to_effect e in
+            let v = PL.var PI.get_id in
             let new_e = I.app (I.app (I.var ~inst:[e] v l) ref l) map l in
             let e = infer env new_e in
             e.v, e.t, e.e
         | _, M.Ref _  ->
-           (* FIXME *) assert false
-(*
-            error l "using !! on term %a which is not a map but of type
-            %a@." I.print map U.print_node map'.t
-*)
+            errorm l "using !! on term which is not a map but of type
+            %a@." M.print map'.t
         | _, _ ->
-           (* FIXME *) assert false
-(*
-            error l "using !! on term %a which is not a reference but of type
-            %a@." I.print ref U.print_node ref'.t
-*)
+            errorm l "using !! on term which is not a reference but of type
+            %a@." M.print ref'.t
         end
     | I.App (e1,e2, k, cap) ->
         let e1 = infer env e1 in
         let t1,t2, eff =
           match Uf.desc e1.t with
           | M.Arrow (t1,t2, eff, cap') ->
-              List.iter2 (fun a b -> U.runify a (M.from_region b)) cap' cap;
-              t1,t2, eff
+              begin try
+                List.iter2 (fun a b -> U.runify a (M.from_region b)) cap' cap;
+                t1,t2, eff
+              with
+              | Unify.CannotUnify -> error l WrongRegionCap
+              | Invalid_argument _ -> error l WrongRegionCapNumber
+        end
           | M.PureArr (t1,t2) -> t1, t2, M.eff_empty
-          | _ ->
-              (* FIXME *) assert false
-(*
-              error l "term is expected to be a function but is of type %a"
-                U.print_node e1.t
-*)
+          | _ -> error l (NotAFunction e1.t)
         in
         let e2 = check_type env t1 e2 in
         App (e1,e2,k, cap), t2, M.eff_union3 e1.e e2.e eff
@@ -203,15 +211,12 @@ and infer env (x : I.t) =
 (*         Myformat.printf "treating var: %a@." Name.print v; *)
         let (_,_,evl) as m ,xt =
           try Env.lookup env v
-          with Not_found -> error l "variable %a not found" Name.print v in
+          with Not_found -> errorm l "variable %a not found" Name.print v in
         let xt = if Env.is_logic_env env then M.to_logic_type xt else xt in
         let nt,i =
           try M.refresh m el xt
           with Invalid_argument _ ->
-            error l "not the right number of effect vars: %a@.\
-            I expected %d variables, but you gave %d effects.@."
-            Name.print v (List.length evl) (List.length el) in
-(*         Myformat.printf "found type: %a@." U.print_node nt; *)
+            error l (WrongNumberEffects(v, List.length evl, List.length el)) in
         Var (v, i), nt, M.eff_empty
     | I.Let (g,e1,(_,x,e2),r) ->
         let env, e1 = letgen env x g e1 r in

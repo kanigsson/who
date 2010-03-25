@@ -3,6 +3,7 @@ logic tt : unit
 logic = ['a||] : 'a -> 'a -> prop
 logic /\ : prop -> prop -> prop
 logic -> : prop -> prop -> prop
+logic ~ : prop -> prop
 logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
 parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
   {}
@@ -20,16 +21,17 @@ parameter := ['a|r|] (x : ref(r,'a)) (v : 'a) : unit, {r} =
   {}
   { !!x = v}
 
+logic combine [||'e1 'e2 'e3] : <'e1 'e2> -> <'e2 'e3> -> <'e1 'e2 'e3>
 
-parameter forto [||'e] (inv : int -> <'e> -> prop) (start end_ : int) 
+parameter forto [||'e] (inv : int -> <'e> -> prop) (start end_ : int)
   (f : int ->{'e} unit) : unit, {'e} =
     { inv start cur /\
           forall (i : int). start <= i /\ i <= end_ ->
           forall (m : <'e>) . inv i m -> pre f i m /\
           forall (n : <'e>). post f i m n () -> inv (i+1) n
     }
-    { inv (int_max start (end_ + 1)) cur} 
-let f [|r|](b : unit) (x : ref(r,int)) = 
+    { inv (int_max start (end_ + 1)) cur}
+let f [|r|](b : unit) (x : ref(r,int)) =
   {}
   for i = 1 to 5 do
     { !!x < i * 10}

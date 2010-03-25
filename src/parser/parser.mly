@@ -95,9 +95,9 @@ aterm:
   | x = IDENT MID e = sepeffect
     { mk (Restrict (var x.c x.info,e)) x.info }
   | p = DEXCLAM x = IDENT
-    { app2 "!!" (var x.c x.info) (var "cur" p) (embrace p x.info) }
+    { mk (Get (var x.c x.info, var "cur" p)) (embrace p x.info) }
   | p = DEXCLAM x = IDENT MID t = aterm
-    { app2 "!!" (var x.c x.info) t (embrace p t.loc)  }
+    { mk (Get (var x.c x.info, t)) (embrace p t.loc) }
   | x = IDENT { var x.c x.info }
   | x = IDENT LBRACKET inst = sepeffect* RBRACKET { var ~inst x.c x.info }
   | l = LPAREN x = prefix r = RPAREN

@@ -70,6 +70,7 @@ let rec ast' env = function
   | I.Restrict (t,e) ->
       let t = ast env t and e = effect env e in
       Restrict (t,e)
+  | I.Get (t1,t2) -> Get (ast env t1, ast env t2)
   | I.HoareTriple (p,e,q) ->
       let p = pre env p and q = post env q and e = ast env e in
       HoareTriple (p,e,q)
@@ -110,6 +111,7 @@ let rec decl env d =
   | I.Logic (n,g,t) ->
       let env, g = Env.add_gen env g in
       let env, nv = Env.add_var env n in
+      Predefined.Logic.add_symbol n nv;
       env, Logic (nv,g, ty env t)
   | I.Axiom (s,g,t) ->
       let env', g = Env.add_gen env g in
@@ -128,6 +130,7 @@ let rec decl env d =
       env, DLetReg nrl
   | I.Program (x,g,e,r) ->
       let env, nv, g , e, r = letgen env x g e r in
+      Predefined.Logic.add_symbol x nv;
       env, Program (nv, g, e, r)
 and theory x = ExtList.fold_map decl x
 

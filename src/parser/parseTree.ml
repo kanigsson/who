@@ -46,6 +46,7 @@ type t' =
   | For of var * t option * var * var * var * t
   | LetReg of rvar list * t
   | Restrict of t * effect
+  | Get of t * t
   | HoareTriple of t option * t * post
 and t = { v : t' ; loc : Loc.loc }
 and post = 

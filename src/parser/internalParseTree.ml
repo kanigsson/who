@@ -43,6 +43,7 @@ type t' =
   | HoareTriple of funcbody
   | LetReg of Name.t list * t
   | Restrict of t * Effect.t
+  | Get of t * t
 and t = { v : t' ; loc : Loc.loc }
 and post' =
   | PNone

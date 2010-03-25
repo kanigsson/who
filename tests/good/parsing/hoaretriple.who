@@ -14,12 +14,14 @@ let post ['a 'b||] (x : 'a * 'b) = snd x
 logic <= : int -> int -> prop
   logic < : int -> int -> prop
 logic + : int -> int -> int
+logic ~ : prop -> prop
 logic - : int -> int -> int
 logic int_max : int -> int -> int
 type array ['a||]
 logic len ['a||] :  'a array -> int
 logic get ['a||] : int -> 'a array -> 'a
 
+logic combine [||'e1 'e2 'e3] : <'e1 'e2> -> <'e2 'e3> -> <'e1 'e2 'e3>
 parameter forto [||'e] (inv : int -> <'e> -> prop) (start end_ : int)
   (f : int ->{'e} unit) : unit, {'e} =
     { inv start cur /\

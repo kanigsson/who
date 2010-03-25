@@ -25,6 +25,19 @@ module SM = Misc.StringMap
 
 let preinstantiated_tuple = 7
 
+type error =
+  | PreludeIncomplete of string
+
+exception Error of error
+
+let error e = raise (Error e)
+
+let explain error =
+  match error with
+  | PreludeIncomplete s ->
+      Myformat.sprintf "the prelude is incomplete; the following symbol is \
+        missing: %s" s
+
 module Identifier = struct
   let equal_id = "="
   let empty_id = "empty"
@@ -69,7 +82,7 @@ module Identifier = struct
   let get_tuple_id i j =
     "get_" ^ string_of_int i ^ "_" ^ string_of_int j ^ "_tuple"
 
-  let unsafe_equal v id = 
+  let unsafe_equal v id =
     Name.unsafe_to_string v = id
 
 end
@@ -78,15 +91,15 @@ module Logic = struct
 
   open Identifier
 
-  type env = 
-    { 
+  type env =
+    {
       mutable ty_map : (Ty.Generalize.t * Ty.t) Name.M.t ;
       mutable name_map : Name.t Misc.StringMap.t
     }
 
-  let env = 
+  let env =
     { ty_map = Name.M.empty ; name_map  = Misc.StringMap.empty }
-      
+
   let pangoline_predefined =
     [
       impl_id, "=>" ;
@@ -97,24 +110,27 @@ module Logic = struct
       snd_id, "proj_2_1_tuple" ;
     ]
 
-  let add_symbol x t =
-    env.name_map <- 
-      Misc.StringMap.add (Name.unsafe_to_string x) x env.name_map;
+  let add_symbol s n =
+    env.name_map <- Misc.StringMap.add s n env.name_map
+
+  let add_binding x t =
     env.ty_map <- Name.M.add x t env.ty_map
 
   let type_of_var v = Name.M.find v env.ty_map
-  
-  let var s = 
+
+  let var s =
     try Misc.StringMap.find s env.name_map
-    with Not_found -> failwith s
+    with Not_found ->
+      error (PreludeIncomplete s)
+
   let type_of_id s = type_of_var (var s)
 
-  let var_and_type s = 
+  let var_and_type s =
     let v = var s in
     let t = type_of_var v in
     v, t
 
-  let equal x id = 
+  let equal x id =
     let y = var id in
     Name.equal x y
 
