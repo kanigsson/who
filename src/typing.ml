@@ -84,8 +84,8 @@ let rec formtyping' env loc = function
       Recon.print e1 Recon.print e2 Ty.print t1 Ty.print t2;
 *)
       begin match t1 with
-      | C (Arrow _) -> error loc "effectful application not allowed in logic"
-      | C (PureArr (ta,tb)) ->
+      | Arrow _ -> error loc "effectful application not allowed in logic"
+      | PureArr (ta,tb) ->
           if Ty.equal ta t2 then tb else
             (Myformat.printf "here@."; error loc "%s"
               (Error.ty_app_mismatch t2 ta))
@@ -163,7 +163,7 @@ and typing' env loc = function
       Recon.print e1 Recon.print e2 Effect.print eff1 Effect.print eff2;
 *)
       begin match t1 with
-      | C (Arrow (ta,tb,eff,caparg)) ->
+      | Arrow (ta,tb,eff,caparg) ->
           if Ty.equal ta t2 then
             if ExtList.equal Name.equal capapp caparg then
               tb, Effect.union eff effi,
@@ -173,7 +173,7 @@ and typing' env loc = function
                  expected %a, given %a"
                  Name.print_list caparg Name.print_list capapp
           else error loc "%s" (Error.ty_app_mismatch t2 ta)
-      | C (PureArr (ta,tb)) ->
+      | PureArr (ta,tb) ->
           if Ty.equal ta t2 then tb, effi, disjoint_union loc cap1 cap2 else
             error loc "%s" (Error.ty_app_mismatch t2 ta)
       | _ -> error loc "no function type"

@@ -197,14 +197,16 @@ let rec print kind fmt = function
         | `Pangoline when is_infix_name n -> fprintf fmt "( %a )" Name.print n
         | _ -> Name.print fmt n in
       fprintf fmt "@[<hov 2>%a %a:@ %a %a%a%a @]" (def kind) k npr x
-        (pr_generalize false kind) g (Ty.gen_print (kind :> sup)) t print_stop kind
+        (pr_generalize false kind) g 
+          (Ty.gen_print ~kind:(kind :> sup)) t print_stop kind
         (print_def_end kind) k
   | Axiom (h,e) -> 
       fprintf fmt "@[<hov 2>%a %a:@ %a%a @]" hypo kind Name.print h 
         (Ast.Recon.gen_print (kind :> sup)) e print_stop kind
   | PO (x,e) -> 
       fprintf fmt "@[<hov 2>%a %a:@ %a%a%a@]" lemma kind Name.print x 
-        (Ast.Recon.gen_print (kind :> sup)) e print_stop kind print_proof kind
+        (Ast.Recon.gen_print (kind :> sup)) e 
+          print_stop kind print_proof kind
   | Infix (n,i) ->
       if kind = `Pangoline then fprintf fmt "infix %a %d" Name.print n i
   | Type (x,((tl,_,_) as g)) -> 

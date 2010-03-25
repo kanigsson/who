@@ -23,8 +23,6 @@
 
 module Uf = Unionfind
 (* TODO Hash-consing *)
-(* TODO rewrite so that this type is a reimplemenation, no recursive knot *)
-(* TODO separate functionality for refresh and from_ty *)
 (* TODO rewrite types and functions in Ast and Ty without type arguments *)
 
 type ty =
@@ -153,7 +151,7 @@ let bool = var Predefty.bool_var
 let unit = var Predefty.unit_var
 let int = const Const.TInt
 
-let rec from_ty (Ty.C x : Ty.t) =
+let rec from_ty (x : Ty.t) =
   match x with
   | Ty.Const c -> const c
   | Ty.Arrow (t1,t2,e, c) ->

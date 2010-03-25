@@ -159,7 +159,7 @@ module Print = struct
 
   (* TODO factorize the different branches *)
   let term ?(kind : sup =`Who) pra prb prc open_ fmt t =
-    let typrint = Ty.gen_print kind in
+    let typrint = Ty.gen_print ~kind in
     let rec print' fmt = function
       | Const c -> Const.print fmt c
       | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) ->
@@ -236,7 +236,7 @@ module Print = struct
     print fmt t
 
   let decl ?(kind=`Who) pra prb prc open_ fmt d =
-    let typrint = Ty.gen_print kind in
+    let typrint = Ty.gen_print ~kind in
     let term = term ~kind pra prb prc open_ in
     let rec decl fmt d =
       match d with
@@ -340,15 +340,17 @@ module Recon = struct
     esubst evl el (rsubst rvl rl (tsubst tvl tl t))
 
   let gen_print kind fmt t =
-    Print.term ~kind (Ty.gen_print kind) Name.print Effect.print sopen fmt t
+    Print.term ~kind (Ty.gen_print ~kind) Name.print Effect.print sopen fmt t
   let coq_print fmt t = gen_print `Coq fmt t
   let print fmt t = gen_print `Who fmt t
 
   let print_decl =
-    Print.decl ~kind:`Who (Ty.gen_print `Who) Name.print Effect.print sopen
+    Print.decl ~kind:`Who 
+      (Ty.gen_print ~kind:`Who) Name.print Effect.print sopen
 
   let print_theory =
-    Print.theory ~kind:`Who (Ty.gen_print `Who) Name.print Effect.print sopen
+    Print.theory ~kind:`Who 
+      (Ty.gen_print ~kind:`Who) Name.print Effect.print sopen
 
   let print' fmt t =
     print fmt {v = t; t = Ty.unit; e = Effect.empty; loc = Loc.dummy }
@@ -356,7 +358,6 @@ module Recon = struct
   let mk v t e loc = { v = v; t = t; e = e; loc = loc }
   let mk_val v t loc = { v = v; t = t; e = Effect.empty; loc = loc }
 
-  module PT = Ty.Predef
   let ptrue_ loc = mk_val (Const Const.Ptrue) Ty.prop loc
   let pfalse_ loc = mk_val (Const Const.Pfalse) Ty.prop loc
 
@@ -399,7 +400,7 @@ module Recon = struct
 
   let domain t =
     match t.t with
-    | Ty.C Ty.Map e -> e
+    | Ty.Map e -> e
     | _ -> assert false
 
   let let_ g e1 x e2 r l =
@@ -688,7 +689,7 @@ module Recon = struct
     | Annot (e,_) | Gen (_,e) -> is_value e
     | App (t1,_,_,_) ->
         match t1.t with
-        | Ty.C (Ty.PureArr _) -> true
+        | Ty.PureArr _ -> true
         | _ -> false
 
   let aquant k x t f loc =
@@ -744,7 +745,7 @@ module Recon = struct
 
   let get ref map l =
     match ref.t with
-    | Ty.C (Ty.Ref (r,t)) ->
+    | Ty.Ref (r,t) ->
         let d = domain map in
         let d = Effect.rremove d [r] in
         simple_app2 (predef PI.get_id ([t],[r],[d]) l) ref map l
