@@ -3,8 +3,7 @@ logic = ['a||] : a -> a -> prop
 type bool
 logic true  : bool
 logic false  : bool
-type hmap['a1
-'b||]
+type hmap['a1 'b||]
 goal ymemo_correct : forall (t:hmap[int,int||]).
                      (forall (x:int).
                       (false =[bool||] true) -> (0 =[int||] x))

@@ -1,3 +1,36 @@
+logic /\  : prop -> prop -> prop
+logic \/  : prop -> prop -> prop
+logic ->  : prop -> prop -> prop
+logic = ['a||] : (a) -> (a) -> prop
+logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
+logic fst ['a2 'b1||] : ((a2) * (b1)) -> a2
+logic snd ['a3 'b2||] : ((a3) * (b2)) -> b2
+type bool
+logic true  : bool
+logic false : bool
+type unit
+logic tt  : unit
+ logic !! ['a7|r|'e] : ref(r,a7) -> <r  'e > -> a7
+let
+  ! ['a8|r1|] = (fun (x4:ref(r1,a8)) -> {(fun (cur:<r1  >) -> True)}
+                parameter(a8,{r1  })
+                {(fun (old:<r1  >) ->
+                 (fun (cur1:<r1  >) ->
+                 (fun (r2:a8) ->
+                 ((!! [a8| r1| { }] x4 cur1) =[a8||] r2) /\
+                 ((!! [a8| r1| { }] x4 old) =[a8||]
+                  (!! [a8| r1| { }] x4 cur1)))))}) 
+let
+  := ['a9|r3|] = (fun (x5:ref(r3,a9)) ->
+                 (fun (v:a9) -> {(fun (cur2:<r3  >) -> True)}
+                 parameter(unit,{r3  })
+                 {(fun (old1:<r3  >) ->
+                  (fun (cur3:<r3  >) ->
+                  (fun (anon:unit) -> (!! [a9| r3| { }] x5 cur3) =[a9||] v)))})) 
+logic combine [||'e1 'e2 'e3] : < 'e1 'e2 > -> < 'e2 'e3 > -> < 'e1 'e2 'e3
+  >
+logic restrict [||'e4 'e5] : < 'e4 'e5 > -> < 'e5 >
+logic empty  : < >
 type hmap['a31
 'b5||]
 logic hmem ['a32 'b6||] : (a32) -> (hmap[(a32),(b6)||]) -> bool

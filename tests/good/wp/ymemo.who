@@ -1,3 +1,15 @@
+type bool
+logic true : bool
+logic false : bool
+logic /\ : prop -> prop -> prop
+logic \/ : prop -> prop -> prop
+logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
+logic -> : prop -> prop -> prop
+logic ~ : prop -> prop
+logic = ['a||] : 'a -> 'a -> prop
+  logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
+  logic fst ['a 'b||] : 'a * 'b -> 'a
+  logic snd ['a 'b||] : 'a * 'b -> 'b
 type hmap['a1
 'b||]
 logic hmem ['a2 'b1||] : (a2) -> (hmap[(a2),(b1)||]) -> bool
@@ -10,6 +22,23 @@ logic combine [||'e1 'e2 'e3] : <'e1 'e2> -> <'e2 'e3> -> <'e1 'e2 'e3>
 logic restrict [||'e1 'e2] : <'e1 'e2> -> <'e2>
 logic empty : < >
 
+let
+  ! ['a8|r1|] = (fun (x:ref(r1,'a8)) -> {(fun (cur:<r1  >) -> True)}
+                parameter('a8,{r1  })
+                {(fun (old:<r1  >) ->
+                 (fun (cur1:<r1  >) ->
+                 (fun (r2:'a8) ->
+                 ((!! ['a8| r1| {r1  }] x cur1) =['a8||] r2) /\
+                 ((!! ['a8| r1| {r1  }] x old) =['a8||]
+                  (!! ['a8| r1| {r1  }] x cur1)))))}) 
+let
+  := ['a9|r3|] = (fun (x1:ref(r3,'a9)) ->
+                 (fun (v:'a9) -> {(fun (cur2:<r3  >) -> True)}
+                 parameter(unit,{r3  })
+                 {(fun (old1:<r3  >) ->
+                  (fun (cur3:<r3  >) ->
+                  (fun (anon:unit) ->
+                  (!! ['a9| r3| {r3  }] x1 cur3) =['a9||] v)))})) 
 let
   stores  = (fun (f:int -> int) ->
             (fun (m:hmap[int,int||]) ->
