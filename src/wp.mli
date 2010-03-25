@@ -21,5 +21,5 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-val main : Ast.Recon.t -> Ast.Recon.t
-val theory : Ast.Recon.theory -> Ast.Recon.theory
+val main : Ast.t -> Ast.t
+val theory : Ast.theory -> Ast.theory

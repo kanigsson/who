@@ -22,7 +22,6 @@
 (******************************************************************************)
 
 open Ast
-open Ast.Recon
 module PL = Predefined.Logic
 module PI = Predefined.Identifier
 module N = Name

@@ -21,4 +21,4 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-val theory : AnnotParseTree.theory -> Ast.Recon.theory
+val theory : AnnotParseTree.theory -> Ast.theory

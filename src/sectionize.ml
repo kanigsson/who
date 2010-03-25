@@ -33,10 +33,10 @@ type outdecl =
   | Infix of Name.t * int
   | Variable of Name.t * G.t * Ty.t * [`Logic | `Quant]
   | Type of Name.t * G.t
-  | Axiom of Name.t * Ast.Recon.t
+  | Axiom of Name.t * Ast.t
   | Section of Name.t * outdecl list
   | Import of string
-  | PO of Name.t * Ast.Recon.t
+  | PO of Name.t * Ast.t
 
 let intro_eq f = function
   (* TODO PO could actually be used here *)
@@ -73,7 +73,7 @@ let to_section kind th =
         | Const.Include f -> [ Import f ]
         | Const.TakeOver -> List.flatten (List.map decl_to_outdecl th)
         end
-  and term_intro (f : Ast.Recon.t) : outdecl list * Ast.Recon.t = 
+  and term_intro (f : Ast.t) : outdecl list * Ast.t = 
     (* take a formula and cut it into two parts : intro and the rest *)
     let rec aux acc f = 
       match f.v with
@@ -89,7 +89,7 @@ let to_section kind th =
               aux (Axiom (Name.from_string "H", f1)::acc) f2
           | _ -> List.rev acc, f in
     aux [] f
-  and make_PO ?(namehint="goal") ( f : Ast.Recon.t) : outdecl list = 
+  and make_PO ?(namehint="goal") ( f : Ast.t) : outdecl list = 
     let rec aux acc f = 
       match f.v with
       | Quant (`FA,_,_) | Ast.Gen _ ->
@@ -101,7 +101,7 @@ let to_section kind th =
           | _ -> PO (Name.from_string namehint, f) :: acc
     in
     aux [] f
-  and mk_Section ?namehint (f : Ast.Recon.t) :outdecl list = 
+  and mk_Section ?namehint (f : Ast.t) :outdecl list = 
     let il, f' = term_intro f in
     match make_PO ?namehint f' with
     | [] -> []
@@ -202,10 +202,10 @@ let rec print kind fmt = function
         (print_def_end kind) k
   | Axiom (h,e) -> 
       fprintf fmt "@[<hov 2>%a %a:@ %a%a @]" hypo kind Name.print h 
-        (Ast.Recon.gen_print (kind :> sup)) e print_stop kind
+        (Ast.gen_print (kind :> sup)) e print_stop kind
   | PO (x,e) -> 
       fprintf fmt "@[<hov 2>%a %a:@ %a%a%a@]" lemma kind Name.print x 
-        (Ast.Recon.gen_print (kind :> sup)) e 
+        (Ast.gen_print (kind :> sup)) e 
           print_stop kind print_proof kind
   | Infix (n,i) ->
       if kind = `Pangoline then fprintf fmt "infix %a %d" Name.print n i

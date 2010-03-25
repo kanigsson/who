@@ -21,14 +21,12 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-module RA = Recon
 open Ast
 open CommonInternalize
 module I = AnnotParseTree
 module PI = Predefined.Identifier
 
 let dummy = Name.new_anon ()
-module R = Recon
 
 exception Error of string * Loc.loc
 
@@ -60,42 +58,42 @@ let typed_var logic env x =
 let rec term logic env (t : I.t) =
   let l = t.I.loc in
   match t.I.v with
-  | I.Const c -> R.const c l
+  | I.Const c -> const c l
   | I.Var (x,i) ->
       let x, g = typed_var logic env x in
-      R.var x (inst env i) g l
+      var x (inst env i) g l
   | I.App (t1,t2,kind,cap) ->
-      R.app ~kind ~cap:(List.map (Env.rvar env) cap)
+      app ~kind ~cap:(List.map (Env.rvar env) cap)
         (term logic env t1) (term logic env t2) l
   | I.Lam (x,t,cap, p, e, q) ->
       let t = ty env t in
       let env, nv = add_svar env x t in
-      R.caplam nv t (List.map (Env.rvar env) cap)
+      caplam nv t (List.map (Env.rvar env) cap)
         (term true env p) (term false env e)
         (term true env q) l
   | I.HoareTriple (p,e,q) ->
-      R.hoare_triple (term true env p) (term false env e) (term true env q) l
+      hoare_triple (term true env p) (term false env e) (term true env q) l
   | I.Let (g,e1,x,e2,r) ->
       let env, nv, g , e1, r = letgen env x g e1 r in
       let e2 = term logic env e2 in
-      R.let_ g e1 nv e2 r l
+      let_ g e1 nv e2 r l
   | I.PureFun (t,x,e) ->
       let t = ty env t in
       let env, x = add_svar env x t in
-      R.plam x t (term logic env e) l
+      plam x t (term logic env e) l
   | I.Quant (k,t,x,e) ->
       let t = ty env t in
       let env, x = add_svar env x t in
-      R.squant k x t (term logic env e) l
+      squant k x t (term logic env e) l
   | I.LetReg (rl,e) ->
       let env, nrl = Env.add_rvars env rl in
-      R.letreg nrl (term logic env e) l
+      letreg nrl (term logic env e) l
   | I.Ite (e1, e2, e3) ->
-      R.ite ~logic (term logic env e1) (term logic env e2) (term logic env e3) l
-  | I.Annot (e,t) -> R.annot (term logic env e) (ty env t)
+      ite ~logic (term logic env e1) (term logic env e2) (term logic env e3) l
+  | I.Annot (e,t) -> annot (term logic env e) (ty env t)
   | I.Gen (g,e) ->
       let env, g = Env.add_gen env g in
-      R.gen g (term logic env e) l
+      gen g (term logic env e) l
 (*
   | I.Tuple tl ->
       let tl = List.map (term logic env) tl in
@@ -104,7 +102,7 @@ let rec term logic env (t : I.t) =
       let mktup = R.predef (PI.mk_tuple_id n) (tyl,[],[]) l in
       R.appn mktup tl l
 *)
-  | I.Param (t,e) -> R.param (ty env t) (effect env e) l
+  | I.Param (t,e) -> param (ty env t) (effect env e) l
 and letgen env x g e r =
   let env', g = Env.add_gen env g in
   let nv = Name.from_string x in
@@ -150,6 +148,6 @@ and theory env th = ExtList.fold_map decl env th
 
 
 let theory th =
-  let env = Env.annot Internalize.prelude_env RA.prelude_table in
+  let env = Env.annot Internalize.prelude_env Recon.prelude_table in
   let _, th = theory env th in
   th

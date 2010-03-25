@@ -22,7 +22,6 @@
 (******************************************************************************)
 
 open Ast
-open Ast.Recon
 module I = InferTree
 module M = MutableType
 
@@ -86,7 +85,7 @@ and get_pre (_,x) =
   match x with
   | None -> assert false
   | Some x -> recon x
-and recon (t : InferTree.t) : Ast.Recon.t =
+and recon (t : InferTree.t) : Ast.t =
   { v = recon' t.I.v; t = M.to_ty t.I.t; e = M.to_effect t.I.e; loc = t.I.loc }
 and inst i = Inst.map M.to_ty M.to_region M.to_effect i
 let rec recon_decl x =

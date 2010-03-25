@@ -130,15 +130,15 @@ let rec formtyping' env loc = function
         prop
   | Param _ -> error loc "effectful parameter in logic"
   | LetReg _ -> assert false
-and formtyping env (e : Ast.Recon.t) : Ty.t =
-(*   Myformat.printf "formtyping %a@." Ast.Recon.print e; *)
+and formtyping env (e : Ast.t) : Ty.t =
+(*   Myformat.printf "formtyping %a@." Ast.print e; *)
   let t = formtyping' env e.loc e.v in
   if Ty.equal e.t t then
     if Effect.is_empty e.e then t
     else error e.loc "not empty: %a" Effect.print e.e
   else
     error e.loc "fannotation mismatch on %a: %a and %a@."
-      Ast.Recon.print e Ty.print e.t Ty.print t
+      Ast.print e Ty.print e.t Ty.print t
 
 and pre env eff f = fis_oftype env (prety eff) f
 and post env eff t f = fis_oftype env (postty eff t) f
@@ -233,21 +233,21 @@ and typing' env loc = function
         post env eff t' q;
         prop, Effect.empty, RS.empty
 
-and typing env (e : Ast.Recon.t) : Ty.t * Effect.t * RS.t =
-(*   Myformat.printf "typing %a@." Ast.Recon.print e; *)
+and typing env (e : Ast.t) : Ty.t * Effect.t * RS.t =
+(*   Myformat.printf "typing %a@." Ast.print e; *)
   let ((t',_,_) as x) = typing' env e.loc e.v in
   if Ty.equal e.t t' then x else
     error e.loc "annotation mismatch on %a: %a and %a@."
-      Ast.Recon.print e Ty.print e.t Ty.print t'
+      Ast.print e Ty.print e.t Ty.print t'
 and fis_oftype env t e =
   let t' = formtyping env e in
   if Ty.equal t t' then ()
   else
     error e.loc "term %a is of type %a, but I expected %a@."
-      Ast.Recon.print e Ty.print t' Ty.print t
+      Ast.print e Ty.print t' Ty.print t
 
 and letgen env x g e r =
-  if not ( G.is_empty g || Recon.is_value e) then
+  if not ( G.is_empty g || is_value e) then
         error e.loc "generalization over non-value";
   let env' =
     match r with

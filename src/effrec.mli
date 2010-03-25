@@ -23,8 +23,8 @@
 
 type t
 
-val from_form_t : Ty.t -> Ast.Recon.t -> t
-val from_form : Effect.t -> Ast.Recon.t -> t
+val from_form_t : Ty.t -> Ast.t -> t
+val from_form : Effect.t -> Ast.t -> t
 
 val get_reg : Name.t -> t -> Name.t
 val rfold : (Name.t -> Name.t -> 'b -> 'b) -> t -> 'b -> 'b

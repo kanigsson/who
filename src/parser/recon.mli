@@ -21,6 +21,6 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-val prelude : Ast.Recon.theory
+val prelude : Ast.theory
 val prelude_table : (Ty.Generalize.t * Ty.t) Name.M.t
-val theory : InferTree.theory -> Ast.Recon.theory
+val theory : InferTree.theory -> Ast.theory

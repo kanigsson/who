@@ -23,7 +23,7 @@
 
 exception Error of string * Loc.loc
 
-val typing : Ast.Recon.t -> unit
-val formtyping : Ast.Recon.t -> unit
+val typing : Ast.t -> unit
+val formtyping : Ast.t -> unit
 
-val theory : Ast.Recon.theory -> unit
+val theory : Ast.theory -> unit
