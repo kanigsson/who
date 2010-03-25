@@ -22,8 +22,6 @@
 (******************************************************************************)
 
 module Uf = Unionfind
-(* TODO Hash-consing *)
-(* TODO rewrite types and functions in Ast and Ty without type arguments *)
 
 type ty =
   | U

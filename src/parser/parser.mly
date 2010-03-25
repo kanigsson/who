@@ -34,7 +34,7 @@
   (* take a nonempty list of variable bindings l and a function [f] and
   build [λv1:t1 ... λv(n-1):t(n-1).u], where [u] is the result of [f vn tn];
   all lambdas are pure. *)
-  let mk_lam f l loc =
+  let mk_lam f (l : (string * ty option) list) loc =
     let l = List.rev l in
     match l with
     | [] -> assert false
@@ -48,7 +48,12 @@
 
   (* construct a sequence of pure lambdas on top of [e], using [l];
     the innermost lambda is effectful, using [p] and [q] as pre and post *)
-  let mk_efflam l cap p e q = mk_lam (fun x t -> lamcap x t cap p e q) l
+  let mk_efflam l cap p e q = mk_lam (fun x t -> 
+    let t = 
+      try Opt.force t 
+      with Invalid_argument "force" -> 
+        failwith "type annotation obligatory for lambda" in
+    lamcap x t cap p e q) l
 
   (* construct a sequence of pure lambdas on top of a parameter with type [rt]
      and effect [eff]; the innermost lambda is effectful as in [mk_efflam] *)
@@ -161,8 +166,9 @@ todownto:
   | DOWNTO { "fordownto" }
 
 onetyarg:
-  LPAREN xl = defprogvar_no_pos+ COLON t = ty RPAREN
-    { List.map (fun x -> x,t) xl }
+  | LPAREN xl = defprogvar_no_pos+ COLON t = ty RPAREN
+    { List.map (fun x -> x,Some t) xl }
+  | x = IDENT { [x.c, None] }
 
 
 arglist: l = onetyarg+ { List.flatten l }

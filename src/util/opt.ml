@@ -28,6 +28,16 @@ let get def x =
   | None -> def
   | Some x -> x
 
+let force x = 
+  match x with
+  | None -> invalid_arg "force"
+  | Some x -> x
+
+let get_lazy f x =
+  match x with
+  | None -> f ()
+  | Some x ->x
+
 let get_map def f x =
   match x with
   | None -> def
@@ -37,8 +47,3 @@ let map f x =
   match x with
   | None -> None
   | Some x -> Some (f x)
-
-let get_fail x = 
-  match x with
-  | Some x -> x
-  | None -> assert false

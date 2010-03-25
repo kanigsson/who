@@ -80,11 +80,11 @@ let unify t1 t2 loc =
 exception FindFirst of Name.t
 
 let pref eff cur p =
-  I.pure_lam cur (M.map eff) p p.I.loc
+  I.pure_lam cur (Some (M.map eff)) p p.I.loc
 
 let postf eff t old cur res p =
   let l = p.I.loc in
-  let lameff s body = I.pure_lam s (M.map eff) body l in
+  let lameff s body = I.pure_lam s (Some (M.map eff)) body l in
   lameff old (lameff cur (I.pure_lam res t p l))
 
 module Uf = Unionfind
@@ -166,10 +166,12 @@ and infer env (x : I.t) =
         Annot (e,t), t', e.e
     | I.Const c -> Const c, M.const (Const.type_of_constant c), M.eff_empty
     | I.PureFun (nt,(_,x,e)) ->
+        let nt = Opt.get_lazy M.new_ty nt in
         let env = Env.add_svar env x nt in
         let e = infer env e in
         PureFun (nt, Name.close_bind x e), M.parr nt e.t, M.eff_empty
     | I.Quant (k,nt,(_,x,e)) ->
+        let nt = Opt.get_lazy M.new_ty nt in
         let env = Env.add_svar env x nt in
         let e = check_type env M.prop e in
         Quant (k, nt, Name.close_bind x e), M.prop, M.eff_empty
@@ -239,7 +241,7 @@ and post env eff t (old,cur,x) l =
     | I.PNone -> Name.new_anon (), I.ptrue l
     | I.PPlain f -> Name.new_anon (), f
     | I.PResult (r,f) -> r, f in
-  let p = postf eff t old cur r f in
+  let p = postf eff (Some t) old cur r f in
   check_type (Env.to_logic_env env) bp p
 
 and letgen env x g e r =

@@ -50,12 +50,10 @@ let rec ast' env = function
       Let (g, e1,Name.close_bind nv e2, r)
   | I.PureFun (x,t,e) ->
       let env, x = Env.add_var env x in
-      PureFun (MutableType.from_ty (ty env t),
-               Name.close_bind x (ast env e))
+      PureFun (Opt.map (to_mutable env) t, Name.close_bind x (ast env e))
   | I.Quant (k,x,t,e) ->
       let env, x = Env.add_var env x in
-      Quant (k, MutableType.from_ty (ty env t),
-             Name.close_bind x (ast env e))
+      Quant (k, Opt.map (to_mutable env) t, Name.close_bind x (ast env e))
   | I.Ite (e1,e2,e3) -> Ite (ast env e1, ast env e2, ast env e3)
   | I.Annot (e,t) -> Annot (ast env e, ty env t)
   | I.Param (t,e) -> Param (ty env t, effect env e)
@@ -75,6 +73,7 @@ let rec ast' env = function
   | I.HoareTriple (p,e,q) ->
       let p = pre env p and q = post env q and e = ast env e in
       HoareTriple (p,e,q)
+and to_mutable env t = MutableType.from_ty (ty env t)
 
 and post env x =
   let env, old = Env.add_var env "old" in

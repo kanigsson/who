@@ -47,6 +47,8 @@ val parr : t -> t -> t
 val arrow : t -> t -> effect -> r list -> t
 val map : effect -> t
 
+val new_ty : unit -> t
+
 val r_equal : r -> r -> bool
 
 (** conversion functions *)

@@ -78,7 +78,7 @@ let apply_all_trans t =
   let t =
     if !Options.transforms = [] then begin Typing.theory t; t end
     else List.fold_right apply_one_trans !Options.transforms t in
-  maybe_abort !Options.transform_only Ast.print_theory t;
+  maybe_abort !Options.transform_only Ast.Recon.print_theory t;
   t
 
 let import input =
@@ -97,7 +97,7 @@ let _ =
       if !Options.input_annot then
         let p = parse_file annotparser !Options.filename in
         let p = AnnotInternalize.theory p in
-        maybe_abort !Options.parse_only Ast.print_theory p;
+        maybe_abort !Options.parse_only Ast.Recon.print_theory p;
         Recon.prelude @ p
       else
         Recon.prelude @ import (`File !Options.filename) in

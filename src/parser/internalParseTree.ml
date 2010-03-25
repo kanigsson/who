@@ -33,10 +33,10 @@ type t' =
   | App of t * t * [`Infix | `Prefix ] * Name.t list
   | Lam of Name.t * Ty.t * Name.t list * funcbody
   | Let of G.t * t * t Name.bind * isrec
-  | PureFun of MutableType.t * t Name.bind
+  | PureFun of MutableType.t option * t Name.bind
   | Ite of t * t * t
   | Annot of t * Ty.t
-  | Quant of [`FA | `EX ] * MutableType.t * t Name.bind
+  | Quant of [`FA | `EX ] * MutableType.t option * t Name.bind
   | Param of Ty.t * Effect.t
   | Gen of G.t * t
   | For of Name.t * pre * Name.t * Name.t * Name.t * t

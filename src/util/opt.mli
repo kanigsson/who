@@ -22,6 +22,11 @@
 (******************************************************************************)
 
 type 'a t = 'a option
+
 val get : 'a -> 'a t -> 'a
+
+val force : 'a t -> 'a
+
+val get_lazy : (unit -> 'a) -> 'a t -> 'a
 
 val map : ('a -> 'b) -> 'a t -> 'b t
