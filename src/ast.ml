@@ -506,7 +506,7 @@ and impl h1 goal l =
       match destruct_app2_var goal with
       | Some (v, _, h2, goal) when PL.equal v PI.and_id ->
           begin match destruct_app2_var h1,destruct_app2_var h2 with
-          | Some ( v, _,_, _), _ when PL.equal v PI.and_id -> raise Exit
+          | Some ( v, _,_, _), _ when PL.equal v PI.equal_id -> raise Exit
           | _, Some (v, _,_, _) when PL.equal v PI.equal_id ->
               impl h2 (impl h1 goal l) l
           | _ -> raise Exit
