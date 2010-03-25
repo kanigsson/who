@@ -1,2 +1,2 @@
 logic = ['a||] : a -> a -> prop
-axiom a : forall (x:int). x = 0
+axiom a : forall (x:int). x =[int||] 0

@@ -2,6 +2,7 @@ type unit
 logic tt : unit
 logic = ['a||] : 'a -> 'a -> prop
 logic /\ : prop -> prop -> prop
+logic ~ : prop -> prop
 logic -> : prop -> prop -> prop
 logic fst ['a 'b||] : 'a * 'b -> 'a
 logic snd ['a 'b||] : 'a * 'b -> 'b
@@ -9,6 +10,7 @@ logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
 parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
   {}
   {r : !!x = r /\ !!x|old = !!x}
+logic combine [||'e1 'e2 'e3] : <'e1 'e2> -> <'e2 'e3> -> <'e1 'e2 'e3>
 let pre ['a 'b||] (x : 'a * 'b) = fst x
 let post ['a 'b||] (x : 'a * 'b) = snd x
 logic <= : int -> int -> prop

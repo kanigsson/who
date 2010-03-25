@@ -2,7 +2,14 @@ type bool
 logic true  : bool
 logic false  : bool
 logic == ['a||] : a -> a -> bool
-let f ['a1||] = (fun (x:a1) -> (fun (y:a1) -> {} x == y {})) 
-let f1 ['a2||] = (fun (x1:a2) -> {} true {}) 
-let g  = f1 true 
-let h  = f1 5 
+let
+  f ['a1||] = (fun (x:a1) ->
+              (fun (y:a1) -> {(fun (cur:<{ }>) -> True)} x ==[a1||] y
+              {(fun (old:<{ }>) ->
+               (fun (cur1:<{ }>) -> (fun (anon:bool) -> True)))})) 
+let
+  f1 ['a2||] = (fun (x1:a2) -> {(fun (cur2:<{ }>) -> True)} true
+               {(fun (old1:<{ }>) ->
+                (fun (cur3:<{ }>) -> (fun (anon1:bool) -> True)))}) 
+let g  = f1 [bool||] true 
+let h  = f1 [int||] 5 

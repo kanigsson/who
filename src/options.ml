@@ -53,7 +53,6 @@ let opt_spec =
     "--input-annot", Arg.Set input_annot,
       " take fully type annotated input file";
     "--parse-only", Arg.Set parse_only, " parse file and exit";
-    "--infer-only", Arg.Set infer_only, " do type inference and exit";
     "--transform-only", Arg.Set transform_only,
       " stop after applying transforms";
     "--no-check", Arg.Set no_check,

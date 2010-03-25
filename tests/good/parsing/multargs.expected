@@ -1,3 +1,7 @@
 logic = ['a||] : a -> a -> prop
 logic +  : int -> int -> int
-let f  = (fun (x:int) -> (fun (y:int) -> {} x + y {r : (x + y) = r})) 
+let
+  f  = (fun (x:int) ->
+       (fun (y:int) -> {(fun (cur:<{ }>) -> True)} x + y
+       {(fun (old:<{ }>) ->
+        (fun (cur1:<{ }>) -> (fun (r:int) -> (x + y) =[int||] r)))})) 

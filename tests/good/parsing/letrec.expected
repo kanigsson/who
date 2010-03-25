@@ -1,8 +1,16 @@
 logic fst ['a 'b||] : (a * b) -> a
 logic snd ['a1 'b1||] : (a1 * b1) -> b1
-let pre ['a2 'b2||] = (fun (x:a2 * b2) -> fst x) 
-let post ['a3 'b3||] = (fun (x1:a3 * b3) -> snd x1) 
-let rec((a4 ->{ 'e } a4) -> a4 ->{ 'e
-  } a4) apply ['a4||'e] = (fun (g:a4 ->{ 'e } a4) ->
-                          (fun (x2:a4) -> {pre g x2 cur} g x2
-                          {r : post g x2 old cur1 r})) 
+let pre ['a2 'b2||] = (fun (x:a2 * b2) -> fst [a2,b2||] x) 
+let post ['a3 'b3||] = (fun (x1:a3 * b3) -> snd [a3,b3||] x1) 
+let rec((a4 ->{{ 'e }} a4) -> a4 ->{{ 'e
+  }} a4) apply ['a4||'e] = (fun (g:a4 ->{{ 'e }} a4) ->
+                           (fun (x2:a4) ->
+                           {(fun (cur:<{ 'e }>) ->
+                            pre [a4 -> <{ 'e }> -> prop,a4 -> <{ 'e }> ->
+                            <{ 'e }> -> a4 -> prop||] g x2 cur)}
+                           g x2
+                           {(fun (old:<{ 'e }>) ->
+                            (fun (cur1:<{ 'e }>) ->
+                            (fun (r:a4) ->
+                            post [a4 -> <{ 'e }> -> prop,a4 -> <{ 'e }> ->
+                            <{ 'e }> -> a4 -> prop||] g x2 old cur1 r)))})) 

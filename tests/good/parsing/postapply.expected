@@ -3,14 +3,35 @@ logic tt  : unit
 logic = ['a||] : a -> a -> prop
 logic fst ['a1 'b||] : (a1 * b) -> a1
 logic snd ['a2 'b1||] : (a2 * b1) -> b1
-logic !! ['a3|r|'e] : ref(r,a3) -> <r  'e > -> a3
+logic !! ['a3|r|'e] : ref(r,a3) -> <{r  'e }> -> a3
 let
   := ['a4|r1|] = (fun (x:ref(r1,a4)) ->
-                 (fun (v:a4) -> {} parameter(unit,{r1  }) {(!! x cur) = v})) 
+                 (fun (v:a4) -> {(fun (cur:<{r1  }>) -> True)}
+                 parameter(unit,{r1  })
+                 {(fun (old:<{r1  }>) ->
+                  (fun (cur1:<{r1  }>) ->
+                  (fun (anon:unit) -> (x !![a4| r1| { }] cur1) =[a4||] v)))})) 
 let apply ['a5
-  'b2||'e1] = (fun (f:a5 ->{ 'e1 } b2) ->
-              (fun (x1:a5) -> {fst f x1 cur1} f x1 {k : snd f x1 old cur2 k})) 
+  'b2||'e1] = (fun (f:a5 ->{{ 'e1 }} b2) ->
+              (fun (x1:a5) ->
+              {(fun (cur2:<{ 'e1 }>) ->
+               fst [a5 -> <{ 'e1 }> -> prop,a5 -> <{ 'e1 }> -> <{ 'e1 }> ->
+               b2 -> prop||] f x1 cur2)}
+              f x1
+              {(fun (old1:<{ 'e1 }>) ->
+               (fun (cur3:<{ 'e1 }>) ->
+               (fun (k:b2) ->
+               snd [a5 -> <{ 'e1 }> -> prop,a5 -> <{ 'e1 }> -> <{ 'e1 }> ->
+               b2 -> prop||] f x1 old1 cur3 k)))})) 
 let
-  main [|r2|] = (fun (x2:ref(r2,int)) -> {}
-                apply (fun (z:unit) -> {} x2 := 0 {(!! x2 cur3) = 0}) tt
-                {(!! x2 cur4) = 0}) 
+  main [|r2|] = (fun (x2:ref(r2,int)) -> {(fun (cur4:<{r2  }>) -> True)}
+                apply [unit,unit|| {r2  }]
+                (fun (z:unit) -> {(fun (cur5:<{r2  }>) -> True)}
+                x2 :=[int| r2|] 0
+                {(fun (old2:<{r2  }>) ->
+                 (fun (cur6:<{r2  }>) ->
+                 (fun (anon1:unit) -> (x2 !![int| r2| { }] cur6) =[int||] 0)))})
+                tt
+                {(fun (old3:<{r2  }>) ->
+                 (fun (cur7:<{r2  }>) ->
+                 (fun (anon2:unit) -> (x2 !![int| r2| { }] cur7) =[int||] 0)))}) 

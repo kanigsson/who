@@ -3,8 +3,17 @@ logic /\  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
 logic fst ['a1 'b||] : (a1 * b) -> a1
 logic snd ['a2 'b1||] : (a2 * b1) -> b1
-logic !! ['a3|r|'e] : ref(r,a3) -> <r  'e > -> a3
+logic !! ['a3|r|'e] : ref(r,a3) -> <{r  'e }> -> a3
 let
-  ! ['a4|r1|] = (fun (x:ref(r1,a4)) -> {} parameter(a4,{r1  })
-                {r2 : ((!! x cur) = r2) /\ ((!! x old) = (!! x cur))}) 
-let f ['a5|toto|] = (fun (x1:ref(toto,a5)) -> {} ! x1 {}) 
+  ! ['a4|r1|] = (fun (x:ref(r1,a4)) -> {(fun (cur:<{r1  }>) -> True)}
+                parameter(a4,{r1  })
+                {(fun (old:<{r1  }>) ->
+                 (fun (cur1:<{r1  }>) ->
+                 (fun (r2:a4) ->
+                 ((x !![a4| r1| { }] cur1) =[a4||] r2) /\
+                 ((x !![a4| r1| { }] old) =[a4||] (x !![a4| r1| { }] cur1)))))}) 
+let
+  f ['a5|toto|] = (fun (x1:ref(toto,a5)) -> {(fun (cur2:<{toto  }>) -> True)}
+                  ! [a5| toto|] x1
+                  {(fun (old1:<{toto  }>) ->
+                   (fun (cur3:<{toto  }>) -> (fun (anon:a5) -> True)))}) 

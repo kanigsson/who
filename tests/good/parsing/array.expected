@@ -4,4 +4,6 @@ logic get ['a2||] : int -> array[a2||] -> a2
 logic set ['a3||] : int -> a3 -> array[a3||] -> array[a3||]
 axiom get_set_eq : forall ['a4||]. forall (t:array[a4||]).
                                    forall (i:int).
-                                   forall (z:a4). (get i (set i z t)) = z
+                                   forall (z:a4).
+                                   (get [a4||] i (set [a4||] i z t)) =[a4||]
+                                   z

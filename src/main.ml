@@ -97,11 +97,15 @@ let _ =
       if !Options.input_annot then
         let p = parse_file annotparser !Options.filename in
         AnnotInternalize.theory p
-      else 
-        let prelude = 
+      else
+        let prelude =
           if !Options.no_prelude then []
-          else import (`String (Prelude.prelude)) in
-        prelude @ import (`File !Options.filename) in
+          else parse_string infer_parser Prelude.prelude in
+        let user_text = parse_file infer_parser !Options.filename in
+        let p = prelude @ user_text in
+        let p = Internalize.theory p in
+        let p = Infer.theory p in
+        Recon.theory p in
     maybe_abort !Options.parse_only Ast.print_theory p;
     let p = apply_all_trans p in
     let kind = !Options.backend in
