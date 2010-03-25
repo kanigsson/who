@@ -129,7 +129,6 @@ let rec formtyping' env loc = function
         post env eff t' q;
         prop
   | Param _ -> error loc "effectful parameter in logic"
-  | For _ -> assert false
   | LetReg _ -> assert false
 and formtyping env (e : Ast.Recon.t) : Ty.t =
 (*   Myformat.printf "formtyping %a@." Ast.Recon.print e; *)
@@ -224,7 +223,6 @@ and typing' env loc = function
   | LetReg (vl,e) ->
       let t, eff, cap = typing env e in
       t, Effect.rremove eff vl, Name.remove_list_from_set vl cap
-  | For _ -> assert false
   | Gen _ -> assert false
   | HoareTriple (p,e,q) ->
       let t', eff, capreal = typing env e in

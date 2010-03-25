@@ -21,8 +21,6 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-module U = Unify
-module C = Const
 module G = Ty.Generalize
 module PL = Predefined.Logic
 module PI = Predefined.Identifier
@@ -41,16 +39,9 @@ type ('a,'b,'c) t'' =
   | Quant of [`FA | `EX ] * Ty.t * ('a,'b,'c) t' Name.bind
   | Param of Ty.t * Effect.t
   | Gen of G.t *  ('a,'b,'c) t'
-  | For of Name.t * ('a,'b,'c) t' * Name.t * Name.t * Name.t * ('a,'b,'c) t'
   | HoareTriple of ('a,'b,'c) funcbody
   | LetReg of Name.t list * ('a,'b,'c) t'
 and ('a,'b,'c) t' = { v :('a,'b,'c)  t'' ; t : 'a ; e : 'c; loc : Loc.loc }
-and ('a,'b,'c) post' =
-  | PNone
-  | PPlain of ('a,'b,'c) t'
-  | PResult of Name.t * ('a,'b,'c) t'
-and ('a,'b,'c) pre = Name.t * ('a,'b,'c) t' option
-and ('a,'b,'c) post = Name.t * Name.t * ('a,'b,'c) post'
 and isrec = Ty.t Const.isrec
 and ('a,'b,'c) funcbody =
      ('a,'b,'c) t' * ('a,'b,'c) t' * ('a,'b,'c) t'
@@ -76,7 +67,6 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
     | Lam (x,t,cap,b) ->
         Lam (x,tyfun t, List.map rvarfun cap, body b )
     | LetReg (l,e) -> LetReg (l,aux e)
-    | For _ -> assert false
     | HoareTriple b -> HoareTriple (body b)
     | Let (g,e1,b,r) -> Let (g,aux e1,varbindfun b, r)
     | PureFun (t,b) -> PureFun (tyfun t, varbindfun b)
@@ -115,7 +105,7 @@ let rec equal' a b =
   | PureFun (t1,b1), PureFun (t2,b2) -> Ty.equal t1 t2 && bind_equal b1 b2
   | Quant (k1,t1,b1), Quant (k2,t2,b2) ->
       k1 = k2 && Ty.equal t1 t2 && bind_equal b1 b2
-  | For _, _ | LetReg _, _ | Annot _, _ | Param _, _
+  | LetReg _, _ | Annot _, _ | Param _, _
   | Lam _, _ -> assert false
   | _, _ -> false
 and bind_equal b1 b2 =
@@ -131,7 +121,7 @@ module Print = struct
   let is_compound = function
     | Const _ | Var _ | Lam _ | PureFun _ | Annot _-> false
     | App _ | Let _ | Ite _
-    | Quant _ | Param _ | For _ | LetReg _ | Gen _ | HoareTriple _ -> true
+    | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
   let is_compound_node t = is_compound t.v
 
   type sup = [ `Coq | `Who | `Pangoline ]
@@ -192,7 +182,7 @@ module Print = struct
       | Quant (k,t,b) ->
           let x,e = open_ b in
           let bind = if k = `FA then binder else binder' false in
-          fprintf fmt "@[%a %a%a@ %a@]" C.quant k bind (x,t)
+          fprintf fmt "@[%a %a%a@ %a@]" Const.quant k bind (x,t)
             Const.quantsep kind print e
       | Gen ((tl,_,_) as g,t) ->
           if G.is_empty g then print fmt t else
@@ -210,9 +200,6 @@ module Print = struct
       | Param (t,e) ->
           fprintf fmt "parameter(%a,%a)"
             typrint t Effect.print e
-      | For (dir,inv,_,st,en,t) ->
-          fprintf fmt "%a ({%a}) %a %a (%a)"
-            Name.print dir print inv Name.print st Name.print en print t
       | HoareTriple (p,f,q) ->
           fprintf fmt "[[%a]]%a[[%a]]" print p print f print q
       | LetReg (v,t) ->
@@ -518,7 +505,7 @@ module Recon = struct
         | Gen (g,e) -> gen g (aux e) l
         | HoareTriple (p,e,q) ->
             hoare_triple (aux p) (aux e) (aux q) l
-        | For _ | LetReg _ | Param _ | Lam _ -> assert false in
+        | LetReg _ | Param _ | Lam _ -> assert false in
       termfun t
     in
     aux t
@@ -685,7 +672,7 @@ module Recon = struct
   let rec is_value x =
     match x.v with
     | Const _ | Var _ | Lam _ | PureFun _ | Quant _ | HoareTriple _ -> true
-    | Let _ | Ite _ | For _ | LetReg _ | Param _ -> false
+    | Let _ | Ite _ | LetReg _ | Param _ -> false
     | Annot (e,_) | Gen (_,e) -> is_value e
     | App (t1,_,_,_) ->
         match t1.t with

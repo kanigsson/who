@@ -31,7 +31,6 @@ and normalize e k =
   let loc = e.loc in
   match e.v with
   | (Const _ | Ast.Var _ | Param _ ) -> k e
-  | For _ -> assert false
   | Lam (x,t,cap,(p,e,q)) ->
 (*       Format.printf "found effectful function %a@." Name.print x; *)
       k (caplam x t cap (normalize_term p)
