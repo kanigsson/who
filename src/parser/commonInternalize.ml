@@ -51,8 +51,6 @@ module Env : sig
   val only_add_type : t -> Name.t -> Ty.Generalize.t * Ty.t -> t
   val lookup_type : t -> Name.t -> Ty.Generalize.t * Ty.t
 
-  val annot : t -> (Ty.Generalize.t * Ty.t) Name.M.t -> t
-
 end = struct
 
   type t = 

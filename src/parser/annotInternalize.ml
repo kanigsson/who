@@ -148,6 +148,5 @@ and theory env th = ExtList.fold_map decl env th
 
 
 let theory th =
-  let env = Env.annot Internalize.prelude_env Recon.prelude_table in
-  let _, th = theory env th in
+  let _, th = theory Env.empty th in
   th

@@ -207,7 +207,7 @@ and infer env (x : I.t) =
         let xt = if Env.is_logic_env env then M.to_logic_type xt else xt in
         let nt,i =
           try M.refresh m el xt
-          with Invalid_argument "List.fold_left2" ->
+          with Invalid_argument _ ->
             error l "not the right number of effect vars: %a@.\
             I expected %d variables, but you gave %d effects.@."
             Name.print v (List.length evl) (List.length el) in
@@ -271,9 +271,6 @@ let rec infer_th env d =
       env, Program (x,g,e,r)
 and theory env th = ExtList.fold_map infer_th env th
 
-let prelude_env, prelude =
-  theory Env.empty Internalize.prelude
-
 let theory th =
-  let _, th = theory prelude_env th in
+  let _, th = theory Env.empty th in
   th

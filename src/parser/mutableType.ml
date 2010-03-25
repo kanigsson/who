@@ -194,7 +194,7 @@ let esubst evl el t =
   let table = Name.H.create 17 in
   begin try List.iter2 (fun v e -> Name.H.add table v e) evl el
   with Invalid_argument _ ->
-    failwith "not the right number of effect instantiations" end;
+    invalid_arg "esubst" end;
   node_map ~f:Misc.id ~eff_fun:(effect_subst table) ~rfun:Misc.id t
 
 let bh f l =

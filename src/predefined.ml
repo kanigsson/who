@@ -78,10 +78,15 @@ module Logic = struct
 
   open Identifier
 
-  let ty_map : (Ty.Generalize.t * Ty.t) Name.M.t ref = ref Name.M.empty
-  let name_map : Name.t Misc.StringMap.t ref = ref Misc.StringMap.empty
-  let pangoline_map : string Name.M.t ref = ref Name.M.empty
+  type env = 
+    { 
+      mutable ty_map : (Ty.Generalize.t * Ty.t) Name.M.t ;
+      mutable name_map : Name.t Misc.StringMap.t
+    }
 
+  let env = 
+    { ty_map = Name.M.empty ; name_map  = Misc.StringMap.empty }
+      
   let pangoline_predefined =
     [
       impl_id, "=>" ;
@@ -92,21 +97,15 @@ module Logic = struct
       snd_id, "proj_2_1_tuple" ;
     ]
 
-  let init m = 
-    ty_map := m;
-    name_map := 
-      Name.M.fold (fun x _ acc -> 
-        Misc.StringMap.add (Name.unsafe_to_string x) x acc) m 
-        Misc.StringMap.empty;
-    pangoline_map :=
-      List.fold_left (fun acc (id,pid) -> 
-        Name.M.add (Misc.StringMap.find id !name_map) pid acc) Name.M.empty
-        pangoline_predefined
+  let add_symbol x t =
+    env.name_map <- 
+      Misc.StringMap.add (Name.unsafe_to_string x) x env.name_map;
+    env.ty_map <- Name.M.add x t env.ty_map
 
-  let type_of_var v = Name.M.find v !ty_map
+  let type_of_var v = Name.M.find v env.ty_map
   
   let var s = 
-    try Misc.StringMap.find s !name_map
+    try Misc.StringMap.find s env.name_map
     with Not_found -> failwith s
   let type_of_id s = type_of_var (var s)
 
@@ -115,13 +114,13 @@ module Logic = struct
     let t = type_of_var v in
     v, t
 
-  let get_pangoline_id x = 
-    Name.M.find x !pangoline_map
-
   let equal x id = 
     let y = var id in
     Name.equal x y
 
   let belongs_to var id_list = List.exists (equal var) id_list
+  let find var id_list = List.find (fun (a,_) -> equal var a) id_list
+
+  let get_pangoline_id x = snd (find x pangoline_predefined)
 
 end

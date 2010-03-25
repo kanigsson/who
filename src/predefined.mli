@@ -66,7 +66,7 @@ module Logic : sig
 
   val equal : Name.t -> string -> bool
   
-  val init : (Ty.Generalize.t * Ty.t) Name.M.t -> unit
+  val add_symbol : Name.t -> (Ty.Generalize.t * Ty.t) -> unit
 
   val belongs_to : Name.t -> string list -> bool
 end

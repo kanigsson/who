@@ -24,5 +24,3 @@
 exception Error of string * Loc.loc
 
 val theory : InternalParseTree.theory -> InferTree.theory
-
-val prelude : InferTree.theory

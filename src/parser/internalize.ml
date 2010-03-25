@@ -131,10 +131,6 @@ let rec decl env d =
       env, Program (nv, g, e, r)
 and theory x = ExtList.fold_map decl x
 
-let prelude_env, prelude =
-  theory Env.empty
-    (Parser.main Lexer.token (Lexing.from_string Prelude.prelude))
-
 let theory th =
-  let _, th = theory prelude_env th in
+  let _, th = theory Env.empty th in
   th

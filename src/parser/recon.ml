@@ -90,7 +90,9 @@ and recon (t : InferTree.t) : Ast.t =
 and inst i = Inst.map M.to_ty M.to_region M.to_effect i
 let rec recon_decl x =
   match x with
-  | I.Logic (x,g,t) -> Logic (x,g,t)
+  | I.Logic (x,g,t) -> 
+      Predefined.Logic.add_symbol x (g,t);
+      Logic (x,g,t)
   | I.Formula (s,t,k) -> Formula (s, recon t, k)
   | I.Section (s,cl, dl) -> Section (s,cl, recon_th dl)
   | I.DLetReg rl -> DLetReg rl
@@ -98,11 +100,5 @@ let rec recon_decl x =
   | I.Program (n,g,t,r) -> Program (n,g,recon t, r)
   | I.DGen g -> DGen g
 and recon_th l = List.map recon_decl l
-
-let prelude, prelude_table =
-  let p = recon_th Infer.prelude in
-  let table = build_symbol_table p in
-  Predefined.Logic.init table;
-  p, table
 
 let theory = recon_th
