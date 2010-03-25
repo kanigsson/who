@@ -89,7 +89,6 @@ let close = Name.close_bind
 let sopen = Name.sopen refresh
 let vopen_with x = Name.open_with refresh x
 
-
 let rec equal' a b =
   match a, b with
   | Const c1, Const c2 -> Const.compare c1 c2 = 0
@@ -290,7 +289,6 @@ let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
       ~tyfun ~rvarfun ~effectfun t
   in
   aux t
-
 
 exception Error of string * Loc.loc
 

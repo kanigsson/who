@@ -41,6 +41,11 @@ and rnode =
   | RT of Name.t
 and effect = r list * Name.S.t
 
+let is_compound x =
+  match Uf.desc x with
+  | Const _ | Ref _ | Map _ | App _ | U -> false
+  | Tuple _ | Arrow _ | PureArr _ -> true
+
 let hash_effect (rl,s) =
   ExtList.hash Uf.hash (Name.hash_set s) rl
 
@@ -271,7 +276,32 @@ let to_logic_type t =
     | _ -> t) t
 
 open Myformat
-let rec print_node fmt x =
+
+let rec inst fmt i =
+  Inst.print ~kind:`Who ~intype:true print print_region print_effect fmt i
+
+and print fmt (x : t) =
+  let mayp fmt t = if is_compound t then paren print fmt t else print fmt t in
   match Uf.desc x with
   | U -> fprintf fmt "%d" (Uf.tag x)
-  | _ -> (* FIXME *) assert false
+  | Tuple tl ->
+      print_list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
+  | Ref (r,t) -> fprintf fmt "ref(%a,%a)" print_region r print t
+  | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 print t2
+  | Map e -> fprintf fmt "<%a>" print_effect e
+  | Const c -> Const.print_ty `Who fmt c
+  | App (v,i) -> fprintf fmt "%a%a" Name.print v inst i
+  | Arrow (t1,t2,eff,cap) ->
+      fprintf fmt "%a ->{%a%a} %a" mayp t1 print_effect eff maycap cap print t2
+and maycap fmt = function
+  | [] -> ()
+  | l -> fprintf fmt "|%a" region_list l
+and print_region fmt x =
+  match Uf.desc x with
+  | RU -> fprintf fmt "%d" (Uf.tag x)
+  | RT n -> Name.print fmt n
+and region_list fmt l = print_list space print_region fmt l
+and print_effect fmt (rl,el) =
+  fprintf fmt "{%a|" region_list rl;
+  Name.S.iter (Name.print fmt) el;
+  pp_print_string fmt "}"
