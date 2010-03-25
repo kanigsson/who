@@ -116,12 +116,14 @@ module Logic = struct
   let add_binding x t =
     env.ty_map <- Name.M.add x t env.ty_map
 
+  let add_symbol_and_binding s x t = 
+    add_symbol s x;
+    add_binding x t
+
   let type_of_var v = Name.M.find v env.ty_map
 
-  let var s =
-    try Misc.StringMap.find s env.name_map
-    with Not_found ->
-      error (PreludeIncomplete s)
+  let base_var s = Misc.StringMap.find s env.name_map
+  let var s = try base_var s with Not_found -> error (PreludeIncomplete s)
 
   let type_of_id s = type_of_var (var s)
 
@@ -131,8 +133,10 @@ module Logic = struct
     v, t
 
   let equal x id =
-    let y = var id in
-    Name.equal x y
+    try
+      let y = base_var id in
+      Name.equal x y
+    with Not_found -> false
 
   let belongs_to var id_list = List.exists (equal var) id_list
   let find var id_list = List.find (fun (a,_) -> equal var a) id_list

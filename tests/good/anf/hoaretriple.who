@@ -1,3 +1,52 @@
+type unit
+logic tt  : unit
+logic = ['a||] : (a) -> (a) -> prop
+logic /\  : prop -> prop -> prop
+logic ->  : prop -> prop -> prop
+logic fst ['a1 'b||] : ((a1) * (b)) -> a1
+logic snd ['a2 'b1||] : ((a2) * (b1)) -> b1
+logic !! ['a3|r|'e] : ref(r,a3) -> <r  'e > -> a3
+let
+  ! ['a4|r1|] = (fun (x:ref(r1,a4)) -> {(fun (cur:<r1  >) -> True)}
+                parameter(a4,{r1  })
+                {(fun (old:<r1  >) ->
+                 (fun (cur1:<r1  >) ->
+                 (fun (r2:a4) ->
+                 ((!! [a4| r1| { }] x cur1) =[a4||] r2) /\
+                 ((!! [a4| r1| { }] x old) =[a4||] (!! [a4| r1| { }] x cur1)))))})
+let pre ['a5 'b2||] = (fun (x1:(a5) * (b2)) -> fst [a5,b2||] x1)
+let post ['a6 'b3||] = (fun (x2:(a6) * (b3)) -> snd [a6,b3||] x2)
+logic <=  : int -> int -> prop
+logic <  : int -> int -> prop
+logic +  : int -> int -> int
+logic -  : int -> int -> int
+logic int_max  : int -> int -> int
+type array['a7||]
+logic len ['a8||] : (array[(a8)||]) -> int
+logic get ['a9||] : int -> (array[(a9)||]) -> a9
+let
+  forto [||'e1] = (fun (inv:int -> < 'e1 > -> prop) ->
+                  (fun (start:int) ->
+                  (fun (end_:int) ->
+                  (fun (f:int ->{ 'e1 } unit) ->
+                  {(fun (cur2:< 'e1 >) ->
+                   (inv start cur2) /\
+                   (forall (i:int).
+                    ((start <= i) /\ (i <= end_)) ->
+                    (forall (m:< 'e1 >).
+                     (inv i m) ->
+                     ((pre [int -> < 'e1 > -> prop,int -> < 'e1 > -> < 'e1
+                       > -> (unit) -> prop||] f i m)
+                      /\
+                      (forall (n:< 'e1 >).
+                       (post [int -> < 'e1 > -> prop,int -> < 'e1 > -> < 'e1
+                        > -> (unit) -> prop||] f i m n tt)
+                       -> (inv (i + 1) n))))))}
+                  parameter(unit,{ 'e1 })
+                  {(fun (old1:< 'e1 >) ->
+                   (fun (cur3:< 'e1 >) ->
+                   (fun (anon:unit) -> inv (int_max start (end_ + 1)) cur3)))}))))
+
 type array['a7||]
 logic len ['a8||] : (array[(a8)||]) -> int
 logic get ['a9||] : int -> (array[(a9)||]) -> a9
