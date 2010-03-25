@@ -24,6 +24,7 @@
 type 'a t = 'a list
 type 'a eq = 'a -> 'a -> bool
 
+let singleton x = [ x ]
 let rec list_compare cmp l1 l2 =
   match l1,l2 with
   | [],[] -> 0
@@ -84,3 +85,4 @@ let repeat ?(from=0) n f =
     loop from []
 
 let hash = Hash.combine_list
+

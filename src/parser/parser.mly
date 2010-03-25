@@ -234,6 +234,8 @@ decl:
   }
   | AXIOM x = defprogvar_no_pos l = gen COLON t = nterm
     { Axiom (x, l, t) }
+  | GOAL x = defprogvar_no_pos l = gen COLON t = nterm
+    { Goal (x, l, t) }
   | LOGIC x = defprogvar_no_pos l = gen COLON t = ty
     { Logic (x,l,t) }
   | TYPE x = IDENT l = gen

@@ -24,6 +24,7 @@ INTERNAL
 
 BUGS
 
+* sequences ';' still not fixed
 * find bug with "nil" - postponed
 
 * implement "reordering"

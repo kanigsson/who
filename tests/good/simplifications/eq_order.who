@@ -1,0 +1,6 @@
+logic = ['a||] : 'a -> 'a -> prop
+logic -> : prop -> prop -> prop
+logic < : int -> int -> prop
+axiom z :
+  forall (x : int).
+    x < 0 -> x = 0 -> 0 = x

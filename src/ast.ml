@@ -146,8 +146,8 @@ module Print = struct
     if l = [] then () else
     fprintf fmt "(%a :@ %s)" (print_list space Name.print) l s
 
-  let inst ~kind = 
-    Inst.print ~kind ~intype:false 
+  let inst ~kind =
+    Inst.print ~kind ~intype:false
       (Ty.gen_print ~kind) Name.print Effect.print
 
   (* TODO factorize the different branches *)
@@ -278,6 +278,11 @@ let destruct_app2_var' x =
 let destruct_app2_var x = destruct_app2_var' x.v
 let destruct_app x = destruct_app' x.v
 
+let is_equality t =
+  match destruct_app2_var t with
+  | Some (v, _, _,_) when PL.equal v PI.equal_id -> true
+  | _ -> false
+
 let destruct_varname x =
   match x.v with
   | Var (v, tl) -> Some (v,tl)
@@ -358,13 +363,13 @@ let var s inst (g,t) =
 let var_i s inst t = mk_val (Var (s,inst)) t
 let svar s t = var s Inst.empty (G.empty, t)
 
-let predef s i = 
+let predef s i =
   let x, t = PL.var_and_type s in
-  var x i t 
+  var x i t
 
-let spredef s = 
+let spredef s =
   let x, (_,t) = PL.var_and_type s in
-  svar x t 
+  svar x t
 
 let true_or e v =
   match e.v with
@@ -402,6 +407,9 @@ let simple_app2 ?kind t t1 t2 loc =
   simple_app ?kind (simple_app t t1 loc) t2 loc
 let simple_appi t t1 t2 loc = simple_app2 ~kind:`Infix t t1 t2 loc
 
+let simple_eq t1 t2 l =
+  simple_appi (predef PI.equal_id ([t1.t],[],[]) l) t1 t2 l
+
 
 let boolcmp_to_propcmp x =
   let eq = Predefined.Logic.equal in
@@ -427,6 +435,7 @@ let rec app ?kind ?cap t1 t2 l : t =
     | App (op,t1,_,_) ->
         begin match destruct_varname op with
         | Some (v,_) when PL.equal v PI.and_id -> and_ t1 t2 l
+(*         | Some (v,_) when PL.equal v PI.or_id -> or_ t1 t2 l *)
         | Some (v,_) when PL.equal v PI.impl_id -> impl t1 t2 l
         | Some (v,_) when PL.equal v PI.equal_id -> eq t1 t2 l
         | Some (v,_) when PL.equal v PI.combine_id -> combine t1 t2 l
@@ -470,8 +479,12 @@ and reduce_bool t l =
             appi (v i l) arg1 arg2 l
         | None -> raise Exit in
   aux t
-and rebuild_map ~varfun ~termfun ?(tyfun = (fun x -> x)) t =
+and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
   (* this function is intended to be used with logic functions only *)
+  if varfun == Misc.k3 && termfun == Misc.id && tyfun == Misc.id then
+    (fun t -> t)
+  else
+    fun t ->
   let l = t.loc in
   let rec aux t =
     let t =
@@ -504,13 +517,10 @@ and impl h1 goal l =
       impl ha (impl hb goal l) l
   | _ ->
       match destruct_app2_var goal with
-      | Some (v, _, h2, goal) when PL.equal v PI.and_id ->
-          begin match destruct_app2_var h1,destruct_app2_var h2 with
-          | Some ( v, _,_, _), _ when PL.equal v PI.equal_id -> raise Exit
-          | _, Some (v, _,_, _) when PL.equal v PI.equal_id ->
-              impl h2 (impl h1 goal l) l
-          | _ -> raise Exit
-          end
+      | Some (v, _, h2, goal) when PL.equal v PI.impl_id ->
+          if is_equality h1 then raise Exit
+          else if is_equality h2 then impl h2 (impl h1 goal l) l
+          else raise Exit
        | _ ->
            begin match h1.v,goal.v with
            | Const Const.Ptrue, _ -> goal
@@ -534,7 +544,15 @@ and eq t1 t2 l =
         let f = reduce_bool t1 l in
         if PL.equal v PI.btrue_id then f else neg f l
     | _ -> raise Exit
-    with Exit -> simple_appi (predef PI.equal_id ([t1.t],[],[]) l) t1 t2 l
+    with Exit ->
+      match t1.v, t2.v with
+      | Var (v1,([],[],[])), Var (v2, ([],[],[])) ->
+          if Name.compare v2 v1 < 0 then simple_eq t2 t1 l
+          else simple_eq t1 t2 l
+      | Var _, _ -> simple_eq t1 t2 l
+      | _, Var _ -> simple_eq t2 t1 l
+      | _, _ -> simple_eq t1 t2 l
+
 and and_ t1 t2 l =
   match t1.v,t2.v with
   | Const Const.Ptrue, _ -> t2
@@ -551,7 +569,8 @@ and subst x v e =
 and polsubst g x v e = subst x (fun i -> allsubst g i v) e
 and squant k x t f loc =
   if Ty.equal t Ty.unit || Ty.equal t Ty.emptymap then f
-  else (
+  else
+  begin
     try match destruct_app2_var f with
     | Some (i, _, t1,f) when PL.equal i PI.impl_id ->
         begin match destruct_app2_var t1 with
@@ -560,18 +579,16 @@ and squant k x t f loc =
             if Name.equal x y then subst x (fun _ -> t2) f
             else if Name.equal x z then subst z (fun _ -> t1) f
             else raise Exit
-        | Some (e, _,{v= Var(y,_)}, def)
-            when PL.equal e PI.equal_id ->
+        | Some (e, _,{v= Var(y,_)}, def) when PL.equal e PI.equal_id ->
             if Name.equal x y then subst x (fun _ -> def) f else raise Exit
-        | Some (e, _,def,{v = Var (y,_)})
-            when PL.equal e PI.equal_id ->
+        | Some (e, _,def,{v = Var (y,_)}) when PL.equal e PI.equal_id ->
             if Name.equal x y then subst x (fun _ -> def) f else raise Exit
-        | _ ->
-            raise Exit
+        | _ -> raise Exit
         end
     | _ -> raise Exit
     with Exit ->
-      true_or f (mk (Quant (k,t,Name.close_bind x f)) f.t f.e loc) )
+      true_or f (mk (Quant (k,t,Name.close_bind x f)) f.t f.e loc)
+  end
 
 and pre t l =
   match destruct_app2_var t with
@@ -606,7 +623,7 @@ and combine t1 t2 l =
       | Some (v,([],[],[e1;_;_]), _, db)
         when PL.equal v PI.combine_id && Effect.sub_effect e1 d2' ->
           combine db t2 l
-      | _  -> 
+      | _  ->
           simple_app2 (predef PI.combine_id ([],[],[d1';d2';d3']) l) t1 t2 l
 
 and restrict eff t l =
@@ -726,17 +743,17 @@ let get ref map l =
       simple_app2 (predef PI.get_id ([t],[r],[d]) l) ref map l
   | _ -> assert false
 
-let rec decl_map ~varfun ~termfun ~declfun d : decl list =
+let rec decl_map ?varfun ?termfun ?(declfun=ExtList.singleton) d : decl list =
   let d =
     match d with
     | Logic _ | TypeDef _ | DLetReg _ | DGen _ -> d
-    | Formula (s,t,k) -> Formula (s,rebuild_map ~varfun ~termfun t, k)
+    | Formula (s,t,k) -> Formula (s,rebuild_map ?varfun ?termfun t, k)
     | Section (s,cl,th) ->
-        Section (s,cl,theory_map ~varfun ~termfun ~declfun th)
-    | Program (n,g,t,r) -> Program (n,g,rebuild_map ~varfun ~termfun t, r) in
+        Section (s,cl,theory_map ?varfun ?termfun ~declfun th)
+    | Program (n,g,t,r) -> Program (n,g,rebuild_map ?varfun ?termfun t, r) in
   declfun d
-and theory_map ~varfun ~termfun ~declfun th =
-  List.flatten (List.map (decl_map ~varfun ~termfun ~declfun) th)
+and theory_map ?varfun ?termfun ?declfun th =
+  List.flatten (List.map (decl_map ?varfun ?termfun ?declfun) th)
 
 let mk_formula n f k =
   match f.v with

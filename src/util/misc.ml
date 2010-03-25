@@ -22,6 +22,7 @@
 (******************************************************************************)
 
 let id x = x
+let k3 _ _ z = z
 
 module StringMap = Map.Make(String)
 module StringSet = Set.Make(String)

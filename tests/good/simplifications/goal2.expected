@@ -1,0 +1,5 @@
+logic = ['a||] : a -> a -> prop
+logic ->  : prop -> prop -> prop
+logic f  : int -> int
+logic +  : int -> int -> int
+goal g : True

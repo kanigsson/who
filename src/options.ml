@@ -38,7 +38,8 @@ let transform_only = ref false
 let no_check = ref false
 
 let transforms =
-  ref (List.rev [ Anf.theory ; Wp.theory ; InlineLet.theory ; Simplify.theory ])
+  ref (List.rev [ Anf.theory ; Wp.theory ; InlineLet.theory ;
+  Simplify.theory; RemoveTrivialGoals.theory;])
 
 let append_trans x () = transforms := x :: !transforms
 
@@ -66,6 +67,8 @@ let opt_spec =
       " inline let bindings";
     "--mapsimpl", Arg.Unit (append_trans Simplify.theory),
       " simplify map expressions";
+    "--trivialgoals", Arg.Unit (append_trans RemoveTrivialGoals.theory),
+      " remove trivial goals";
     "-o", Arg.Set_string outfile,
             "<arg> use <arg> instead of default filename for output";
     "--pangoline", Arg.Unit (fun () -> backend := `Pangoline),

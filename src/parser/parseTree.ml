@@ -58,6 +58,7 @@ and generalize = tvar list * rvar list * effvar list
 type decl = 
   | Logic of var * generalize * ty
   | Axiom of string * generalize * t
+  | Goal of string * generalize * t
   | Section of var * Const.takeover list * decl list
   | TypeDef of generalize * ty option * var
   | Program of var * generalize * t * ParseTypes.t Const.isrec

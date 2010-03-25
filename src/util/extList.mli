@@ -24,6 +24,8 @@
 type 'a t = 'a list
 type 'a eq = 'a -> 'a -> bool
 
+val singleton : 'a -> 'a list
+
 val equal : 'a eq -> 'a t -> 'a t -> bool
 val mem : 'a eq -> 'a -> 'a t -> bool
 
