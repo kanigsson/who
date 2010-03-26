@@ -29,6 +29,7 @@ val explain : error -> string
 module Identifier : sig
   val bool_id : string
   val unit_id : string
+  val region_id : string
 end
 
 val add_symbol : string -> Name.t -> unit

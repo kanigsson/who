@@ -60,6 +60,7 @@ module Identifier : sig
   val minus_id : string
 
   val mk_tuple_id : int -> string
+  val get_tuple_id  : int -> int -> string
 
   val unsafe_equal : Name.t -> string -> bool
 

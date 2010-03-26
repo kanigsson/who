@@ -643,6 +643,14 @@ and restrict eff t l =
 let svar s t = var s Inst.empty (G.empty,t)
 let le t1 t2 loc = simple_appi (spredef PI.le_id loc) t1 t2 loc
 
+let get_tuple_var tl i j l =
+  (predef (PI.get_tuple_id i j) (tl,[],[])) l
+
+let get_tuple i t l =
+  let tl = Ty.tuple_list t.t in
+  let n = List.length tl in
+  app (get_tuple_var tl n i l) t l
+
 let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
 let efflam x eff e = plam x (Ty.map eff) e
 let lam x t p e q =

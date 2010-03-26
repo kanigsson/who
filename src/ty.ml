@@ -93,13 +93,22 @@ module PI = Predefty.Identifier
 let prop = const (Const.TProp)
 let bool () = var (Predefty.var PI.bool_id)
 let unit () = var (Predefty.var PI.unit_id)
+let region x = app (Predefty.var PI.region_id) ([x],[],[])
 let int = const (Const.TInt)
+
 let emptymap = map (Effect.empty)
 
 let is_unit t =
   match t with
   | App (v,([],[],[])) -> Predefty.equal v PI.unit_id
   | _ -> false
+
+let tuple_list t = 
+  match t with
+  | Tuple l -> l
+  | _ -> invalid_arg "tuple_arity"
+
+let tuple_arity t = List.length (tuple_list t)
 
 let destr_pair t =
   match t with

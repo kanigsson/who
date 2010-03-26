@@ -37,6 +37,7 @@ let explain error =
 module Identifier = struct
   let bool_id = "bool"
   let unit_id = "unit"
+  let region_id = "region"
 end
 
 type env = Name.t Misc.StringMap.t ref
@@ -44,11 +45,11 @@ type env = Name.t Misc.StringMap.t ref
 let env = ref Misc.StringMap.empty
 let add_symbol s x = env := Misc.StringMap.add s x !env
 let base_var s = Misc.StringMap.find s !env
-let var s = 
+let var s =
   try base_var s
   with Not_found -> error (PreludeIncomplete s)
 
-let equal x id = 
+let equal x id =
   try
     let y = base_var id in
     Name.equal x y

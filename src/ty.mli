@@ -47,6 +47,8 @@ val map : Effect.t -> t
 val unit : unit -> t
 val prop : t
 val bool : unit -> t
+
+val region : t -> t
 val int : t
 val emptymap : t
 
@@ -59,6 +61,8 @@ val domain : t -> Effect.t
 val is_map : t -> bool
 val is_ref : t -> bool
 val destr_pair : t -> t * t
+val tuple_arity : t -> int
+val tuple_list : t -> t list
 
 val to_logic_type : t -> t
 val from_logic_pair : t -> t * t * Effect.t

@@ -29,6 +29,7 @@ val singleton : 'a -> 'a list
 val equal : 'a eq -> 'a t -> 'a t -> bool
 val mem : 'a eq -> 'a -> 'a t -> bool
 
+val find_pos : 'a eq -> 'a -> 'a t -> int
 
 val union : 'a eq -> 'a t -> 'a t -> 'a t
 val equal_unsorted : 'a eq -> 'a t -> 'a t -> bool

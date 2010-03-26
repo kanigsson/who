@@ -133,14 +133,14 @@ let build_var r v env =
     Name.print v
 
 
-(* for effect var [e] and state [v], build the term variable using the fresh name
- * corresponding to (r,v) - an effect variable is its own type *)
+(* for effect var [e] and state [v], build the term variable using the fresh
+ * name corresponding to (r,v) - an effect variable is its own type *)
 let build_evar e v env =
   let nv = getname e v env in
   svar nv (Ty.var e) env.l
 
 (* a simplification either does nothing, a simple top-level change, or a deeper
- *  change requiring all simplifications to rerun *)
+ * change requiring all simplifications to rerun *)
 let tyfun env t = Ty.selim_map (rtype env) t
 
 let add_effect env x d =

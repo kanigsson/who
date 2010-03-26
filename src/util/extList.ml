@@ -86,3 +86,10 @@ let repeat ?(from=0) n f =
 
 let hash = Hash.combine_list
 
+let find_pos eq x l = 
+  let rec aux n l =
+    match l with
+    | [] -> raise Not_found
+    | (y::ys) -> if eq x y then n else aux (n+1) ys
+  in
+  aux 0 l

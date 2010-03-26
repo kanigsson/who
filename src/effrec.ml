@@ -46,7 +46,7 @@ let rec from_form d x =
   match destruct_app2_var x with
   | Some (v,_, m1,m2) when PL.equal v PI.combine_id ->
       e_combine (from_form_t m1.t m1) (from_form_t m2.t m2)
-  | None | Some _ -> 
+  | _ -> 
       match destruct_app x with
       | Some ({v = Var (v,([],[],[_;e2]))}, m) when PL.equal v PI.restrict_id ->
           e_restrict e2 (from_form_t m.t m)
