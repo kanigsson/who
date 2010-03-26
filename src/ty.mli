@@ -64,6 +64,10 @@ val destr_pair : t -> t * t
 val tuple_arity : t -> int
 val tuple_list : t -> t list
 
+val node_map : 
+    ?rfun:(Name.t -> Name.t) ->
+    ?effectfun:(Effect.t -> Effect.t) -> (t -> t) -> t -> t
+
 val to_logic_type : t -> t
 val from_logic_pair : t -> t * t * Effect.t
 
