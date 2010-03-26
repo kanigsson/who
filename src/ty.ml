@@ -144,15 +144,28 @@ let pretype a e = parr a (parr (map e) prop)
 let posttype a b e = parr a (parr (map e) (parr (map e) (parr b prop)))
 let prepost_type a b e = tuple [pretype a e ; posttype a b e ]
 
-let to_logic_type t =
-  let rec aux = function
-    | (Const _ | Map _) as t -> t
-    | Tuple tl -> tuple (List.map aux tl)
-    | PureArr (t1,t2) -> parr (aux t1) (aux t2)
-    | Arrow (t1,t2,e,_) -> prepost_type (aux t1) (aux t2) e
-    | Ref (x,t) -> ref_ x (aux t)
-    | App (v,i) -> app v i in
+let node_map ?(rfun=Misc.id) ?(effectfun=Misc.id) f t =
+  let rec aux t = 
+    let t = 
+      match t with
+      | (Const _ ) as t -> t
+      | Map e -> Map (effectfun e)
+      | Tuple tl -> tuple (List.map aux tl)
+      | PureArr (t1,t2) -> parr (aux t1) (aux t2)
+      | Arrow (t1,t2,e,rl) -> 
+          caparrow (aux t1) (aux t2) (effectfun e) (List.map rfun rl)
+      | Ref (r,t) -> ref_ (rfun r) (aux t)
+      | App (v,i) -> app v (Inst.map aux rfun effectfun i) in
+    f t in
   aux t
+
+let to_logic_type =
+  let f t = 
+    match t with
+    | Arrow (t1,t2,e,_) -> prepost_type t1 t2 e
+    | _ -> t
+  in
+  node_map f
 
 let build_tvar_map el effl =
   try
@@ -162,18 +175,13 @@ let build_tvar_map el effl =
       "not the right number of type arguments: expecting %a but %a is
       given.@." Name.print_list el (print_list Myformat.comma) effl)
 
-let tlsubst xl tl target =
+let tlsubst xl tl =
   let map = build_tvar_map xl tl in
-  let rec aux = function
-    | App (y,([],[],[])) as t ->
-        begin try Name.M.find y map with Not_found -> t end
-    | (Const _ | Map _ ) as x -> x
-    | Tuple tl -> Tuple (List.map aux tl)
-    | PureArr (t1,t2) -> PureArr (aux t1, aux t2)
-    | Arrow (t1,t2,eff,cap) -> Arrow (aux t1, aux t2,eff, cap)
-    | Ref (r,t) -> Ref (r, aux t)
-    | App (v,i) -> App (v,Inst.map aux Misc.id Misc.id i) in
-  aux target
+  let f t = match t with
+  | App (y,([],[],[])) as t ->
+      begin try Name.M.find y map with Not_found -> t end
+  | _ -> t in
+  node_map f
 
 let build_rvar_map el effl =
   try
@@ -183,24 +191,11 @@ let build_rvar_map el effl =
       "not the right number of region arguments: expecting %a but %a is
       given.@." Name.print_list el Name.print_list effl)
 
-let rlsubst rvl rl target =
-(*
-  Myformat.printf "building type %a[%a |-> %a]@."
-  print target Name.print_list rvl Name.print_list rl;
-*)
+let rlsubst rvl rl =
   let map = build_rvar_map rvl rl in
-  let rec aux = function
-    | Const _ as x -> x
-    | Tuple tl -> Tuple (List.map aux tl)
-    | PureArr (t1,t2) -> PureArr (aux t1, aux t2)
-    | Arrow (t1,t2,eff, cap) ->
-        Arrow (aux t1, aux t2,effsubst eff, List.map auxr cap)
-    | Ref (r,t) -> Ref (auxr r, aux t)
-    | Map e -> Map (effsubst e)
-    | App (v,i) -> App (v, Inst.map aux auxr effsubst i)
-  and auxr r = try Name.M.find r map with Not_found -> r
-  and effsubst e = Effect.rmap auxr e in
-  aux target
+  let rfun r = try Name.M.find r map with Not_found -> r in
+  let effectfun e = Effect.rmap rfun e in
+  node_map ~rfun ~effectfun Misc.id
 
 exception Found of Name.t
 let rsubst rvl rl r =
@@ -209,17 +204,9 @@ let rsubst rvl rl r =
     r
   with Found v -> v
 
-let elsubst evl effl target =
-  let rec aux = function
-    | Const _ as x -> x
-    | Tuple tl -> Tuple (List.map aux tl)
-    | PureArr (t1,t2) -> PureArr (aux t1, aux t2)
-    | Arrow (t1,t2,eff',cap) -> Arrow (aux t1, aux t2,effsubst eff' ,cap)
-    | Map eff' -> Map (effsubst eff')
-    | Ref (r,t) -> Ref (r, aux t)
-    | App (v,i) -> App (v, Inst.map aux Misc.id effsubst i)
-  and effsubst eff' = Effect.lsubst evl effl eff' in
-  aux target
+let elsubst evl effl = 
+  let effectfun eff' = Effect.lsubst evl effl eff' in
+  node_map ~effectfun Misc.id
 
 module Generalize = struct
   (* order : ty,r,e *)
@@ -317,20 +304,14 @@ let get_reg = function
   | Ref (reg,_) -> reg
   | _ -> assert false
 
-let selim_map get_rtype t =
-  let rec aux = function
-    | Const _ as t -> t
-    | Map _ -> assert false
-    | Tuple tl -> tuple (List.map aux tl)
-    | PureArr (Map e, t) ->
-        let t = Effect.efold (fun e acc -> parr (get_rtype e) acc) (aux t) e in
-        Effect.rfold (fun r acc -> parr (get_rtype r) acc) t e
-    | PureArr (t1,t2) -> parr (aux t1) (aux t2)
-    | Arrow (t1,t2,e,cap) -> caparrow (aux t1) (aux t2) e cap
-    | Ref (r,t) -> ref_ r (aux t)
-    | App (v,i) -> app v (Inst.map aux Misc.id Misc.id i) in
-(*   Myformat.printf "converting type: %a@." print t; *)
-  aux t
+let selim_map get_rtype =
+  let f t = match t with
+  | PureArr (Map e, t) ->
+      let t = Effect.efold (fun e acc -> parr (get_rtype e) acc) t e in
+      Effect.rfold (fun r acc -> parr (get_rtype r) acc) t e
+  | _ -> t
+  in
+  node_map f
 
 let from_logic_pair t =
   match t with

@@ -115,20 +115,21 @@ let gen env (tl,rl,el) =
   let env,el = Env.add_effect_var_list env el in
   env, (tl@rl@el,[],[])
 
-let scheme env (g,t) =
-  let 
-  assert false
+let scheme env g t =
+  let env, g = gen env g in
+  g, tyfun env t
 
-let decl env d =
+let rec decl env d =
   match d with
   | Logic (n,g,t) ->
       let g,t = scheme env g t in
       env, Logic (n,g,t)
   | Formula (s,t,k) ->
       env, Formula (s, term env t, k)
-  | Section (s,cl,th) -> env, Section (s,cl, theory env th)
-  | Section of string * Const.takeover list * decl list
-  | TypeDef of G.t * Ty.t option * Name.t
+  | Section (s,cl,th) -> env, Section (s,cl, snd (theory env th))
+  | TypeDef (g,d,n) ->
+      let _, g = gen env g in
+      env, TypeDef (g,d,n)
   | Program _ -> assert false
   | DLetReg _ -> assert false
   | DGen (tl,rl,el) ->
