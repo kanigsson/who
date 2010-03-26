@@ -60,11 +60,13 @@ let rec recon' = function
         (* fordownto : λold.λcurλ(). inv (i-1) cur *)
         efflam old e
           (efflam cur e
-            (plam (Name.new_anon ()) Ty.unit
+            (plam (Name.new_anon ()) (Ty.unit ())
               (app2 inv' next curvar l) l) l) l in
       let bodyfun = lam i Ty.int pre body post l in
       (* forvar inv start end bodyfun *)
-      (app2 (app2 (var dir ([],[],[e]) Ty.forty l) inv' sv l) ev bodyfun l).v
+      (app2 (app2 
+        (var dir ([],[],[e]) (Ty.forty ()) l) inv' sv l) 
+        ev bodyfun l).v
   | I.HoareTriple (p,e,q) -> HoareTriple (recon p, recon e, recon q)
 (*
       let f = recon f and x = recon x and p = get_pre p and q = get_post q in
@@ -91,7 +93,7 @@ and inst i = Inst.map M.to_ty M.to_region M.to_effect i
 let rec recon_decl x =
   match x with
   | I.Logic (x,g,t) ->
-      Predefined.Logic.add_binding x (g,t);
+      Predefined.add_binding x (g,t);
       Logic (x,g,t)
   | I.Formula (s,t,k) -> Formula (s, recon t, k)
   | I.Section (s,cl, dl) -> Section (s,cl, recon_th dl)
@@ -99,7 +101,7 @@ let rec recon_decl x =
   | I.TypeDef (g,t,n) -> TypeDef (g,t,n)
   | I.Program (n,g,t,r) ->
       let t = recon t in
-      Predefined.Logic.add_binding n (g,t.t);
+      Predefined.add_binding n (g,t.t);
       Program (n,g,t, r)
   | I.DGen g -> DGen g
 and recon_th l = List.map recon_decl l

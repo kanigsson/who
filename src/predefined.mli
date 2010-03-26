@@ -62,20 +62,18 @@ module Identifier : sig
   val mk_tuple_id : int -> string
 
   val unsafe_equal : Name.t -> string -> bool
+
 end
 
-module Logic : sig
+val get_pangoline_id : Name.t -> string
+val var_and_type : string -> Name.t * (Ty.Generalize.t * Ty.t)
+val var : string -> Name.t
 
-  val get_pangoline_id : Name.t -> string
-  val var_and_type : string -> Name.t * (Ty.Generalize.t * Ty.t)
-  val var : string -> Name.t
+val equal : Name.t -> string -> bool
 
-  val equal : Name.t -> string -> bool
+val add_binding : Name.t -> (Ty.Generalize.t * Ty.t) -> unit
+val add_symbol : string -> Name.t -> unit
+val add_symbol_and_binding : 
+  string -> Name.t -> (Ty.Generalize.t * Ty.t) -> unit
 
-  val add_binding : Name.t -> (Ty.Generalize.t * Ty.t) -> unit
-  val add_symbol : string -> Name.t -> unit
-  val add_symbol_and_binding : 
-    string -> Name.t -> (Ty.Generalize.t * Ty.t) -> unit
-
-  val belongs_to : Name.t -> string list -> bool
-end
+val belongs_to : Name.t -> string list -> bool

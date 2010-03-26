@@ -122,7 +122,7 @@ let rec decl env d =
       let env, g = Env.add_gen env g in
       let t = ty env t in
       let env, nv = add_var env n (g,t) in
-      Predefined.Logic.add_symbol_and_binding n nv (g,t);
+      Predefined.add_symbol_and_binding n nv (g,t);
       env, Logic (nv,g, t)
   | I.Axiom (s,t) ->
       env,Formula (s, term true env t, `Assumed)
@@ -141,7 +141,7 @@ let rec decl env d =
       env, DLetReg nrl
   | I.Program (x,g,e,r) ->
       let env, nv, g , e, r = letgen env x g e r in
-      Predefined.Logic.add_symbol_and_binding x nv (g,e.t);
+      Predefined.add_symbol_and_binding x nv (g,e.t);
       env, Program (nv, g, e, r)
   | I.DGen g ->
       let env, g = Env.add_gen env g in

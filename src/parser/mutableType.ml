@@ -183,8 +183,8 @@ let const =
   fun c -> Hashtbl.find h c
 
 let prop = const Const.TProp
-let bool = var Predefty.bool_var
-let unit = var Predefty.unit_var
+let bool () = var (Predefty.var (Predefty.Identifier.bool_id))
+let unit () = var (Predefty.var (Predefty.Identifier.unit_id))
 let int = const Const.TInt
 
 let rec from_ty (x : Ty.t) =

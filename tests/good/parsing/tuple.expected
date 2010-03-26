@@ -1,3 +1,10 @@
+section boolean coq predefined
+  pangoline takeover type bool
+  logic true  : bool
+  logic false  : bool end
+section unit coq predefined
+  pangoline takeover type unit
+  logic tt  : unit end
 section basiclogic coq predefined
   pangoline predefined
    logic /\  : prop -> prop -> prop
@@ -7,7 +14,8 @@ section basiclogic coq predefined
   logic = ['a||] : a -> a -> prop end
 section tuples coq predefined
   pangoline predefined
-   logic mk_2tuple ['a1 'b||] : a1 -> b -> a1 * b
+   type region['u||]
+  logic mk_2tuple ['a1 'b||] : a1 -> b -> a1 * b
   logic mk_3tuple ['a2 'b1 'c||] : a2 -> b1 -> c -> a2 * b1 * c
   logic mk_4tuple ['a3 'b2 'c1 'd||] : a3 -> b2 -> c1 -> d -> a3 * b2 * c1 *
     d
@@ -64,13 +72,6 @@ section tuples coq predefined
     c29 * d25 * e20 * f14 * g7) -> g7
   logic fst ['a34 'b33||] : (a34 * b33) -> a34
   logic snd ['a35 'b34||] : (a35 * b34) -> b34 end
-section boolean coq predefined
-  pangoline takeover type bool
-  logic true  : bool
-  logic false  : bool end
-section unit coq predefined
-  pangoline takeover type unit
-  logic tt  : unit end
 section arith coq "WhoArith"
   pangoline takeover
    logic +  : int -> int -> int

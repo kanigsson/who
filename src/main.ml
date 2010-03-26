@@ -116,5 +116,6 @@ let _ =
   | Typing.Error (s,loc) -> Error.with_loc s loc
   | Infer.Error (loc,e) ->
       Error.with_loc (Infer.explain e) loc
-(*   | Predefned.Error e -> Error.bad (Predefined.explain e) *)
+  | Predefined.Error e -> Error.bad (Predefined.explain e)
+  | Predefty.Error e -> Error.bad (Predefty.explain e)
 

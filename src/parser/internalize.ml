@@ -65,7 +65,7 @@ let rec ast' env = function
       let env, nrl = Env.add_rvars env rl in
       LetReg (nrl, ast env e)
   | I.Seq (e1,e2) ->
-      Let (G.empty, annot (ast env e1) Ty.unit e1.I.loc,
+      Let (G.empty, annot (ast env e1) (Ty.unit ()) e1.I.loc,
            Name.close_bind (Name.new_anon ()) (ast env e2), Const.NoRec)
   | I.Restrict (t,e) ->
       let t = ast env t and e = effect env e in
@@ -111,7 +111,7 @@ let rec decl env d =
   | I.Logic (n,g,t) ->
       let env, g = Env.add_gen env g in
       let env, nv = Env.add_var env n in
-      Predefined.Logic.add_symbol n nv;
+      Predefined.add_symbol n nv;
       env, Logic (nv,g, ty env t)
   | I.Axiom (s,g,t) ->
       let env', g = Env.add_gen env g in
@@ -134,7 +134,7 @@ let rec decl env d =
       env, DLetReg nrl
   | I.Program (x,g,e,r) ->
       let env, nv, g , e, r = letgen env x g e r in
-      Predefined.Logic.add_symbol x nv;
+      Predefined.add_symbol x nv;
       env, Program (nv, g, e, r)
 and theory x = ExtList.fold_map decl x
 

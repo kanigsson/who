@@ -19,7 +19,7 @@ let
                       (fun (old:<{r1  }>) ->
                       (fun (cur1:<{r1  }>) ->
                       (fun (r2:a5) ->
-                      ((!! [a5| r1| { }] x cur1) =[a5||] r2) /\
+                      (r2 =[a5||] (!! [a5| r1| { }] x cur1)) /\
                       ((!! [a5| r1| { }] x old) =[a5||]
                        (!! [a5| r1| { }] x cur1)))))) 
 let
@@ -31,7 +31,7 @@ let
                        (fun (old1:<{r3  }>) ->
                        (fun (cur3:<{r3  }>) ->
                        (fun (anon:unit) ->
-                       (!! [a6| r3| { }] x1 cur3) =[a6||] v))))) 
+                       v =[a6||] (!! [a6| r3| { }] x1 cur3)))))) 
 logic combine [||'e1 'e2 'e3] : <{ 'e1 'e2 }> -> <{ 'e2 'e3 }> -> <{ 'e1 'e2
   'e3 }>
 logic restrict [||'e4 'e5] : <{ 'e4 'e5 }> -> <{ 'e5 }>

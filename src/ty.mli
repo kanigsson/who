@@ -44,12 +44,13 @@ val parr : t -> t -> t
 val tuple : t list -> t
 val ref_ : Name.t -> t -> t
 val map : Effect.t -> t
-val unit : t
+val unit : unit -> t
 val prop : t
-val bool : t
+val bool : unit -> t
 val int : t
 val emptymap : t
 
+val is_unit : t -> bool
 val arg : t -> t
 val result : t -> t
 val split : t -> t * t
@@ -91,7 +92,7 @@ val allsubst :
   Generalize.t -> t list * Name.t list * Effect.t list -> 
     t -> t
 
-val forty : Generalize.t * t
+val forty : unit -> Generalize.t * t
 
 val find_type_of_r : Name.t -> t -> t option
 

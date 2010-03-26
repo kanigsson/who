@@ -93,9 +93,8 @@ end = struct
     add_ex_var env ?ty x y, y
 
   let add_tvar env x g t = 
-    let y = 
-      try SM.find x Predefty.map
-      with Not_found -> Name.from_string x in
+    let y = Name.from_string x in
+    Predefty.add_symbol x y;
     { env with t = SM.add x y env.t;
       tyrepl = 
          match t with

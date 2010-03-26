@@ -99,7 +99,7 @@ let rec formtyping' env loc = function
       fis_oftype (add_svar env x t) prop e;
       prop
   | Ite (e1,e2,e3) ->
-      fis_oftype env bool e1;
+      fis_oftype env (bool ()) e1;
       let t = formtyping env e2 in
       fis_oftype env t e3;
       t
@@ -210,7 +210,7 @@ and typing' env loc = function
       if Ty.equal t t' then t, eff, cap else error loc "wrong type annotation"
   | Ite (e1,e2,e3) ->
       let t1, eff1, cap1 = typing env e1 in
-      if Ty.equal t1 Ty.bool then
+      if Ty.equal t1 (Ty.bool ()) then
         let t2, eff2, cap2 = typing env e2 in
         let t3, eff3, cap3 = typing env e3 in
         if Ty.equal t2 t3 then

@@ -12,7 +12,7 @@ let
                 {(fun (old:<{r1  }>) ->
                  (fun (cur1:<{r1  }>) ->
                  (fun (r2:a4) ->
-                 ((!! [a4| r1| { }] x cur1) =[a4||] r2) /\
+                 (r2 =[a4||] (!! [a4| r1| { }] x cur1)) /\
                  ((!! [a4| r1| { }] x old) =[a4||] (!! [a4| r1| { }] x cur1)))))}) 
 let pre ['a5 'b2||] = (fun (x1:a5 * b2) -> fst [a5,b2||] x1) 
 let post ['a6 'b3||] = (fun (x2:a6 * b3) -> snd [a6,b3||] x2) 

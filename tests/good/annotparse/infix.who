@@ -1,11 +1,11 @@
 type unit
-  let := ['a9|r3|] = 
+  let := ['a9|r3|] =
     (fun (x1:ref(r3,'a9)) -> (fun (v:'a9) -> {(fun (cur2:<r3  >) -> True)}
        parameter(unit,{r3  })
-     {(fun (old1:<r3  >) -> (fun (cur3:<r3  >) -> (fun (anon:unit) -> True)))})) 
+     {(fun (old1:<r3  >) -> (fun (cur3:<r3  >) -> (fun (anon:unit) -> True)))}))
 
 let x [|r|] = fun (z:(ref(r,int))) ->
   { fun (c : < r >) -> True }
     (:= [int|r|]) z 0
   {fun (old1:<r  >) -> fun (cur3:<r  >) -> fun (anon:unit) -> True}
-  
+

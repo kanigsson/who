@@ -22,6 +22,21 @@
 (******************************************************************************)
 
 let prelude = "
+section boolean
+  coq predefined
+  pangoline takeover
+  type bool
+  logic true : bool
+  logic false : bool
+end
+
+section unit
+  coq predefined
+  pangoline takeover
+  type unit
+  logic tt : unit
+end
+
 section basiclogic
   coq predefined
   pangoline predefined
@@ -36,15 +51,16 @@ section tuples
   coq predefined
   pangoline predefined
 
+  type region ['u||]
   logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
   logic mk_3tuple ['a 'b 'c||] : 'a -> 'b -> 'c -> 'a * 'b * 'c
-  logic mk_4tuple ['a 'b 'c 'd||] : 
+  logic mk_4tuple ['a 'b 'c 'd||] :
     'a -> 'b -> 'c -> 'd -> 'a * 'b * 'c * 'd
-  logic mk_5tuple ['a 'b 'c 'd 'e||] : 
+  logic mk_5tuple ['a 'b 'c 'd 'e||] :
     'a -> 'b -> 'c -> 'd -> 'e -> 'a * 'b * 'c * 'd * 'e
-  logic mk_6tuple ['a 'b 'c 'd 'e 'f||] : 
+  logic mk_6tuple ['a 'b 'c 'd 'e 'f||] :
     'a -> 'b -> 'c -> 'd -> 'e -> 'f-> 'a * 'b * 'c * 'd * 'e * 'f
-  logic mk_7tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+  logic mk_7tuple ['a 'b 'c 'd 'e 'f 'g||] :
     'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'a * 'b * 'c * 'd * 'e * 'f * 'g
 
   logic get_2_1_tuple ['a 'b||] : 'a * 'b -> 'a
@@ -72,40 +88,24 @@ section tuples
   logic get_6_5_tuple ['a 'b 'c 'd 'e 'f||] : 'a * 'b * 'c * 'd * 'e * 'f -> 'e
   logic get_6_6_tuple ['a 'b 'c 'd 'e 'f||] : 'a * 'b * 'c * 'd * 'e * 'f -> 'f
 
-  logic get_7_1_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+  logic get_7_1_tuple ['a 'b 'c 'd 'e 'f 'g||] :
       'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'a
-  logic get_7_2_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+  logic get_7_2_tuple ['a 'b 'c 'd 'e 'f 'g||] :
       'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'b
-  logic get_7_3_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+  logic get_7_3_tuple ['a 'b 'c 'd 'e 'f 'g||] :
       'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'c
-  logic get_7_4_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+  logic get_7_4_tuple ['a 'b 'c 'd 'e 'f 'g||] :
       'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'd
-  logic get_7_5_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+  logic get_7_5_tuple ['a 'b 'c 'd 'e 'f 'g||] :
       'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'e
-  logic get_7_6_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+  logic get_7_6_tuple ['a 'b 'c 'd 'e 'f 'g||] :
       'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'f
-  logic get_7_7_tuple ['a 'b 'c 'd 'e 'f 'g||] : 
+  logic get_7_7_tuple ['a 'b 'c 'd 'e 'f 'g||] :
       'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'g
 
   logic fst ['a 'b||] : 'a * 'b -> 'a
   logic snd ['a 'b||] : 'a * 'b -> 'b
 end
-
-section boolean
-  coq predefined
-  pangoline takeover
-  type bool
-  logic true : bool
-  logic false : bool
-end
-
-section unit
-  coq predefined
-  pangoline takeover
-  type unit
-  logic tt : unit
-end
-
 section arith
   coq \"WhoArith\"
   pangoline takeover
@@ -175,6 +175,7 @@ section Whoref
 
   let pre ['a 'b||] (x : 'a * 'b) = fst x
   let post ['a 'b||] (x : 'a * 'b) = snd x
+
 end
 
 parameter forto [||'e] (inv : int -> <'e> -> prop) (start end_ : int)

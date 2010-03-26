@@ -1,3 +1,4 @@
+type unit
 type bool
 logic true  : bool
 logic false  : bool
@@ -18,7 +19,7 @@ let
   logic stores  = (fun (f:int -> int) ->
                   (fun (m:hmap[int,int||]) ->
                   forall (x:int).
-                  ((hmem [int,int||] x m) =[bool||] true) ->
+                  (true =[bool||] (hmem [int,int||] x m)) ->
                   ((hget [int,int||] x m) =[int||] (f x)))) 
 INTROS [|t|]
 logic table  : ref(t,hmap[int,int||])

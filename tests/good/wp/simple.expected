@@ -17,8 +17,8 @@ let
                       (fun (o:<{r  }>) ->
                       (fun (c1:<{r  }>) -> (fun (r1:unit) -> True)))) 
 goal blit_correct : forall [|s|]. forall (s1:<{s  }>).
-                                  t ->
-                                  ((9 =[int||] 0) ->
+                                  (9 =[int||] 0) ->
+                                  (t ->
                                    (fst [unit -> <{s  }> -> prop,unit -> <{s
                                      }> -> <{s  }> -> unit -> prop||]
                                     myget [| s|] tt s1))

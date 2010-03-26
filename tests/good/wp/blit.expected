@@ -47,7 +47,7 @@ section basiclogic coq predefined
                           (fun (old:<{r1  }>) ->
                           (fun (cur1:<{r1  }>) ->
                           (fun (r2:a8) ->
-                          ((!! [a8| r1| {r1  }] x cur1) =[a8||] r2) /\
+                          (r2 =[a8||] (!! [a8| r1| {r1  }] x cur1)) /\
                           ((!! [a8| r1| {r1  }] x old) =[a8||]
                            (!! [a8| r1| {r1  }] x cur1)))))) 
     let
@@ -59,7 +59,7 @@ section basiclogic coq predefined
                            (fun (old1:<{r3  }>) ->
                            (fun (cur3:<{r3  }>) ->
                            (fun (anon:unit) ->
-                           (!! [a9| r3| {r3  }] x1 cur3) =[a9||] v))))) 
+                           v =[a9||] (!! [a9| r3| {r3  }] x1 cur3)))))) 
     let
       logic ref ['a10|r4|] = (fun (v1:a10) -> (fun (cur4:<{r4  }>) -> True))
                              mk_2tuple[a10 -> <{r4  }> -> prop,a10 -> <{r4
@@ -68,7 +68,7 @@ section basiclogic coq predefined
                              (fun (old2:<{r4  }>) ->
                              (fun (cur5:<{r4  }>) ->
                              (fun (x2:ref(r4,a10)) ->
-                             (!! [a10| r4| {r4  }] x2 cur5) =[a10||] v1)))) 
+                             v1 =[a10||] (!! [a10| r4| {r4  }] x2 cur5))))) 
     logic combine [||'e1 'e2 'e3] : <{ 'e1 'e2 }> -> <{ 'e2 'e3 }> -> <{ 'e1
       'e2 'e3 }>
     logic restrict [||'e4 'e5] : <{ 'e4 'e5 }> -> <{ 'e5 }>
@@ -157,9 +157,9 @@ section basiclogic coq predefined
                                         forall (i3:int).
                                         forall (z1:a20).
                                         (i3 < (len [a20||] t1)) ->
-                                        ((get [a20||] i3
-                                          (set [a20||] i3 z1 t1))
-                                         =[a20||] z1)
+                                        (z1 =[a20||]
+                                         (get [a20||] i3
+                                          (set [a20||] i3 z1 t1)))
     axiom length_empty : forall ['a21||]. (len [a21||] ar_empty [a21||])
                                           =[int||] 0
     axiom get_set_neq : forall ['a22||]. forall (t2:array[a22||]).
@@ -177,17 +177,17 @@ section basiclogic coq predefined
     axiom length_create : forall ['a24||]. forall (l:int).
                                            forall (v2:a24).
                                            (0 <= l) ->
-                                           ((len [a24||]
-                                             (create [a24||] l v2))
-                                            =[int||] l)
+                                           (l =[int||]
+                                            (len [a24||]
+                                             (create [a24||] l v2)))
     axiom length_access : forall ['a25||]. forall (i5:int).
                                            forall (l1:int).
                                            forall (v3:a25).
                                            (0 <= i5) ->
                                            ((i5 <= l1) ->
-                                            ((get [a25||] i5
-                                              (create [a25||] l1 v3))
-                                             =[a25||] v3)) end
+                                            (v3 =[a25||]
+                                             (get [a25||] i5
+                                              (create [a25||] l1 v3)))) end
   section List coq "WhoList"
     pangoline takeover
      type list['a26||]
@@ -241,15 +241,15 @@ section basiclogic coq predefined
                      let logic __end = 0 in
                      ((forall (i6:int).
                        forall (s3:<{r5 r6  }>).
-                       (__end <= i6) ->
-                       ((i6 <= __start) ->
-                        (((!! [array[a31||]| r5| {r5 r6  }] ar s3)
-                          =[array[a31||]||] anon3)
-                         ->
-                         (((len [a31||]
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 s3))
-                           =[int||] l3)
-                          ->
+                       (anon3 =[array[a31||]||]
+                        (!! [array[a31||]| r5| {r5 r6  }] ar s3))
+                       ->
+                       ((l3 =[int||]
+                         (len [a31||]
+                          (!! [array[a31||]| r6| {r5 r6  }] ar1 s3)))
+                        ->
+                        ((__end <= i6) ->
+                         ((i6 <= __start) ->
                           ((forall (k:int).
                             (i6 < k) ->
                             ((k <= (l3 - 1)) ->
@@ -302,14 +302,14 @@ section basiclogic coq predefined
                                    (get [a31||] (ofs + i6) anon5) anon6)
                                   s5 s6 tt)
                                  ->
-                                 ((((!! [array[a31||]| r5| {r5 r6  }] ar
-                                     (combine [|| {r5  } { } {r6  }] s4 s6))
-                                    =[array[a31||]||] anon3)
+                                 (((anon3 =[array[a31||]||]
+                                    (!! [array[a31||]| r5| {r5 r6  }] ar
+                                     (combine [|| {r5  } { } {r6  }] s4 s6)))
                                    /\
-                                   ((len [a31||]
+                                   (l3 =[int||]
+                                    (len [a31||]
                                      (!! [array[a31||]| r6| {r5 r6  }] ar1
-                                      (combine [|| {r5  } { } {r6  }] s4 s6)))
-                                    =[int||] l3))
+                                      (combine [|| {r5  } { } {r6  }] s4 s6)))))
                                   /\
                                   (forall (k1:int).
                                    ((i6 - 1) < k1) ->
@@ -330,12 +330,12 @@ section basiclogic coq predefined
                        (fordownto [|| {r5 r6  }]
                         (fun (i7:int) ->
                         (fun (cur10:<{r5 r6  }>) ->
-                        (((!! [array[a31||]| r5| {r5 r6  }] ar cur10)
-                          =[array[a31||]||] anon3)
+                        ((anon3 =[array[a31||]||]
+                          (!! [array[a31||]| r5| {r5 r6  }] ar cur10))
                          /\
-                         ((len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur10))
-                          =[int||] l3))
+                         (l3 =[int||]
+                          (len [a31||]
+                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur10))))
                         /\
                         (forall (k2:int).
                          (i7 < k2) ->
@@ -349,12 +349,12 @@ section basiclogic coq predefined
                        ((fun (i8:int) ->
                         (fun (cur11:<{r5 r6  }>) ->
                         ((__end <= i8) /\ (i8 <= __start)) /\
-                        ((((!! [array[a31||]| r5| {r5 r6  }] ar cur11)
-                           =[array[a31||]||] anon3)
+                        (((anon3 =[array[a31||]||]
+                           (!! [array[a31||]| r5| {r5 r6  }] ar cur11))
                           /\
-                          ((len [a31||]
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur11))
-                           =[int||] l3))
+                          (l3 =[int||]
+                           (len [a31||]
+                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur11))))
                          /\
                          (forall (k3:int).
                           (i8 < k3) ->
@@ -370,12 +370,12 @@ section basiclogic coq predefined
                         (fun (anon7:<{r5 r6  }>) ->
                         (fun (cur12:<{r5 r6  }>) ->
                         (fun (anon8:unit) ->
-                        (((!! [array[a31||]| r5| {r5 r6  }] ar cur12)
-                          =[array[a31||]||] anon3)
+                        ((anon3 =[array[a31||]||]
+                          (!! [array[a31||]| r5| {r5 r6  }] ar cur12))
                          /\
-                         ((len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur12))
-                          =[int||] l3))
+                         (l3 =[int||]
+                          (len [a31||]
+                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur12))))
                         /\
                         (forall (k4:int).
                          ((i9 - 1) < k4) ->
@@ -396,12 +396,12 @@ section basiclogic coq predefined
                        (fordownto [|| {r5 r6  }]
                         (fun (i10:int) ->
                         (fun (cur13:<{r5 r6  }>) ->
-                        (((!! [array[a31||]| r5| {r5 r6  }] ar cur13)
-                          =[array[a31||]||] anon3)
+                        ((anon3 =[array[a31||]||]
+                          (!! [array[a31||]| r5| {r5 r6  }] ar cur13))
                          /\
-                         ((len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur13))
-                          =[int||] l3))
+                         (l3 =[int||]
+                          (len [a31||]
+                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur13))))
                         /\
                         (forall (k5:int).
                          (i10 < k5) ->
@@ -415,12 +415,12 @@ section basiclogic coq predefined
                        ((fun (i11:int) ->
                         (fun (cur14:<{r5 r6  }>) ->
                         ((__end <= i11) /\ (i11 <= __start)) /\
-                        ((((!! [array[a31||]| r5| {r5 r6  }] ar cur14)
-                           =[array[a31||]||] anon3)
+                        (((anon3 =[array[a31||]||]
+                           (!! [array[a31||]| r5| {r5 r6  }] ar cur14))
                           /\
-                          ((len [a31||]
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur14))
-                           =[int||] l3))
+                          (l3 =[int||]
+                           (len [a31||]
+                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur14))))
                          /\
                          (forall (k6:int).
                           (i11 < k6) ->
@@ -436,12 +436,12 @@ section basiclogic coq predefined
                         (fun (anon9:<{r5 r6  }>) ->
                         (fun (cur15:<{r5 r6  }>) ->
                         (fun (anon10:unit) ->
-                        (((!! [array[a31||]| r5| {r5 r6  }] ar cur15)
-                          =[array[a31||]||] anon3)
+                        ((anon3 =[array[a31||]||]
+                          (!! [array[a31||]| r5| {r5 r6  }] ar cur15))
                          /\
-                         ((len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur15))
-                          =[int||] l3))
+                         (l3 =[int||]
+                          (len [a31||]
+                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur15))))
                         /\
                         (forall (k7:int).
                          ((i12 - 1) < k7) ->
@@ -477,15 +477,15 @@ section basiclogic coq predefined
                      let logic __end1 = l3 - 1 in
                      ((forall (i13:int).
                        forall (s8:<{r5 r6  }>).
-                       (__start1 <= i13) ->
-                       ((i13 <= __end1) ->
-                        (((!! [array[a31||]| r5| {r5 r6  }] ar s8)
-                          =[array[a31||]||] anon3)
-                         ->
-                         (((len [a31||]
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 s8))
-                           =[int||] l3)
-                          ->
+                       (anon3 =[array[a31||]||]
+                        (!! [array[a31||]| r5| {r5 r6  }] ar s8))
+                       ->
+                       ((l3 =[int||]
+                         (len [a31||]
+                          (!! [array[a31||]| r6| {r5 r6  }] ar1 s8)))
+                        ->
+                        ((__start1 <= i13) ->
+                         ((i13 <= __end1) ->
                           ((forall (k9:int).
                             (0 <= k9) ->
                             ((k9 < i13) ->
@@ -538,14 +538,14 @@ section basiclogic coq predefined
                                    (get [a31||] (ofs + i13) anon11) anon12)
                                   s10 s11 tt)
                                  ->
-                                 ((((!! [array[a31||]| r5| {r5 r6  }] ar
-                                     (combine [|| {r5  } { } {r6  }] s9 s11))
-                                    =[array[a31||]||] anon3)
+                                 (((anon3 =[array[a31||]||]
+                                    (!! [array[a31||]| r5| {r5 r6  }] ar
+                                     (combine [|| {r5  } { } {r6  }] s9 s11)))
                                    /\
-                                   ((len [a31||]
+                                   (l3 =[int||]
+                                    (len [a31||]
                                      (!! [array[a31||]| r6| {r5 r6  }] ar1
-                                      (combine [|| {r5  } { } {r6  }] s9 s11)))
-                                    =[int||] l3))
+                                      (combine [|| {r5  } { } {r6  }] s9 s11)))))
                                   /\
                                   (forall (k10:int).
                                    (0 <= k10) ->
@@ -566,12 +566,12 @@ section basiclogic coq predefined
                        (forto [|| {r5 r6  }]
                         (fun (i14:int) ->
                         (fun (cur16:<{r5 r6  }>) ->
-                        (((!! [array[a31||]| r5| {r5 r6  }] ar cur16)
-                          =[array[a31||]||] anon3)
+                        ((anon3 =[array[a31||]||]
+                          (!! [array[a31||]| r5| {r5 r6  }] ar cur16))
                          /\
-                         ((len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur16))
-                          =[int||] l3))
+                         (l3 =[int||]
+                          (len [a31||]
+                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur16))))
                         /\
                         (forall (k11:int).
                          (0 <= k11) ->
@@ -585,12 +585,12 @@ section basiclogic coq predefined
                        ((fun (i15:int) ->
                         (fun (cur17:<{r5 r6  }>) ->
                         ((__start1 <= i15) /\ (i15 <= __end1)) /\
-                        ((((!! [array[a31||]| r5| {r5 r6  }] ar cur17)
-                           =[array[a31||]||] anon3)
+                        (((anon3 =[array[a31||]||]
+                           (!! [array[a31||]| r5| {r5 r6  }] ar cur17))
                           /\
-                          ((len [a31||]
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur17))
-                           =[int||] l3))
+                          (l3 =[int||]
+                           (len [a31||]
+                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur17))))
                          /\
                          (forall (k12:int).
                           (0 <= k12) ->
@@ -606,12 +606,12 @@ section basiclogic coq predefined
                         (fun (anon13:<{r5 r6  }>) ->
                         (fun (cur18:<{r5 r6  }>) ->
                         (fun (anon14:unit) ->
-                        (((!! [array[a31||]| r5| {r5 r6  }] ar cur18)
-                          =[array[a31||]||] anon3)
+                        ((anon3 =[array[a31||]||]
+                          (!! [array[a31||]| r5| {r5 r6  }] ar cur18))
                          /\
-                         ((len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur18))
-                          =[int||] l3))
+                         (l3 =[int||]
+                          (len [a31||]
+                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur18))))
                         /\
                         (forall (k13:int).
                          (0 <= k13) ->
@@ -632,12 +632,12 @@ section basiclogic coq predefined
                        (forto [|| {r5 r6  }]
                         (fun (i17:int) ->
                         (fun (cur19:<{r5 r6  }>) ->
-                        (((!! [array[a31||]| r5| {r5 r6  }] ar cur19)
-                          =[array[a31||]||] anon3)
+                        ((anon3 =[array[a31||]||]
+                          (!! [array[a31||]| r5| {r5 r6  }] ar cur19))
                          /\
-                         ((len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur19))
-                          =[int||] l3))
+                         (l3 =[int||]
+                          (len [a31||]
+                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur19))))
                         /\
                         (forall (k14:int).
                          (0 <= k14) ->
@@ -651,12 +651,12 @@ section basiclogic coq predefined
                        ((fun (i18:int) ->
                         (fun (cur20:<{r5 r6  }>) ->
                         ((__start1 <= i18) /\ (i18 <= __end1)) /\
-                        ((((!! [array[a31||]| r5| {r5 r6  }] ar cur20)
-                           =[array[a31||]||] anon3)
+                        (((anon3 =[array[a31||]||]
+                           (!! [array[a31||]| r5| {r5 r6  }] ar cur20))
                           /\
-                          ((len [a31||]
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur20))
-                           =[int||] l3))
+                          (l3 =[int||]
+                           (len [a31||]
+                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur20))))
                          /\
                          (forall (k15:int).
                           (0 <= k15) ->
@@ -672,12 +672,12 @@ section basiclogic coq predefined
                         (fun (anon15:<{r5 r6  }>) ->
                         (fun (cur21:<{r5 r6  }>) ->
                         (fun (anon16:unit) ->
-                        (((!! [array[a31||]| r5| {r5 r6  }] ar cur21)
-                          =[array[a31||]||] anon3)
+                        ((anon3 =[array[a31||]||]
+                          (!! [array[a31||]| r5| {r5 r6  }] ar cur21))
                          /\
-                         ((len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur21))
-                          =[int||] l3))
+                         (l3 =[int||]
+                          (len [a31||]
+                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur21))))
                         /\
                         (forall (k16:int).
                          (0 <= k16) ->

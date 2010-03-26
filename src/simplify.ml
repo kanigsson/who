@@ -25,7 +25,7 @@ open Name
 open Const
 open Ast
 open Recon
-module PL = Predefined.Logic
+module PL = Predefined
 module PI = Predefined.Identifier
 
 exception Error of string
@@ -52,7 +52,7 @@ type env =
   }
 
 let empty =
-  { rtypes = Name.M.empty ; renames = NPM.empty; et = Ty.unit; l = Loc.dummy }
+  { rtypes = Name.M.empty ; renames = NPM.empty; et = Ty.int; l = Loc.dummy }
 
 
   (* [rtype_add] adds a type for a given region name *)

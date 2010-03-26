@@ -24,7 +24,7 @@
 open Name
 open Ast
 
-module PL = Predefined.Logic
+module PL = Predefined
 module G = Ty.Generalize
 
 type outdecl = 

@@ -21,12 +21,35 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-let bool_var = Name.from_string "bool"
-let unit_var = Name.from_string "unit"
+type error =
+  | PreludeIncomplete of string
 
-module SM = Misc.StringMap
+exception Error of error
 
-let allvars = [ bool_var ; unit_var ]
-let map =
-  List.fold_left (fun acc x ->
-    SM.add (Name.unsafe_to_string x) x acc) SM.empty allvars
+let error e = raise (Error e)
+
+let explain error =
+  match error with
+  | PreludeIncomplete s ->
+      Myformat.sprintf "the prelude is incomplete; the following symbol is \
+        missing: %s" s
+
+module Identifier = struct
+  let bool_id = "bool"
+  let unit_id = "unit"
+end
+
+type env = Name.t Misc.StringMap.t ref
+
+let env = ref Misc.StringMap.empty
+let add_symbol s x = env := Misc.StringMap.add s x !env
+let base_var s = Misc.StringMap.find s !env
+let var s = 
+  try base_var s
+  with Not_found -> error (PreludeIncomplete s)
+
+let equal x id = 
+  try
+    let y = base_var id in
+    Name.equal x y
+  with Not_found -> false

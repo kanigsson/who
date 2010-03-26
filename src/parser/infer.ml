@@ -30,7 +30,7 @@ module G = Ty.Generalize
 module U = Unify
 
 module S = Name.S
-module PL = Predefined.Logic
+module PL = Predefined
 
 module Env : sig
   type t
@@ -188,7 +188,7 @@ and infer env (x : I.t) =
         let eff = M.rremove e.e (List.map M.from_region rl) in
         LetReg (rl,e), e.t, eff
     | I.Ite (e1,e2,e3) ->
-        let e1 = check_type env M.bool e1 in
+        let e1 = check_type env (M.bool ()) e1 in
         let e2 = infer env e2 in
         let e3 = check_type env e2.t e3 in
         Ite (e1,e2,e3), e2.t, M.eff_union3 e1.e e2.e e3.e
@@ -199,9 +199,9 @@ and infer env (x : I.t) =
         Param (t,eff), M.from_ty t, M.from_effect eff
     | I.For (dir,inv,i,s,e,body) ->
         let env = Env.add_svar env i M.int in
-        let body = check_type env M.unit body in
+        let body = check_type env (M.unit ()) body in
         let inv = pre env body.e inv l in
-        For (dir, inv, i, s, e, body), M.unit, body.e
+        For (dir, inv, i, s, e, body), (M.unit ()), body.e
     | I.HoareTriple (p,e,q) ->
         let e = infer (Env.to_program_env env) e in
         let p = pre env e.e p l in

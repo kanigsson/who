@@ -22,7 +22,7 @@
 (******************************************************************************)
 
 module G = Ty.Generalize
-module PL = Predefined.Logic
+module PL = Predefined
 module PI = Predefined.Identifier
 
 type node =
@@ -333,7 +333,7 @@ let print_decl = Print.decl ~kind:`Who sopen
 let print_theory = Print.theory ~kind:`Who sopen
 
 let print' fmt t =
-  print fmt {v = t; t = Ty.unit; e = Effect.empty; loc = Loc.dummy }
+  print fmt {v = t; t = Ty.prop; e = Effect.empty; loc = Loc.dummy }
 
 let mk v t e loc = { v = v; t = t; e = e; loc = loc }
 let mk_val v t loc = { v = v; t = t; e = Effect.empty; loc = loc }
@@ -356,7 +356,7 @@ let void l = simple_var_id PI.void_id l
 
 let var s inst (g,t) =
   let nt = (Ty.allsubst g inst t) in
-  if Ty.equal nt Ty.unit then void
+  if Ty.is_unit nt then void
   else if Ty.equal nt Ty.emptymap then mempty
   else mk_val (Var (s,inst)) nt
 
@@ -412,7 +412,7 @@ let simple_eq t1 t2 l =
 
 
 let boolcmp_to_propcmp x =
-  let eq = Predefined.Logic.equal in
+  let eq = Predefined.equal in
   match x with
   | x when eq x PI.leb_id -> fun _ -> spredef PI.le_id
   | x when eq x PI.ltb_id -> fun _ -> spredef PI.lt_id
@@ -568,7 +568,7 @@ and subst x v e =
 
 and polsubst g x v e = subst x (fun i -> allsubst g i v) e
 and squant k x t f loc =
-  if Ty.equal t Ty.unit || Ty.equal t Ty.emptymap then f
+  if Ty.is_unit t || Ty.equal t Ty.emptymap then f
   else
   begin
     try match destruct_app2_var f with

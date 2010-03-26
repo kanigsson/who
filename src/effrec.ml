@@ -22,7 +22,7 @@
 (******************************************************************************)
 
 open Ast
-module PL = Predefined.Logic
+module PL = Predefined
 module PI = Predefined.Identifier
 module N = Name
 module M = N.M

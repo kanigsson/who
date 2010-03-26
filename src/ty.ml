@@ -88,11 +88,18 @@ let map e = Map e
 let app v i = App (v,i)
 let var v = App (v,Inst.empty)
 
+module PI = Predefty.Identifier
+
 let prop = const (Const.TProp)
-let bool = var Predefty.bool_var
-let unit = var Predefty.unit_var
+let bool () = var (Predefty.var PI.bool_id)
+let unit () = var (Predefty.var PI.unit_id)
 let int = const (Const.TInt)
 let emptymap = map (Effect.empty)
+
+let is_unit t =
+  match t with
+  | App (v,([],[],[])) -> Predefty.equal v PI.unit_id
+  | _ -> false
 
 let destr_pair t =
   match t with
@@ -265,9 +272,10 @@ let rec equal t1 t2 =
       v1 = v2 && Inst.equal equal Name.equal (Effect.equal) i1 i2
   | _ -> false
 
-let forty =
+let forty () =
   let e = Name.from_string "e" in
   let eff = Effect.esingleton e in
+  let unit = unit () in
   ([],[],[e]),
    parr
      (parr int (parr (map eff) prop))

@@ -40,9 +40,9 @@ and effect = r list * Name.S.t
 val eff_empty : effect
 val const : Const.ty -> t
 val prop : t
-val bool : t
+val bool : unit -> t
 val int : t
-val unit : t
+val unit : unit -> t
 val parr : t -> t -> t
 val arrow : t -> t -> effect -> r list -> t
 val map : effect -> t

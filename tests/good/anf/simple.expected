@@ -1,3 +1,4 @@
+type unit
 logic +  : int -> int -> int
 logic = ['a||] : a -> a -> prop
 logic /\  : prop -> prop -> prop
@@ -8,7 +9,7 @@ let
                 {(fun (old:<{r1  }>) ->
                  (fun (cur1:<{r1  }>) ->
                  (fun (r2:a2) ->
-                 ((!! [a2| r1| { }] x cur1) =[a2||] r2) /\
+                 (r2 =[a2||] (!! [a2| r1| { }] x cur1)) /\
                  ((!! [a2| r1| { }] x old) =[a2||] (!! [a2| r1| { }] x cur1)))))}) 
 let
   f [|r3|] = (fun (x1:ref(r3,int)) -> {(fun (cur2:<{r3  }>) -> True)}

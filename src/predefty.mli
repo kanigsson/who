@@ -21,7 +21,17 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-val bool_var : Name.t
-val unit_var : Name.t
+type error
+exception Error of error
+val explain : error -> string
 
-val map : Name.t Misc.StringMap.t
+
+module Identifier : sig
+  val bool_id : string
+  val unit_id : string
+end
+
+val add_symbol : string -> Name.t -> unit
+val var :string -> Name.t
+
+val equal : Name.t -> string -> bool

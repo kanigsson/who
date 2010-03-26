@@ -18,7 +18,7 @@ let
                       (fun (old:<{r1  }>) ->
                       (fun (cur1:<{r1  }>) ->
                       (fun (r2:a5) ->
-                      ((!! [a5| r1| { }] x cur1) =[a5||] r2) /\
+                      (r2 =[a5||] (!! [a5| r1| { }] x cur1)) /\
                       ((!! [a5| r1| { }] x old) =[a5||]
                        (!! [a5| r1| { }] x cur1)))))) 
 let logic pre ['a6 'b3||] = (fun (x1:a6 * b3) -> fst [a6,b3||] x1) 

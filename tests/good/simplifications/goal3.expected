@@ -1,0 +1,9 @@
+logic ->  : prop -> prop -> prop
+logic = ['a||] : a -> a -> prop
+type bool
+logic true  : bool
+logic false  : bool
+goal ymemo_correct : forall (z:int).
+                     (forall (x:int).
+                      (true =[bool||] false) -> (x =[int||] 0))
+                     -> (0 =[int||] 1)
