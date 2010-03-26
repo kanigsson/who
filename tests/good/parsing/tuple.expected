@@ -14,7 +14,9 @@ section basiclogic coq predefined
   logic = ['a||] : a -> a -> prop end
 section tuples coq predefined
   pangoline predefined
-   type region['u||]
+   type region
+  type refty['u||]
+  logic ref_get ['u1||] : region -> refty[u1||] -> u1
   logic mk_2tuple ['a1 'b||] : a1 -> b -> a1 * b
   logic mk_3tuple ['a2 'b1 'c||] : a2 -> b1 -> c -> a2 * b1 * c
   logic mk_4tuple ['a3 'b2 'c1 'd||] : a3 -> b2 -> c1 -> d -> a3 * b2 * c1 *

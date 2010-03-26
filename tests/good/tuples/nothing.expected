@@ -1,0 +1,5 @@
+logic = ['a||] : a -> a -> prop
+logic ->  : prop -> prop -> prop
+logic y  : int
+logic z  : int
+goal g : forall (x:int). (y =[int||] z) -> (x =[int||] 1)

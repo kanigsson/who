@@ -23,6 +23,7 @@ INTERNAL
   - elimination of regions
 
 * "inference" for n-ary applications in ast.ml
+* additional Type variables for [region] and [refty]
 
 BUGS
 

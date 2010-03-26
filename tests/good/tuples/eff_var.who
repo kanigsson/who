@@ -1,0 +1,18 @@
+type region
+type refty ['u||]
+logic ref_get ['u||] : region -> 'u refty -> 'u
+
+logic get_2_1_tuple ['a 'b||] : 'a * 'b -> 'a
+logic get_2_2_tuple ['a 'b||] : 'a * 'b -> 'b
+
+
+logic = ['a||] : 'a -> 'a -> prop
+logic -> : prop -> prop -> prop
+logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
+
+logic z : int
+logic f [||'e] : <'e> -> int
+letregion r1 r2
+goal g :
+  forall (x : ref(r1,int)) (k : ref(r2,int)) (u : <r1 r2>). 
+    z = f[{r1 r2}] u -> !!x|u = !!k|u

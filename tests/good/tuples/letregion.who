@@ -1,0 +1,13 @@
+type region
+type refty ['u||]
+logic ref_get ['u||] : region -> 'u refty -> 'u
+
+logic = ['a||] : 'a -> 'a -> prop
+logic -> : prop -> prop -> prop
+logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
+
+logic y : int
+logic z : int
+letregion r
+goal g :
+  forall (x : ref(r,int)) (u : <r>). z = y -> !!x|u = 1
