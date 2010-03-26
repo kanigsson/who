@@ -51,7 +51,10 @@ section tuples
   coq predefined
   pangoline predefined
 
-  type region ['u||]
+  type region
+  type refty ['u||]
+
+  logic ref_get ['u||] : region -> 'u refty -> 'u
   logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
   logic mk_3tuple ['a 'b 'c||] : 'a -> 'b -> 'c -> 'a * 'b * 'c
   logic mk_4tuple ['a 'b 'c 'd||] :

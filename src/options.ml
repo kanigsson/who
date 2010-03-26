@@ -69,6 +69,8 @@ let opt_spec =
       " simplify map expressions";
     "--trivialgoals", Arg.Unit (append_trans RemoveTrivialGoals.theory),
       " remove trivial goals";
+    "--tuples", Arg.Unit (append_trans Tuples.theory),
+      " introduce tuples instead of maps";
     "-o", Arg.Set_string outfile,
             "<arg> use <arg> instead of default filename for output";
     "--pangoline", Arg.Unit (fun () -> backend := `Pangoline),

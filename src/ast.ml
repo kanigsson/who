@@ -21,6 +21,8 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
+(* TODO system for type inference on term application ?? *)
+
 module G = Ty.Generalize
 module PL = Predefined
 module PI = Predefined.Identifier
@@ -647,9 +649,15 @@ let get_tuple_var tl i j l =
   (predef (PI.get_tuple_id i j) (tl,[],[])) l
 
 let get_tuple i t l =
-  let tl = Ty.tuple_list t.t in
-  let n = List.length tl in
-  app (get_tuple_var tl n i l) t l
+  try
+    let tl = Ty.tuple_list t.t in
+    let n = List.length tl in
+    app (get_tuple_var tl n i l) t l
+  with Invalid_argument "tuple_list" ->
+    (* in this case, we hope that our "tuple" is a singleton, and we just return
+       it *)
+    assert (i = 1);
+    t
 
 let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
 let efflam x eff e = plam x (Ty.map eff) e
@@ -659,6 +667,10 @@ let caplam x t cap p e q =
   mk_val (Lam (x,t,cap,(p,e,q))) (Ty.caparrow t e.t e.e cap)
 let plus t1 t2 loc = appi (spredef PI.plus_id loc) t1 t2 loc
 let minus t1 t2 loc = appi (spredef PI.minus_id loc) t1 t2 loc
+let ref_get reg ref l =
+  let t = Ty.destr_refty ref.t in
+  app2 (predef PI.refget_id ([t],[],[]) l) reg ref l
+
 let one = mk_val (Const (Const.Int Big_int.unit_big_int)) Ty.int
 let succ t loc = plus t (one loc) loc
 let prev t loc = minus t (one loc) loc

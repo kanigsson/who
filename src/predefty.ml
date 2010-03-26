@@ -38,6 +38,7 @@ module Identifier = struct
   let bool_id = "bool"
   let unit_id = "unit"
   let region_id = "region"
+  let refty_id = "refty"
 end
 
 type env = Name.t Misc.StringMap.t ref

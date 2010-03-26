@@ -71,6 +71,7 @@ module Identifier = struct
   let store_id = ":="
 
 
+  let refget_id = "ref_get"
   let btrue_id = "true"
   let bfalse_id = "false"
 

@@ -81,7 +81,6 @@ let print_list sep fmt t = print_list sep print fmt t
 let arrow t1 t2 eff = Arrow (t1,t2,eff,[])
 let caparrow t1 t2 eff cap = Arrow (t1,t2,eff,cap)
 let parr t1 t2 = PureArr (t1,t2)
-let tuple tl = Tuple tl
 let const c = Const c
 let ref_ r t = Ref (r,t)
 let map e = Map e
@@ -93,8 +92,15 @@ module PI = Predefty.Identifier
 let prop = const (Const.TProp)
 let bool () = var (Predefty.var PI.bool_id)
 let unit () = var (Predefty.var PI.unit_id)
-let region x = app (Predefty.var PI.region_id) ([x],[],[])
+let region () = var (Predefty.var PI.region_id)
+let refty x = app (Predefty.var PI.refty_id) ([x],[],[])
 let int = const (Const.TInt)
+
+let tuple tl =
+  match tl with
+  | [] -> unit ()
+  | [x] -> x
+  | _ -> Tuple tl
 
 let emptymap = map (Effect.empty)
 
@@ -103,10 +109,10 @@ let is_unit t =
   | App (v,([],[],[])) -> Predefty.equal v PI.unit_id
   | _ -> false
 
-let tuple_list t = 
+let tuple_list t =
   match t with
   | Tuple l -> l
-  | _ -> invalid_arg "tuple_arity"
+  | _ -> invalid_arg "tuple_list"
 
 let tuple_arity t = List.length (tuple_list t)
 
@@ -140,19 +146,28 @@ let is_ref = function
   | Ref _ -> true
   | _ -> false
 
+let destr_ref = function
+  | Ref (_,t) -> t
+  | _ -> failwith "destr_ref"
+
+let destr_refty t =
+  match t with
+  | App (v,([t],[],[])) when Predefty.equal v PI.refty_id  -> t
+  | _ -> failwith "destr_refty"
+
 let pretype a e = parr a (parr (map e) prop)
 let posttype a b e = parr a (parr (map e) (parr (map e) (parr b prop)))
 let prepost_type a b e = tuple [pretype a e ; posttype a b e ]
 
 let node_map ?(rfun=Misc.id) ?(effectfun=Misc.id) f t =
-  let rec aux t = 
-    let t = 
+  let rec aux t =
+    let t =
       match t with
       | (Const _ ) as t -> t
       | Map e -> Map (effectfun e)
       | Tuple tl -> tuple (List.map aux tl)
       | PureArr (t1,t2) -> parr (aux t1) (aux t2)
-      | Arrow (t1,t2,e,rl) -> 
+      | Arrow (t1,t2,e,rl) ->
           caparrow (aux t1) (aux t2) (effectfun e) (List.map rfun rl)
       | Ref (r,t) -> ref_ (rfun r) (aux t)
       | App (v,i) -> app v (Inst.map aux rfun effectfun i) in
@@ -160,7 +175,7 @@ let node_map ?(rfun=Misc.id) ?(effectfun=Misc.id) f t =
   aux t
 
 let to_logic_type =
-  let f t = 
+  let f t =
     match t with
     | Arrow (t1,t2,e,_) -> prepost_type t1 t2 e
     | _ -> t
@@ -204,7 +219,7 @@ let rsubst rvl rl r =
     r
   with Found v -> v
 
-let elsubst evl effl = 
+let elsubst evl effl =
   let effectfun eff' = Effect.lsubst evl effl eff' in
   node_map ~effectfun Misc.id
 

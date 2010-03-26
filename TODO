@@ -22,11 +22,10 @@ INTERNAL
   - modelisation of effect vars by regions
   - elimination of regions
 
+* "inference" for n-ary applications in ast.ml
+
 BUGS
 
 * sequences ';' still not fixed
 * find bug with "nil" - postponed
-
-* implement "reordering"
-* remove option "no-prelude"
-* clean up tests
+* check types for well-formedness

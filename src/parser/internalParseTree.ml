@@ -67,7 +67,8 @@ type theory = decl list
 
 let mk t l = { v = t ; loc = l }
 let annot e t = mk (Annot (e,t))
-let gen g t = mk (Gen (g,t))
+let gen g t l = 
+  if Ty.Generalize.is_empty g then t else mk (Gen (g,t)) l
 
 let app t1 t2 = mk (App (t1,t2,`Infix,[]))
 let var ?(inst=[]) v = mk (Var (v,inst))
