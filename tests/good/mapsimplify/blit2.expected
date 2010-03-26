@@ -1,1 +1,2 @@
+type unit
 goal blit_correct : forall (r:prop). r
