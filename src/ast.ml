@@ -405,6 +405,7 @@ let simple_app ?(kind=`Prefix) ?(cap=[]) t1 t2 l =
     print t2 Ty.print t2.t ; invalid_arg "app" end
   else
     mk (App (t1,t2,kind,cap)) t (Effect.union t1.e (Effect.union t2.e e)) l
+
 let simple_app2 ?kind t t1 t2 loc =
   simple_app ?kind (simple_app t t1 loc) t2 loc
 let simple_appi t t1 t2 loc = simple_app2 ~kind:`Infix t t1 t2 loc
@@ -641,9 +642,41 @@ and restrict eff t l =
     | _ -> raise Exit
   with Exit -> simple_app (predef PI.restrict_id ([],[],[d; eff]) l) t l
 
+let applist ?(fix=`Prefix) l loc =
+  match l with
+  | [] | [ _ ] -> failwith "not enough arguments given"
+  | [f;a;b] when fix = `Infix -> appi f a b loc
+  | a::b::rest ->
+      List.fold_left (fun acc x -> app acc x loc) (app a b loc) rest
+
+let infer_app ?fix ?(regions=[]) ?(effects=[]) ?rty x
+  (((tvl,rl,el),ty) as scheme) tel l =
+  let ty = Ty.elsubst el effects (Ty.rlsubst rl regions ty) in
+(*
+  Myformat.printf "inferring args for %a : ∀%a.  %a with args %a@."
+  Name.print x Name.print_list tvl Ty.print ty (Myformat.print_list
+  Myformat.space (fun fmt t ->
+    Myformat.fprintf fmt "%a : %a" print t Ty.print t.t)) tel;
+*)
+  let tyl, xrty = Ty.nsplit ty in
+  if List.length tyl <> List.length tel then invalid_arg "infer_app";
+  let vars = List.fold_right Name.S.add tvl Name.S.empty in
+  let matching = Ty.matching vars in
+  let initial =
+    match rty with
+    | None -> Name.M.empty
+    | Some rty -> matching Name.M.empty xrty rty in
+  let s = List.fold_left2 matching initial tyl (List.map (fun t -> t.t) tel) in
+  let tl = List.map (fun x -> Name.M.find x s) tvl in
+  applist ?fix (var x (tl,regions,effects) scheme l :: tel) l
+
+let infer_predef ?fix ?regions ?effects ?rty id =
+  let x,t = PL.var_and_type id in
+  infer_app ?fix ?regions ?effects ?rty x t
 
 let svar s t = var s Inst.empty (G.empty,t)
-let le t1 t2 loc = simple_appi (spredef PI.le_id loc) t1 t2 loc
+let le t1 t2 loc =
+  simple_appi (spredef PI.le_id loc) t1 t2 loc
 
 let get_tuple_var tl i j l =
   (predef (PI.get_tuple_id i j) (tl,[],[])) l
@@ -665,11 +698,11 @@ let lam x t p e q =
   mk_val (Lam (x,t,[],(p,e,q))) (Ty.arrow t e.t e.e)
 let caplam x t cap p e q =
   mk_val (Lam (x,t,cap,(p,e,q))) (Ty.caparrow t e.t e.e cap)
-let plus t1 t2 loc = appi (spredef PI.plus_id loc) t1 t2 loc
+let plus t1 t2 loc =
+  infer_predef ~fix:`Infix PI.plus_id [t1;t2] loc
+
 let minus t1 t2 loc = appi (spredef PI.minus_id loc) t1 t2 loc
-let ref_get reg ref l =
-  let t = Ty.destr_refty ref.t in
-  app2 (predef PI.refget_id ([t],[],[]) l) reg ref l
+let ref_get reg ref l = infer_predef PI.refget_id [reg; ref] l
 
 let one = mk_val (Const (Const.Int Big_int.unit_big_int)) Ty.int
 let succ t loc = plus t (one loc) loc
@@ -678,16 +711,9 @@ let prev t loc = minus t (one loc) loc
 let param t e = mk (Param (t,e)) t e
 
 let mk_tuple t1 t2 loc =
-  appi (predef (PI.mk_tuple_id 2) ([t1.t;t2.t],[],[]) loc) t1 t2 loc
-
+  infer_predef (PI.mk_tuple_id 2) [t1;t2] loc
 
 let letreg l e = mk (LetReg (l,e)) e.t (Effect.rremove e.e l)
-
-let applist l loc =
-  match l with
-  | [] | [ _ ] -> failwith "not enough arguments given"
-  | a::b::rest ->
-      List.fold_left (fun acc x -> app acc x loc) (app a b loc) rest
 let andlist l loc =
   match l with
   | [] | [ _ ] -> failwith "not enough arguments given"

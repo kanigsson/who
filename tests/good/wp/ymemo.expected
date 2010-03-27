@@ -21,9 +21,9 @@ logic combine [||'e1 'e2 'e3] : <{ 'e1 'e2 }> -> <{ 'e2 'e3 }> -> <{ 'e1 'e2
 logic restrict [||'e4 'e5] : <{ 'e4 'e5 }> -> <{ 'e5 }>
 logic empty  : <{ }>
 let
-  logic ! ['a9|r1|] = (fun (x:ref(r1,a9)) -> (fun (cur:<{r1  }>) -> True))
-                      mk_2tuple[ref(r1,a9) -> <{r1  }> -> prop,ref(r1,a9) ->
+  logic ! ['a9|r1|] = mk_2tuple [ref(r1,a9) -> <{r1  }> -> prop,ref(r1,a9) ->
                       <{r1  }> -> <{r1  }> -> a9 -> prop||]
+                      (fun (x:ref(r1,a9)) -> (fun (cur:<{r1  }>) -> True))
                       (fun (x:ref(r1,a9)) ->
                       (fun (old:<{r1  }>) ->
                       (fun (cur1:<{r1  }>) ->
@@ -33,9 +33,9 @@ let
                        (!! [a9| r1| {r1  }] x cur1)))))) 
 let
   logic := ['a10|r3|] = (fun (x1:ref(r3,a10)) ->
-                        (fun (v:a10) -> (fun (cur2:<{r3  }>) -> True))
-                        mk_2tuple[a10 -> <{r3  }> -> prop,a10 -> <{r3  }> ->
+                        mk_2tuple [a10 -> <{r3  }> -> prop,a10 -> <{r3  }> ->
                         <{r3  }> -> unit -> prop||]
+                        (fun (v:a10) -> (fun (cur2:<{r3  }>) -> True))
                         (fun (v:a10) ->
                         (fun (old1:<{r3  }>) ->
                         (fun (cur3:<{r3  }>) ->
@@ -93,12 +93,12 @@ goal ymemo_correct : forall (f3:int -> int).
                      ->
                      (let
                       logic f4 =
+                                mk_2tuple [int -> <{t  }> -> prop,int -> <{t
+                                 }> -> <{t  }> -> int -> prop||]
                                 (fun (x4:int) ->
                                 (fun (cur4:<{t  }>) ->
                                 stores f3
                                 (!! [hmap[int,int||]| t| { }] table cur4)))
-                                mk_2tuple[int -> <{t  }> -> prop,int -> <{t
-                                 }> -> <{t  }> -> int -> prop||]
                                 (fun (x4:int) ->
                                 (fun (old2:<{t  }>) ->
                                 (fun (cur5:<{t  }>) ->
@@ -200,6 +200,18 @@ goal ymemo_correct : forall (f3:int -> int).
                       /\ (realizes f3 f4))
 let
   logic ymemo  = (fun (f3:int -> int) ->
+                 mk_2tuple [((((int -> <{t  }> -> prop) * (int -> <{t  }> ->
+                 <{t  }> -> int -> prop)) -> <{ }> -> prop) * (((int -> <{t
+                  }> -> prop) * (int -> <{t  }> -> <{t  }> -> int ->
+                 prop)) -> <{ }> -> <{ }> -> ((int -> <{t  }> -> prop) *
+                 (int -> <{t  }> -> <{t  }> -> int -> prop)) -> prop)) ->
+                 <{ }> -> prop,((((int -> <{t  }> -> prop) * (int -> <{t
+                  }> -> <{t  }> -> int -> prop)) -> <{ }> -> prop) *
+                 (((int -> <{t  }> -> prop) * (int -> <{t  }> -> <{t  }> ->
+                 int -> prop)) -> <{ }> -> <{ }> -> ((int -> <{t  }> ->
+                 prop) * (int -> <{t  }> -> <{t  }> -> int -> prop)) ->
+                 prop)) -> <{ }> -> <{ }> -> ((int -> <{t  }> -> prop) *
+                 (int -> <{t  }> -> <{t  }> -> int -> prop)) -> prop||]
                  (fun (ff:(((int -> <{t  }> -> prop) * (int -> <{t  }> -> <{t
                   }> -> int -> prop)) -> <{ }> -> prop) * (((int -> <{t
                   }> -> prop) * (int -> <{t  }> -> <{t  }> -> int ->
@@ -224,18 +236,6 @@ let
                      }> -> <{t  }> -> int -> prop)) -> prop||] ff k1 empty
                     empty anon8)
                    -> (realizes f3 anon8)))))
-                 mk_2tuple[((((int -> <{t  }> -> prop) * (int -> <{t  }> ->
-                 <{t  }> -> int -> prop)) -> <{ }> -> prop) * (((int -> <{t
-                  }> -> prop) * (int -> <{t  }> -> <{t  }> -> int ->
-                 prop)) -> <{ }> -> <{ }> -> ((int -> <{t  }> -> prop) *
-                 (int -> <{t  }> -> <{t  }> -> int -> prop)) -> prop)) ->
-                 <{ }> -> prop,((((int -> <{t  }> -> prop) * (int -> <{t
-                  }> -> <{t  }> -> int -> prop)) -> <{ }> -> prop) *
-                 (((int -> <{t  }> -> prop) * (int -> <{t  }> -> <{t  }> ->
-                 int -> prop)) -> <{ }> -> <{ }> -> ((int -> <{t  }> ->
-                 prop) * (int -> <{t  }> -> <{t  }> -> int -> prop)) ->
-                 prop)) -> <{ }> -> <{ }> -> ((int -> <{t  }> -> prop) *
-                 (int -> <{t  }> -> <{t  }> -> int -> prop)) -> prop||]
                  (fun (ff:(((int -> <{t  }> -> prop) * (int -> <{t  }> -> <{t
                   }> -> int -> prop)) -> <{ }> -> prop) * (((int -> <{t
                   }> -> prop) * (int -> <{t  }> -> <{t  }> -> int ->

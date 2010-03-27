@@ -38,11 +38,11 @@ section basiclogic coq predefined
     pangoline predefined
      logic !! ['a7|r|'e] : ref(r,a7) -> <{ 'e }> -> a7
     let
-      logic ! ['a8|r1|] = (fun (x:ref(r1,a8)) ->
-                          (fun (cur:<{r1  }>) -> True))
-                          mk_2tuple[ref(r1,a8) -> <{r1  }> ->
+      logic ! ['a8|r1|] = mk_2tuple [ref(r1,a8) -> <{r1  }> ->
                           prop,ref(r1,a8) -> <{r1  }> -> <{r1  }> -> a8 ->
                           prop||]
+                          (fun (x:ref(r1,a8)) ->
+                          (fun (cur:<{r1  }>) -> True))
                           (fun (x:ref(r1,a8)) ->
                           (fun (old:<{r1  }>) ->
                           (fun (cur1:<{r1  }>) ->
@@ -52,18 +52,18 @@ section basiclogic coq predefined
                            (!! [a8| r1| {r1  }] x cur1)))))) 
     let
       logic := ['a9|r3|] = (fun (x1:ref(r3,a9)) ->
+                           mk_2tuple [a9 -> <{r3  }> -> prop,a9 -> <{r3
+                            }> -> <{r3  }> -> unit -> prop||]
                            (fun (v:a9) -> (fun (cur2:<{r3  }>) -> True))
-                           mk_2tuple[a9 -> <{r3  }> -> prop,a9 -> <{r3  }> ->
-                           <{r3  }> -> unit -> prop||]
                            (fun (v:a9) ->
                            (fun (old1:<{r3  }>) ->
                            (fun (cur3:<{r3  }>) ->
                            (fun (anon:unit) ->
                            v =[a9||] (!! [a9| r3| {r3  }] x1 cur3)))))) 
     let
-      logic ref ['a10|r4|] = (fun (v1:a10) -> (fun (cur4:<{r4  }>) -> True))
-                             mk_2tuple[a10 -> <{r4  }> -> prop,a10 -> <{r4
+      logic ref ['a10|r4|] = mk_2tuple [a10 -> <{r4  }> -> prop,a10 -> <{r4
                               }> -> <{r4  }> -> ref(r4,a10) -> prop||]
+                             (fun (v1:a10) -> (fun (cur4:<{r4  }>) -> True))
                              (fun (v1:a10) ->
                              (fun (old2:<{r4  }>) ->
                              (fun (cur5:<{r4  }>) ->
@@ -79,6 +79,11 @@ section basiclogic coq predefined
     logic forto [||'e6] = (fun (inv:int -> <{ 'e6 }> -> prop) ->
                           (fun (start:int) ->
                           (fun (end_:int) ->
+                          mk_2tuple [((int -> <{ 'e6 }> -> prop) * (int ->
+                          <{ 'e6 }> -> <{ 'e6 }> -> unit -> prop)) -> <{ 'e6
+                          }> -> prop,((int -> <{ 'e6 }> -> prop) * (int ->
+                          <{ 'e6 }> -> <{ 'e6 }> -> unit -> prop)) -> <{ 'e6
+                          }> -> <{ 'e6 }> -> unit -> prop||]
                           (fun (f:(int -> <{ 'e6 }> -> prop) * (int -> <{ 'e6
                           }> -> <{ 'e6 }> -> unit -> prop)) ->
                           (fun (cur6:<{ 'e6 }>) ->
@@ -95,11 +100,6 @@ section basiclogic coq predefined
                                (post [int -> <{ 'e6 }> -> prop,int -> <{ 'e6
                                 }> -> <{ 'e6 }> -> unit -> prop||] f i m n tt)
                                -> (inv (i + 1) n))))))))
-                          mk_2tuple[((int -> <{ 'e6 }> -> prop) * (int ->
-                          <{ 'e6 }> -> <{ 'e6 }> -> unit -> prop)) -> <{ 'e6
-                          }> -> prop,((int -> <{ 'e6 }> -> prop) * (int ->
-                          <{ 'e6 }> -> <{ 'e6 }> -> unit -> prop)) -> <{ 'e6
-                          }> -> <{ 'e6 }> -> unit -> prop||]
                           (fun (f:(int -> <{ 'e6 }> -> prop) * (int -> <{ 'e6
                           }> -> <{ 'e6 }> -> unit -> prop)) ->
                           (fun (old3:<{ 'e6 }>) ->
@@ -110,6 +110,12 @@ section basiclogic coq predefined
     logic fordownto [||'e7] = (fun (inv1:int -> <{ 'e7 }> -> prop) ->
                               (fun (start1:int) ->
                               (fun (end_1:int) ->
+                              mk_2tuple [((int -> <{ 'e7 }> -> prop) *
+                              (int -> <{ 'e7 }> -> <{ 'e7 }> -> unit ->
+                              prop)) -> <{ 'e7 }> -> prop,((int -> <{ 'e7
+                              }> -> prop) * (int -> <{ 'e7 }> -> <{ 'e7 }> ->
+                              unit -> prop)) -> <{ 'e7 }> -> <{ 'e7 }> ->
+                              unit -> prop||]
                               (fun (f1:(int -> <{ 'e7 }> -> prop) * (int ->
                               <{ 'e7 }> -> <{ 'e7 }> -> unit -> prop)) ->
                               (fun (cur8:<{ 'e7 }>) ->
@@ -128,12 +134,6 @@ section basiclogic coq predefined
                                     <{ 'e7 }> -> <{ 'e7 }> -> unit -> prop||]
                                     f1 i1 m1 n1 tt)
                                    -> (inv1 (i1 - 1) n1))))))))
-                              mk_2tuple[((int -> <{ 'e7 }> -> prop) * (int ->
-                              <{ 'e7 }> -> <{ 'e7 }> -> unit -> prop)) ->
-                              <{ 'e7 }> -> prop,((int -> <{ 'e7 }> -> prop) *
-                              (int -> <{ 'e7 }> -> <{ 'e7 }> -> unit ->
-                              prop)) -> <{ 'e7 }> -> <{ 'e7 }> -> unit ->
-                              prop||]
                               (fun (f1:(int -> <{ 'e7 }> -> prop) * (int ->
                               <{ 'e7 }> -> <{ 'e7 }> -> unit -> prop)) ->
                               (fun (old4:<{ 'e7 }>) ->
@@ -346,7 +346,9 @@ section basiclogic coq predefined
                            (get [a31||] (ofs + k2)
                             (!! [array[a31||]| r5| {r5 r6  }] ar cur10)))))))
                         __start __end)
-                       ((fun (i8:int) ->
+                       (mk_2tuple [int -> <{r5 r6  }> -> prop,int -> <{r5 r6
+                         }> -> <{r5 r6  }> -> unit -> prop||]
+                        (fun (i8:int) ->
                         (fun (cur11:<{r5 r6  }>) ->
                         ((__end <= i8) /\ (i8 <= __start)) /\
                         (((anon3 =[array[a31||]||]
@@ -364,8 +366,6 @@ section basiclogic coq predefined
                             =[a31||]
                             (get [a31||] (ofs + k3)
                              (!! [array[a31||]| r5| {r5 r6  }] ar cur11))))))))
-                        mk_2tuple[int -> <{r5 r6  }> -> prop,int -> <{r5 r6
-                         }> -> <{r5 r6  }> -> unit -> prop||]
                         (fun (i9:int) ->
                         (fun (anon7:<{r5 r6  }>) ->
                         (fun (cur12:<{r5 r6  }>) ->
@@ -412,7 +412,9 @@ section basiclogic coq predefined
                            (get [a31||] (ofs + k5)
                             (!! [array[a31||]| r5| {r5 r6  }] ar cur13)))))))
                         __start __end)
-                       ((fun (i11:int) ->
+                       (mk_2tuple [int -> <{r5 r6  }> -> prop,int -> <{r5 r6
+                         }> -> <{r5 r6  }> -> unit -> prop||]
+                        (fun (i11:int) ->
                         (fun (cur14:<{r5 r6  }>) ->
                         ((__end <= i11) /\ (i11 <= __start)) /\
                         (((anon3 =[array[a31||]||]
@@ -430,8 +432,6 @@ section basiclogic coq predefined
                             =[a31||]
                             (get [a31||] (ofs + k6)
                              (!! [array[a31||]| r5| {r5 r6  }] ar cur14))))))))
-                        mk_2tuple[int -> <{r5 r6  }> -> prop,int -> <{r5 r6
-                         }> -> <{r5 r6  }> -> unit -> prop||]
                         (fun (i12:int) ->
                         (fun (anon9:<{r5 r6  }>) ->
                         (fun (cur15:<{r5 r6  }>) ->
@@ -582,7 +582,9 @@ section basiclogic coq predefined
                            (get [a31||] (ofs + k11)
                             (!! [array[a31||]| r5| {r5 r6  }] ar cur16)))))))
                         __start1 __end1)
-                       ((fun (i15:int) ->
+                       (mk_2tuple [int -> <{r5 r6  }> -> prop,int -> <{r5 r6
+                         }> -> <{r5 r6  }> -> unit -> prop||]
+                        (fun (i15:int) ->
                         (fun (cur17:<{r5 r6  }>) ->
                         ((__start1 <= i15) /\ (i15 <= __end1)) /\
                         (((anon3 =[array[a31||]||]
@@ -600,8 +602,6 @@ section basiclogic coq predefined
                             =[a31||]
                             (get [a31||] (ofs + k12)
                              (!! [array[a31||]| r5| {r5 r6  }] ar cur17))))))))
-                        mk_2tuple[int -> <{r5 r6  }> -> prop,int -> <{r5 r6
-                         }> -> <{r5 r6  }> -> unit -> prop||]
                         (fun (i16:int) ->
                         (fun (anon13:<{r5 r6  }>) ->
                         (fun (cur18:<{r5 r6  }>) ->
@@ -648,7 +648,9 @@ section basiclogic coq predefined
                            (get [a31||] (ofs + k14)
                             (!! [array[a31||]| r5| {r5 r6  }] ar cur19)))))))
                         __start1 __end1)
-                       ((fun (i18:int) ->
+                       (mk_2tuple [int -> <{r5 r6  }> -> prop,int -> <{r5 r6
+                         }> -> <{r5 r6  }> -> unit -> prop||]
+                        (fun (i18:int) ->
                         (fun (cur20:<{r5 r6  }>) ->
                         ((__start1 <= i18) /\ (i18 <= __end1)) /\
                         (((anon3 =[array[a31||]||]
@@ -666,8 +668,6 @@ section basiclogic coq predefined
                             =[a31||]
                             (get [a31||] (ofs + k15)
                              (!! [array[a31||]| r5| {r5 r6  }] ar cur20))))))))
-                        mk_2tuple[int -> <{r5 r6  }> -> prop,int -> <{r5 r6
-                         }> -> <{r5 r6  }> -> unit -> prop||]
                         (fun (i19:int) ->
                         (fun (anon15:<{r5 r6  }>) ->
                         (fun (cur21:<{r5 r6  }>) ->
@@ -712,6 +712,8 @@ section basiclogic coq predefined
            (fun (ar1:ref(r6,array[a31||])) ->
            (fun (ofs:int) ->
            (fun (ofs1:int) ->
+           mk_2tuple [int -> <{r5 r6  }> -> prop,int -> <{r5 r6  }> -> <{r5
+           r6  }> -> unit -> prop||]
            (fun (l2:int) ->
            (fun (cur22:<{r5 r6  }>) ->
            ((((0 <= l2) /\ (0 <= ofs)) /\ (0 <= ofs1)) /\
@@ -720,8 +722,6 @@ section basiclogic coq predefined
            /\
            (ofs1 <=
             ((len [a31||] (!! [array[a31||]| r6| {r5 r6  }] ar1 cur22)) - l2))))
-           mk_2tuple[int -> <{r5 r6  }> -> prop,int -> <{r5 r6  }> -> <{r5 r6
-            }> -> unit -> prop||]
            (fun (l2:int) ->
            (fun (old5:<{r5 r6  }>) ->
            (fun (cur23:<{r5 r6  }>) ->

@@ -64,8 +64,8 @@ let rec recon' = function
               (app2 inv' next curvar l) l) l) l in
       let bodyfun = lam i Ty.int pre body post l in
       (* forvar inv start end bodyfun *)
-      (app2 (app2 
-        (var dir ([],[],[e]) (Ty.forty ()) l) inv' sv l) 
+      (app2 (app2
+        (var dir ([],[],[e]) (Ty.forty ()) l) inv' sv l)
         ev bodyfun l).v
   | I.HoareTriple (p,e,q) -> HoareTriple (recon p, recon e, recon q)
 (*

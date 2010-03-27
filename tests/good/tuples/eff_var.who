@@ -1,6 +1,6 @@
-type region
-type refty ['u||]
-logic ref_get ['u||] : region -> 'u refty -> 'u
+type region ['u||]
+type refty ['reg 'ty||]
+logic ref_get ['reg 'u||] : 'reg region -> ('reg,'u) refty -> 'u
 
 logic get_2_1_tuple ['a 'b||] : 'a * 'b -> 'a
 logic get_2_2_tuple ['a 'b||] : 'a * 'b -> 'b

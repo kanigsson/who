@@ -86,14 +86,15 @@ let ref_ r t = Ref (r,t)
 let map e = Map e
 let app v i = App (v,i)
 let var v = App (v,Inst.empty)
+let ty_app v tl = app v (tl,[],[])
 
 module PI = Predefty.Identifier
 
 let prop = const (Const.TProp)
 let bool () = var (Predefty.var PI.bool_id)
 let unit () = var (Predefty.var PI.unit_id)
-let region () = var (Predefty.var PI.region_id)
-let refty x = app (Predefty.var PI.refty_id) ([x],[],[])
+let region x = ty_app (Predefty.var PI.region_id) [x]
+let refty x y = ty_app (Predefty.var PI.refty_id) [x;y]
 let int = const (Const.TInt)
 
 let tuple tl =
@@ -130,7 +131,22 @@ let split t =
   match t with
   | Arrow (t1,t2,_,_) -> t1, t2
   | PureArr (t1,t2) -> t1, t2
-  | _ -> failwith "split"
+  | _ -> invalid_arg "split"
+
+let pure_split t = 
+  match t with
+  | PureArr (t1,t2) -> t1, t2
+  | _ -> invalid_arg "pure_split"
+
+let nsplit t = 
+  let rec aux acc t = 
+    try  
+      let t1,t2 = pure_split t in
+      aux (t1::acc) t2
+    with Invalid_argument _ -> acc, t
+  in
+  let tl, t = aux [] t in
+  List.rev tl, t
 
 let arg t = fst (split t)
 let result t = snd (split t)
@@ -148,12 +164,7 @@ let is_ref = function
 
 let destr_ref = function
   | Ref (_,t) -> t
-  | _ -> failwith "destr_ref"
-
-let destr_refty t =
-  match t with
-  | App (v,([t],[],[])) when Predefty.equal v PI.refty_id  -> t
-  | _ -> failwith "destr_refty"
+  | _ -> invalid_arg "destr_ref"
 
 let pretype a e = parr a (parr (map e) prop)
 let posttype a b e = parr a (parr (map e) (parr (map e) (parr b prop)))
@@ -182,32 +193,26 @@ let to_logic_type =
   in
   node_map f
 
-let build_tvar_map el effl =
+let build_var_map nl il =
   try
-  List.fold_left2 (fun acc k v -> Name.M.add k v acc) Name.M.empty el effl
-  with Invalid_argument _ ->
+  List.fold_left2 (fun acc k v -> Name.M.add k v acc) Name.M.empty nl il
+  with Invalid_argument _ -> invalid_arg "build_var_map"
+(*
     failwith (Myformat.sprintf
       "not the right number of type arguments: expecting %a but %a is
-      given.@." Name.print_list el (print_list Myformat.comma) effl)
+      given.@." Name.print_list nl (print_list Myformat.comma) il)
+*)
 
 let tlsubst xl tl =
-  let map = build_tvar_map xl tl in
+  let map = build_var_map xl tl in
   let f t = match t with
   | App (y,([],[],[])) as t ->
       begin try Name.M.find y map with Not_found -> t end
   | _ -> t in
   node_map f
 
-let build_rvar_map el effl =
-  try
-    List.fold_left2 (fun acc k v -> Name.M.add k v acc) Name.M.empty el effl
-  with Invalid_argument _ ->
-    failwith (Myformat.sprintf
-      "not the right number of region arguments: expecting %a but %a is
-      given.@." Name.print_list el Name.print_list effl)
-
 let rlsubst rvl rl =
-  let map = build_rvar_map rvl rl in
+  let map = build_var_map rvl rl in
   let rfun r = try Name.M.find r map with Not_found -> r in
   let effectfun e = Effect.rmap rfun e in
   node_map ~rfun ~effectfun Misc.id
@@ -333,3 +338,30 @@ let from_logic_pair t =
   | Tuple [_;PureArr (t1,PureArr (Map e, PureArr (_, PureArr (t2, _))))] ->
       t1, t2, e
   | _ -> assert false
+
+exception TypeMismatch
+
+let matching vars =
+  let rec matching s ty1 ty2 =
+    match ty1, ty2 with
+    | App (v,([],[],[])), _ when Name.S.mem v vars ->
+        begin try if equal (Name.M.find v s) ty2 then s else raise TypeMismatch
+        with Not_found -> Name.M.add v ty2 s end
+    | Const c1, Const c2 when Const.equal_t c1 c2 -> s
+    | Map e1, Map e2 when Effect.equal e1 e2 -> s
+    | Tuple tl1, Tuple tl2 when List.length tl1 = List.length tl2 -> 
+        List.fold_left2 matching s tl1 tl2
+    | PureArr (ta1,ta2), PureArr (tb1,tb2) -> 
+        let s = matching s ta1 tb1 in
+        matching s ta2 tb2
+    | Ref (r1,t1), Ref (r2,t2) when Name.equal r1 r2 -> matching s t1 t2
+    | App (v1,i1), App (v2,i2) when Name.equal v1 v2 ->
+        inst_matching s i1 i2
+    | _ -> raise TypeMismatch
+  and inst_matching s (tl1,rl1,el1) (tl2,rl2,el2) = 
+    if ExtList.equal Name.equal rl1 rl2 && ExtList.equal Effect.equal el1 el2
+      && List.length tl1 = List.length tl2 then
+        List.fold_left2 matching s tl1 tl2
+    else raise TypeMismatch
+  in
+  matching

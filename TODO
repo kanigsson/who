@@ -24,6 +24,8 @@ INTERNAL
 
 * "inference" for n-ary applications in ast.ml
 * additional Type variables for [region] and [refty]
+* "inference" for partial effect instantiations:
+  example: eff_var2.who
 
 BUGS
 

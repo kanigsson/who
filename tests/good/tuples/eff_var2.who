@@ -1,6 +1,6 @@
-type region
-type refty ['u||]
-logic ref_get ['u||] : region -> 'u refty -> 'u
+type region ['u||]
+type refty ['reg 'ty||]
+logic ref_get ['reg 'u||] : 'reg region -> ('reg,'u) refty -> 'u
 
 logic get_2_1_tuple ['a 'b||] : 'a * 'b -> 'a
 logic get_2_2_tuple ['a 'b||] : 'a * 'b -> 'b
@@ -11,8 +11,8 @@ logic -> : prop -> prop -> prop
 logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
 
 logic z : int
-logic f [|r|'e] : ref(r,int) ->  <r 'e> -> int
-letregion r1 r2
+logic f [|a|'e] : ref(a,int) ->  <a 'e> -> int
+letregion b c
 goal g :
-  forall (x : ref(r1,int)) (k : ref(r2,int)) (u : <r1 r2>).
-    z = f[{r2}] x u -> !!x|u = !!k|u
+  forall (x : ref(b,int)) (k : ref(c,int)) (u : <b c>).
+    z = f[{c}] x u -> !!x|u = !!k|u

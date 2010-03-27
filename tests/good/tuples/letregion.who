@@ -1,7 +1,7 @@
-type region
-type refty ['u||]
-logic ref_get ['u||] : region -> 'u refty -> 'u
+type region ['u||]
+type refty ['reg 'ty||]
 
+logic ref_get ['reg 'u||] : 'reg region -> ('reg,'u) refty -> 'u
 logic = ['a||] : 'a -> 'a -> prop
 logic -> : prop -> prop -> prop
 logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a

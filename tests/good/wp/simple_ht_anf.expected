@@ -27,7 +27,11 @@ goal f_correct : forall (g:(unit -> <{ }> -> prop) * (unit -> <{ }> ->
                     unit -> prop||] g tt empty empty tt)
                    -> (3 < 6)))
 let
-  logic f  = (fun (g:(unit -> <{ }> -> prop) * (unit -> <{ }> -> <{ }> ->
+  logic f  = mk_2tuple [((unit -> <{ }> -> prop) * (unit -> <{ }> -> <{ }> ->
+             unit -> prop)) -> <{ }> -> prop,((unit -> <{ }> -> prop) *
+             (unit -> <{ }> -> <{ }> -> unit -> prop)) -> <{ }> -> <{ }> ->
+             unit -> prop||]
+             (fun (g:(unit -> <{ }> -> prop) * (unit -> <{ }> -> <{ }> ->
              unit -> prop)) ->
              (fun (cur:<{ }>) ->
              (0 < 5) ->
@@ -37,10 +41,6 @@ let
               ((snd [unit -> <{ }> -> prop,unit -> <{ }> -> <{ }> -> unit ->
                 prop||] g tt empty empty tt)
                -> (3 < 6)))))
-             mk_2tuple[((unit -> <{ }> -> prop) * (unit -> <{ }> -> <{ }> ->
-             unit -> prop)) -> <{ }> -> prop,((unit -> <{ }> -> prop) *
-             (unit -> <{ }> -> <{ }> -> unit -> prop)) -> <{ }> -> <{ }> ->
-             unit -> prop||]
              (fun (g:(unit -> <{ }> -> prop) * (unit -> <{ }> -> <{ }> ->
              unit -> prop)) ->
              (fun (old:<{ }>) ->

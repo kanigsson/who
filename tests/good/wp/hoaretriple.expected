@@ -11,9 +11,9 @@ logic fst ['a2 'b1||] : (a2 * b1) -> a2
 logic snd ['a3 'b2||] : (a3 * b2) -> b2
 logic !! ['a4|r|'e5] : ref(r,a4) -> <{r  'e5 }> -> a4
 let
-  logic ! ['a5|r1|] = (fun (x:ref(r1,a5)) -> (fun (cur:<{r1  }>) -> True))
-                      mk_2tuple[ref(r1,a5) -> <{r1  }> -> prop,ref(r1,a5) ->
+  logic ! ['a5|r1|] = mk_2tuple [ref(r1,a5) -> <{r1  }> -> prop,ref(r1,a5) ->
                       <{r1  }> -> <{r1  }> -> a5 -> prop||]
+                      (fun (x:ref(r1,a5)) -> (fun (cur:<{r1  }>) -> True))
                       (fun (x:ref(r1,a5)) ->
                       (fun (old:<{r1  }>) ->
                       (fun (cur1:<{r1  }>) ->
@@ -35,6 +35,11 @@ let
   logic forto [||'e6] = (fun (inv:int -> <{ 'e6 }> -> prop) ->
                         (fun (start:int) ->
                         (fun (end_:int) ->
+                        mk_2tuple [((int -> <{ 'e6 }> -> prop) * (int ->
+                        <{ 'e6 }> -> <{ 'e6 }> -> unit -> prop)) -> <{ 'e6
+                        }> -> prop,((int -> <{ 'e6 }> -> prop) * (int ->
+                        <{ 'e6 }> -> <{ 'e6 }> -> unit -> prop)) -> <{ 'e6
+                        }> -> <{ 'e6 }> -> unit -> prop||]
                         (fun (f:(int -> <{ 'e6 }> -> prop) * (int -> <{ 'e6
                         }> -> <{ 'e6 }> -> unit -> prop)) ->
                         (fun (cur2:<{ 'e6 }>) ->
@@ -51,11 +56,6 @@ let
                              (post [int -> <{ 'e6 }> -> prop,int -> <{ 'e6
                               }> -> <{ 'e6 }> -> unit -> prop||] f i m n tt)
                              -> (inv (i + 1) n))))))))
-                        mk_2tuple[((int -> <{ 'e6 }> -> prop) * (int ->
-                        <{ 'e6 }> -> <{ 'e6 }> -> unit -> prop)) -> <{ 'e6
-                        }> -> prop,((int -> <{ 'e6 }> -> prop) * (int ->
-                        <{ 'e6 }> -> <{ 'e6 }> -> unit -> prop)) -> <{ 'e6
-                        }> -> <{ 'e6 }> -> unit -> prop||]
                         (fun (f:(int -> <{ 'e6 }> -> prop) * (int -> <{ 'e6
                         }> -> <{ 'e6 }> -> unit -> prop)) ->
                         (fun (old1:<{ 'e6 }>) ->
@@ -202,15 +202,15 @@ goal iter_correct : forall ['a11|t|'e7]. forall (inv1:<{t  'e7 }> -> int ->
                                                 (fun (i3:int) ->
                                                 (fun (cur4:<{t  'e7 }>) ->
                                                 inv1 cur4 i3)) __start __end)
-                                               ((fun (i4:int) ->
+                                               (mk_2tuple [int -> <{t  'e7
+                                                }> -> prop,int -> <{t  'e7
+                                                }> -> <{t  'e7 }> -> unit ->
+                                                prop||]
+                                                (fun (i4:int) ->
                                                 (fun (cur5:<{t  'e7 }>) ->
                                                 ((__start <= i4) /\
                                                  (i4 <= __end))
                                                 /\ (inv1 cur5 i4)))
-                                                mk_2tuple[int -> <{t  'e7
-                                                }> -> prop,int -> <{t  'e7
-                                                }> -> <{t  'e7 }> -> unit ->
-                                                prop||]
                                                 (fun (i5:int) ->
                                                 (fun (anon4:<{t  'e7 }>) ->
                                                 (fun (cur6:<{t  'e7 }>) ->
@@ -233,15 +233,15 @@ goal iter_correct : forall ['a11|t|'e7]. forall (inv1:<{t  'e7 }> -> int ->
                                                 (fun (i6:int) ->
                                                 (fun (cur7:<{t  'e7 }>) ->
                                                 inv1 cur7 i6)) __start __end)
-                                               ((fun (i7:int) ->
+                                               (mk_2tuple [int -> <{t  'e7
+                                                }> -> prop,int -> <{t  'e7
+                                                }> -> <{t  'e7 }> -> unit ->
+                                                prop||]
+                                                (fun (i7:int) ->
                                                 (fun (cur8:<{t  'e7 }>) ->
                                                 ((__start <= i7) /\
                                                  (i7 <= __end))
                                                 /\ (inv1 cur8 i7)))
-                                                mk_2tuple[int -> <{t  'e7
-                                                }> -> prop,int -> <{t  'e7
-                                                }> -> <{t  'e7 }> -> unit ->
-                                                prop||]
                                                 (fun (i8:int) ->
                                                 (fun (anon6:<{t  'e7 }>) ->
                                                 (fun (cur9:<{t  'e7 }>) ->
@@ -258,6 +258,12 @@ goal iter_correct : forall ['a11|t|'e7]. forall (inv1:<{t  'e7 }> -> int ->
 let
   logic iter ['a11|t|'e7] = (fun (inv1:<{t  'e7 }> -> int -> prop) ->
                             (fun (ar:ref(t,array[a11||])) ->
+                            mk_2tuple [((a11 -> <{t  'e7 }> -> prop) *
+                            (a11 -> <{t  'e7 }> -> <{t  'e7 }> -> unit ->
+                            prop)) -> <{t  'e7 }> -> prop,((a11 -> <{t  'e7
+                            }> -> prop) * (a11 -> <{t  'e7 }> -> <{t  'e7
+                            }> -> unit -> prop)) -> <{t  'e7 }> -> <{t  'e7
+                            }> -> unit -> prop||]
                             (fun (f1:(a11 -> <{t  'e7 }> -> prop) * (a11 ->
                             <{t  'e7 }> -> <{t  'e7 }> -> unit -> prop)) ->
                             (fun (cur10:<{t  'e7 }>) ->
@@ -296,12 +302,6 @@ let
                                     (combine [|| { 'e7 } {t  } { }] s9 s10)
                                     s11 tt)
                                    -> (inv1 s11 (i9 + 1)))))))))))
-                            mk_2tuple[((a11 -> <{t  'e7 }> -> prop) * (a11 ->
-                            <{t  'e7 }> -> <{t  'e7 }> -> unit -> prop)) ->
-                            <{t  'e7 }> -> prop,((a11 -> <{t  'e7 }> ->
-                            prop) * (a11 -> <{t  'e7 }> -> <{t  'e7 }> ->
-                            unit -> prop)) -> <{t  'e7 }> -> <{t  'e7 }> ->
-                            unit -> prop||]
                             (fun (f1:(a11 -> <{t  'e7 }> -> prop) * (a11 ->
                             <{t  'e7 }> -> <{t  'e7 }> -> unit -> prop)) ->
                             (fun (old2:<{t  'e7 }>) ->

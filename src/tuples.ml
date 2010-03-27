@@ -59,7 +59,7 @@ end
 open Ast
 
 let effect_lists_to_type_list env (rl,el) =
-  let rt = List.map (fun _ -> Ty.region ()) rl in
+  let rt = List.map (fun x -> Ty.region (Env.rlookup env x)) rl in
   let et = List.map (Env.elookup env) el in
   rt@et
 
@@ -72,10 +72,10 @@ let get_to_select reg ref dom m l =
   ref_get (get_tuple i m l) ref l
 
 let tyfun env =
-  let f t =
+  let f t : Ty.t =
     match t with
     | Ty.Map e -> effect_to_tuple_type env e
-    | Ty.Ref (_,t) -> Ty.refty t
+    | Ty.Ref (r,t) -> Ty.refty (Env.rlookup env r) t
     | _ -> t in
   Ty.node_map f
 
@@ -99,7 +99,8 @@ let rec term env t =
       | Var (v,(tl,rl,el)) ->
           let rl = List.map (Env.rlookup env) rl in
           let el = List.map (effect_to_tuple_type env) el in
-          var_i v (tl@(rl@el),[],[]) (tyfun env t.t) l
+          let tl = tl@(rl@el) in
+          var_i v (tl,[],[]) (tyfun env t.t) l
       | Quant (k,t,b) ->
           let x,f = vopen b in
           squant k x (tyfun env t) (term env f) l
@@ -108,10 +109,6 @@ let rec term env t =
           gen g (term env t) l
       | _ -> assert false
 (*
-      | Gen (g,t) ->
-          let env, g = genbind g env (fun r -> find_type r t) in
-          let t = term env t in
-          gen g t env.l
       | Let (g ,e1,b,r) ->
           let x,e2 = vopen b in
           let env', g = genbind g env (fun r -> find_type r e1) in
