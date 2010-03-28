@@ -81,7 +81,7 @@ let rec recon' = function
       f.v
 *)
   | I.LetReg (vl,e) -> LetReg (vl,recon e)
-  | I.Annot (e,t) -> Annot (recon e, t)
+  | I.Annot (e,t) -> (recon e).v
   | I.Gen (g,e) -> Gen (g,recon e)
 and get_pre (_,x) =
   match x with

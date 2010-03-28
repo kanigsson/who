@@ -199,7 +199,7 @@ let rec term env t =
           varbind env (k :> [`EX | `FA | `LAM ]) x t e l
       | Ite (e1,e2,e3) ->
           ite (term env e1) (term env e2) (term env e3) l
-      | Lam _ | Annot _ | LetReg _ | Param _ | HoareTriple _ -> 
+      | Lam _ | LetReg _ | Param _ | HoareTriple _ ->
           assert false
 and genbind (tvl,rl,el) env find_type =
     let env = List.fold_left (fun env r ->

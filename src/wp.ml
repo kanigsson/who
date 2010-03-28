@@ -54,7 +54,7 @@ let rec lift_value v =
       let x,f = sopen b in
       let_ g (lift_value e1) x (lift_value f) Const.LogicDef l
   | HoareTriple (p,e,q) -> bodyfun p e q
-  | Let _ | LetReg _ | Gen _ | Param _ | Annot _ | Ite _ ->
+  | Let _ | LetReg _ | Gen _ | Param _ | Ite _ ->
       error (Myformat.sprintf "not a value: %a" print v) l
 
 and correct v =
@@ -69,7 +69,7 @@ and correct v =
       and_ (gen g (correct e1) l)
         (let_ g (lift_value e1) x (correct e2) Const.LogicDef l) l
   | Let _ | LetReg _ | Gen _ | Param _
-  | Annot _ | Ite _ | HoareTriple _ ->
+  | Ite _ | HoareTriple _ ->
       Myformat.printf "correct: not a value: %a@." print v;
       assert false
 and scan f =

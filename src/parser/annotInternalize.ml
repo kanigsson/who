@@ -90,7 +90,11 @@ let rec term logic env (t : I.t) =
       letreg nrl (term logic env e) l
   | I.Ite (e1, e2, e3) ->
       ite ~logic (term logic env e1) (term logic env e2) (term logic env e3) l
-  | I.Annot (e,t) -> annot (term logic env e) (ty env t)
+  | I.Annot (e,t) ->
+      let e = term logic env e in
+      let t = ty env t in
+      assert (Ty.equal t e.t);
+      e
   | I.Gen (g,e) ->
       let env, g = Env.add_gen env g in
       gen g (term logic env e) l

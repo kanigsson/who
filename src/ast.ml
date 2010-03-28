@@ -37,7 +37,6 @@ type node =
   | Let of G.t * t * t Name.bind * isrec
   | PureFun of Ty.t * t Name.bind
   | Ite of t * t * t
-  | Annot of t * Ty.t
   | Quant of [`FA | `EX ] * Ty.t * t Name.bind
   | Param of Ty.t * Effect.t
   | Gen of G.t *  t
@@ -65,7 +64,6 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
     | Param (t,e) -> Param (tyfun t, effectfun e)
     | Var (v,i) -> varfun v (Inst.map tyfun rvarfun effectfun i)
     | App (t1,t2,p,cap) -> App (aux t1, aux t2, p, List.map rvarfun cap)
-    | Annot (e,t) -> Annot (aux e, tyfun t)
     | Lam (x,t,cap,b) ->
         Lam (x,tyfun t, List.map rvarfun cap, body b )
     | LetReg (l,e) -> LetReg (l,aux e)
@@ -106,7 +104,7 @@ let rec equal' a b =
   | PureFun (t1,b1), PureFun (t2,b2) -> Ty.equal t1 t2 && bind_equal b1 b2
   | Quant (k1,t1,b1), Quant (k2,t2,b2) ->
       k1 = k2 && Ty.equal t1 t2 && bind_equal b1 b2
-  | LetReg _, _ | Annot _, _ | Param _, _
+  | LetReg _, _ | Param _, _
   | Lam _, _ -> assert false
   | _, _ -> false
 and bind_equal b1 b2 =
@@ -120,7 +118,7 @@ module Print = struct
   open Myformat
 
   let is_compound = function
-    | Const _ | Var _ | Lam _ | PureFun _ | Annot _-> false
+    | Const _ | Var _ | Lam _ | PureFun _ -> false
     | App _ | Let _ | Ite _
     | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
   let is_compound_node t = is_compound t.v
@@ -182,7 +180,6 @@ module Print = struct
               pr fmt ()
           | `Coq -> Name.print fmt v
           end
-      | Annot (e,t) -> fprintf fmt "(%a : %a)" print e typrint t
       | Quant (k,t,b) ->
           let x,e = open_ b in
           let bind = if k = `FA then binder else binder' false in
@@ -378,8 +375,6 @@ let true_or e v =
   | Const Const.Ptrue -> e
   | _ -> v
 
-let annot e t = true_or e (mk (Annot (e,t)) t e.e e.loc)
-
 let domain t =
   match t.t with
   | Ty.Map e -> e
@@ -495,7 +490,6 @@ and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
       | Const _ -> t
       | Var (v,i) -> varfun v (Inst.map tyfun Misc.id Misc.id i) t
       | App (t1,t2,p,cap) -> allapp (aux t1) (aux t2) p cap l
-      | Annot (e,t) -> annot (aux e) (tyfun t)
       | Let (g,e1,b,r) ->
           let x,f = vopen b in
           let_ g (aux e1) x (aux f) r l
@@ -724,7 +718,7 @@ let rec is_value x =
   match x.v with
   | Const _ | Var _ | Lam _ | PureFun _ | Quant _ | HoareTriple _ -> true
   | Let _ | Ite _ | LetReg _ | Param _ -> false
-  | Annot (e,_) | Gen (_,e) -> is_value e
+  | Gen (_,e) -> is_value e
   | App (t1,_,_,_) ->
       match t1.t with
       | Ty.PureArr _ -> true

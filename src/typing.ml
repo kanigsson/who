@@ -119,7 +119,6 @@ let rec formtyping' env loc = function
       let env = add_var env x g t in
       let t = formtyping env e2 in
       t
-  | Annot (e,t) -> fis_oftype env t e; t
   | HoareTriple (p,e,q) ->
       let t', eff, capreal = typing env e in
       if not (RS.is_empty capreal) then
@@ -205,9 +204,6 @@ and typing' env loc = function
       if Effect.is_empty eff && RS.is_empty cap && Ty.equal t' Ty.prop
       then Ty.prop, eff, cap
       else error loc "not of type prop"
-  | Annot (e,t) ->
-      let t', eff, cap = typing env e in
-      if Ty.equal t t' then t, eff, cap else error loc "wrong type annotation"
   | Ite (e1,e2,e3) ->
       let t1, eff1, cap1 = typing env e1 in
       if Ty.equal t1 (Ty.bool ()) then

@@ -107,21 +107,18 @@ let rec term env t =
       | Gen (g,t) ->
           let env, g = genfun env g in
           gen g (term env t) l
-      | _ -> assert false
-(*
-      | Let (g ,e1,b,r) ->
-          let x,e2 = vopen b in
-          let env', g = genbind g env (fun r -> find_type r e1) in
-          let e1 = term env' e1 in
-          let_ g e1 x (term env e2) r l
       | PureFun (t,b) ->
-          let x,e = vopen b in
-          varbind env `LAM x t e l
+          let x,f = vopen b in
+          plam x (tyfun env t) (term env f) l
       | Ite (e1,e2,e3) ->
           ite (term env e1) (term env e2) (term env e3) l
-      | Lam _ | Annot _ | LetReg _ | Param _ | HoareTriple _ ->
+      | Let (g ,e1,b,r) ->
+          let x,e2 = vopen b in
+          let env', g = genfun env g in
+          let e1 = term env' e1 in
+          let_ g e1 x (term env e2) r l
+      | Lam _ | LetReg _ | Param _ | HoareTriple _ ->
           assert false
-*)
 
 let scheme env g t =
   let env, g = genfun env g in

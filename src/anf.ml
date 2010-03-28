@@ -45,7 +45,6 @@ and normalize e k =
       normalize_name e1
         (fun v ->
           k (ite ~logic:false v (normalize_term e2) (normalize_term e3) loc))
-  | Annot (e,_) -> normalize e k
   | App (e1,e2,f,c) ->
 (*       Format.printf "applying: %a@." print e1; *)
       normalize_name e1
