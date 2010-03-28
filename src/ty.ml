@@ -269,6 +269,8 @@ module Generalize = struct
 end
 module G = Generalize
 
+type scheme = G.t * t
+
 let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target =
   elsubst evl el (rlsubst rvl rl (tlsubst tvl tl target))
 
@@ -365,3 +367,4 @@ let matching vars =
     else raise TypeMismatch
   in
   matching
+

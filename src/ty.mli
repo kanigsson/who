@@ -21,7 +21,7 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-type t = 
+type t =
   | Const of Const.ty
   | Tuple of t list
   | Arrow of t * t * Effect.t * Name.t list
@@ -67,7 +67,7 @@ val destr_pair : t -> t * t
 val tuple_arity : t -> int
 val tuple_list : t -> t list
 
-val node_map : 
+val node_map :
     ?rfun:(Name.t -> Name.t) ->
     ?effectfun:(Effect.t -> Effect.t) -> (t -> t) -> t -> t
 
@@ -86,21 +86,22 @@ module Generalize : sig
   type t = Name.t list * Name.t list * Name.t list
   type 'a bind = 'a Name.listbind Name.listbind Name.listbind
 
-  val empty : t 
+  val empty : t
   val is_empty : t -> bool
 
   val print : t Myformat.fmt
   val open_ : (Name.subst -> 'a -> 'a) -> 'a bind -> t * 'a
   val sopen_ : 'a bind -> t * 'a
-  val close : t -> 'a -> 'a bind 
+  val close : t -> 'a -> 'a bind
 
   val equal : t -> t -> bool
 
-  val get_first : t -> Name.t
 end
 
-val allsubst : 
-  Generalize.t -> t list * Name.t list * Effect.t list -> 
+type scheme = Generalize.t * t
+
+val allsubst :
+  Generalize.t -> t list * Name.t list * Effect.t list ->
     t -> t
 
 val forty : unit -> Generalize.t * t

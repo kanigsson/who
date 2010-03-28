@@ -704,8 +704,9 @@ let prev t loc = minus t (one loc) loc
 
 let param t e = mk (Param (t,e)) t e
 
-let mk_tuple t1 t2 loc =
-  infer_predef (PI.mk_tuple_id 2) [t1;t2] loc
+let mk_tuple n tl = infer_predef (PI.mk_tuple_id n) tl
+
+let mk_pair t1 t2 = mk_tuple 2 [t1;t2]
 
 let letreg l e = mk (LetReg (l,e)) e.t (Effect.rremove e.e l)
 let andlist l loc =

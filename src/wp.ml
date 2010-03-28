@@ -49,7 +49,7 @@ let rec lift_value v =
   | Lam (x,t,_,(p,_,q)) ->
       let t = ty t in
       let p = plam x t (scan p) l and q = plam x t (scan q) l in
-      mk_tuple p q l
+      mk_pair p q l
   | Let (g,e1,b,Const.LogicDef) ->
       let x,f = sopen b in
       let_ g (lift_value e1) x (lift_value f) Const.LogicDef l
