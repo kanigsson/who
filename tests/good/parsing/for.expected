@@ -4,15 +4,15 @@ logic = ['a||] : a -> a -> prop
 logic /\  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
 logic ~  : prop -> prop
-logic !! ['a1|r|'e] : ref(r,a1) -> <{r  'e }> -> a1
+logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
 let
-  ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {(fun (cur:<{r1  }>) -> True)}
+  ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {(fun (cur:<r1  >) -> True)}
                 parameter(a2,{r1  })
-                {(fun (old:<{r1  }>) ->
-                 (fun (cur1:<{r1  }>) ->
+                {(fun (old:<r1  >) ->
+                 (fun (cur1:<r1  >) ->
                  (fun (r2:a2) ->
-                 ((x !![a2| r1| { }] cur1) =[a2||] r2) /\
-                 ((x !![a2| r1| { }] old) =[a2||] (x !![a2| r1| { }] cur1)))))}) 
+                 ((!! [a2| r1| { }] x cur1) =[a2||] r2) /\
+                 ((!! [a2| r1| { }] x old) =[a2||] (!! [a2| r1| { }] x cur1)))))}) 
 logic fst ['a3 'b||] : (a3 * b) -> a3
 logic snd ['a4 'b1||] : (a4 * b1) -> b1
 let pre ['a5 'b2||] = (fun (x1:a5 * b2) -> fst [a5,b2||] x1) 
@@ -24,52 +24,51 @@ logic *  : int -> int -> int
 logic int_max  : int -> int -> int
 let
   := ['a7|r3|] = (fun (x3:ref(r3,a7)) ->
-                 (fun (v:a7) -> {(fun (cur2:<{r3  }>) -> True)}
+                 (fun (v:a7) -> {(fun (cur2:<r3  >) -> True)}
                  parameter(unit,{r3  })
-                 {(fun (old1:<{r3  }>) ->
-                  (fun (cur3:<{r3  }>) ->
-                  (fun (anon:unit) -> (x3 !![a7| r3| { }] cur3) =[a7||] v)))})) 
-logic combine [||'e1 'e2 'e3] : <{ 'e1 'e2 }> -> <{ 'e2 'e3 }> -> <{ 'e1 'e2
-  'e3 }>
+                 {(fun (old1:<r3  >) ->
+                  (fun (cur3:<r3  >) ->
+                  (fun (anon:unit) -> (!! [a7| r3| { }] x3 cur3) =[a7||] v)))})) 
+logic combine [||'e1 'e2 'e3] : < 'e1 'e2 > -> < 'e2 'e3 > -> < 'e1 'e2 'e3 >
 let
-  forto [||'e4] = (fun (inv:int -> <{ 'e4 }> -> prop) ->
+  forto [||'e4] = (fun (inv:int -> < 'e4 > -> prop) ->
                   (fun (start:int) ->
                   (fun (end_:int) ->
                   (fun (f:int ->{{ 'e4 }} unit) ->
-                  {(fun (cur4:<{ 'e4 }>) ->
+                  {(fun (cur4:< 'e4 >) ->
                    (inv start cur4) /\
                    (forall (i:int).
                     ((start <= i) /\ (i <= end_)) ->
-                    (forall (m:<{ 'e4 }>).
+                    (forall (m:< 'e4 >).
                      (inv i m) ->
-                     ((pre [int -> <{ 'e4 }> -> prop,int -> <{ 'e4 }> ->
-                       <{ 'e4 }> -> unit -> prop||] f i m)
+                     ((pre [int -> < 'e4 > -> prop,int -> < 'e4 > -> < 'e4
+                       > -> unit -> prop||] f i m)
                       /\
-                      (forall (n:<{ 'e4 }>).
-                       (post [int -> <{ 'e4 }> -> prop,int -> <{ 'e4 }> ->
-                        <{ 'e4 }> -> unit -> prop||] f i m n tt)
+                      (forall (n:< 'e4 >).
+                       (post [int -> < 'e4 > -> prop,int -> < 'e4 > -> < 'e4
+                        > -> unit -> prop||] f i m n tt)
                        -> (inv (i + 1) n))))))}
                   parameter(unit,{ 'e4 })
-                  {(fun (old2:<{ 'e4 }>) ->
-                   (fun (cur5:<{ 'e4 }>) ->
+                  {(fun (old2:< 'e4 >) ->
+                   (fun (cur5:< 'e4 >) ->
                    (fun (anon1:unit) -> inv (int_max start (end_ + 1)) cur5)))})))) 
 let
   f1 [|r4|] = (fun (b4:unit) ->
-              (fun (x4:ref(r4,int)) -> {(fun (cur6:<{r4  }>) -> True)}
+              (fun (x4:ref(r4,int)) -> {(fun (cur6:<r4  >) -> True)}
               let __start = 1 in
               let __end = 5 in
               forto [|| {r4  }]
               (fun (i1:int) ->
-              (fun (cur7:<{r4  }>) -> (x4 !![int| r4| { }] cur7) < (i1 * 10)))
+              (fun (cur7:<r4  >) -> (!! [int| r4| { }] x4 cur7) < (i1 * 10)))
               __start __end
               (fun (i1:int) ->
-              {(fun (cur8:<{r4  }>) ->
+              {(fun (cur8:<r4  >) ->
                ((__start <= i1) /\ (i1 <= __end)) /\
-               ((x4 !![int| r4| { }] cur8) < (i1 * 10)))}
+               ((!! [int| r4| { }] x4 cur8) < (i1 * 10)))}
               x4 :=[int| r4|] ((! [int| r4|] x4) + i1)
-              {(fun (anon2:<{r4  }>) ->
-               (fun (cur8:<{r4  }>) ->
+              {(fun (anon2:<r4  >) ->
+               (fun (cur8:<r4  >) ->
                (fun (anon3:unit) ->
-               (x4 !![int| r4| { }] cur8) < ((i1 + 1) * 10))))})
-              {(fun (old3:<{r4  }>) ->
-               (fun (cur9:<{r4  }>) -> (fun (anon4:unit) -> True)))})) 
+               (!! [int| r4| { }] x4 cur8) < ((i1 + 1) * 10))))})
+              {(fun (old3:<r4  >) ->
+               (fun (cur9:<r4  >) -> (fun (anon4:unit) -> True)))})) 

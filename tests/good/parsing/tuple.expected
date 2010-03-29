@@ -112,82 +112,81 @@ section beq coq predefined
   logic != ['a38||] : a38 -> a38 -> bool end
 section Whoref coq "WhoMap"
   pangoline predefined
-   logic !! ['a39|r|'e21] : ref(r,a39) -> <{r  'e21 }> -> a39
+   logic !! ['a39|r|'e21] : ref(r,a39) -> <r  'e21 > -> a39
   let
-    ! ['a40|r1|] = (fun (x4:ref(r1,a40)) -> {(fun (cur:<{r1  }>) -> True)}
+    ! ['a40|r1|] = (fun (x4:ref(r1,a40)) -> {(fun (cur:<r1  >) -> True)}
                    parameter(a40,{r1  })
-                   {(fun (old:<{r1  }>) ->
-                    (fun (cur1:<{r1  }>) ->
+                   {(fun (old:<r1  >) ->
+                    (fun (cur1:<r1  >) ->
                     (fun (r2:a40) ->
-                    ((x4 !![a40| r1| { }] cur1) =[a40||] r2) /\
-                    ((x4 !![a40| r1| { }] old) =[a40||]
-                     (x4 !![a40| r1| { }] cur1)))))}) 
+                    ((!! [a40| r1| { }] x4 cur1) =[a40||] r2) /\
+                    ((!! [a40| r1| { }] x4 old) =[a40||]
+                     (!! [a40| r1| { }] x4 cur1)))))}) 
   let
     := ['a41|r3|] = (fun (x5:ref(r3,a41)) ->
-                    (fun (v:a41) -> {(fun (cur2:<{r3  }>) -> True)}
+                    (fun (v:a41) -> {(fun (cur2:<r3  >) -> True)}
                     parameter(unit,{r3  })
-                    {(fun (old1:<{r3  }>) ->
-                     (fun (cur3:<{r3  }>) ->
+                    {(fun (old1:<r3  >) ->
+                     (fun (cur3:<r3  >) ->
                      (fun (anon:unit) ->
-                     (x5 !![a41| r3| { }] cur3) =[a41||] v)))})) 
+                     (!! [a41| r3| { }] x5 cur3) =[a41||] v)))})) 
   let
     ref ['a42|r4|] = (fun (v1:a42) ->allocates r4
-                     {(fun (cur4:<{r4  }>) -> True)}
-                     parameter(ref(r4,a42),{r4  })
-                     {(fun (old2:<{r4  }>) ->
-                      (fun (cur5:<{r4  }>) ->
+                     {(fun (cur4:<r4  >) -> True)} parameter(ref(r4,a42),{r4
+                      })
+                     {(fun (old2:<r4  >) ->
+                      (fun (cur5:<r4  >) ->
                       (fun (x6:ref(r4,a42)) ->
-                      (x6 !![a42| r4| { }] cur5) =[a42||] v1)))}) 
-  logic combine [||'e22 'e23 'e24] : <{ 'e22 'e23 }> -> <{ 'e23 'e24 }> ->
-    <{ 'e22 'e23 'e24 }>
-  logic restrict [||'e25 'e26] : <{ 'e25 'e26 }> -> <{ 'e26 }>
-  logic empty  : <{ }>
+                      (!! [a42| r4| { }] x6 cur5) =[a42||] v1)))}) 
+  logic combine [||'e22 'e23 'e24] : < 'e22 'e23 > -> < 'e23 'e24 > -> < 'e22
+    'e23 'e24 >
+  logic restrict [||'e25 'e26] : < 'e25 'e26 > -> < 'e26 >
+  logic empty  : < >
   let pre ['a43 'b35||] = (fun (x7:a43 * b35) -> fst [a43,b35||] x7) 
   let post ['a44 'b36||] = (fun (x8:a44 * b36) -> snd [a44,b36||] x8)  end
 let
-  forto [||'e27] = (fun (inv:int -> <{ 'e27 }> -> prop) ->
+  forto [||'e27] = (fun (inv:int -> < 'e27 > -> prop) ->
                    (fun (start:int) ->
                    (fun (end_:int) ->
                    (fun (f15:int ->{{ 'e27 }} unit) ->
-                   {(fun (cur6:<{ 'e27 }>) ->
+                   {(fun (cur6:< 'e27 >) ->
                     (inv start cur6) /\
                     (forall (i:int).
                      ((start <= i) /\ (i <= end_)) ->
-                     (forall (m:<{ 'e27 }>).
+                     (forall (m:< 'e27 >).
                       (inv i m) ->
-                      ((pre [int -> <{ 'e27 }> -> prop,int -> <{ 'e27 }> ->
-                        <{ 'e27 }> -> unit -> prop||] f15 i m)
+                      ((pre [int -> < 'e27 > -> prop,int -> < 'e27 > ->
+                        < 'e27 > -> unit -> prop||] f15 i m)
                        /\
-                       (forall (n:<{ 'e27 }>).
-                        (post [int -> <{ 'e27 }> -> prop,int -> <{ 'e27 }> ->
-                         <{ 'e27 }> -> unit -> prop||] f15 i m n tt)
+                       (forall (n:< 'e27 >).
+                        (post [int -> < 'e27 > -> prop,int -> < 'e27 > ->
+                         < 'e27 > -> unit -> prop||] f15 i m n tt)
                         -> (inv (i + 1) n))))))}
                    parameter(unit,{ 'e27 })
-                   {(fun (old3:<{ 'e27 }>) ->
-                    (fun (cur7:<{ 'e27 }>) ->
+                   {(fun (old3:< 'e27 >) ->
+                    (fun (cur7:< 'e27 >) ->
                     (fun (anon1:unit) -> inv (int_max start (end_ + 1)) cur7)))})))) 
 let
-  fordownto [||'e28] = (fun (inv1:int -> <{ 'e28 }> -> prop) ->
+  fordownto [||'e28] = (fun (inv1:int -> < 'e28 > -> prop) ->
                        (fun (start1:int) ->
                        (fun (end_1:int) ->
                        (fun (f16:int ->{{ 'e28 }} unit) ->
-                       {(fun (cur8:<{ 'e28 }>) ->
+                       {(fun (cur8:< 'e28 >) ->
                         (inv1 start1 cur8) /\
                         (forall (i1:int).
                          ((end_1 <= i1) /\ (i1 <= start1)) ->
-                         (forall (m1:<{ 'e28 }>).
+                         (forall (m1:< 'e28 >).
                           (inv1 i1 m1) ->
-                          ((pre [int -> <{ 'e28 }> -> prop,int -> <{ 'e28
-                            }> -> <{ 'e28 }> -> unit -> prop||] f16 i1 m1)
+                          ((pre [int -> < 'e28 > -> prop,int -> < 'e28 > ->
+                            < 'e28 > -> unit -> prop||] f16 i1 m1)
                            /\
-                           (forall (n1:<{ 'e28 }>).
-                            (post [int -> <{ 'e28 }> -> prop,int -> <{ 'e28
-                             }> -> <{ 'e28 }> -> unit -> prop||] f16 i1 m1 n1
-                             tt)
+                           (forall (n1:< 'e28 >).
+                            (post [int -> < 'e28 > -> prop,int -> < 'e28 > ->
+                             < 'e28 > -> unit -> prop||] f16 i1 m1 n1 tt)
                             -> (inv1 (i1 - 1) n1))))))}
                        parameter(unit,{ 'e28 })
-                       {(fun (old4:<{ 'e28 }>) ->
-                        (fun (cur9:<{ 'e28 }>) ->
+                       {(fun (old4:< 'e28 >) ->
+                        (fun (cur9:< 'e28 >) ->
                         (fun (anon2:unit) ->
                         inv1 (int_min start1 (end_1 - 1)) cur9)))})))) 
 section Array coq "WhoArray"

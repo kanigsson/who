@@ -1,8 +1,8 @@
 logic = ['a||] : a -> a -> prop
-logic !! ['a1|r|'e] : ref(r,a1) -> <{r  'e }> -> a1
+logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
 let
-  ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {(fun (cur:<{r1  }>) -> True)}
+  ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {(fun (cur:<r1  >) -> True)}
                 parameter(a2,{r1  })
-                {(fun (old:<{r1  }>) ->
-                 (fun (cur1:<{r1  }>) ->
-                 (fun (r2:a2) -> (x !![a2| r1| { }] cur1) =[a2||] r2)))}) 
+                {(fun (old:<r1  >) ->
+                 (fun (cur1:<r1  >) ->
+                 (fun (r2:a2) -> (!! [a2| r1| { }] x cur1) =[a2||] r2)))}) 

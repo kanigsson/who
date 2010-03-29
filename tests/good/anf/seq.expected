@@ -2,12 +2,12 @@ type unit
 logic /\  : prop -> prop -> prop
 logic ~  : prop -> prop
 logic = ['a||] : a -> a -> prop
-logic !! ['a1|r|'e] : ref(r,a1) -> <{ 'e }> -> a1
+logic !! ['a1|r|'e] : ref(r,a1) -> < 'e > -> a1
 let
-  ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {(fun (cur:<{r1  }>) -> True)}
+  ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {(fun (cur:<r1  >) -> True)}
                 parameter(a2,{r1  })
-                {(fun (old:<{r1  }>) ->
-                 (fun (cur1:<{r1  }>) ->
+                {(fun (old:<r1  >) ->
+                 (fun (cur1:<r1  >) ->
                  (fun (r2:a2) ->
                  (r2 =[a2||] (!! [a2| r1| {r1  }] x cur1)) /\
                  ((!! [a2| r1| {r1  }] x old) =[a2||]
@@ -15,21 +15,21 @@ let
 let seq ['a3 'b 'c||'e1
   'e2] = (fun (f:a3 ->{{ 'e1 }} b) ->
          (fun (g:b ->{{ 'e2 }} c) ->
-         (fun (x1:a3) -> {(fun (cur2:<{ 'e1 'e2 }>) -> True)}
+         (fun (x1:a3) -> {(fun (cur2:< 'e1 'e2 >) -> True)}
          let anf = f x1 in g anf
-         {(fun (old1:<{ 'e1 'e2 }>) ->
-          (fun (cur3:<{ 'e1 'e2 }>) -> (fun (anon:c) -> True)))}))) 
+         {(fun (old1:< 'e1 'e2 >) ->
+          (fun (cur3:< 'e1 'e2 >) -> (fun (anon:c) -> True)))}))) 
 let h [|r3
   r4|] = (fun (a4:ref(r3,int)) ->
-         (fun (b1:ref(r4,int)) -> {(fun (cur4:<{ }>) -> True)}
+         (fun (b1:ref(r4,int)) -> {(fun (cur4:< >) -> True)}
          seq [int,int,int|| {r3  } {r4  }]
-         (fun (c1:int) -> {(fun (cur5:<{r3  }>) -> True)} ! [int| r3|] a4
-         {(fun (old2:<{r3  }>) ->
-          (fun (cur6:<{r3  }>) -> (fun (anon1:int) -> True)))})
-         (fun (d:int) -> {(fun (cur7:<{r4  }>) -> True)} ! [int| r4|] b1
-         {(fun (old3:<{r4  }>) ->
-          (fun (cur8:<{r4  }>) -> (fun (anon2:int) -> True)))})
-         {(fun (old4:<{ }>) ->
-          (fun (cur9:<{ }>) ->
-          (fun (anon3:(int -> <{r3 r4  }> -> prop) * (int -> <{r3 r4  }> ->
-          <{r3 r4  }> -> int -> prop)) -> True)))})) 
+         (fun (c1:int) -> {(fun (cur5:<r3  >) -> True)} ! [int| r3|] a4
+         {(fun (old2:<r3  >) ->
+          (fun (cur6:<r3  >) -> (fun (anon1:int) -> True)))})
+         (fun (d:int) -> {(fun (cur7:<r4  >) -> True)} ! [int| r4|] b1
+         {(fun (old3:<r4  >) ->
+          (fun (cur8:<r4  >) -> (fun (anon2:int) -> True)))})
+         {(fun (old4:< >) ->
+          (fun (cur9:< >) ->
+          (fun (anon3:(int -> <r3 r4  > -> prop) * (int -> <r3 r4  > -> <r3
+          r4  > -> int -> prop)) -> True)))})) 

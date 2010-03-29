@@ -10,32 +10,31 @@ logic true  : bool
 logic false  : bool
 type unit
 logic tt  : unit
-logic !! ['a4|r|'e] : ref(r,a4) -> <{r  'e }> -> a4
+logic !! ['a4|r|'e] : ref(r,a4) -> <r  'e > -> a4
 let
-  logic ! ['a5|r1|] = mk_2tuple [ref(r1,a5) -> <{r1  }> -> prop,ref(r1,a5) ->
-                      <{r1  }> -> <{r1  }> -> a5 -> prop||]
-                      (fun (x:ref(r1,a5)) -> (fun (cur:<{r1  }>) -> True))
+  logic ! ['a5|r1|] = mk_2tuple [ref(r1,a5) -> <r1  > -> prop,ref(r1,a5) ->
+                      <r1  > -> <r1  > -> a5 -> prop||]
+                      (fun (x:ref(r1,a5)) -> (fun (cur:<r1  >) -> True))
                       (fun (x:ref(r1,a5)) ->
-                      (fun (old:<{r1  }>) ->
-                      (fun (cur1:<{r1  }>) ->
+                      (fun (old:<r1  >) ->
+                      (fun (cur1:<r1  >) ->
                       (fun (r2:a5) ->
                       (r2 =[a5||] (!! [a5| r1| { }] x cur1)) /\
                       ((!! [a5| r1| { }] x old) =[a5||]
                        (!! [a5| r1| { }] x cur1)))))) 
 let
   logic := ['a6|r3|] = (fun (x1:ref(r3,a6)) ->
-                       mk_2tuple [a6 -> <{r3  }> -> prop,a6 -> <{r3  }> ->
-                       <{r3  }> -> unit -> prop||]
-                       (fun (v:a6) -> (fun (cur2:<{r3  }>) -> True))
+                       mk_2tuple [a6 -> <r3  > -> prop,a6 -> <r3  > -> <r3
+                        > -> unit -> prop||]
+                       (fun (v:a6) -> (fun (cur2:<r3  >) -> True))
                        (fun (v:a6) ->
-                       (fun (old1:<{r3  }>) ->
-                       (fun (cur3:<{r3  }>) ->
+                       (fun (old1:<r3  >) ->
+                       (fun (cur3:<r3  >) ->
                        (fun (anon:unit) ->
                        v =[a6||] (!! [a6| r3| { }] x1 cur3)))))) 
-logic combine [||'e1 'e2 'e3] : <{ 'e1 'e2 }> -> <{ 'e2 'e3 }> -> <{ 'e1 'e2
-  'e3 }>
-logic restrict [||'e4 'e5] : <{ 'e4 'e5 }> -> <{ 'e5 }>
-logic empty  : <{ }>
+logic combine [||'e1 'e2 'e3] : < 'e1 'e2 > -> < 'e2 'e3 > -> < 'e1 'e2 'e3 >
+logic restrict [||'e4 'e5] : < 'e4 'e5 > -> < 'e5 >
+logic empty  : < >
 type hmap['a7 'b3||]
 logic hmem ['a8 'b4||] : a8 -> hmap[a8,b4||] -> bool
 logic hget ['a9 'b5||] : a9 -> hmap[a9,b5||] -> b5
@@ -43,17 +42,17 @@ logic hset ['a10 'b6||] : a10 -> b6 -> hmap[a10,b6||] -> hmap[a10,b6||]
 goal memo_correct : forall [|t|]. forall (table:ref(t,hmap[int,int||])).
                                   forall (f:int -> int).
                                   forall (x2:int).
-                                  forall (s:<{t  }>).
-                                  fst [ref(t,hmap[int,int||]) -> <{t  }> ->
-                                  prop,ref(t,hmap[int,int||]) -> <{t  }> ->
-                                  <{t  }> -> hmap[int,int||] -> prop||]
+                                  forall (s:<t  >).
+                                  fst [ref(t,hmap[int,int||]) -> <t  > ->
+                                  prop,ref(t,hmap[int,int||]) -> <t  > -> <t
+                                   > -> hmap[int,int||] -> prop||]
                                   ! [hmap[int,int||]| t|] table s
 let
   logic memo [|t|] = (fun (table:ref(t,hmap[int,int||])) ->
                      (fun (f:int -> int) ->
-                     mk_2tuple [int -> <{t  }> -> prop,int -> <{t  }> -> <{t
-                      }> -> int -> prop||]
-                     (fun (x2:int) -> (fun (cur4:<{t  }>) -> True))
+                     mk_2tuple [int -> <t  > -> prop,int -> <t  > -> <t  > ->
+                     int -> prop||]
+                     (fun (x2:int) -> (fun (cur4:<t  >) -> True))
                      (fun (x2:int) ->
-                     (fun (old2:<{t  }>) ->
-                     (fun (cur5:<{t  }>) -> (fun (r4:int) -> True)))))) 
+                     (fun (old2:<t  >) ->
+                     (fun (cur5:<t  >) -> (fun (r4:int) -> True)))))) 

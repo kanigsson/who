@@ -48,10 +48,10 @@
 
   (* construct a sequence of pure lambdas on top of [e], using [l];
     the innermost lambda is effectful, using [p] and [q] as pre and post *)
-  let mk_efflam l cap p e q = mk_lam (fun x t -> 
-    let t = 
-      try Opt.force t 
-      with Invalid_argument "force" -> 
+  let mk_efflam l cap p e q = mk_lam (fun x t ->
+    let t =
+      try Opt.force t
+      with Invalid_argument "force" ->
         failwith "type annotation obligatory for lambda" in
     lamcap x t cap p e q) l
 
@@ -134,7 +134,7 @@ tuple_list:
 seq_term:
   | t = infix_term { t }
   | tl = tuple_list
-    { 
+    {
       let n = List.length tl in
       appni (Predefined.Identifier.mk_tuple_id n) tl (List.hd tl).loc
     }

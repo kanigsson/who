@@ -2,12 +2,12 @@ logic fst ['a 'b||] : (a * b) -> a
 logic snd ['a1 'b1||] : (a1 * b1) -> b1
 let
   f [||'e] = (fun (g:int ->{{ 'e }} int) ->
-             {(fun (cur:<{ 'e }>) ->
-              fst [int -> <{ 'e }> -> prop,int -> <{ 'e }> -> <{ 'e }> ->
-              int -> prop||] g 5 cur)}
+             {(fun (cur:< 'e >) ->
+              fst [int -> < 'e > -> prop,int -> < 'e > -> < 'e > -> int ->
+              prop||] g 5 cur)}
              g 5
-             {(fun (old:<{ 'e }>) ->
-              (fun (cur1:<{ 'e }>) ->
+             {(fun (old:< 'e >) ->
+              (fun (cur1:< 'e >) ->
               (fun (r:int) ->
-              snd [int -> <{ 'e }> -> prop,int -> <{ 'e }> -> <{ 'e }> ->
-              int -> prop||] g 5 old cur1 r)))}) 
+              snd [int -> < 'e > -> prop,int -> < 'e > -> < 'e > -> int ->
+              prop||] g 5 old cur1 r)))}) 

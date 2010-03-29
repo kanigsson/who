@@ -11,8 +11,8 @@ axiom fact_zero : (fact 0) =[int||] 1
 axiom fact_step : forall (n:int).
                   (0 <= n) -> ((fact (n + 1)) =[int||] (n * (fact n)))
 let
-  rec(int ->{{ }} int) f  = (fun (x:int) -> {(fun (cur:<{ }>) -> 0 <= x)}
+  rec(int ->{{ }} int) f  = (fun (x:int) -> {(fun (cur:< >) -> 0 <= x)}
                             if x ==[int||] 0 then 1 else x * (f (x - 1))
-                            {(fun (old:<{ }>) ->
-                             (fun (cur1:<{ }>) ->
+                            {(fun (old:< >) ->
+                             (fun (cur1:< >) ->
                              (fun (r:int) -> r =[int||] (fact x))))}) 

@@ -56,7 +56,7 @@ let rec gen_print ?(kind=`Who) fmt x =
       as you wish *)
       fprintf fmt "%a ->{%a%a} %a" mayp t1
         Effect.print eff (maycap Name.print) cap pt t2
-  | Map e -> fprintf fmt "<%a>" Effect.print e
+  | Map e -> fprintf fmt "<%a>" Effect.print_nosep e
   | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 pt t2
   | Tuple tl ->
       list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl

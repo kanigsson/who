@@ -1,13 +1,14 @@
 logic = ['a||] : a -> a -> prop
-logic !! ['a1|r|'e] : ref(r,a1) -> <{r  'e }> -> a1
+logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
 let
-  ref ['a2|r1|] = (fun (v:a2) ->allocates r1 {(fun (cur:<{r1  }>) -> True)}
+  ref ['a2|r1|] = (fun (v:a2) ->allocates r1 {(fun (cur:<r1  >) -> True)}
                   parameter(ref(r1,a2),{r1  })
-                  {(fun (old:<{r1  }>) ->
-                   (fun (cur1:<{r1  }>) ->
-                   (fun (x:ref(r1,a2)) -> (x !![a2| r1| { }] cur1) =[a2||] v)))}) 
+                  {(fun (old:<r1  >) ->
+                   (fun (cur1:<r1  >) ->
+                   (fun (x:ref(r1,a2)) ->
+                   (!! [a2| r1| { }] x cur1) =[a2||] v)))}) 
 let
-  myref ['a3|r2|] = (fun (x1:a3) ->allocates r2
-                    {(fun (cur2:<{r2  }>) -> True)} ref [a3| r2|]{r2} x1
-                    {(fun (old1:<{r2  }>) ->
-                     (fun (cur3:<{r2  }>) -> (fun (anon:ref(r2,a3)) -> True)))}) 
+  myref ['a3|r2|] = (fun (x1:a3) ->allocates r2 {(fun (cur2:<r2  >) -> True)}
+                    ref [a3| r2|]{r2} x1
+                    {(fun (old1:<r2  >) ->
+                     (fun (cur3:<r2  >) -> (fun (anon:ref(r2,a3)) -> True)))}) 

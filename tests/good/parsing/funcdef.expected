@@ -1,4 +1,4 @@
 logic +  : int -> int -> int
 let
-  f  = (fun (x:int) -> {(fun (cur:<{ }>) -> True)} x + 3
-       {(fun (old:<{ }>) -> (fun (cur1:<{ }>) -> (fun (anon:int) -> True)))}) 
+  f  = (fun (x:int) -> {(fun (cur:< >) -> True)} x + 3
+       {(fun (old:< >) -> (fun (cur1:< >) -> (fun (anon:int) -> True)))}) 
