@@ -284,7 +284,8 @@ section basiclogic coq predefined
                                ->
                                ((fst [array[a31||] -> <r6  > ->
                                  prop,array[a31||] -> <r6  > -> <r6  > ->
-                                 unit -> prop||] (:= [array[a31||]| r6|] ar1)
+                                 unit -> prop||]
+                                 ((:= [array[a31||]| r6|]) ar1)
                                  (set [a31||] (ofs1 + i6)
                                   (get [a31||] (ofs + i6) anon5) anon6)
                                  s5)
@@ -293,7 +294,7 @@ section basiclogic coq predefined
                                  (snd [array[a31||] -> <r6  > ->
                                   prop,array[a31||] -> <r6  > -> <r6  > ->
                                   unit -> prop||]
-                                  (:= [array[a31||]| r6|] ar1)
+                                  ((:= [array[a31||]| r6|]) ar1)
                                   (set [a31||] (ofs1 + i6)
                                    (get [a31||] (ofs + i6) anon5) anon6)
                                   s5 s6 tt)
@@ -519,7 +520,8 @@ section basiclogic coq predefined
                                ->
                                ((fst [array[a31||] -> <r6  > ->
                                  prop,array[a31||] -> <r6  > -> <r6  > ->
-                                 unit -> prop||] (:= [array[a31||]| r6|] ar1)
+                                 unit -> prop||]
+                                 ((:= [array[a31||]| r6|]) ar1)
                                  (set [a31||] (ofs1 + i13)
                                   (get [a31||] (ofs + i13) anon11) anon12)
                                  s10)
@@ -528,7 +530,7 @@ section basiclogic coq predefined
                                  (snd [array[a31||] -> <r6  > ->
                                   prop,array[a31||] -> <r6  > -> <r6  > ->
                                   unit -> prop||]
-                                  (:= [array[a31||]| r6|] ar1)
+                                  ((:= [array[a31||]| r6|]) ar1)
                                   (set [a31||] (ofs1 + i13)
                                    (get [a31||] (ofs + i13) anon11) anon12)
                                   s10 s11 tt)

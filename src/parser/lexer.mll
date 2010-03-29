@@ -35,10 +35,10 @@ let create_info lexbuf =
 
 
 (* decide if a string is a keyword or an identifier *)
-let id_or_keyword = 
+let id_or_keyword =
   let h = Hashtbl.create 17 in
     List.iter (fun (s,k) -> Hashtbl.add h s k)
-      [ 
+      [
         ("True", fun i -> PTRUE (create_info i) );
         ("False", fun i -> PFALSE (create_info i) );
         ("let", fun i -> LET (create_info i)  );
@@ -75,12 +75,12 @@ let id_or_keyword =
         ("fun", fun i -> FUN (create_info i) );
         ("INTROS", fun _ -> INTROS );
       ];
-    fun s -> try Hashtbl.find h s with Not_found -> 
+    fun s -> try Hashtbl.find h s with Not_found ->
       fun i -> IDENT (Loc.mk (create_info i) s)
 
 let incr_linenum lexbuf =
     let pos = lexbuf.lex_curr_p in
-    lexbuf.lex_curr_p <- 
+    lexbuf.lex_curr_p <-
        { pos with
         pos_lnum = pos.pos_lnum + 1;
         pos_bol = pos.pos_cnum;
@@ -152,10 +152,10 @@ and comment = parse
   | '\n' { incr_linenum lexbuf ; comment lexbuf }
   | "*)" { () }
   | eof { raise (Error "unterminated comment") }
-  | _ { comment lexbuf } 
+  | _ { comment lexbuf }
 
 {
-  let reset lexbuf = 
-    lexbuf.lex_curr_p <- 
+  let reset lexbuf =
+    lexbuf.lex_curr_p <-
        { lexbuf.lex_curr_p with pos_lnum = 1; pos_bol = 0; }
 }

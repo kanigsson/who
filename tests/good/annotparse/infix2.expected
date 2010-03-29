@@ -7,6 +7,6 @@ let
                 (fun (cur1:<r  >) -> (fun (anon:unit) -> True)))})) 
 let
   x1 [|r1|] = (fun (z:ref(r1,int)) -> {(fun (c:<r1  >) -> True)}
-              (:= [int| r1|]) z 0
+              z :=[int| r1|] 0
               {(fun (old1:<r1  >) ->
                (fun (cur2:<r1  >) -> (fun (anon1:unit) -> True)))}) 

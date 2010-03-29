@@ -177,7 +177,7 @@ module Print = struct
                 if Inst.is_empty i then (name_print ~kind) fmt v
                 else fprintf fmt "%a %a" (name_print ~kind) v (inst ~kind) i
               in
-              pr fmt ()
+              if Predefined.is_infix v then paren pr fmt () else pr fmt ()
           | `Coq -> Name.print fmt v
           end
       | Quant (k,t,b) ->

@@ -75,7 +75,9 @@ val equal : Name.t -> string -> bool
 
 val add_binding : Name.t -> (Ty.Generalize.t * Ty.t) -> unit
 val add_symbol : string -> Name.t -> unit
-val add_symbol_and_binding : 
+val add_symbol_and_binding :
   string -> Name.t -> (Ty.Generalize.t * Ty.t) -> unit
 
 val belongs_to : Name.t -> string list -> bool
+
+val is_infix : Name.t -> bool

@@ -84,6 +84,13 @@ module Identifier = struct
   let unsafe_equal v id =
     Name.unsafe_to_string v = id
 
+  let infix_ids =
+    [
+      equal_id; leb_id ; ltb_id; gtb_id; geb_id; eqb_id; neqb_id; le_id; lt_id;
+      ge_id; gt_id; neq_id; and_id; or_id; andb_id; orb_id; impl_id; plus_id;
+      minus_id; store_id;
+    ]
+
 end
 
 open Identifier
@@ -113,7 +120,7 @@ let add_symbol s n =
 let add_binding x t =
   env.ty_map <- Name.M.add x t env.ty_map
 
-let add_symbol_and_binding s x t = 
+let add_symbol_and_binding s x t =
   add_symbol s x;
   add_binding x t
 
@@ -139,3 +146,5 @@ let belongs_to var id_list = List.exists (equal var) id_list
 let find var id_list = List.find (fun (a,_) -> equal var a) id_list
 
 let get_pangoline_id x = snd (find x pangoline_predefined)
+
+let is_infix x = belongs_to x Identifier.infix_ids

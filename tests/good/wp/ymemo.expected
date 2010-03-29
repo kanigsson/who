@@ -179,14 +179,14 @@ goal ymemo_correct : forall (f3:int -> int).
                                  ((fst [hmap[int,int||] -> <t  > ->
                                    prop,hmap[int,int||] -> <t  > -> <t  > ->
                                    unit -> prop||]
-                                   (:= [hmap[int,int||]| t|] table)
+                                   ((:= [hmap[int,int||]| t|]) table)
                                    (hset [int,int||] x4 anon6 anon7) s6)
                                   /\
                                   (forall (s7:<t  >).
                                    (snd [hmap[int,int||] -> <t  > ->
                                     prop,hmap[int,int||] -> <t  > -> <t  > ->
                                     unit -> prop||]
-                                    (:= [hmap[int,int||]| t|] table)
+                                    ((:= [hmap[int,int||]| t|]) table)
                                     (hset [int,int||] x4 anon6 anon7) s6 s7
                                     tt)
                                    ->

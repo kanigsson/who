@@ -26,7 +26,7 @@
   open Const
   open ParseTypes
 
-  let partition_effect l = 
+  let partition_effect l =
     List.fold_right (fun x (rl,el) ->
       match x with
       | `Rvar r -> r ::rl, el
@@ -42,7 +42,7 @@
   | x = prefix { { c = snd x; info = fst x } }
   | p = REF { Loc.mk p "ref" }
   | p = DEXCLAM { Loc.mk p "!!" }
-  
+
 %public defprogvar_no_pos : x = defprogvar { x.c }
 %public tconstant:
   | TINT { Const.TInt }
@@ -121,7 +121,7 @@ sepcreateeffect:
   | LCURL e = createeffect RCURL { e }
 
 createeffect:
-  | e = effect cl = maycap 
+  | e = effect cl = maycap
     { let rl, el = e in rl, el, cl }
 
 maycap:
@@ -138,7 +138,7 @@ effect: | l = rvar_or_effectvar* {partition_effect l }
 %public ty:
   | t = stype { t }
   | t1 = ty ARROW t2 = ty { PureArr (t1, t2) }
-  | t1 = ty ARROW e = sepcreateeffect t2 = ty %prec ARROW 
+  | t1 = ty ARROW e = sepcreateeffect t2 = ty %prec ARROW
     { let rl,el,cl = e in Arrow (t1,t2,(rl,el),cl) }
   | tl = product_ty { Tuple tl }
   | LT e = effect GT { Map e }

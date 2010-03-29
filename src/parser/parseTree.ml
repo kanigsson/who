@@ -49,20 +49,20 @@ type t' =
   | Get of t * t
   | HoareTriple of t option * t * post
 and t = { v : t' ; loc : Loc.loc }
-and post = 
+and post =
   | PNone
   | PPlain of t
   | PResult of var * t
 and generalize = tvar list * rvar list * effvar list
 
-type decl = 
+type decl =
   | Logic of var * generalize * ty
   | Axiom of string * generalize * t
   | Goal of string * generalize * t
   | Section of var * Const.takeover list * decl list
   | TypeDef of generalize * ty option * var
   | Program of var * generalize * t * ParseTypes.t Const.isrec
-  | DLetReg of rvar list 
+  | DLetReg of rvar list
 
 type theory = decl list
 
@@ -77,7 +77,7 @@ let appi s t1 t2 loc = app ~kind:`Infix (app (var s loc) t1 loc) t2 loc
 let appn t1 tl loc = List.fold_left (fun t1 t2 -> app t1 t2 loc) t1 tl
 let appni s tl loc = appn (var s loc) tl loc
 
-let let_ l e1 x e2 r = mk (Let (l,e1,x,e2,r)) 
+let let_ l e1 x e2 r = mk (Let (l,e1,x,e2,r))
 let lam x t p e q = mk (Lam (x,t,[],p,e,q))
 let lamcap x t c p e q = mk (Lam (x, t, c, p, e, q))
 let pure_lam x t e = mk (PureFun (x,t,e))
