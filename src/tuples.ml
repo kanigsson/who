@@ -60,6 +60,7 @@ end = struct
     { env with n = M.add n s env.n }
 
   let lookup env n =
+    Myformat.printf "looking up: %a@." Name.print n;
     M.find n env.n
 
 end
@@ -196,6 +197,7 @@ let rec term env t =
           gen g (term env t) l
       | PureFun (t,b) ->
           let x,f = vopen b in
+          let env = Env.add_var env x (Ty.Generalize.empty,t) in
           plam x (tyfun env t) (term env f) l
       | Ite (e1,e2,e3) ->
           ite (term env e1) (term env e2) (term env e3) l

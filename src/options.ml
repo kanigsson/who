@@ -38,8 +38,16 @@ let transform_only = ref false
 let no_check = ref false
 
 let transforms =
-  ref (List.rev [ Anf.theory ; Wp.theory ; InlineLet.theory ;
-  Simplify.theory; RemoveTrivialGoals.theory;])
+  ref (List.rev [
+    Anf.theory ;
+    Wp.theory ;
+    Tuples.theory;
+(*
+    InlineLet.theory ;
+    Simplify.theory;
+*)
+    RemoveTrivialGoals.theory;
+])
 
 let append_trans x () = transforms := x :: !transforms
 
