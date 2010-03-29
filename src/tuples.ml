@@ -60,7 +60,6 @@ end = struct
     { env with n = M.add n s env.n }
 
   let lookup env n =
-    Myformat.printf "looking up: %a@." Name.print n;
     M.find n env.n
 
 end
@@ -172,6 +171,7 @@ let rec term env t =
       | Var (v,(tl,rl,el)) ->
           let rl = List.map (Env.rlookup env) rl in
           let el = List.map (effect_to_tuple_type env) el in
+          let tl = List.map (tyfun env) tl in
           let tl = tl@(rl@el) in
           (* expected-type is the type of the object we want to have here;
            * we simply use its original type in the effect system and convert it
@@ -205,6 +205,7 @@ let rec term env t =
           let x,e2 = vopen b in
           let env', g = genfun env g in
           let e1 = term env' e1 in
+          let env = Env.add_var env x (g,e1.t) in
           let_ g e1 x (term env e2) r l
       | Lam _ | LetReg _ | Param _ | HoareTriple _ ->
           assert false
