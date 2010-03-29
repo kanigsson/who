@@ -215,7 +215,9 @@ let rec decl env d =
       env', Logic (n,g,t)
   | Formula (s,t,k) ->
       env, Formula (s, term env t, k)
-  | Section (s,cl,th) -> env, Section (s,cl, theory env th)
+  | Section (s,cl,th) ->
+      let env, th = theory env th in
+      env, Section (s,cl, th)
   | TypeDef (g,d,n) ->
       let _, g = genfun env g in
       env, TypeDef (g,d,n)
@@ -227,6 +229,6 @@ let rec decl env d =
       let env, rl = Env.add_region_list env rl in
       let env,el = Env.add_effect_var_list env el in
       env, DGen (tl@rl@el,[],[])
-and theory env t = snd (ExtList.fold_map decl env t)
+and theory env t = ExtList.fold_map decl env t
 
-let theory = theory Env.empty
+let theory t = snd (theory Env.empty t)
