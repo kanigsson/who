@@ -117,16 +117,10 @@ let build_get_tuple il tup l =
   List.fold_right (fun i acc -> get_tuple i acc l) il tup
 
 let obtain_get t tl tup l =
-(*
-  Myformat.printf "--searching %a in list %a@."
-    Ty.print t (Ty.print_list Myformat.comma) tl ;
-*)
-  let il = find_type t tl in
-(*
-  Myformat.printf "for type %a, found list: %a@." Ty.print t
-    (Myformat.list Myformat.comma Myformat.int) il;
-*)
-  build_get_tuple il tup l
+  if Ty.is_unit t then void l
+  else
+    let il = find_type t tl in
+    build_get_tuple il tup l
 
 let adapt_tuples t tl1 t2 l =
   (* [t] is a tuple of list tl1, but we want a tuple of list tl2 *)
@@ -158,7 +152,7 @@ let adapt obt exp t l =
           (* if there is an order problem, it *has* to be a tuple on the left
            * side; otherwise, the types cannot be different *)
       | Ty.Tuple tl1, t2 -> adapt_tuples t tl1 t2 l
-      | _, _ -> assert false
+      | t1, t2 -> adapt_tuples t [t1] t2 l
   in
   adapt obt exp t
 
