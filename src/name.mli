@@ -84,3 +84,13 @@ val set_to_list : S.t -> t list
 val remove_list_from_set : t list -> S.t -> S.t
 
 val get_cur_name : t -> string
+
+module Env : sig
+  type name = t
+  type t
+  val empty : t
+  val id : t -> name -> string
+  val add_id : t -> name -> t
+  val add_id_list : t -> name list -> t
+end
+

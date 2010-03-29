@@ -49,29 +49,29 @@ module Convert = struct
       | Map e -> P.Map (effect e)
       | App (n,i) ->
           P.TApp (id n, Inst.map aux id effect i)
-    and id x = P.Env.id env x
+    and id x = Name.Env.id env x
     and effect e = Effect.Convert.t env e in
     aux
+
+  let add_id = Name.Env.add_id_list
+  let map env = List.map (Name.Env.id env)
+  let gen env (tl,rl,el) =
+    let env = add_id (add_id (add_id env tl) rl) el in
+    env, (map env tl, map env rl, map env el)
+
+  let scheme env (g,ty) = 
+    let env', g = gen env g in
+    g, t env' ty
+
 end
-let is_compound = function
-  | Const _ | Ref _ | Map _ | App _ -> false
-  | Tuple _ | Arrow _ | PureArr _ -> true
-
-let maycap pr fmt = function
-  | [] -> ()
-  | l -> fprintf fmt "|%a" (list space pr) l
-
-let varprint kind fmt x =
-  match kind with
-  | `Who -> fprintf fmt "'%a" Name.print x
-  | `Coq | `Pangoline -> Name.print fmt x
 
 let gen_print ?kind fmt x =
-  PrintTree.Print.ty ?kind fmt (Convert.t PrintTree.Env.empty x)
+  PrintTree.Print.ty ?kind fmt (Convert.t Name.Env.empty x)
 let print fmt x = gen_print ~kind:`Who fmt x
 let coq_print fmt x = gen_print ~kind:`Coq fmt x
-
 let print_list sep fmt t = list sep print fmt t
+let print_scheme fmt s = 
+  PrintTree.Print.scheme fmt (Convert.scheme Name.Env.empty s)
 
 let arrow t1 t2 eff = Arrow (t1,t2,eff,[])
 let caparrow t1 t2 eff cap = Arrow (t1,t2,eff,cap)
@@ -233,13 +233,11 @@ module Generalize = struct
     | [],[],[] -> true
     | _ -> false
 
-  open Myformat
+  let print fmt g = 
+    let _, g = Convert.gen Name.Env.empty g in
+    PrintTree.Print.gen fmt g
 
-  let varlist = list space (varprint `Who)
-  let print fmt ((tl,rl,el) as g) =
-    if is_empty g then ()
-    else fprintf fmt "[%a|%a|%a]" varlist tl
-          Name.print_list rl varlist el
+  open Myformat
 
   let open_ r b =
     let tl,b = Name.open_listbind Name.refresh_listbind b in
@@ -265,9 +263,6 @@ end
 module G = Generalize
 
 type scheme = G.t * t
-
-let print_scheme fmt (g,t) =
-  Myformat.fprintf fmt "forall %a. %a" Generalize.print g print t
 
 let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target =
   elsubst evl el (rlsubst rvl rl (tlsubst tvl tl target))

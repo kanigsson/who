@@ -144,3 +144,17 @@ let print_set fmt s =
 
 let hash_set s =
   S.fold (fun x acc -> Hash.combine (hash x) acc) s 2
+
+module Env = struct
+  type name = t
+  type t = string M.t
+
+  let empty = M.empty
+  let id env x =
+    try M.find x env
+    with Not_found -> get_cur_name x
+  let add_id env x = M.add x (to_string x) env
+
+  let add_id_list = List.fold_left add_id
+end
+

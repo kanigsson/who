@@ -91,7 +91,7 @@ module Convert = struct
   open PrintTree
 
   let build_string_list env s =
-    List.rev (S.fold (fun x acc -> Env.id env x :: acc) s [])
+    List.rev (S.fold (fun x acc -> Name.Env.id env x :: acc) s [])
 
   let t env (r,e) = build_string_list env r, build_string_list env e
 end
@@ -99,8 +99,9 @@ end
 module Print = struct
   open PrintTree
 
-  let nosep fmt e = Print.effect_no_sep fmt (Convert.t Env.empty e)
-  let effect fmt e = Print.effect fmt (Convert.t Env.empty e)
+  let emp = Name.Env.empty
+  let nosep fmt e = Print.effect_no_sep fmt (Convert.t emp e)
+  let effect fmt e = Print.effect fmt (Convert.t emp e)
   let list sep = Myformat.list sep effect
 end
 

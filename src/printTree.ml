@@ -30,23 +30,6 @@ and gen = string list * string list * string list
 and funcbody = t * t * t
 and isrec = ty Const.isrec
 
-
-module Env : sig
-  type t
-  val empty : t
-  val id : t -> Name.t -> string
-  val add_id : t -> Name.t -> t
-end
-= struct
-  type t = string Name.M.t
-
-  let empty = Name.M.empty
-  let id env x =
-    try Name.M.find x env
-    with Not_found -> Name.get_cur_name x
-  let add_id env x = Name.M.add x (Name.to_string x) env
-end
-
 module Print = struct
   open Myformat
 
@@ -111,5 +94,18 @@ module Print = struct
       | TApp (v,i) -> fprintf fmt "%a%a" string v (inst ~kind ~intype:true) i
     and mayp fmt t = if is_compound t then paren print fmt t else print fmt t in
     print
+
+  let varprint kind fmt x =
+    match kind with
+    | `Who -> fprintf fmt "'%a" string x
+    | `Coq | `Pangoline -> string fmt x
+  let varlist = list space (varprint `Who)
+
+  let gen fmt ((tl,rl,el) as g) =
+    if is_empty g then ()
+    else fprintf fmt "[%a|%a|%a]" varlist tl (list space string) rl varlist el
+
+  let scheme fmt (g,t) = fprintf fmt "forall %a. %a" gen g (ty ~kind:`Who) t
+
 
 end
