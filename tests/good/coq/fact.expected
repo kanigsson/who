@@ -1,7 +1,0 @@
-cp fact_who.v.orig fact_who.v
-chmod a-w fact_who.v.orig
-coqc fact_who.v
-rm -f fact_who.v.orig
-rm -f fact_who.v
-rm -f fact_who.glob
-rm -f fact_who.vo

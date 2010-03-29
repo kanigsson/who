@@ -68,3 +68,8 @@ val split : t -> t -> t * t * t
 *)
 
 val s_equal : Name.S.t -> Name.S.t -> bool
+
+module Convert : sig
+
+  val t : PrintTree.Env.t -> t -> PrintTree.effect
+end

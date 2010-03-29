@@ -2,17 +2,17 @@ type unit
 logic +  : int -> int -> int
 logic = ['a||] : a -> a -> prop
 logic /\  : prop -> prop -> prop
-logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
+logic !! ['a1|r|'e] : ref(r,a1) -> <r 'e> -> a1
 let
-  ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {(fun (cur:<r1  >) -> True)}
-                parameter(a2,{r1  })
-                {(fun (old:<r1  >) ->
-                 (fun (cur1:<r1  >) ->
+  ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {(fun (cur:<r1 >) -> True)}
+                parameter(a2,{r1 })
+                {(fun (old:<r1 >) ->
+                 (fun (cur1:<r1 >) ->
                  (fun (r2:a2) ->
                  (r2 =[a2||] (!! [a2| r1| { }] x cur1)) /\
                  ((!! [a2| r1| { }] x old) =[a2||] (!! [a2| r1| { }] x cur1)))))}) 
 let
-  f [|r3|] = (fun (x1:ref(r3,int)) -> {(fun (cur2:<r3  >) -> True)}
+  f [|r3|] = (fun (x1:ref(r3,int)) -> {(fun (cur2:<r3 >) -> True)}
              let anf = ! [int| r3|] x1 in anf + 1
-             {(fun (old1:<r3  >) ->
-              (fun (cur3:<r3  >) -> (fun (anon:int) -> True)))}) 
+             {(fun (old1:<r3 >) ->
+              (fun (cur3:<r3 >) -> (fun (anon:int) -> True)))}) 

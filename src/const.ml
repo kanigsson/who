@@ -21,16 +21,16 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-type t = 
+type t =
   | Int of Big_int.big_int
   | Ptrue
   | Pfalse
 
-type ty = 
+type ty =
   | TInt
   | TProp
 
-type 'a isrec = 
+type 'a isrec =
   | LogicDef
   | NoRec
   | Rec of 'a
@@ -42,51 +42,51 @@ let type_of_constant = function
   | Ptrue | Pfalse -> TProp
 
 type takeover = [`Coq | `Pangoline ] * choice
-and choice = 
+and choice =
   | Include of string
-  | TakeOver 
+  | TakeOver
   | Predefined
 
 open Myformat
 let print fmt = function
-  | Int b -> pp_print_string fmt (Big_int.string_of_big_int b)
-  | Ptrue -> pp_print_string fmt "True"
-  | Pfalse -> pp_print_string fmt "False"
+  | Int b -> string fmt (Big_int.string_of_big_int b)
+  | Ptrue -> string fmt "True"
+  | Pfalse -> string fmt "False"
 
-let funsep fmt kind = 
+let funsep fmt kind =
   match kind with
-  | `Who | `Pangoline -> pp_print_string fmt "->"
-  | `Coq -> pp_print_string fmt "=>"
+  | `Who | `Pangoline -> string fmt "->"
+  | `Coq -> string fmt "=>"
 
 let print_ty kind fmt = function
-  | TInt -> 
+  | TInt ->
       begin match kind with
-      | `Coq -> pp_print_string fmt "Z"
-      | _ -> pp_print_string fmt "int"
+      | `Coq -> string fmt "Z"
+      | _ -> string fmt "int"
       end
-  | TProp -> 
-      match kind with 
-      | `Coq -> pp_print_string fmt "Prop"
-      | _ -> pp_print_string fmt "prop"
+  | TProp ->
+      match kind with
+      | `Coq -> string fmt "Prop"
+      | _ -> string fmt "prop"
 
 let quant fmt = function
-  | `FA -> pp_print_string fmt "forall"
-  | `EX -> pp_print_string fmt "exists"
+  | `FA -> string fmt "forall"
+  | `EX -> string fmt "exists"
 
-let quantsep fmt kind = 
+let quantsep fmt kind =
   match kind with
-  | `Who | `Pangoline -> pp_print_string fmt "."
-  | `Coq -> pp_print_string fmt ","
+  | `Who | `Pangoline -> string fmt "."
+  | `Coq -> string fmt ","
 
 let prover fmt = function
-  | `Pangoline -> pp_print_string fmt "pangoline"
-  | `Coq -> pp_print_string fmt "coq"
+  | `Pangoline -> string fmt "pangoline"
+  | `Coq -> string fmt "coq"
 let choice fmt = function
-  | Predefined -> pp_print_string fmt "predefined"
+  | Predefined -> string fmt "predefined"
   | Include s -> printf "\"%s\"" s
-  | TakeOver -> pp_print_string fmt "takeover"
+  | TakeOver -> string fmt "takeover"
 let takeover fmt (p,c) = fprintf fmt "%a %a" prover p choice c
-let compare a b = 
+let compare a b =
   match a,b with
   | Int i1, Int i2 -> Big_int.compare_big_int i1 i2
   | _, _ -> Pervasives.compare a b

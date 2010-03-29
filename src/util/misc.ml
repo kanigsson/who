@@ -28,6 +28,8 @@ module StringMap = Map.Make(String)
 module StringSet = Set.Make(String)
 module SS = StringSet
 
-let rec fold_down f acc n = 
+let string_set_map f s = SS.fold (fun x -> SS.add (f x)) s SS.empty
+
+let rec fold_down f acc n =
   if n <= 0 then acc
   else fold_down f (f acc n) (n-1)

@@ -1,5 +1,0 @@
-Set Implicit Arguments.
-Lemma goal: True.
-  Proof.
-  Admitted.
-  

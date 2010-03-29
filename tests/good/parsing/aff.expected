@@ -1,15 +1,15 @@
 type unit
 logic = ['a||] : a -> a -> prop
-logic !! ['a1|r|'e] : ref(r,a1) -> <r  'e > -> a1
+logic !! ['a1|r|'e] : ref(r,a1) -> <r 'e> -> a1
 let
   := ['a2|r1|] = (fun (x:ref(r1,a2)) ->
-                 (fun (v:a2) -> {(fun (cur:<r1  >) -> True)}
-                 parameter(unit,{r1  })
-                 {(fun (old:<r1  >) ->
-                  (fun (cur1:<r1  >) ->
+                 (fun (v:a2) -> {(fun (cur:<r1 >) -> True)}
+                 parameter(unit,{r1 })
+                 {(fun (old:<r1 >) ->
+                  (fun (cur1:<r1 >) ->
                   (fun (anon:unit) -> (!! [a2| r1| { }] x cur1) =[a2||] v)))})) 
 let
-  f [|r2|] = (fun (x1:ref(r2,int)) -> {(fun (cur2:<r2  >) -> True)}
+  f [|r2|] = (fun (x1:ref(r2,int)) -> {(fun (cur2:<r2 >) -> True)}
              x1 :=[int| r2|] 0
-             {(fun (old1:<r2  >) ->
-              (fun (cur3:<r2  >) -> (fun (anon1:unit) -> True)))}) 
+             {(fun (old1:<r2 >) ->
+              (fun (cur3:<r2 >) -> (fun (anon1:unit) -> True)))}) 

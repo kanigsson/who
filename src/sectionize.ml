@@ -140,20 +140,20 @@ let pr_generalize in_term kind fmt ((tl,rl,el) as g) =
 
 let def kind fmt x =
   match kind, x with
-  | `Coq, `Quant -> pp_print_string fmt "Variable"
-  | `Coq, `Logic -> pp_print_string fmt "Definition"
-  | `Pangoline, _ -> pp_print_string fmt "logic"
+  | `Coq, `Quant -> string fmt "Variable"
+  | `Coq, `Logic -> string fmt "Definition"
+  | `Pangoline, _ -> string fmt "logic"
 
 let hypo fmt = function
-  | `Pangoline -> pp_print_string fmt "hypothesis"
-  | `Coq -> pp_print_string fmt "Hypothesis"
+  | `Pangoline -> string fmt "hypothesis"
+  | `Coq -> string fmt "Hypothesis"
 let lemma fmt = function
-  | `Pangoline -> pp_print_string fmt "lemma"
-  | `Coq -> pp_print_string fmt "Lemma"
+  | `Pangoline -> string fmt "lemma"
+  | `Coq -> string fmt "Lemma"
 
 let print_stop fmt = function
   | `Pangoline -> ()
-  | `Coq -> pp_print_string fmt "."
+  | `Coq -> string fmt "."
 
 let print_proof fmt = function
   | `Pangoline -> ()
@@ -168,12 +168,12 @@ type sup = [`Coq | `Pangoline | `Who ]
 
 let beginsec kind fmt n =
   match kind with
-  | `Pangoline -> pp_print_string fmt "begin"
+  | `Pangoline -> string fmt "begin"
   | `Coq -> fprintf fmt "Section %a." Name.print n
 
 let endsec kind fmt n =
   match kind with
-  | `Pangoline -> pp_print_string fmt "end"
+  | `Pangoline -> string fmt "end"
   | `Coq -> fprintf fmt "End %a." Name.print n
 
 let rec print kind fmt = function

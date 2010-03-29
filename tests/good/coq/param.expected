@@ -1,7 +1,0 @@
-cp param_who.v.orig param_who.v
-chmod a-w param_who.v.orig
-coqc param_who.v
-rm -f param_who.v.orig
-rm -f param_who.v
-rm -f param_who.glob
-rm -f param_who.vo

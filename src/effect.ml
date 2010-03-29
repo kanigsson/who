@@ -85,16 +85,29 @@ let s_equal a b =
   ExtList.equal Name.equal (S.elements a) (S.elements b)
 let equal (r1,e1) (r2, e2) = s_equal r1 r2 && s_equal e1 e2
 
-open Myformat
-let print_set fmt s =
-  S.iter (fun x -> fprintf fmt "'%a" Name.print x ; space fmt ()) s
+module Convert = struct
+  module SS = Misc.StringSet
 
-let print_nosep fmt (r,e) =
-    fprintf fmt "%a %a" Name.print_set r print_set e
-let print fmt e = fprintf fmt "{%a}" print_nosep e
+  open PrintTree
 
+  let build_string_list env s =
+    List.rev (S.fold (fun x acc -> Env.id env x :: acc) s [])
 
-let print_list sep fmt l = list sep print fmt l
+  let t env (r,e) = build_string_list env r, build_string_list env e
+end
+
+module Print = struct
+  open PrintTree
+
+  let nosep fmt e = Print.effect_no_sep fmt (Convert.t Env.empty e)
+  let effect fmt e = Print.effect fmt (Convert.t Env.empty e)
+  let list sep = Myformat.list sep effect
+end
+
+let print_nosep = Print.nosep
+let print = Print.effect
+let print_list = Print.list
+
 
 let inter (r1,e1) (r2,e2) = S.inter r1 r2, S.inter e1 e2
 let diff (r1,e1) (r2,e2) = S.diff r1 r2, S.diff e1 e2

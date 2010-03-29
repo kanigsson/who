@@ -1,7 +1,0 @@
-cp array_who.v.orig array_who.v
-chmod a-w array_who.v.orig
-coqc array_who.v
-rm -f array_who.v.orig
-rm -f array_who.v
-rm -f array_who.glob
-rm -f array_who.vo

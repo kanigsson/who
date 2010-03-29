@@ -1,7 +1,0 @@
-cp axiom_who.v.orig axiom_who.v
-chmod a-w axiom_who.v.orig
-coqc axiom_who.v
-rm -f axiom_who.v.orig
-rm -f axiom_who.v
-rm -f axiom_who.glob
-rm -f axiom_who.vo

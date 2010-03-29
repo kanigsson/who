@@ -136,7 +136,7 @@ let get_cur_name =
       s
 
 open Myformat
-let print fmt x = fprintf fmt "%s" (get_cur_name x)
+let print fmt x = string fmt (get_cur_name x)
 let print_list fmt x = list space print fmt x
 
 let print_set fmt s =

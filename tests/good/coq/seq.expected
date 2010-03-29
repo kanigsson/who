@@ -1,7 +1,0 @@
-cp seq_who.v.orig seq_who.v
-chmod a-w seq_who.v.orig
-coqc seq_who.v
-rm -f seq_who.v.orig
-rm -f seq_who.v
-rm -f seq_who.glob
-rm -f seq_who.vo

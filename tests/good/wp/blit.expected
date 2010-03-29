@@ -36,105 +36,105 @@ section basiclogic coq predefined
   logic != ['a6||] : a6 -> a6 -> bool
   section Whoref coq "WhoMap"
     pangoline predefined
-     logic !! ['a7|r|'e] : ref(r,a7) -> < 'e > -> a7
+     logic !! ['a7|r|'e] : ref(r,a7) -> < 'e> -> a7
     let
-      logic ! ['a8|r1|] = mk_2tuple [ref(r1,a8) -> <r1  > ->
-                          prop,ref(r1,a8) -> <r1  > -> <r1  > -> a8 ->
-                          prop||]
-                          (fun (x:ref(r1,a8)) -> (fun (cur:<r1  >) -> True))
+      logic ! ['a8|r1|] = mk_2tuple [ref(r1,a8) -> <r1 > ->
+                          prop,ref(r1,a8) -> <r1 > -> <r1 > -> a8 -> prop||]
+                          (fun (x:ref(r1,a8)) -> (fun (cur:<r1 >) -> True))
                           (fun (x:ref(r1,a8)) ->
-                          (fun (old:<r1  >) ->
-                          (fun (cur1:<r1  >) ->
+                          (fun (old:<r1 >) ->
+                          (fun (cur1:<r1 >) ->
                           (fun (r2:a8) ->
-                          (r2 =[a8||] (!! [a8| r1| {r1  }] x cur1)) /\
-                          ((!! [a8| r1| {r1  }] x old) =[a8||]
-                           (!! [a8| r1| {r1  }] x cur1)))))) 
+                          (r2 =[a8||] (!! [a8| r1| {r1 }] x cur1)) /\
+                          ((!! [a8| r1| {r1 }] x old) =[a8||]
+                           (!! [a8| r1| {r1 }] x cur1)))))) 
     let
       logic := ['a9|r3|] = (fun (x1:ref(r3,a9)) ->
-                           mk_2tuple [a9 -> <r3  > -> prop,a9 -> <r3  > ->
-                           <r3  > -> unit -> prop||]
-                           (fun (v:a9) -> (fun (cur2:<r3  >) -> True))
+                           mk_2tuple [a9 -> <r3 > -> prop,a9 -> <r3 > ->
+                           <r3 > -> unit -> prop||]
+                           (fun (v:a9) -> (fun (cur2:<r3 >) -> True))
                            (fun (v:a9) ->
-                           (fun (old1:<r3  >) ->
-                           (fun (cur3:<r3  >) ->
+                           (fun (old1:<r3 >) ->
+                           (fun (cur3:<r3 >) ->
                            (fun (anon:unit) ->
-                           v =[a9||] (!! [a9| r3| {r3  }] x1 cur3)))))) 
+                           v =[a9||] (!! [a9| r3| {r3 }] x1 cur3)))))) 
     let
-      logic ref ['a10|r4|] = mk_2tuple [a10 -> <r4  > -> prop,a10 -> <r4
-                              > -> <r4  > -> ref(r4,a10) -> prop||]
-                             (fun (v1:a10) -> (fun (cur4:<r4  >) -> True))
+      logic ref ['a10|r4|] = mk_2tuple [a10 -> <r4 > -> prop,a10 -> <r4 > ->
+                             <r4 > -> ref(r4,a10) -> prop||]
+                             (fun (v1:a10) -> (fun (cur4:<r4 >) -> True))
                              (fun (v1:a10) ->
-                             (fun (old2:<r4  >) ->
-                             (fun (cur5:<r4  >) ->
+                             (fun (old2:<r4 >) ->
+                             (fun (cur5:<r4 >) ->
                              (fun (x2:ref(r4,a10)) ->
-                             v1 =[a10||] (!! [a10| r4| {r4  }] x2 cur5))))) 
-    logic combine [||'e1 'e2 'e3] : < 'e1 'e2 > -> < 'e2 'e3 > -> < 'e1 'e2
-      'e3 >
-    logic restrict [||'e4 'e5] : < 'e4 'e5 > -> < 'e5 >
+                             v1 =[a10||] (!! [a10| r4| {r4 }] x2 cur5))))) 
+    logic combine [||'e1 'e2 'e3] : < 'e1 'e2> -> < 'e2 'e3> -> < 'e1 'e2
+      'e3>
+    logic restrict [||'e4 'e5] : < 'e4 'e5> -> < 'e5>
     logic empty  : < >
     let logic pre ['a11 'b3||] = (fun (x3:a11 * b3) -> fst [a11,b3||] x3) 
     let logic post ['a12 'b4||] = (fun (x4:a12 * b4) -> snd [a12,b4||] x4)  end
   let
-    logic forto [||'e6] = (fun (inv:int -> < 'e6 > -> prop) ->
+    logic forto [||'e6] = (fun (inv:int -> < 'e6> -> prop) ->
                           (fun (start:int) ->
                           (fun (end_:int) ->
-                          mk_2tuple [((int -> < 'e6 > -> prop) * (int ->
-                          < 'e6 > -> < 'e6 > -> unit -> prop)) -> < 'e6 > ->
-                          prop,((int -> < 'e6 > -> prop) * (int -> < 'e6 > ->
-                          < 'e6 > -> unit -> prop)) -> < 'e6 > -> < 'e6 > ->
+                          mk_2tuple [((int -> < 'e6> -> prop) * (int ->
+                          < 'e6> -> < 'e6> -> unit -> prop)) -> < 'e6> ->
+                          prop,((int -> < 'e6> -> prop) * (int -> < 'e6> ->
+                          < 'e6> -> unit -> prop)) -> < 'e6> -> < 'e6> ->
                           unit -> prop||]
-                          (fun (f:(int -> < 'e6 > -> prop) * (int -> < 'e6
-                          > -> < 'e6 > -> unit -> prop)) ->
-                          (fun (cur6:< 'e6 >) ->
+                          (fun (f:(int -> < 'e6> -> prop) * (int -> < 'e6> ->
+                          < 'e6> -> unit -> prop)) ->
+                          (fun (cur6:< 'e6>) ->
                           (inv start cur6) /\
                           (forall (i:int).
                            (start <= i) ->
                            ((i <= end_) ->
-                            (forall (m:< 'e6 >).
+                            (forall (m:< 'e6>).
                              (inv i m) ->
-                             ((pre [int -> < 'e6 > -> prop,int -> < 'e6 > ->
-                               < 'e6 > -> unit -> prop||] f i m)
+                             ((pre [int -> < 'e6> -> prop,int -> < 'e6> ->
+                               < 'e6> -> unit -> prop||] f i m)
                               /\
-                              (forall (n:< 'e6 >).
-                               (post [int -> < 'e6 > -> prop,int -> < 'e6
-                                > -> < 'e6 > -> unit -> prop||] f i m n tt)
+                              (forall (n:< 'e6>).
+                               (post [int -> < 'e6> -> prop,int -> < 'e6> ->
+                                < 'e6> -> unit -> prop||] f i m n tt)
                                -> (inv (i + 1) n))))))))
-                          (fun (f:(int -> < 'e6 > -> prop) * (int -> < 'e6
-                          > -> < 'e6 > -> unit -> prop)) ->
-                          (fun (old3:< 'e6 >) ->
-                          (fun (cur7:< 'e6 >) ->
+                          (fun (f:(int -> < 'e6> -> prop) * (int -> < 'e6> ->
+                          < 'e6> -> unit -> prop)) ->
+                          (fun (old3:< 'e6>) ->
+                          (fun (cur7:< 'e6>) ->
                           (fun (anon1:unit) ->
                           inv (max start (end_ + 1)) cur7))))))) 
   let
-    logic fordownto [||'e7] = (fun (inv1:int -> < 'e7 > -> prop) ->
+    logic fordownto [||'e7] = (fun (inv1:int -> < 'e7> -> prop) ->
                               (fun (start1:int) ->
                               (fun (end_1:int) ->
-                              mk_2tuple [((int -> < 'e7 > -> prop) * (int ->
-                              < 'e7 > -> < 'e7 > -> unit -> prop)) -> < 'e7
-                              > -> prop,((int -> < 'e7 > -> prop) * (int ->
-                              < 'e7 > -> < 'e7 > -> unit -> prop)) -> < 'e7
-                              > -> < 'e7 > -> unit -> prop||]
-                              (fun (f1:(int -> < 'e7 > -> prop) * (int ->
-                              < 'e7 > -> < 'e7 > -> unit -> prop)) ->
-                              (fun (cur8:< 'e7 >) ->
+                              mk_2tuple [((int -> < 'e7> -> prop) * (int ->
+                              < 'e7> -> < 'e7> -> unit -> prop)) -> < 'e7> ->
+                              prop,((int -> < 'e7> -> prop) * (int ->
+                              < 'e7> -> < 'e7> -> unit -> prop)) -> < 'e7> ->
+                              < 'e7> -> unit -> prop||]
+                              (fun (f1:(int -> < 'e7> -> prop) * (int ->
+                              < 'e7> -> < 'e7> -> unit -> prop)) ->
+                              (fun (cur8:< 'e7>) ->
                               (inv1 start1 cur8) /\
                               (forall (i1:int).
                                (end_1 <= i1) ->
                                ((i1 <= start1) ->
-                                (forall (m1:< 'e7 >).
+                                (forall (m1:< 'e7>).
                                  (inv1 i1 m1) ->
-                                 ((pre [int -> < 'e7 > -> prop,int -> < 'e7
-                                   > -> < 'e7 > -> unit -> prop||] f1 i1 m1)
+                                 ((pre [int -> < 'e7> -> prop,int ->
+                                   < 'e7> -> < 'e7> -> unit -> prop||] f1 i1
+                                   m1)
                                   /\
-                                  (forall (n1:< 'e7 >).
-                                   (post [int -> < 'e7 > -> prop,int -> < 'e7
-                                    > -> < 'e7 > -> unit -> prop||] f1 i1 m1
-                                    n1 tt)
+                                  (forall (n1:< 'e7>).
+                                   (post [int -> < 'e7> -> prop,int ->
+                                    < 'e7> -> < 'e7> -> unit -> prop||] f1 i1
+                                    m1 n1 tt)
                                    -> (inv1 (i1 - 1) n1))))))))
-                              (fun (f1:(int -> < 'e7 > -> prop) * (int ->
-                              < 'e7 > -> < 'e7 > -> unit -> prop)) ->
-                              (fun (old4:< 'e7 >) ->
-                              (fun (cur9:< 'e7 >) ->
+                              (fun (f1:(int -> < 'e7> -> prop) * (int ->
+                              < 'e7> -> < 'e7> -> unit -> prop)) ->
+                              (fun (old4:< 'e7>) ->
+                              (fun (cur9:< 'e7>) ->
                               (fun (anon2:unit) ->
                               inv1 (min start1 (end_1 - 1)) cur9))))))) 
   section Array coq "WhoArray"
@@ -198,52 +198,52 @@ section basiclogic coq predefined
           forall (ofs:int).
           forall (ofs1:int).
           forall (l2:int).
-          forall (s:<r5 r6  >).
+          forall (s:<r5 r6 >).
           (0 <= l2) ->
           ((0 <= ofs) ->
            ((0 <= ofs1) ->
             ((ofs <=
-              ((len [a31||] (!! [array[a31||]| r5| {r5 r6  }] ar s)) - l2))
+              ((len [a31||] (!! [array[a31||]| r5| {r5 r6 }] ar s)) - l2))
              ->
              ((ofs1 <=
-               ((len [a31||] (!! [array[a31||]| r6| {r5 r6  }] ar1 s)) - l2))
+               ((len [a31||] (!! [array[a31||]| r6| {r5 r6 }] ar1 s)) - l2))
               ->
-              ((fst [ref(r5,array[a31||]) -> <r5  > ->
-                prop,ref(r5,array[a31||]) -> <r5  > -> <r5  > ->
+              ((fst [ref(r5,array[a31||]) -> <r5 > ->
+                prop,ref(r5,array[a31||]) -> <r5 > -> <r5 > ->
                 array[a31||] -> prop||] ! [array[a31||]| r5|] ar
-                (restrict [|| {r6  } {r5  }] s))
+                (restrict [|| {r6 } {r5 }] s))
                /\
-               (forall (s1:<r5  >).
+               (forall (s1:<r5 >).
                 forall (anon3:array[a31||]).
-                (snd [ref(r5,array[a31||]) -> <r5  > ->
-                 prop,ref(r5,array[a31||]) -> <r5  > -> <r5  > ->
+                (snd [ref(r5,array[a31||]) -> <r5 > ->
+                 prop,ref(r5,array[a31||]) -> <r5 > -> <r5 > ->
                  array[a31||] -> prop||] ! [array[a31||]| r5|] ar
-                 (restrict [|| {r6  } {r5  }] s) s1 anon3)
+                 (restrict [|| {r6 } {r5 }] s) s1 anon3)
                 ->
-                ((fst [ref(r6,array[a31||]) -> <r6  > ->
-                  prop,ref(r6,array[a31||]) -> <r6  > -> <r6  > ->
+                ((fst [ref(r6,array[a31||]) -> <r6 > ->
+                  prop,ref(r6,array[a31||]) -> <r6 > -> <r6 > ->
                   array[a31||] -> prop||] ! [array[a31||]| r6|] ar1
-                  (restrict [|| {r5  } {r6  }] s))
+                  (restrict [|| {r5 } {r6 }] s))
                  /\
-                 (forall (s2:<r6  >).
+                 (forall (s2:<r6 >).
                   forall (anon4:array[a31||]).
-                  (snd [ref(r6,array[a31||]) -> <r6  > ->
-                   prop,ref(r6,array[a31||]) -> <r6  > -> <r6  > ->
+                  (snd [ref(r6,array[a31||]) -> <r6 > ->
+                   prop,ref(r6,array[a31||]) -> <r6 > -> <r6 > ->
                    array[a31||] -> prop||] ! [array[a31||]| r6|] ar1
-                   (restrict [|| {r5  } {r6  }] s) s2 anon4)
+                   (restrict [|| {r5 } {r6 }] s) s2 anon4)
                   ->
                   (let logic l3 = len [a31||] anon4 in
                    ((ofs < ofs1) ->
                     (let logic __start = l3 - 1 in
                      let logic __end = 0 in
                      ((forall (i6:int).
-                       forall (s3:<r5 r6  >).
+                       forall (s3:<r5 r6 >).
                        (anon3 =[array[a31||]||]
-                        (!! [array[a31||]| r5| {r5 r6  }] ar s3))
+                        (!! [array[a31||]| r5| {r5 r6 }] ar s3))
                        ->
                        ((l3 =[int||]
                          (len [a31||]
-                          (!! [array[a31||]| r6| {r5 r6  }] ar1 s3)))
+                          (!! [array[a31||]| r6| {r5 r6 }] ar1 s3)))
                         ->
                         ((__end <= i6) ->
                          ((i6 <= __start) ->
@@ -251,48 +251,47 @@ section basiclogic coq predefined
                             (i6 < k) ->
                             ((k <= (l3 - 1)) ->
                              ((get [a31||] (ofs1 + k)
-                               (!! [array[a31||]| r6| {r5 r6  }] ar1 s3))
+                               (!! [array[a31||]| r6| {r5 r6 }] ar1 s3))
                               =[a31||]
                               (get [a31||] (ofs + k)
-                               (!! [array[a31||]| r5| {r5 r6  }] ar s3)))))
+                               (!! [array[a31||]| r5| {r5 r6 }] ar s3)))))
                            ->
-                           ((fst [ref(r5,array[a31||]) -> <r5  > ->
-                             prop,ref(r5,array[a31||]) -> <r5  > -> <r5  > ->
+                           ((fst [ref(r5,array[a31||]) -> <r5 > ->
+                             prop,ref(r5,array[a31||]) -> <r5 > -> <r5 > ->
                              array[a31||] -> prop||] ! [array[a31||]| r5|] ar
-                             (restrict [|| {r6  } {r5  }] s3))
+                             (restrict [|| {r6 } {r5 }] s3))
                             /\
-                            (forall (s4:<r5  >).
+                            (forall (s4:<r5 >).
                              forall (anon5:array[a31||]).
-                             (snd [ref(r5,array[a31||]) -> <r5  > ->
-                              prop,ref(r5,array[a31||]) -> <r5  > -> <r5
-                               > -> array[a31||] -> prop||] ! [array[a31||]|
-                              r5|] ar (restrict [|| {r6  } {r5  }] s3) s4
-                              anon5)
+                             (snd [ref(r5,array[a31||]) -> <r5 > ->
+                              prop,ref(r5,array[a31||]) -> <r5 > -> <r5 > ->
+                              array[a31||] -> prop||] ! [array[a31||]| r5|]
+                              ar (restrict [|| {r6 } {r5 }] s3) s4 anon5)
                              ->
-                             ((fst [ref(r6,array[a31||]) -> <r6  > ->
-                               prop,ref(r6,array[a31||]) -> <r6  > -> <r6
-                                > -> array[a31||] -> prop||] ! [array[a31||]|
-                               r6|] ar1 (restrict [|| {r5  } {r6  }] s3))
+                             ((fst [ref(r6,array[a31||]) -> <r6 > ->
+                               prop,ref(r6,array[a31||]) -> <r6 > -> <r6 > ->
+                               array[a31||] -> prop||] ! [array[a31||]| r6|]
+                               ar1 (restrict [|| {r5 } {r6 }] s3))
                               /\
-                              (forall (s5:<r6  >).
+                              (forall (s5:<r6 >).
                                forall (anon6:array[a31||]).
-                               (snd [ref(r6,array[a31||]) -> <r6  > ->
-                                prop,ref(r6,array[a31||]) -> <r6  > -> <r6
-                                 > -> array[a31||] -> prop||]
+                               (snd [ref(r6,array[a31||]) -> <r6 > ->
+                                prop,ref(r6,array[a31||]) -> <r6 > ->
+                                <r6 > -> array[a31||] -> prop||]
                                 ! [array[a31||]| r6|] ar1
-                                (restrict [|| {r5  } {r6  }] s3) s5 anon6)
+                                (restrict [|| {r5 } {r6 }] s3) s5 anon6)
                                ->
-                               ((fst [array[a31||] -> <r6  > ->
-                                 prop,array[a31||] -> <r6  > -> <r6  > ->
+                               ((fst [array[a31||] -> <r6 > ->
+                                 prop,array[a31||] -> <r6 > -> <r6 > ->
                                  unit -> prop||]
                                  ((:= [array[a31||]| r6|]) ar1)
                                  (set [a31||] (ofs1 + i6)
                                   (get [a31||] (ofs + i6) anon5) anon6)
                                  s5)
                                 /\
-                                (forall (s6:<r6  >).
-                                 (snd [array[a31||] -> <r6  > ->
-                                  prop,array[a31||] -> <r6  > -> <r6  > ->
+                                (forall (s6:<r6 >).
+                                 (snd [array[a31||] -> <r6 > ->
+                                  prop,array[a31||] -> <r6 > -> <r6 > ->
                                   unit -> prop||]
                                   ((:= [array[a31||]| r6|]) ar1)
                                   (set [a31||] (ofs1 + i6)
@@ -300,186 +299,185 @@ section basiclogic coq predefined
                                   s5 s6 tt)
                                  ->
                                  (((anon3 =[array[a31||]||]
-                                    (!! [array[a31||]| r5| {r5 r6  }] ar
-                                     (combine [|| {r5  } { } {r6  }] s4 s6)))
+                                    (!! [array[a31||]| r5| {r5 r6 }] ar
+                                     (combine [|| {r5 } { } {r6 }] s4 s6)))
                                    /\
                                    (l3 =[int||]
                                     (len [a31||]
-                                     (!! [array[a31||]| r6| {r5 r6  }] ar1
-                                      (combine [|| {r5  } { } {r6  }] s4 s6)))))
+                                     (!! [array[a31||]| r6| {r5 r6 }] ar1
+                                      (combine [|| {r5 } { } {r6 }] s4 s6)))))
                                   /\
                                   (forall (k1:int).
                                    ((i6 - 1) < k1) ->
                                    ((k1 <= (l3 - 1)) ->
                                     ((get [a31||] (ofs1 + k1)
-                                      (!! [array[a31||]| r6| {r5 r6  }] ar1
-                                       (combine [|| {r5  } { } {r6  }] s4 s6)))
+                                      (!! [array[a31||]| r6| {r5 r6 }] ar1
+                                       (combine [|| {r5 } { } {r6 }] s4 s6)))
                                      =[a31||]
                                      (get [a31||] (ofs + k1)
-                                      (!! [array[a31||]| r5| {r5 r6  }] ar
-                                       (combine [|| {r5  } { } {r6  }] s4 s6))))))))))))))))))
+                                      (!! [array[a31||]| r5| {r5 r6 }] ar
+                                       (combine [|| {r5 } { } {r6 }] s4 s6))))))))))))))))))
                       /\
-                      (fst [((int -> <r5 r6  > -> prop) * (int -> <r5 r6
-                        > -> <r5 r6  > -> unit -> prop)) -> <r5 r6  > ->
-                       prop,((int -> <r5 r6  > -> prop) * (int -> <r5 r6
-                        > -> <r5 r6  > -> unit -> prop)) -> <r5 r6  > -> <r5
-                       r6  > -> unit -> prop||]
-                       (fordownto [|| {r5 r6  }]
+                      (fst [((int -> <r5 r6 > -> prop) * (int -> <r5 r6 > ->
+                       <r5 r6 > -> unit -> prop)) -> <r5 r6 > ->
+                       prop,((int -> <r5 r6 > -> prop) * (int -> <r5 r6 > ->
+                       <r5 r6 > -> unit -> prop)) -> <r5 r6 > -> <r5 r6 > ->
+                       unit -> prop||]
+                       (fordownto [|| {r5 r6 }]
                         (fun (i7:int) ->
-                        (fun (cur10:<r5 r6  >) ->
+                        (fun (cur10:<r5 r6 >) ->
                         ((anon3 =[array[a31||]||]
-                          (!! [array[a31||]| r5| {r5 r6  }] ar cur10))
+                          (!! [array[a31||]| r5| {r5 r6 }] ar cur10))
                          /\
                          (l3 =[int||]
                           (len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur10))))
+                           (!! [array[a31||]| r6| {r5 r6 }] ar1 cur10))))
                         /\
                         (forall (k2:int).
                          (i7 < k2) ->
                          ((k2 <= (l3 - 1)) ->
                           ((get [a31||] (ofs1 + k2)
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur10))
+                            (!! [array[a31||]| r6| {r5 r6 }] ar1 cur10))
                            =[a31||]
                            (get [a31||] (ofs + k2)
-                            (!! [array[a31||]| r5| {r5 r6  }] ar cur10)))))))
+                            (!! [array[a31||]| r5| {r5 r6 }] ar cur10)))))))
                         __start __end)
-                       (mk_2tuple [int -> <r5 r6  > -> prop,int -> <r5 r6
-                         > -> <r5 r6  > -> unit -> prop||]
+                       (mk_2tuple [int -> <r5 r6 > -> prop,int -> <r5 r6 > ->
+                        <r5 r6 > -> unit -> prop||]
                         (fun (i8:int) ->
-                        (fun (cur11:<r5 r6  >) ->
+                        (fun (cur11:<r5 r6 >) ->
                         ((__end <= i8) /\ (i8 <= __start)) /\
                         (((anon3 =[array[a31||]||]
-                           (!! [array[a31||]| r5| {r5 r6  }] ar cur11))
+                           (!! [array[a31||]| r5| {r5 r6 }] ar cur11))
                           /\
                           (l3 =[int||]
                            (len [a31||]
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur11))))
+                            (!! [array[a31||]| r6| {r5 r6 }] ar1 cur11))))
                          /\
                          (forall (k3:int).
                           (i8 < k3) ->
                           ((k3 <= (l3 - 1)) ->
                            ((get [a31||] (ofs1 + k3)
-                             (!! [array[a31||]| r6| {r5 r6  }] ar1 cur11))
+                             (!! [array[a31||]| r6| {r5 r6 }] ar1 cur11))
                             =[a31||]
                             (get [a31||] (ofs + k3)
-                             (!! [array[a31||]| r5| {r5 r6  }] ar cur11))))))))
+                             (!! [array[a31||]| r5| {r5 r6 }] ar cur11))))))))
                         (fun (i9:int) ->
-                        (fun (anon7:<r5 r6  >) ->
-                        (fun (cur12:<r5 r6  >) ->
+                        (fun (anon7:<r5 r6 >) ->
+                        (fun (cur12:<r5 r6 >) ->
                         (fun (anon8:unit) ->
                         ((anon3 =[array[a31||]||]
-                          (!! [array[a31||]| r5| {r5 r6  }] ar cur12))
+                          (!! [array[a31||]| r5| {r5 r6 }] ar cur12))
                          /\
                          (l3 =[int||]
                           (len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur12))))
+                           (!! [array[a31||]| r6| {r5 r6 }] ar1 cur12))))
                         /\
                         (forall (k4:int).
                          ((i9 - 1) < k4) ->
                          ((k4 <= (l3 - 1)) ->
                           ((get [a31||] (ofs1 + k4)
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur12))
+                            (!! [array[a31||]| r6| {r5 r6 }] ar1 cur12))
                            =[a31||]
                            (get [a31||] (ofs + k4)
-                            (!! [array[a31||]| r5| {r5 r6  }] ar cur12))))))))))
-                       (combine [|| {r5  } { } {r6  }] s1 s2)))
+                            (!! [array[a31||]| r5| {r5 r6 }] ar cur12))))))))))
+                       (combine [|| {r5 } { } {r6 }] s1 s2)))
                      /\
-                     (forall (s7:<r5 r6  >).
-                      (snd [((int -> <r5 r6  > -> prop) * (int -> <r5 r6
-                        > -> <r5 r6  > -> unit -> prop)) -> <r5 r6  > ->
-                       prop,((int -> <r5 r6  > -> prop) * (int -> <r5 r6
-                        > -> <r5 r6  > -> unit -> prop)) -> <r5 r6  > -> <r5
-                       r6  > -> unit -> prop||]
-                       (fordownto [|| {r5 r6  }]
+                     (forall (s7:<r5 r6 >).
+                      (snd [((int -> <r5 r6 > -> prop) * (int -> <r5 r6 > ->
+                       <r5 r6 > -> unit -> prop)) -> <r5 r6 > ->
+                       prop,((int -> <r5 r6 > -> prop) * (int -> <r5 r6 > ->
+                       <r5 r6 > -> unit -> prop)) -> <r5 r6 > -> <r5 r6 > ->
+                       unit -> prop||]
+                       (fordownto [|| {r5 r6 }]
                         (fun (i10:int) ->
-                        (fun (cur13:<r5 r6  >) ->
+                        (fun (cur13:<r5 r6 >) ->
                         ((anon3 =[array[a31||]||]
-                          (!! [array[a31||]| r5| {r5 r6  }] ar cur13))
+                          (!! [array[a31||]| r5| {r5 r6 }] ar cur13))
                          /\
                          (l3 =[int||]
                           (len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur13))))
+                           (!! [array[a31||]| r6| {r5 r6 }] ar1 cur13))))
                         /\
                         (forall (k5:int).
                          (i10 < k5) ->
                          ((k5 <= (l3 - 1)) ->
                           ((get [a31||] (ofs1 + k5)
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur13))
+                            (!! [array[a31||]| r6| {r5 r6 }] ar1 cur13))
                            =[a31||]
                            (get [a31||] (ofs + k5)
-                            (!! [array[a31||]| r5| {r5 r6  }] ar cur13)))))))
+                            (!! [array[a31||]| r5| {r5 r6 }] ar cur13)))))))
                         __start __end)
-                       (mk_2tuple [int -> <r5 r6  > -> prop,int -> <r5 r6
-                         > -> <r5 r6  > -> unit -> prop||]
+                       (mk_2tuple [int -> <r5 r6 > -> prop,int -> <r5 r6 > ->
+                        <r5 r6 > -> unit -> prop||]
                         (fun (i11:int) ->
-                        (fun (cur14:<r5 r6  >) ->
+                        (fun (cur14:<r5 r6 >) ->
                         ((__end <= i11) /\ (i11 <= __start)) /\
                         (((anon3 =[array[a31||]||]
-                           (!! [array[a31||]| r5| {r5 r6  }] ar cur14))
+                           (!! [array[a31||]| r5| {r5 r6 }] ar cur14))
                           /\
                           (l3 =[int||]
                            (len [a31||]
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur14))))
+                            (!! [array[a31||]| r6| {r5 r6 }] ar1 cur14))))
                          /\
                          (forall (k6:int).
                           (i11 < k6) ->
                           ((k6 <= (l3 - 1)) ->
                            ((get [a31||] (ofs1 + k6)
-                             (!! [array[a31||]| r6| {r5 r6  }] ar1 cur14))
+                             (!! [array[a31||]| r6| {r5 r6 }] ar1 cur14))
                             =[a31||]
                             (get [a31||] (ofs + k6)
-                             (!! [array[a31||]| r5| {r5 r6  }] ar cur14))))))))
+                             (!! [array[a31||]| r5| {r5 r6 }] ar cur14))))))))
                         (fun (i12:int) ->
-                        (fun (anon9:<r5 r6  >) ->
-                        (fun (cur15:<r5 r6  >) ->
+                        (fun (anon9:<r5 r6 >) ->
+                        (fun (cur15:<r5 r6 >) ->
                         (fun (anon10:unit) ->
                         ((anon3 =[array[a31||]||]
-                          (!! [array[a31||]| r5| {r5 r6  }] ar cur15))
+                          (!! [array[a31||]| r5| {r5 r6 }] ar cur15))
                          /\
                          (l3 =[int||]
                           (len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur15))))
+                           (!! [array[a31||]| r6| {r5 r6 }] ar1 cur15))))
                         /\
                         (forall (k7:int).
                          ((i12 - 1) < k7) ->
                          ((k7 <= (l3 - 1)) ->
                           ((get [a31||] (ofs1 + k7)
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur15))
+                            (!! [array[a31||]| r6| {r5 r6 }] ar1 cur15))
                            =[a31||]
                            (get [a31||] (ofs + k7)
-                            (!! [array[a31||]| r5| {r5 r6  }] ar cur15))))))))))
-                       (combine [|| {r5  } { } {r6  }] s1 s2) s7 tt)
+                            (!! [array[a31||]| r5| {r5 r6 }] ar cur15))))))))))
+                       (combine [|| {r5 } { } {r6 }] s1 s2) s7 tt)
                       ->
-                      ((((!! [array[a31||]| r5| {r5 r6  }] ar s)
+                      ((((!! [array[a31||]| r5| {r5 r6 }] ar s)
                          =[array[a31||]||]
-                         (!! [array[a31||]| r5| {r5 r6  }] ar s7))
+                         (!! [array[a31||]| r5| {r5 r6 }] ar s7))
                         /\
                         ((len [a31||]
-                          (!! [array[a31||]| r6| {r5 r6  }] ar1 s7))
+                          (!! [array[a31||]| r6| {r5 r6 }] ar1 s7))
                          =[int||]
-                         (len [a31||]
-                          (!! [array[a31||]| r6| {r5 r6  }] ar1 s))))
+                         (len [a31||] (!! [array[a31||]| r6| {r5 r6 }] ar1 s))))
                        /\
                        (forall (k8:int).
                         (0 <= k8) ->
                         ((k8 < l2) ->
                          ((get [a31||] (ofs1 + k8)
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 s7))
+                           (!! [array[a31||]| r6| {r5 r6 }] ar1 s7))
                           =[a31||]
                           (get [a31||] (ofs + k8)
-                           (!! [array[a31||]| r5| {r5 r6  }] ar s7)))))))))
+                           (!! [array[a31||]| r5| {r5 r6 }] ar s7)))))))))
                    /\
                    ((~ (ofs < ofs1)) ->
                     (let logic __start1 = 0 in
                      let logic __end1 = l3 - 1 in
                      ((forall (i13:int).
-                       forall (s8:<r5 r6  >).
+                       forall (s8:<r5 r6 >).
                        (anon3 =[array[a31||]||]
-                        (!! [array[a31||]| r5| {r5 r6  }] ar s8))
+                        (!! [array[a31||]| r5| {r5 r6 }] ar s8))
                        ->
                        ((l3 =[int||]
                          (len [a31||]
-                          (!! [array[a31||]| r6| {r5 r6  }] ar1 s8)))
+                          (!! [array[a31||]| r6| {r5 r6 }] ar1 s8)))
                         ->
                         ((__start1 <= i13) ->
                          ((i13 <= __end1) ->
@@ -487,48 +485,47 @@ section basiclogic coq predefined
                             (0 <= k9) ->
                             ((k9 < i13) ->
                              ((get [a31||] (ofs1 + k9)
-                               (!! [array[a31||]| r6| {r5 r6  }] ar1 s8))
+                               (!! [array[a31||]| r6| {r5 r6 }] ar1 s8))
                               =[a31||]
                               (get [a31||] (ofs + k9)
-                               (!! [array[a31||]| r5| {r5 r6  }] ar s8)))))
+                               (!! [array[a31||]| r5| {r5 r6 }] ar s8)))))
                            ->
-                           ((fst [ref(r5,array[a31||]) -> <r5  > ->
-                             prop,ref(r5,array[a31||]) -> <r5  > -> <r5  > ->
+                           ((fst [ref(r5,array[a31||]) -> <r5 > ->
+                             prop,ref(r5,array[a31||]) -> <r5 > -> <r5 > ->
                              array[a31||] -> prop||] ! [array[a31||]| r5|] ar
-                             (restrict [|| {r6  } {r5  }] s8))
+                             (restrict [|| {r6 } {r5 }] s8))
                             /\
-                            (forall (s9:<r5  >).
+                            (forall (s9:<r5 >).
                              forall (anon11:array[a31||]).
-                             (snd [ref(r5,array[a31||]) -> <r5  > ->
-                              prop,ref(r5,array[a31||]) -> <r5  > -> <r5
-                               > -> array[a31||] -> prop||] ! [array[a31||]|
-                              r5|] ar (restrict [|| {r6  } {r5  }] s8) s9
-                              anon11)
+                             (snd [ref(r5,array[a31||]) -> <r5 > ->
+                              prop,ref(r5,array[a31||]) -> <r5 > -> <r5 > ->
+                              array[a31||] -> prop||] ! [array[a31||]| r5|]
+                              ar (restrict [|| {r6 } {r5 }] s8) s9 anon11)
                              ->
-                             ((fst [ref(r6,array[a31||]) -> <r6  > ->
-                               prop,ref(r6,array[a31||]) -> <r6  > -> <r6
-                                > -> array[a31||] -> prop||] ! [array[a31||]|
-                               r6|] ar1 (restrict [|| {r5  } {r6  }] s8))
+                             ((fst [ref(r6,array[a31||]) -> <r6 > ->
+                               prop,ref(r6,array[a31||]) -> <r6 > -> <r6 > ->
+                               array[a31||] -> prop||] ! [array[a31||]| r6|]
+                               ar1 (restrict [|| {r5 } {r6 }] s8))
                               /\
-                              (forall (s10:<r6  >).
+                              (forall (s10:<r6 >).
                                forall (anon12:array[a31||]).
-                               (snd [ref(r6,array[a31||]) -> <r6  > ->
-                                prop,ref(r6,array[a31||]) -> <r6  > -> <r6
-                                 > -> array[a31||] -> prop||]
+                               (snd [ref(r6,array[a31||]) -> <r6 > ->
+                                prop,ref(r6,array[a31||]) -> <r6 > ->
+                                <r6 > -> array[a31||] -> prop||]
                                 ! [array[a31||]| r6|] ar1
-                                (restrict [|| {r5  } {r6  }] s8) s10 anon12)
+                                (restrict [|| {r5 } {r6 }] s8) s10 anon12)
                                ->
-                               ((fst [array[a31||] -> <r6  > ->
-                                 prop,array[a31||] -> <r6  > -> <r6  > ->
+                               ((fst [array[a31||] -> <r6 > ->
+                                 prop,array[a31||] -> <r6 > -> <r6 > ->
                                  unit -> prop||]
                                  ((:= [array[a31||]| r6|]) ar1)
                                  (set [a31||] (ofs1 + i13)
                                   (get [a31||] (ofs + i13) anon11) anon12)
                                  s10)
                                 /\
-                                (forall (s11:<r6  >).
-                                 (snd [array[a31||] -> <r6  > ->
-                                  prop,array[a31||] -> <r6  > -> <r6  > ->
+                                (forall (s11:<r6 >).
+                                 (snd [array[a31||] -> <r6 > ->
+                                  prop,array[a31||] -> <r6 > -> <r6 > ->
                                   unit -> prop||]
                                   ((:= [array[a31||]| r6|]) ar1)
                                   (set [a31||] (ofs1 + i13)
@@ -536,205 +533,204 @@ section basiclogic coq predefined
                                   s10 s11 tt)
                                  ->
                                  (((anon3 =[array[a31||]||]
-                                    (!! [array[a31||]| r5| {r5 r6  }] ar
-                                     (combine [|| {r5  } { } {r6  }] s9 s11)))
+                                    (!! [array[a31||]| r5| {r5 r6 }] ar
+                                     (combine [|| {r5 } { } {r6 }] s9 s11)))
                                    /\
                                    (l3 =[int||]
                                     (len [a31||]
-                                     (!! [array[a31||]| r6| {r5 r6  }] ar1
-                                      (combine [|| {r5  } { } {r6  }] s9 s11)))))
+                                     (!! [array[a31||]| r6| {r5 r6 }] ar1
+                                      (combine [|| {r5 } { } {r6 }] s9 s11)))))
                                   /\
                                   (forall (k10:int).
                                    (0 <= k10) ->
                                    ((k10 < (i13 + 1)) ->
                                     ((get [a31||] (ofs1 + k10)
-                                      (!! [array[a31||]| r6| {r5 r6  }] ar1
-                                       (combine [|| {r5  } { } {r6  }] s9 s11)))
+                                      (!! [array[a31||]| r6| {r5 r6 }] ar1
+                                       (combine [|| {r5 } { } {r6 }] s9 s11)))
                                      =[a31||]
                                      (get [a31||] (ofs + k10)
-                                      (!! [array[a31||]| r5| {r5 r6  }] ar
-                                       (combine [|| {r5  } { } {r6  }] s9 s11))))))))))))))))))
+                                      (!! [array[a31||]| r5| {r5 r6 }] ar
+                                       (combine [|| {r5 } { } {r6 }] s9 s11))))))))))))))))))
                       /\
-                      (fst [((int -> <r5 r6  > -> prop) * (int -> <r5 r6
-                        > -> <r5 r6  > -> unit -> prop)) -> <r5 r6  > ->
-                       prop,((int -> <r5 r6  > -> prop) * (int -> <r5 r6
-                        > -> <r5 r6  > -> unit -> prop)) -> <r5 r6  > -> <r5
-                       r6  > -> unit -> prop||]
-                       (forto [|| {r5 r6  }]
+                      (fst [((int -> <r5 r6 > -> prop) * (int -> <r5 r6 > ->
+                       <r5 r6 > -> unit -> prop)) -> <r5 r6 > ->
+                       prop,((int -> <r5 r6 > -> prop) * (int -> <r5 r6 > ->
+                       <r5 r6 > -> unit -> prop)) -> <r5 r6 > -> <r5 r6 > ->
+                       unit -> prop||]
+                       (forto [|| {r5 r6 }]
                         (fun (i14:int) ->
-                        (fun (cur16:<r5 r6  >) ->
+                        (fun (cur16:<r5 r6 >) ->
                         ((anon3 =[array[a31||]||]
-                          (!! [array[a31||]| r5| {r5 r6  }] ar cur16))
+                          (!! [array[a31||]| r5| {r5 r6 }] ar cur16))
                          /\
                          (l3 =[int||]
                           (len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur16))))
+                           (!! [array[a31||]| r6| {r5 r6 }] ar1 cur16))))
                         /\
                         (forall (k11:int).
                          (0 <= k11) ->
                          ((k11 < i14) ->
                           ((get [a31||] (ofs1 + k11)
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur16))
+                            (!! [array[a31||]| r6| {r5 r6 }] ar1 cur16))
                            =[a31||]
                            (get [a31||] (ofs + k11)
-                            (!! [array[a31||]| r5| {r5 r6  }] ar cur16)))))))
+                            (!! [array[a31||]| r5| {r5 r6 }] ar cur16)))))))
                         __start1 __end1)
-                       (mk_2tuple [int -> <r5 r6  > -> prop,int -> <r5 r6
-                         > -> <r5 r6  > -> unit -> prop||]
+                       (mk_2tuple [int -> <r5 r6 > -> prop,int -> <r5 r6 > ->
+                        <r5 r6 > -> unit -> prop||]
                         (fun (i15:int) ->
-                        (fun (cur17:<r5 r6  >) ->
+                        (fun (cur17:<r5 r6 >) ->
                         ((__start1 <= i15) /\ (i15 <= __end1)) /\
                         (((anon3 =[array[a31||]||]
-                           (!! [array[a31||]| r5| {r5 r6  }] ar cur17))
+                           (!! [array[a31||]| r5| {r5 r6 }] ar cur17))
                           /\
                           (l3 =[int||]
                            (len [a31||]
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur17))))
+                            (!! [array[a31||]| r6| {r5 r6 }] ar1 cur17))))
                          /\
                          (forall (k12:int).
                           (0 <= k12) ->
                           ((k12 < i15) ->
                            ((get [a31||] (ofs1 + k12)
-                             (!! [array[a31||]| r6| {r5 r6  }] ar1 cur17))
+                             (!! [array[a31||]| r6| {r5 r6 }] ar1 cur17))
                             =[a31||]
                             (get [a31||] (ofs + k12)
-                             (!! [array[a31||]| r5| {r5 r6  }] ar cur17))))))))
+                             (!! [array[a31||]| r5| {r5 r6 }] ar cur17))))))))
                         (fun (i16:int) ->
-                        (fun (anon13:<r5 r6  >) ->
-                        (fun (cur18:<r5 r6  >) ->
+                        (fun (anon13:<r5 r6 >) ->
+                        (fun (cur18:<r5 r6 >) ->
                         (fun (anon14:unit) ->
                         ((anon3 =[array[a31||]||]
-                          (!! [array[a31||]| r5| {r5 r6  }] ar cur18))
+                          (!! [array[a31||]| r5| {r5 r6 }] ar cur18))
                          /\
                          (l3 =[int||]
                           (len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur18))))
+                           (!! [array[a31||]| r6| {r5 r6 }] ar1 cur18))))
                         /\
                         (forall (k13:int).
                          (0 <= k13) ->
                          ((k13 < (i16 + 1)) ->
                           ((get [a31||] (ofs1 + k13)
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur18))
+                            (!! [array[a31||]| r6| {r5 r6 }] ar1 cur18))
                            =[a31||]
                            (get [a31||] (ofs + k13)
-                            (!! [array[a31||]| r5| {r5 r6  }] ar cur18))))))))))
-                       (combine [|| {r5  } { } {r6  }] s1 s2)))
+                            (!! [array[a31||]| r5| {r5 r6 }] ar cur18))))))))))
+                       (combine [|| {r5 } { } {r6 }] s1 s2)))
                      /\
-                     (forall (s12:<r5 r6  >).
-                      (snd [((int -> <r5 r6  > -> prop) * (int -> <r5 r6
-                        > -> <r5 r6  > -> unit -> prop)) -> <r5 r6  > ->
-                       prop,((int -> <r5 r6  > -> prop) * (int -> <r5 r6
-                        > -> <r5 r6  > -> unit -> prop)) -> <r5 r6  > -> <r5
-                       r6  > -> unit -> prop||]
-                       (forto [|| {r5 r6  }]
+                     (forall (s12:<r5 r6 >).
+                      (snd [((int -> <r5 r6 > -> prop) * (int -> <r5 r6 > ->
+                       <r5 r6 > -> unit -> prop)) -> <r5 r6 > ->
+                       prop,((int -> <r5 r6 > -> prop) * (int -> <r5 r6 > ->
+                       <r5 r6 > -> unit -> prop)) -> <r5 r6 > -> <r5 r6 > ->
+                       unit -> prop||]
+                       (forto [|| {r5 r6 }]
                         (fun (i17:int) ->
-                        (fun (cur19:<r5 r6  >) ->
+                        (fun (cur19:<r5 r6 >) ->
                         ((anon3 =[array[a31||]||]
-                          (!! [array[a31||]| r5| {r5 r6  }] ar cur19))
+                          (!! [array[a31||]| r5| {r5 r6 }] ar cur19))
                          /\
                          (l3 =[int||]
                           (len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur19))))
+                           (!! [array[a31||]| r6| {r5 r6 }] ar1 cur19))))
                         /\
                         (forall (k14:int).
                          (0 <= k14) ->
                          ((k14 < i17) ->
                           ((get [a31||] (ofs1 + k14)
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur19))
+                            (!! [array[a31||]| r6| {r5 r6 }] ar1 cur19))
                            =[a31||]
                            (get [a31||] (ofs + k14)
-                            (!! [array[a31||]| r5| {r5 r6  }] ar cur19)))))))
+                            (!! [array[a31||]| r5| {r5 r6 }] ar cur19)))))))
                         __start1 __end1)
-                       (mk_2tuple [int -> <r5 r6  > -> prop,int -> <r5 r6
-                         > -> <r5 r6  > -> unit -> prop||]
+                       (mk_2tuple [int -> <r5 r6 > -> prop,int -> <r5 r6 > ->
+                        <r5 r6 > -> unit -> prop||]
                         (fun (i18:int) ->
-                        (fun (cur20:<r5 r6  >) ->
+                        (fun (cur20:<r5 r6 >) ->
                         ((__start1 <= i18) /\ (i18 <= __end1)) /\
                         (((anon3 =[array[a31||]||]
-                           (!! [array[a31||]| r5| {r5 r6  }] ar cur20))
+                           (!! [array[a31||]| r5| {r5 r6 }] ar cur20))
                           /\
                           (l3 =[int||]
                            (len [a31||]
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur20))))
+                            (!! [array[a31||]| r6| {r5 r6 }] ar1 cur20))))
                          /\
                          (forall (k15:int).
                           (0 <= k15) ->
                           ((k15 < i18) ->
                            ((get [a31||] (ofs1 + k15)
-                             (!! [array[a31||]| r6| {r5 r6  }] ar1 cur20))
+                             (!! [array[a31||]| r6| {r5 r6 }] ar1 cur20))
                             =[a31||]
                             (get [a31||] (ofs + k15)
-                             (!! [array[a31||]| r5| {r5 r6  }] ar cur20))))))))
+                             (!! [array[a31||]| r5| {r5 r6 }] ar cur20))))))))
                         (fun (i19:int) ->
-                        (fun (anon15:<r5 r6  >) ->
-                        (fun (cur21:<r5 r6  >) ->
+                        (fun (anon15:<r5 r6 >) ->
+                        (fun (cur21:<r5 r6 >) ->
                         (fun (anon16:unit) ->
                         ((anon3 =[array[a31||]||]
-                          (!! [array[a31||]| r5| {r5 r6  }] ar cur21))
+                          (!! [array[a31||]| r5| {r5 r6 }] ar cur21))
                          /\
                          (l3 =[int||]
                           (len [a31||]
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 cur21))))
+                           (!! [array[a31||]| r6| {r5 r6 }] ar1 cur21))))
                         /\
                         (forall (k16:int).
                          (0 <= k16) ->
                          ((k16 < (i19 + 1)) ->
                           ((get [a31||] (ofs1 + k16)
-                            (!! [array[a31||]| r6| {r5 r6  }] ar1 cur21))
+                            (!! [array[a31||]| r6| {r5 r6 }] ar1 cur21))
                            =[a31||]
                            (get [a31||] (ofs + k16)
-                            (!! [array[a31||]| r5| {r5 r6  }] ar cur21))))))))))
-                       (combine [|| {r5  } { } {r6  }] s1 s2) s12 tt)
+                            (!! [array[a31||]| r5| {r5 r6 }] ar cur21))))))))))
+                       (combine [|| {r5 } { } {r6 }] s1 s2) s12 tt)
                       ->
-                      ((((!! [array[a31||]| r5| {r5 r6  }] ar s)
+                      ((((!! [array[a31||]| r5| {r5 r6 }] ar s)
                          =[array[a31||]||]
-                         (!! [array[a31||]| r5| {r5 r6  }] ar s12))
+                         (!! [array[a31||]| r5| {r5 r6 }] ar s12))
                         /\
                         ((len [a31||]
-                          (!! [array[a31||]| r6| {r5 r6  }] ar1 s12))
+                          (!! [array[a31||]| r6| {r5 r6 }] ar1 s12))
                          =[int||]
-                         (len [a31||]
-                          (!! [array[a31||]| r6| {r5 r6  }] ar1 s))))
+                         (len [a31||] (!! [array[a31||]| r6| {r5 r6 }] ar1 s))))
                        /\
                        (forall (k17:int).
                         (0 <= k17) ->
                         ((k17 < l2) ->
                          ((get [a31||] (ofs1 + k17)
-                           (!! [array[a31||]| r6| {r5 r6  }] ar1 s12))
+                           (!! [array[a31||]| r6| {r5 r6 }] ar1 s12))
                           =[a31||]
                           (get [a31||] (ofs + k17)
-                           (!! [array[a31||]| r5| {r5 r6  }] ar s12))))))))))))))))))
+                           (!! [array[a31||]| r5| {r5 r6 }] ar s12))))))))))))))))))
   let logic blit ['a31|r5
     r6|] = (fun (ar:ref(r5,array[a31||])) ->
            (fun (ar1:ref(r6,array[a31||])) ->
            (fun (ofs:int) ->
            (fun (ofs1:int) ->
-           mk_2tuple [int -> <r5 r6  > -> prop,int -> <r5 r6  > -> <r5 r6
-            > -> unit -> prop||]
+           mk_2tuple [int -> <r5 r6 > -> prop,int -> <r5 r6 > -> <r5 r6 > ->
+           unit -> prop||]
            (fun (l2:int) ->
-           (fun (cur22:<r5 r6  >) ->
+           (fun (cur22:<r5 r6 >) ->
            ((((0 <= l2) /\ (0 <= ofs)) /\ (0 <= ofs1)) /\
             (ofs <=
-             ((len [a31||] (!! [array[a31||]| r5| {r5 r6  }] ar cur22)) - l2)))
+             ((len [a31||] (!! [array[a31||]| r5| {r5 r6 }] ar cur22)) - l2)))
            /\
            (ofs1 <=
-            ((len [a31||] (!! [array[a31||]| r6| {r5 r6  }] ar1 cur22)) - l2))))
+            ((len [a31||] (!! [array[a31||]| r6| {r5 r6 }] ar1 cur22)) - l2))))
            (fun (l2:int) ->
-           (fun (old5:<r5 r6  >) ->
-           (fun (cur23:<r5 r6  >) ->
+           (fun (old5:<r5 r6 >) ->
+           (fun (cur23:<r5 r6 >) ->
            (fun (anon17:unit) ->
-           (((!! [array[a31||]| r5| {r5 r6  }] ar old5) =[array[a31||]||]
-             (!! [array[a31||]| r5| {r5 r6  }] ar cur23))
+           (((!! [array[a31||]| r5| {r5 r6 }] ar old5) =[array[a31||]||]
+             (!! [array[a31||]| r5| {r5 r6 }] ar cur23))
             /\
-            ((len [a31||] (!! [array[a31||]| r6| {r5 r6  }] ar1 cur23))
+            ((len [a31||] (!! [array[a31||]| r6| {r5 r6 }] ar1 cur23))
              =[int||]
-             (len [a31||] (!! [array[a31||]| r6| {r5 r6  }] ar1 old5))))
+             (len [a31||] (!! [array[a31||]| r6| {r5 r6 }] ar1 old5))))
            /\
            (forall (k18:int).
             (0 <= k18) ->
             ((k18 < l2) ->
              ((get [a31||] (ofs1 + k18)
-               (!! [array[a31||]| r6| {r5 r6  }] ar1 cur23))
+               (!! [array[a31||]| r6| {r5 r6 }] ar1 cur23))
               =[a31||]
               (get [a31||] (ofs + k18)
-               (!! [array[a31||]| r5| {r5 r6  }] ar cur23)))))))))))))  end
+               (!! [array[a31||]| r5| {r5 r6 }] ar cur23)))))))))))))  end

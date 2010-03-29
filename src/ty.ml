@@ -34,6 +34,25 @@ type t =
 
 open Myformat
 
+module Convert = struct
+  module P = PrintTree
+
+  let t env =
+    let rec aux x =
+      match x with
+      | Const c -> P.TConst c
+      | Tuple tl -> P.Tuple (List.map aux tl)
+      | PureArr (t1,t2) -> P.PureArr (aux t1, aux t2)
+      | Ref (n,t) -> P.Ref (id n, aux t)
+      | Arrow (t1,t2,e,cap) ->
+          P.Arrow (aux t1, aux t2, effect e, List.map id cap)
+      | Map e -> P.Map (effect e)
+      | App (n,i) ->
+          P.TApp (id n, Inst.map aux id effect i)
+    and id x = P.Env.id env x
+    and effect e = Effect.Convert.t env e in
+    aux
+end
 let is_compound = function
   | Const _ | Ref _ | Map _ | App _ -> false
   | Tuple _ | Arrow _ | PureArr _ -> true
@@ -47,32 +66,8 @@ let varprint kind fmt x =
   | `Who -> fprintf fmt "'%a" Name.print x
   | `Coq | `Pangoline -> Name.print fmt x
 
-let rec gen_print ?(kind=`Who) fmt x =
-  let pt = gen_print ~kind in
-  let mayp fmt t = if is_compound t then paren pt fmt t else pt fmt t in
-  match x with
-  | Arrow (t1,t2,eff,cap) ->
-      (* there are no impure arrow types in Coq or Pangoline, so simply print it
-      as you wish *)
-      fprintf fmt "%a ->{%a%a} %a" mayp t1
-        Effect.print eff (maycap Name.print) cap pt t2
-  | Map e -> fprintf fmt "<%a>" Effect.print_nosep e
-  | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 pt t2
-  | Tuple tl ->
-      list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
-  | Const c -> Const.print_ty kind fmt c
-  | Ref (r,t) ->
-      (* in Who, this is a special type constructor, in Coq its a simple
-      application, in Pangoline its a type instantiation *)
-      begin match kind with
-      | `Who -> fprintf fmt "ref(%a,%a)" Name.print r pt t
-      | `Coq -> fprintf fmt "ref@ %a@ %a" mayp t Name.print r
-      | `Pangoline -> fprintf fmt "%a ref" mayp t
-      end
-  | App (v,i) ->
-      fprintf fmt "%a%a" Name.print v
-        (Inst.print ~kind ~intype:true mayp Name.print Effect.print) i
-
+let gen_print ?kind fmt x =
+  PrintTree.Print.ty ?kind fmt (Convert.t PrintTree.Env.empty x)
 let print fmt x = gen_print ~kind:`Who fmt x
 let coq_print fmt x = gen_print ~kind:`Coq fmt x
 
@@ -133,14 +128,14 @@ let split t =
   | PureArr (t1,t2) -> t1, t2
   | _ -> invalid_arg "split"
 
-let pure_split t = 
+let pure_split t =
   match t with
   | PureArr (t1,t2) -> t1, t2
   | _ -> invalid_arg "pure_split"
 
-let nsplit t = 
-  let rec aux acc t = 
-    try  
+let nsplit t =
+  let rec aux acc t =
+    try
       let t1,t2 = pure_split t in
       aux (t1::acc) t2
     with Invalid_argument _ -> acc, t
@@ -271,7 +266,7 @@ module G = Generalize
 
 type scheme = G.t * t
 
-let print_scheme fmt (g,t) = 
+let print_scheme fmt (g,t) =
   Myformat.fprintf fmt "forall %a. %a" Generalize.print g print t
 
 let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target =
@@ -354,16 +349,16 @@ let matching vars =
         with Not_found -> Name.M.add v ty2 s end
     | Const c1, Const c2 when Const.equal_t c1 c2 -> s
     | Map e1, Map e2 when Effect.equal e1 e2 -> s
-    | Tuple tl1, Tuple tl2 when List.length tl1 = List.length tl2 -> 
+    | Tuple tl1, Tuple tl2 when List.length tl1 = List.length tl2 ->
         List.fold_left2 matching s tl1 tl2
-    | PureArr (ta1,ta2), PureArr (tb1,tb2) -> 
+    | PureArr (ta1,ta2), PureArr (tb1,tb2) ->
         let s = matching s ta1 tb1 in
         matching s ta2 tb2
     | Ref (r1,t1), Ref (r2,t2) when Name.equal r1 r2 -> matching s t1 t2
     | App (v1,i1), App (v2,i2) when Name.equal v1 v2 ->
         inst_matching s i1 i2
     | _ -> raise TypeMismatch
-  and inst_matching s (tl1,rl1,el1) (tl2,rl2,el2) = 
+  and inst_matching s (tl1,rl1,el1) (tl2,rl2,el2) =
     if ExtList.equal Name.equal rl1 rl2 && ExtList.equal Effect.equal el1 el2
       && List.length tl1 = List.length tl2 then
         List.fold_left2 matching s tl1 tl2

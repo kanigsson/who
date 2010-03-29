@@ -151,7 +151,7 @@ module Print = struct
       (Ty.gen_print ~kind) Name.print Effect.print
 
   (* TODO factorize the different branches *)
-  let term ?(kind : sup =`Who) open_ fmt t =
+  let term ?(kind : sup =`Who) fmt t =
     let typrint = Ty.gen_print ~kind in
     let rec print' fmt = function
       | Const c -> Const.print fmt c
@@ -163,11 +163,11 @@ module Print = struct
       | Ite (e1,e2,e3) ->
           fprintf fmt "@[if %a then@ %a else@ %a@]" print e1 print e2 print e3
       | PureFun (t,b) ->
-          let x,e = open_ b in
+          let x,e = sopen b in
           fprintf fmt "@[(fun %a@ %a@ %a)@]" binder (x,t)
             Const.funsep kind print e
       | Let (g,e1,b,r) ->
-          let x,e2 = open_ b in
+          let x,e2 = sopen b in
           fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]"
             prrec r Name.print x G.print g print e1 print e2
       | Var (v,i) ->
@@ -181,7 +181,7 @@ module Print = struct
           | `Coq -> Name.print fmt v
           end
       | Quant (k,t,b) ->
-          let x,e = open_ b in
+          let x,e = sopen b in
           let bind = if k = `FA then binder else binder' false in
           fprintf fmt "@[%a %a%a@ %a@]" Const.quant k bind (x,t)
             Const.quantsep kind print e
@@ -223,9 +223,9 @@ module Print = struct
       if is_compound_node x then paren print fmt x else print fmt x in
     print fmt t
 
-  let decl ?(kind=`Who) open_ fmt d =
+  let decl ?(kind=`Who) fmt d =
     let typrint = Ty.gen_print ~kind in
-    let term = term ~kind open_ in
+    let term = term ~kind in
     let rec decl fmt d =
       match d with
       | Logic (x,g,t) ->
@@ -255,8 +255,8 @@ module Print = struct
     and decl_list fmt d = list newline decl fmt d in
     decl fmt d
 
-  let theory ?kind open_ fmt t =
-    list newline (decl ?kind open_) fmt t
+  let theory ?kind fmt t =
+    list newline (decl ?kind) fmt t
 end
 
 module N = Name
@@ -323,13 +323,12 @@ let esubst evl el e =
 let allsubst ((tvl,rvl,evl) : G.t) ((tl,rl,el) : inst)  t =
   esubst evl el (rsubst rvl rl (tsubst tvl tl t))
 
-let gen_print kind fmt t =
-  Print.term ~kind sopen fmt t
+let gen_print kind fmt t = Print.term ~kind fmt t
 let coq_print fmt t = gen_print `Coq fmt t
 let print fmt t = gen_print `Who fmt t
 
-let print_decl = Print.decl ~kind:`Who sopen
-let print_theory = Print.theory ~kind:`Who sopen
+let print_decl = Print.decl ~kind:`Who
+let print_theory = Print.theory ~kind:`Who
 
 let print' fmt t =
   print fmt {v = t; t = Ty.prop; e = Effect.empty; loc = Loc.dummy }

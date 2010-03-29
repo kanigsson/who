@@ -61,7 +61,7 @@ let ksprintf k s =
 
 let sprintf s = ksprintf Misc.id s
 
-let print_set fmt s = 
+let print_set fmt s =
   Misc.SS.iter (fun x -> string fmt x ; space fmt ()) s
 
 
@@ -72,6 +72,6 @@ let hash_print ?(bsep=lbrack) ?(endsep=rbrack) prk prv fmt h =
 
 let paren pr fmt x = fprintf fmt "(%a)" pr x
 
-let print_string_map pr fmt m = 
+let print_string_map pr fmt m =
   Misc.StringMap.iter (fun x v -> fprintf fmt "%s : %a" x pr v ) m;
   fprintf fmt "@."

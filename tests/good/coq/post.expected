@@ -1,7 +1,0 @@
-cp post_who.v.orig post_who.v
-chmod a-w post_who.v.orig
-coqc post_who.v
-rm -f post_who.v.orig
-rm -f post_who.v
-rm -f post_who.glob
-rm -f post_who.vo

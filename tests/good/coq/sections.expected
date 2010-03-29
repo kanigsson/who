@@ -1,7 +1,0 @@
-cp sections_who.v.orig sections_who.v
-chmod a-w sections_who.v.orig
-coqc sections_who.v
-rm -f sections_who.v.orig
-rm -f sections_who.v
-rm -f sections_who.glob
-rm -f sections_who.vo

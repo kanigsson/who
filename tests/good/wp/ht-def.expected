@@ -4,7 +4,7 @@ logic true  : bool
 logic false  : bool
 logic /\  : prop -> prop -> prop
 logic \/  : prop -> prop -> prop
-logic !! ['a|r|'e] : ref(r,a) -> <r  'e > -> a
+logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 logic ->  : prop -> prop -> prop
 logic ~  : prop -> prop
 logic = ['a1||] : a1 -> a1 -> prop
@@ -25,16 +25,16 @@ INTROS [|t|]
 logic table  : ref(t,hmap[int,int||])
 let
   logic realizes  = (fun (f1:int -> int) ->
-                    (fun (f2:(int -> <t  > -> prop) * (int -> <t  > -> <t
-                     > -> int -> prop)) ->
+                    (fun (f2:(int -> <t > -> prop) * (int -> <t > -> <t > ->
+                    int -> prop)) ->
                     forall (x1:int).
-                    forall (s:<t  >).
+                    forall (s:<t >).
                     (stores f1 (!! [hmap[int,int||]| t| { }] table s)) ->
-                    ((fst [int -> <t  > -> prop,int -> <t  > -> <t  > ->
-                      int -> prop||] f2 x1 s)
+                    ((fst [int -> <t > -> prop,int -> <t > -> <t > -> int ->
+                      prop||] f2 x1 s)
                      /\
-                     (forall (s1:<t  >).
+                     (forall (s1:<t >).
                       forall (anon:int).
-                      (snd [int -> <t  > -> prop,int -> <t  > -> <t  > ->
-                       int -> prop||] f2 x1 s s1 anon)
+                      (snd [int -> <t > -> prop,int -> <t > -> <t > -> int ->
+                       prop||] f2 x1 s s1 anon)
                       -> (stores f1 (!! [hmap[int,int||]| t| { }] table s1)))))) 

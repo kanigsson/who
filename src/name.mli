@@ -82,3 +82,5 @@ val list_to_set : t list -> S.t
 val set_to_list : S.t -> t list
 
 val remove_list_from_set : t list -> S.t -> S.t
+
+val get_cur_name : t -> string

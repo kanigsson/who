@@ -27,19 +27,19 @@ val empty : ('a,'b,'c) t
 
 val is_empty : ('a,'b,'c) t -> bool
 
-val equal : 
+val equal :
   ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> ('c -> 'c -> bool) ->
     ('a,'b,'c) t -> ('a,'b,'c) t -> bool
 
 val map : ('a -> 'd) -> ('b -> 'e) -> ('c -> 'f) -> ('a,'b,'c) t -> ('d,'e,'f) t
 
-val iter2 : 
+val iter2 :
   ('a -> 'd -> unit) -> ('b -> 'e -> unit) -> ('c -> 'f -> unit) ->
     ('a,'b,'c) t -> ('d,'e,'f) t -> unit
 
 val hash : ('a -> int) -> ('b -> int) -> ('c -> int) -> ('a,'b,'c) t -> int
 
 val print : ?kind:[`Who | `Pangoline | `Coq ] -> intype:bool ->
-  'a Myformat.fmt -> 'b Myformat.fmt -> 'c Myformat.fmt -> 
+  'a Myformat.fmt -> 'b Myformat.fmt -> 'c Myformat.fmt ->
       ('a,'b,'c) t Myformat.fmt
 

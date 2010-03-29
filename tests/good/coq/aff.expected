@@ -1,7 +1,0 @@
-cp aff_who.v.orig aff_who.v
-chmod a-w aff_who.v.orig
-coqc aff_who.v
-rm -f aff_who.v.orig
-rm -f aff_who.v
-rm -f aff_who.glob
-rm -f aff_who.vo

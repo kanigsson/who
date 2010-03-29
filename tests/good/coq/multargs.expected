@@ -1,7 +1,0 @@
-cp multargs_who.v.orig multargs_who.v
-chmod a-w multargs_who.v.orig
-coqc multargs_who.v
-rm -f multargs_who.v.orig
-rm -f multargs_who.v
-rm -f multargs_who.glob
-rm -f multargs_who.vo

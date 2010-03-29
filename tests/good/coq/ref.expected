@@ -1,7 +1,0 @@
-cp ref_who.v.orig ref_who.v
-chmod a-w ref_who.v.orig
-coqc ref_who.v
-rm -f ref_who.v.orig
-rm -f ref_who.v
-rm -f ref_who.glob
-rm -f ref_who.vo

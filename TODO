@@ -26,7 +26,11 @@ INTERNAL
   example: eff_var2.who
 
 * do not allow effect variables in abstract type definitions
-* put types in variables
+  put types in variables
+
+* pretty printing
+
+
 
 BUGS
 

@@ -1,7 +1,0 @@
-cp type_who.v.orig type_who.v
-chmod a-w type_who.v.orig
-coqc type_who.v
-rm -f type_who.v.orig
-rm -f type_who.v
-rm -f type_who.glob
-rm -f type_who.vo

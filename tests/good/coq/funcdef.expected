@@ -1,7 +1,0 @@
-cp funcdef_who.v.orig funcdef_who.v
-chmod a-w funcdef_who.v.orig
-coqc funcdef_who.v
-rm -f funcdef_who.v.orig
-rm -f funcdef_who.v
-rm -f funcdef_who.glob
-rm -f funcdef_who.vo

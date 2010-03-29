@@ -1,7 +1,0 @@
-cp polfunc_who.v.orig polfunc_who.v
-chmod a-w polfunc_who.v.orig
-coqc polfunc_who.v
-rm -f polfunc_who.v.orig
-rm -f polfunc_who.v
-rm -f polfunc_who.glob
-rm -f polfunc_who.vo
