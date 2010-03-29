@@ -125,9 +125,10 @@ let rec decl env d =
   | I.Logic (n,g,t) ->
       let env, g = Env.add_gen env g in
       let t = ty env t in
-      let env, nv = add_var env n (g,t) in
-      Predefined.add_symbol_and_binding n nv (g,t);
-      env, Logic (nv,g, t)
+      let s = g,t in
+      let env, nv = add_var env n s in
+      Predefined.add_symbol_and_binding n nv s;
+      env, Logic (nv,s)
   | I.Axiom (s,t) ->
       env,Formula (s, term true env t, `Assumed)
   | I.Goal (s,t) ->

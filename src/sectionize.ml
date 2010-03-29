@@ -62,7 +62,7 @@ let to_section kind th =
         | `Assumed -> [Axiom (Name.from_string s,f)]
         | `Proved -> mk_Section ~namehint:s f
         end
-    | Logic (x,g,t) ->
+    | Logic (x,(g,t)) ->
         let decl = Variable (x,g,t, `Logic) in
         if is_infix_name x then [ Infix (x,0) ; decl ] else [decl]
     | Ast.Section (_,cl,th) ->

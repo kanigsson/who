@@ -98,7 +98,7 @@ let rec find_type_decl rname th =
   | [] -> cannot_find_type rname
   | d::ds ->
       match d with
-      | Logic (_,_,t) ->
+      | Logic (_,(_,t)) ->
           begin match Ty.find_type_of_r rname t with
           | Some x -> x
           | None -> find_type_decl rname ds
@@ -232,10 +232,10 @@ let rec theory env th =
   | d :: ds ->
       let env, d =
         match d with
-        | Logic (n,_,_) when PL.belongs_to n effrec_set -> env, []
-        | Logic (s,((_,[],[]) as g),t) ->
+        | Logic (n,_) when PL.belongs_to n effrec_set -> env, []
+        | Logic (s,(((_,[],[]) as g),t)) ->
             (*       Myformat.printf "%a@." Name.print s; *)
-            env, if Ty.is_ref t then [] else [Logic (s,g,tyfun env t)]
+            env, if Ty.is_ref t then [] else [Logic (s,(g,tyfun env t))]
         | DGen g ->
             let env, g = genbind g env (fun r -> find_type_decl r ds) in
             env, if G.is_empty g then [] else [DGen g]

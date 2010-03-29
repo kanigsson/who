@@ -93,8 +93,9 @@ and inst i = Inst.map M.to_ty M.to_region M.to_effect i
 let rec recon_decl x =
   match x with
   | I.Logic (x,g,t) ->
-      Predefined.add_binding x (g,t);
-      Logic (x,g,t)
+      let s = g,t in
+      Predefined.add_binding x s;
+      Logic (x,s)
   | I.Formula (s,t,k) -> Formula (s, recon t, k)
   | I.Section (s,cl, dl) -> Section (s,cl, recon_th dl)
   | I.DLetReg rl -> DLetReg rl

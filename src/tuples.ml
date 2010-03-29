@@ -236,10 +236,10 @@ v.t;
 
 let rec decl env d =
   match d with
-  | Logic (n,g,t) ->
-      let env' = Env.add_var env n (g,t) in
-      let g,t = scheme env (g, t) in
-      env', Logic (n,g,t)
+  | Logic (n,s) ->
+      let env' = Env.add_var env n s in
+      let s = scheme env s in
+      env', Logic (n,s)
   | Formula (s,t,k) ->
       env, Formula (s, term env t, k)
   | Section (s,cl,th) ->
@@ -264,5 +264,5 @@ and theory env t = ExtList.fold_map decl env t
 let theory t =
   List.filter (fun d ->
     match d with
-    | Logic (n,_,_) when Predefined.is_effect_var n -> false
+    | Logic (n,_) when Predefined.is_effect_var n -> false
     | _ -> true) (snd (theory Env.empty t))

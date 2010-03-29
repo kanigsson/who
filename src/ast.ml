@@ -48,7 +48,7 @@ and funcbody = t * t * t
 and inst = (Ty.t, Name.t, Effect.t) Inst.t
 
 type decl =
-  | Logic of Name.t * G.t * Ty.t
+  | Logic of Name.t * Ty.scheme
   | Formula of string * t * [ `Proved | `Assumed ]
   | Section of string * Const.takeover list * decl list
   | TypeDef of G.t * Ty.t option * Name.t
@@ -228,7 +228,7 @@ module Print = struct
     let term = term ~kind in
     let rec decl fmt d =
       match d with
-      | Logic (x,g,t) ->
+      | Logic (x,(g,t)) ->
           fprintf fmt "@[<hov 2>logic %a %a : %a@]"
             Name.print x G.print g typrint t
       | Formula (s,t,`Assumed) ->
