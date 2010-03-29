@@ -12,12 +12,14 @@ section basiclogic coq predefined
   logic ->  : prop -> prop -> prop
   logic ~  : prop -> prop
   logic = ['a||] : a -> a -> prop end
-section tuples coq predefined
-  pangoline predefined
+section encoding coq takeover
+  pangoline takeover
    type region['u||]
   type refty['reg 'ty||]
-  logic ref_get ['reg1 'u1||] : region[reg1||] -> refty[reg1,u1||] -> u1
-  logic mk_2tuple ['a1 'b||] : a1 -> b -> a1 * b
+  logic ref_get ['reg1 'u1||] : region[reg1||] -> refty[reg1,u1||] -> u1 end
+section tuples coq predefined
+  pangoline predefined
+   logic mk_2tuple ['a1 'b||] : a1 -> b -> a1 * b
   logic mk_3tuple ['a2 'b1 'c||] : a2 -> b1 -> c -> a2 * b1 * c
   logic mk_4tuple ['a3 'b2 'c1 'd||] : a3 -> b2 -> c1 -> d -> a3 * b2 * c1 *
     d

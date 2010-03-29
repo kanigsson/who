@@ -47,14 +47,18 @@ section basiclogic
   logic = ['a||] : 'a -> 'a -> prop
 end
 
-section tuples
-  coq predefined
-  pangoline predefined
-
+section encoding
+  coq takeover
+  pangoline takeover
   type region ['u||]
   type refty ['reg 'ty||]
 
   logic ref_get ['reg 'u||] : 'reg region -> ('reg,'u) refty -> 'u
+end
+section tuples
+  coq predefined
+  pangoline predefined
+
   logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
   logic mk_3tuple ['a 'b 'c||] : 'a -> 'b -> 'c -> 'a * 'b * 'c
   logic mk_4tuple ['a 'b 'c 'd||] :

@@ -42,8 +42,8 @@ let transforms =
     Anf.theory ;
     Wp.theory ;
     Tuples.theory;
-(*
     InlineLet.theory ;
+(*
     Simplify.theory;
 *)
     RemoveTrivialGoals.theory;
