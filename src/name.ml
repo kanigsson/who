@@ -36,7 +36,7 @@ let new_name =
   function n -> incr x; {n with n = !x}
 let new_anon () = new_name { name = None; n = 0 }
 let from_string s = new_name {name = Some s; n = 0}
-let unsafe_to_string n = 
+let unsafe_to_string n =
   match n.name with
   | Some s -> s
   | None -> default_string
@@ -46,7 +46,7 @@ let refresh = List.fold_right refresh'
 let refresh_bind s (s',v,t) = List.append s s', v, t
 let refresh_listbind s (s',v,t) = List.append s s', v, t
 
-let open_with f nv (s,v,t) = 
+let open_with f nv (s,v,t) =
   let t = f [v,nv] t in
   f s t
 
@@ -78,8 +78,8 @@ let close_listbind nvl t = ([],nvl,t)
 (* map which gives the next index of a new variable *)
 let name_map = Hashtbl.create 47
 
-let strip_numbers s = 
-  let rec aux n = 
+let strip_numbers s =
+  let rec aux n =
     if n <= 0 then 0
     else
       match s.[n-1] with
@@ -88,7 +88,7 @@ let strip_numbers s =
   let n = aux (String.length s) in
   if n = 0 then default_string else String.sub s 0 n
 
-let fresh_string name = 
+let fresh_string name =
   let s = strip_numbers name in
   try
     let i = Hashtbl.find name_map s in
@@ -101,10 +101,10 @@ let fresh_string name =
 
 let to_string n = fresh_string (unsafe_to_string n)
 
-let reserved_names = 
+let reserved_names =
   [ "Definition"; "for"; "end"; "Lemma"; "Parameter"; ]
 
-let reset () = 
+let reset () =
   Hashtbl.clear name_map;
   List.iter (fun s -> ignore (fresh_string s)) reserved_names
 
@@ -137,10 +137,10 @@ let get_cur_name =
 
 open Myformat
 let print fmt x = fprintf fmt "%s" (get_cur_name x)
-let print_list fmt x = print_list space print fmt x
+let print_list fmt x = list space print fmt x
 
-let print_set fmt s = 
+let print_set fmt s =
   S.iter (fun x -> print fmt x ; space fmt ()) s
 
-let hash_set s = 
+let hash_set s =
   S.fold (fun x acc -> Hash.combine (hash x) acc) s 2

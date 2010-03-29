@@ -22,10 +22,10 @@ INTERNAL
   - modelisation of effect vars by regions
   - elimination of regions
 
-* "inference" for n-ary applications in ast.ml
-* additional Type variables for [region] and [refty]
 * "inference" for partial effect instantiations:
   example: eff_var2.who
+
+* do not allow effect variables in abstract type definitions
 
 BUGS
 

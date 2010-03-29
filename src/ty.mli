@@ -100,6 +100,8 @@ end
 
 type scheme = Generalize.t * t
 
+val print_scheme : scheme Myformat.fmt
+
 val allsubst :
   Generalize.t -> t list * Name.t list * Effect.t list ->
     t -> t

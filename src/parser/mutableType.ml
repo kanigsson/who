@@ -117,7 +117,7 @@ module Print = struct
     match Uf.desc x with
     | U -> fprintf fmt "%d" (Uf.tag x)
     | Tuple tl ->
-        print_list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
+        list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
     | Ref (r,t) -> fprintf fmt "ref(%a,%a)" region r ty t
     | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 ty t2
     | Map e -> fprintf fmt "<%a>" effect e
@@ -132,7 +132,7 @@ module Print = struct
     match Uf.desc x with
     | RU -> fprintf fmt "%d" (Uf.tag x)
     | RT n -> Name.print fmt n
-  and region_list fmt l = print_list space region fmt l
+  and region_list fmt l = list space region fmt l
   and effect fmt (rl,el) =
     fprintf fmt "{%a|" region_list rl;
     Name.S.iter (Name.print fmt) el;

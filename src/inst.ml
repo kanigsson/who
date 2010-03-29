@@ -21,30 +21,30 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-type ('a,'b,'c) t = 'a list * 'b list * 'c list 
+type ('a,'b,'c) t = 'a list * 'b list * 'c list
 
-let hash h1 h2 h3 (l1,l2,l3) = 
+let hash h1 h2 h3 (l1,l2,l3) =
   ExtList.hash h1 (ExtList.hash h2 (ExtList.hash h3 7 l3) l2) l1
 
 let empty = [],[],[]
 let is_empty x = x = empty
 
 open Myformat
-let prl pr = print_list comma pr
-let prsl pr fmt l = 
-  if l = [] then () else 
-    fprintf fmt "@ %a" (print_list space pr) l
+let prl pr = list comma pr
+let prsl pr fmt l =
+  if l = [] then () else
+    fprintf fmt "@ %a" (list space pr) l
 
 let print ?(kind=`Who) ~intype pra prb prc fmt ((tl,rl,el) as g) =
   if is_empty g then () else
     match kind with
-    | `Who -> 
+    | `Who ->
         (* separate types with comma, the others by spaces *)
         fprintf fmt "[%a|%a|%a]" (prl pra) tl (prsl prb) rl (prsl prc) el
-    | `Coq -> 
+    | `Coq ->
         if intype then
           fprintf fmt "%a%a%a" (prsl pra) tl (prsl prb) rl (prsl prc) el
-    | `Pangoline -> 
+    | `Pangoline ->
         if tl = [] then () else fprintf fmt "[%a]" (prl pra) tl
 
 
@@ -57,7 +57,7 @@ let iter2 fa fb fc (tl1,rl1,el1) (tl2,rl2,el2) =
   List.iter2 fc el1 el2
 
 let equal eqa eqb eqc (tl1,rl1,el1) (tl2,rl2,el2) =
-  try 
+  try
     List.for_all2 eqa tl1 tl2 &&
     List.for_all2 eqb rl1 rl2 &&
     List.for_all2 eqc el1 el2

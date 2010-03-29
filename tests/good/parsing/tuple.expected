@@ -212,8 +212,7 @@ section Array coq "WhoArray"
                                       ->
                                       ((get [a52||] i3 (set [a52||] i3 z1 t1))
                                        =[a52||] z1)
-  axiom length_empty : forall ['a53||]. (len [a53||]
-                                         (ar_empty [a53||] : array[a53||]))
+  axiom length_empty : forall ['a53||]. (len [a53||] ar_empty [a53||])
                                         =[int||] 0
   axiom get_set_neq : forall ['a54||]. forall (t2:array[a54||]).
                                        forall (i4:int).

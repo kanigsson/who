@@ -25,31 +25,35 @@ include Format
 
 type 'a fmt = Format.formatter -> 'a -> unit
 
-let rec print_list sep prf fmt = function
+let rec list sep prf fmt = function
   | [] -> ()
   | [x] -> prf fmt x
-  | (x::xs) -> prf fmt x; sep fmt (); print_list sep prf fmt xs
+  | (x::xs) -> prf fmt x; sep fmt (); list sep prf fmt xs
 
-let comma fmt () = pp_print_string fmt ","
-let semi fmt () = pp_print_string fmt ";"
+let int = pp_print_int
+let string = pp_print_string
+
+let comma fmt () = string fmt ","
+let semi fmt () = string fmt ";"
 let space fmt () = fprintf fmt "@ "
 let break fmt () = fprintf fmt "@,"
 let fullstop fmt () = fprintf fmt "@."
 let nothing _ () = ()
 let double_newline fmt () = fprintf fmt "@\n@\n"
 let newline fmt () = fprintf fmt "@\n"
-let lbrack fmt () = pp_print_string fmt "["
-let rbrack fmt () = pp_print_string fmt "]"
+let lbrack fmt () = string fmt "["
+let rbrack fmt () = string fmt "]"
+
 
 let optlist pr fmt = function
   | [] -> space fmt ()
-  | l -> fprintf fmt "@ [%a]@ " (print_list space pr) l
+  | l -> fprintf fmt "@ [%a]@ " (list space pr) l
 
 let opt_print prf fmt = function
   | None -> ()
   | Some x -> prf fmt x
 
-let pr_opt_string fmt s = opt_print pp_print_string fmt s
+let pr_opt_string fmt s = opt_print string fmt s
 
 let ksprintf k s =
   ignore(flush_str_formatter ());
@@ -58,7 +62,7 @@ let ksprintf k s =
 let sprintf s = ksprintf Misc.id s
 
 let print_set fmt s = 
-  Misc.SS.iter (fun x -> pp_print_string fmt x ; space fmt ()) s
+  Misc.SS.iter (fun x -> string fmt x ; space fmt ()) s
 
 
 let hash_print ?(bsep=lbrack) ?(endsep=rbrack) prk prv fmt h =

@@ -35,7 +35,7 @@ let union3 a b c = union a (union b c)
 let rsingleton r = S.add r S.empty, S.empty
 let esingleton e = S.empty, S.add e S.empty
 
-let rremove (r,e) l = 
+let rremove (r,e) l =
   S.filter (fun x -> not (List.mem x l)) r, e
 
 let eremove (r,e) ev = r, S.remove ev e
@@ -58,10 +58,10 @@ let to_lists, to_rlist, to_elist =
 
 let to_u_effect ((_,e) as eff) = to_rlist eff, e
 
-let is_esingleton (rl,el) =  S.is_empty rl && S.cardinal el = 1 
+let is_esingleton (rl,el) =  S.is_empty rl && S.cardinal el = 1
 let e_choose (_,el) = S.choose el
 
-let rsmap f x = 
+let rsmap f x =
   S.fold (fun x acc -> S.add (f x) acc) x S.empty
 
 let rmap f (r,e) = rsmap f r, e
@@ -75,31 +75,31 @@ let build_effvar_map el effl =
 
 let lsubst el effl (rt,et) =
   let map = build_effvar_map el effl in
-  let (nrt,ne) = 
-    S.fold (fun ev acc -> 
+  let (nrt,ne) =
+    S.fold (fun ev acc ->
       try union acc (Name.M.find ev map) with Not_found -> eadd acc ev)
       et empty in
   S.union rt nrt, ne
 
-let s_equal a b = 
+let s_equal a b =
   ExtList.equal Name.equal (S.elements a) (S.elements b)
 let equal (r1,e1) (r2, e2) = s_equal r1 r2 && s_equal e1 e2
 
 open Myformat
-let print_set fmt s = 
+let print_set fmt s =
   S.iter (fun x -> fprintf fmt "'%a" Name.print x ; space fmt ()) s
 
-let print_nosep fmt (r,e) = 
+let print_nosep fmt (r,e) =
     fprintf fmt "%a %a" Name.print_set r print_set e
 let print fmt e = fprintf fmt "{%a}" print_nosep e
 
 
-let print_list sep fmt l = print_list sep print fmt l
+let print_list sep fmt l = list sep print fmt l
 
 let inter (r1,e1) (r2,e2) = S.inter r1 r2, S.inter e1 e2
 let diff (r1,e1) (r2,e2) = S.diff r1 r2, S.diff e1 e2
 
-let split d1 d2 = 
+let split d1 d2 =
   let d1 = diff d1 d2 and d2 = diff d2 d1 and d3 = inter d1 d2 in
   d1, d3, d2
 

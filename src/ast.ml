@@ -135,7 +135,7 @@ module Print = struct
 
   let maycaplist fmt l =
     if l = [] then ()
-    else fprintf fmt "allocates %a" (print_list space Name.print) l
+    else fprintf fmt "allocates %a" (list space Name.print) l
 
   let prrec fmt = function
     | Const.NoRec -> ()
@@ -144,7 +144,7 @@ module Print = struct
 
   let lname s fmt l =
     if l = [] then () else
-    fprintf fmt "(%a :@ %s)" (print_list space Name.print) l s
+    fprintf fmt "(%a :@ %s)" (list space Name.print) l s
 
   let inst ~kind =
     Inst.print ~kind ~intype:false
@@ -192,7 +192,7 @@ module Print = struct
                 fprintf fmt "forall@ %a,@ %a " (lname "Type") tl print t
             | `Pangoline  ->
                 fprintf fmt "forall type %a. %a"
-                  (print_list space Name.print) tl print t
+                  (list space Name.print) tl print t
             | `Who ->
                 fprintf fmt "forall %a%a %a"
                   G.print g Const.quantsep kind print t
@@ -205,7 +205,7 @@ module Print = struct
           fprintf fmt "[[%a]]%a[[%a]]" print p print f print q
       | LetReg (v,t) ->
           fprintf fmt "@[letregion %a in@ %a@]"
-            (print_list space Name.print) v print t
+            (list space Name.print) v print t
       | Lam (x,t,cap,(p,e,q)) ->
           fprintf fmt "@[(fun %a@ ->%a@ {%a}@ %a@ {%a})@]"
             binder (x,t) maycaplist cap print p print e print q
@@ -218,7 +218,7 @@ module Print = struct
     and binder fmt b = binder' true fmt b
     and maycap fmt = function
       | [] -> ()
-      | l -> fprintf fmt "{%a}" (print_list space Name.print) l
+      | l -> fprintf fmt "{%a}" (list space Name.print) l
     and with_paren fmt x =
       if is_compound_node x then paren print fmt x else print fmt x in
     print fmt t
@@ -243,20 +243,20 @@ module Print = struct
                 Name.print x G.print g typrint t
           end
       | DLetReg l ->
-          fprintf fmt "@[letregion %a@]" (print_list space Name.print) l
+          fprintf fmt "@[letregion %a@]" (list space Name.print) l
       | Section (s,cl,d) ->
           fprintf fmt "@[<hov 2>section %s@, %a@, %a@] end" s
-          (print_list newline Const.takeover) cl decl_list d
+          (list newline Const.takeover) cl decl_list d
       | Program (x,g,t,r) ->
           fprintf fmt "@[<hov 2>let@ %a%a %a = %a @]" prrec r
           Name.print x G.print g term t
       | DGen g ->
           fprintf fmt "@[INTROS %a@]" G.print g
-    and decl_list fmt d = print_list newline decl fmt d in
+    and decl_list fmt d = list newline decl fmt d in
     decl fmt d
 
   let theory ?kind open_ fmt t =
-    print_list newline (decl ?kind open_) fmt t
+    list newline (decl ?kind open_) fmt t
 end
 
 module N = Name

@@ -40,7 +40,7 @@ let is_compound = function
 
 let maycap pr fmt = function
   | [] -> ()
-  | l -> fprintf fmt "|%a" (print_list space pr) l
+  | l -> fprintf fmt "|%a" (list space pr) l
 
 let varprint kind fmt x =
   match kind with
@@ -59,7 +59,7 @@ let rec gen_print ?(kind=`Who) fmt x =
   | Map e -> fprintf fmt "<%a>" Effect.print e
   | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 pt t2
   | Tuple tl ->
-      print_list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
+      list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
   | Const c -> Const.print_ty kind fmt c
   | Ref (r,t) ->
       (* in Who, this is a special type constructor, in Coq its a simple
@@ -76,7 +76,7 @@ let rec gen_print ?(kind=`Who) fmt x =
 let print fmt x = gen_print ~kind:`Who fmt x
 let coq_print fmt x = gen_print ~kind:`Coq fmt x
 
-let print_list sep fmt t = print_list sep print fmt t
+let print_list sep fmt t = list sep print fmt t
 
 let arrow t1 t2 eff = Arrow (t1,t2,eff,[])
 let caparrow t1 t2 eff cap = Arrow (t1,t2,eff,cap)
@@ -240,7 +240,7 @@ module Generalize = struct
 
   open Myformat
 
-  let varlist = print_list space (varprint `Who)
+  let varlist = list space (varprint `Who)
   let print fmt ((tl,rl,el) as g) =
     if is_empty g then ()
     else fprintf fmt "[%a|%a|%a]" varlist tl
@@ -270,6 +270,9 @@ end
 module G = Generalize
 
 type scheme = G.t * t
+
+let print_scheme fmt (g,t) = 
+  Myformat.fprintf fmt "forall %a. %a" Generalize.print g print t
 
 let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target =
   elsubst evl el (rlsubst rvl rl (tlsubst tvl tl target))

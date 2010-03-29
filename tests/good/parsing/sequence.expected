@@ -1,6 +1,5 @@
 type unit
 logic :=  : int -> int -> unit
 let
-  f  = (fun (x:int) -> {(fun (cur:<{ }>) -> True)}
-       let anon = (x := 0 : unit) in 5
+  f  = (fun (x:int) -> {(fun (cur:<{ }>) -> True)} let anon = x := 0 in 5
        {(fun (old:<{ }>) -> (fun (cur1:<{ }>) -> (fun (anon1:int) -> True)))}) 

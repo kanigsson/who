@@ -21,7 +21,6 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-(* TODO add a type argument to [region] *)
 module Env : sig
   type t
   val empty : t
@@ -30,7 +29,7 @@ module Env : sig
   val elookup : t -> Name.t -> Ty.t
   val add_region_list : t -> Name.t list -> t * Name.t list
   val add_effect_var_list : t -> Name.t list -> t * Name.t list
-  val add_global_var : t -> Name.t -> Ty.scheme -> t
+  val add_var : t -> Name.t -> Ty.scheme -> t
   val lookup : t -> Name.t -> Ty.scheme
 end = struct
 
@@ -56,9 +55,12 @@ end = struct
   let add_effect_var_list env l =
     List.fold_left add_effect_var env l, l
 
-  let add_global_var env n s = { env with n = M.add n s env.n }
+  let add_var env n s =
+(*     Myformat.printf "adding: %a : %a@." Name.print n Ty.print_scheme s; *)
+    { env with n = M.add n s env.n }
 
-  let lookup env n = M.find n env.n
+  let lookup env n =
+    M.find n env.n
 
 end
 
@@ -94,23 +96,71 @@ let scheme env (g, t) =
   let env, g = genfun env g in
   g, tyfun env t
 
-let adapt_tuples tl1 tl2 t l =
+let find_type t =
+  let rec aux acc in_t =
+    if Ty.equal in_t t then acc
+    else
+      match in_t with
+      | Ty.Tuple tl ->
+          aux_tup acc tl
+      | _ -> raise Not_found
+  and aux_tup' acc i tl =
+    match tl with
+    | [] -> raise Not_found
+    | x::xs ->
+        try aux (i::acc) x
+        with Not_found -> aux_tup' acc (i+1) xs
+  and aux_tup acc tl = aux_tup' acc 1 tl in
+  aux_tup []
+
+let build_get_tuple il tup l =
+  List.fold_right (fun i acc -> get_tuple i acc l) il tup
+
+let obtain_get t tl tup l =
+(*
+  Myformat.printf "--searching %a in list %a@."
+    Ty.print t (Ty.print_list Myformat.comma) tl ;
+*)
+  let il = find_type t tl in
+(*
+  Myformat.printf "for type %a, found list: %a@." Ty.print t
+    (Myformat.list Myformat.comma Myformat.int) il;
+*)
+  build_get_tuple il tup l
+
+let adapt_tuples t tl1 t2 l =
   (* [t] is a tuple of list tl1, but we want a tuple of list tl2 *)
-  assert false
+(*
+  Myformat.printf "-have types %a, but want type %a@."
+  (Ty.print_list Myformat.comma) tl1 Ty.print t2;
+*)
+  match t2 with
+  | Ty.Tuple tl2 ->
+      mk_tuple (List.length tl2)
+        (List.map (fun t2 -> obtain_get t2 tl1 t l) tl2) l
+  | _ -> obtain_get t2 tl1 t l
 
 let adapt obt exp t l =
   (* [t] has type [obt], but we want it to have type [ext] *)
   let rec adapt obt exp t =
+(*
+    Myformat.printf "have type %a, but want type %a, and term %a has type %a@."
+    Ty.print obt Ty.print exp print t Ty.print t.t;
+*)
     if Ty.equal obt exp then t
     else
       match obt, exp with
       | Ty.PureArr (ta1,ta2), Ty.PureArr (tb1,tb2) ->
-          plamho tb1 (fun x -> adapt ta2 tb2 (app t (adapt tb1 ta1 x) l)) l
-      | Ty.Tuple tl1, Ty.Tuple tl2 ->
-          adapt_tuples tl1 tl2 t l
+          plamho tb1 (fun x ->
+            let x' = adapt tb1 ta1 x in
+(*             Myformat.printf "adapted: %a@." print x'; *)
+            adapt ta2 tb2 (app t x' l)) l
+          (* if there is an order problem, it *has* to be a tuple on the left
+           * side; otherwise, the types cannot be different *)
+      | Ty.Tuple tl1, t2 -> adapt_tuples t tl1 t2 l
       | _, _ -> assert false
   in
-  adapt exp obt t
+  adapt obt exp t
 
 let rec term env t =
   let l = t.loc in
@@ -128,14 +178,24 @@ let rec term env t =
           let rl = List.map (Env.rlookup env) rl in
           let el = List.map (effect_to_tuple_type env) el in
           let tl = tl@(rl@el) in
+          (* expected-type is the type of the object we want to have here;
+           * we simply use its original type in the effect system and convert it
+           * *)
           let expected_type = tyfun env t.t in
-          let obtained_type =
-            let g,t = scheme env (Env.lookup env v) in
-            Ty.allsubst g (tl, [], []) t in
-          let v = var_i v (tl,[],[]) (tyfun env t.t) l in
+          let ni = (tl, [], []) in
+          (* the obtained type is the type of the instantiated f in the new type
+             system, maybe we have to convert *)
+          let v = var v ni (scheme env (Env.lookup env v)) l in
+          let obtained_type = v.t in
+(*
+          Myformat.printf "calling adapt with obt: %a; exp : %a; term %a of type
+          %a@." Ty.print obtained_type Ty.print expected_type print v Ty.print
+          v.t;
+*)
           adapt obtained_type expected_type v l
       | Quant (k,t,b) ->
           let x,f = vopen b in
+          let env = Env.add_var env x (Ty.Generalize.empty,t) in
           squant k x (tyfun env t) (term env f) l
       | Gen (g,t) ->
           let env, g = genfun env g in
@@ -156,8 +216,9 @@ let rec term env t =
 let rec decl env d =
   match d with
   | Logic (n,g,t) ->
+      let env' = Env.add_var env n (g,t) in
       let g,t = scheme env (g, t) in
-      Env.add_global_var env n (g,t), Logic (n,g,t)
+      env', Logic (n,g,t)
   | Formula (s,t,k) ->
       env, Formula (s, term env t, k)
   | Section (s,cl,th) -> env, Section (s,cl, theory env th)

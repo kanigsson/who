@@ -8,13 +8,13 @@ logic = ['a3||] : a3 -> a3 -> prop
 logic ->  : prop -> prop -> prop
 logic !! ['a4 'r 'e||] : refty[r,a4||] -> (region[r||] * e) -> a4
 logic z  : int
-logic f ['a5 'e1||] : refty[a5,int||] -> (region[a5||] * e1) -> int
 INTROS ['c 'b3||]
+logic f ['e1||] : (region[b3||] * e1) -> int
 goal g : forall (x:refty[b3,int||]).
          forall (k:refty[c,int||]).
          forall (u2:region[c||] * region[b3||]).
          (z =[int||]
-          (f [b3,region[c||]||] x
+          (f [region[c||]||]
            (mk_2tuple [region[b3||],region[c||]||]
             (get_2_2_tuple [region[c||],region[b3||]||] u2)
             (get_2_1_tuple [region[c||],region[b3||]||] u2))))
