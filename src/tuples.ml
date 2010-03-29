@@ -221,7 +221,10 @@ let rec decl env d =
   | TypeDef (g,d,n) ->
       let _, g = genfun env g in
       env, TypeDef (g,d,n)
-  | Program _ -> assert false
+  | Program (n,g,t,k) ->
+      let env_passed = Env.add_var env n (g,t.t) in
+      let env', g = genfun env g in
+      env_passed, Program (n,g, term env' t, k)
   | DLetReg rl ->
       let env, g = genfun env ([],rl,[]) in
       env, DGen g
