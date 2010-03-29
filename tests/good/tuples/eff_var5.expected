@@ -8,7 +8,6 @@ logic get_2_2_tuple ['a1 'b1||] : (a1 * b1) -> b1
 logic mk_2tuple ['a2 'b2||] : a2 -> b2 -> a2 * b2
 logic = ['a3||] : a3 -> a3 -> prop
 logic ->  : prop -> prop -> prop
-logic !! ['a4 'r 'e||] : refty[r,a4||] -> (region[r||] * e) -> a4
 logic z  : int
-logic f ['e1||] : e1 -> int
+logic f ['e||] : e -> int
 goal g : forall (x:int). (z =[int||] (f [unit||] tt)) -> (x =[int||] 3)

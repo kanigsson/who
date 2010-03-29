@@ -1,0 +1,22 @@
+type unit
+logic tt : unit
+type region ['u||]
+type refty ['reg 'ty||]
+logic ref_get ['reg 'u||] : 'reg region -> ('reg,'u) refty -> 'u
+logic combine [||'e1 'e2 'e3] : <'e1 'e2> -> <'e2 'e3> -> <'e1 'e2 'e3>
+
+logic get_2_1_tuple ['a 'b||] : 'a * 'b -> 'a
+logic get_2_2_tuple ['a 'b||] : 'a * 'b -> 'b
+logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
+
+
+logic = ['a||] : 'a -> 'a -> prop
+logic -> : prop -> prop -> prop
+logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
+
+logic z : int
+letregion a b
+goal g :
+  forall (u : <a >) (v : <b>) (x : ref(a,int)) (k : ref(b,int)).
+    (let f = (fun (c : <a b>) -> !!x|c = !!k|c) in
+    f (combine[{a} {} {b}] u v))

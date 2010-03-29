@@ -91,6 +91,11 @@ module Identifier = struct
       minus_id; store_id;
     ]
 
+  let effect_ids =
+    [
+      combine_id; restrict_id; get_id; empty_id
+    ]
+
 end
 
 open Identifier
@@ -148,3 +153,5 @@ let find var id_list = List.find (fun (a,_) -> equal var a) id_list
 let get_pangoline_id x = snd (find x pangoline_predefined)
 
 let is_infix x = belongs_to x Identifier.infix_ids
+
+let is_effect_var x = belongs_to x Identifier.effect_ids

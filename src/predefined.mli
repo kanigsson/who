@@ -81,3 +81,5 @@ val add_symbol_and_binding :
 val belongs_to : Name.t -> string list -> bool
 
 val is_infix : Name.t -> bool
+
+val is_effect_var : Name.t -> bool

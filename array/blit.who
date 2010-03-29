@@ -17,7 +17,7 @@ let blit a1 ofs1 a2 ofs2 len =
 
 let blit ['a|r1 r2|] (ar1 : ref(r1,'a array)) (ar2 : ref(r2,'a array))
       (ofs1 ofs2 l : int) =
-  {0 <= l /\ 0 <= ofs1 /\ 0 <= ofs2 /\ 
+  {0 <= l /\ 0 <= ofs1 /\ 0 <= ofs2 /\
    ofs1 <= len !!ar1 - l /\ ofs2 <= len !!ar2 - l }
    let a = !ar1 in
    let l2 = len (!ar2) in
@@ -25,7 +25,7 @@ let blit ['a|r1 r2|] (ar1 : ref(r1,'a array)) (ar2 : ref(r2,'a array))
      (* Top-down copy *)
      for i = l - 1 downto 0 do
       {!!ar1 = a /\ len !!ar2 = l2 /\
-      forall (k :int).  i < k /\ k <= l - 1 ->           
+      forall (k :int).  i < k /\ k <= l - 1 ->
         get (ofs2 + k) !!ar2 = get (ofs1 + k) !!ar1 }
       ar2 := set (ofs2 + i) (get (ofs1 + i) (!ar1)) (!ar2)
      done
@@ -33,10 +33,10 @@ let blit ['a|r1 r2|] (ar1 : ref(r1,'a array)) (ar2 : ref(r2,'a array))
      (* Bottum-up copy *)
      for i = 0 to l - 1 do
       {!!ar1 = a /\ len !!ar2 = l2 /\
-      forall (k :int).  0 <= k /\ k < i -> 
+      forall (k :int).  0 <= k /\ k < i ->
           get (ofs2 + k) !!ar2 = get (ofs1 + k) !!ar1 }
        ar2 := set (ofs2 + i) (get (ofs1 + i) (!ar1)) (!ar2)
      done
   {!!ar1|old = !!ar1 /\ len !!ar2 = len !!ar2|old /\
-    forall (k : int).  0 <= k /\ k < l -> 
+    forall (k : int).  0 <= k /\ k < l ->
           get (ofs2 + k) !!ar2 = get (ofs1 + k) !!ar1 }

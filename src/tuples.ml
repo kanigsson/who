@@ -111,38 +111,47 @@ let find_type t =
         try aux (i::acc) x
         with Not_found -> aux_tup' acc (i+1) xs
   and aux_tup acc tl = aux_tup' acc 1 tl in
-  aux_tup []
+  aux []
 
 let build_get_tuple il tup l =
   List.fold_right (fun i acc -> get_tuple i acc l) il tup
 
-let obtain_get t tl tup l =
+let obtain_get t in_t tup l =
   if Ty.is_unit t then void l
   else
-    let il = find_type t tl in
+    let il = find_type t in_t in
     build_get_tuple il tup l
 
-let adapt_tuples t tl1 t2 l =
-  (* [t] is a tuple of list tl1, but we want a tuple of list tl2 *)
+let one_or_many f t =
+  match t with
+  | Ty.Tuple tl -> List.map f tl
+  | _ -> [f t]
+
+let adapt_tuples te t1 t2 l =
+  (* [t] is a tuple of t1, but we want a tuple of t2 *)
+  mk_tuple (one_or_many (fun t -> obtain_get t t1 te l) t2) l
 (*
   Myformat.printf "-have types %a, but want type %a@."
-  (Ty.print_list Myformat.comma) tl1 Ty.print t2;
+  Ty.print t1 Ty.print t2;
 *)
-  match t2 with
-  | Ty.Tuple tl2 ->
-      mk_tuple (List.length tl2)
-        (List.map (fun t2 -> obtain_get t2 tl1 t l) tl2) l
-  | _ -> obtain_get t2 tl1 t l
+
+let combine_to_tuple target m1 m2 l =
+  mk_tuple (one_or_many (fun t ->
+    try obtain_get t m2.t m2 l
+    with Not_found -> obtain_get t m1.t m1 l) target) l
+
+let restrict_to_tuple target m l =
+  mk_tuple (one_or_many (fun t -> obtain_get t m.t m l) target) l
 
 let adapt obt exp t l =
   (* [t] has type [obt], but we want it to have type [ext] *)
   let rec adapt obt exp t =
+    if Ty.equal obt exp then t
+    else begin
 (*
     Myformat.printf "have type %a, but want type %a, and term %a has type %a@."
     Ty.print obt Ty.print exp print t Ty.print t.t;
 *)
-    if Ty.equal obt exp then t
-    else
       match obt, exp with
       | Ty.PureArr (ta1,ta2), Ty.PureArr (tb1,tb2) ->
           plamho tb1 (fun x ->
@@ -151,64 +160,79 @@ let adapt obt exp t l =
             adapt ta2 tb2 (app t x' l)) l
           (* if there is an order problem, it *has* to be a tuple on the left
            * side; otherwise, the types cannot be different *)
-      | Ty.Tuple tl1, t2 -> adapt_tuples t tl1 t2 l
-      | t1, t2 -> adapt_tuples t [t1] t2 l
+      | t1, t2 -> adapt_tuples t t1 t2 l
+    end
   in
   adapt obt exp t
 
+
 let rec term env t =
   let l = t.loc in
-  match destruct_get t with
+  try match destruct_get t with
   | Some (_,ref,reg,dom,m) ->
       let m = term env m in
       let ref = term env ref in
       get_to_select reg ref dom m l
   | _ ->
-      match t.v with
-      | Const _ -> t
-      | App (f1,f2,k,c) ->
-          app ~kind:k ~cap:c (term env f1) (term env f2) l
-      | Var (v,(tl,rl,el)) ->
-          let rl = List.map (Env.rlookup env) rl in
-          let el = List.map (effect_to_tuple_type env) el in
-          let tl = List.map (tyfun env) tl in
-          let tl = tl@(rl@el) in
-          (* expected-type is the type of the object we want to have here;
-           * we simply use its original type in the effect system and convert it
-           * *)
-          let expected_type = tyfun env t.t in
-          let ni = (tl, [], []) in
-          (* the obtained type is the type of the instantiated f in the new type
-             system, maybe we have to convert *)
-          let v = var v ni (scheme env (Env.lookup env v)) l in
-          let obtained_type = v.t in
+      match destruct_app2_var t with
+      | Some (v,_, m1,m2) when PL.equal v PI.combine_id ->
+          let m1 = term env m1 and m2 = term env m2 in
+          let t = tyfun env t.t in
+          combine_to_tuple t m1 m2 l
+      | _ ->
+          match destruct_app t with
+          | Some ({v = Var (v,([],[],_))}, m)
+            when PL.equal v PI.restrict_id ->
+              let m = term env m in
+              let t = tyfun env t.t in
+              restrict_to_tuple t m l
+         | _ -> raise Exit
+  with Exit ->
+    match t.v with
+    | Const _ -> t
+    | App (f1,f2,k,c) ->
+        app ~kind:k ~cap:c (term env f1) (term env f2) l
+    | Var (v,(tl,rl,el)) ->
+        let rl = List.map (Env.rlookup env) rl in
+        let el = List.map (effect_to_tuple_type env) el in
+        let tl = List.map (tyfun env) tl in
+        let tl = tl@(rl@el) in
+        (* expected-type is the type of the object we want to have here;
+         * we simply use its original type in the effect system and
+         * convert it *)
+        let expected_type = tyfun env t.t in
+        let ni = (tl, [], []) in
+(* the obtained type is the type of the instantiated f in the new
+ * type system, maybe we have to convert *)
+        let v = var v ni (scheme env (Env.lookup env v)) l in
+        let obtained_type = v.t in
 (*
-          Myformat.printf "calling adapt with obt: %a; exp : %a; term %a of type
-          %a@." Ty.print obtained_type Ty.print expected_type print v Ty.print
-          v.t;
+Myformat.printf "calling adapt with obt: %a; exp : %a; term %a of type
+%a@." Ty.print obtained_type Ty.print expected_type print v Ty.print
+v.t;
 *)
-          adapt obtained_type expected_type v l
-      | Quant (k,t,b) ->
-          let x,f = vopen b in
-          let env = Env.add_var env x (Ty.Generalize.empty,t) in
-          squant k x (tyfun env t) (term env f) l
-      | Gen (g,t) ->
-          let env, g = genfun env g in
-          gen g (term env t) l
-      | PureFun (t,b) ->
-          let x,f = vopen b in
-          let env = Env.add_var env x (Ty.Generalize.empty,t) in
-          plam x (tyfun env t) (term env f) l
-      | Ite (e1,e2,e3) ->
-          ite (term env e1) (term env e2) (term env e3) l
-      | Let (g ,e1,b,r) ->
-          let x,e2 = vopen b in
-          let env', g = genfun env g in
-          let e1 = term env' e1 in
-          let env = Env.add_var env x (g,e1.t) in
-          let_ g e1 x (term env e2) r l
-      | Lam _ | LetReg _ | Param _ | HoareTriple _ ->
-          assert false
+        adapt obtained_type expected_type v l
+    | Quant (k,t,b) ->
+        let x,f = vopen b in
+        let env = Env.add_var env x (Ty.Generalize.empty,t) in
+        squant k x (tyfun env t) (term env f) l
+    | Gen (g,t) ->
+        let env, g = genfun env g in
+        gen g (term env t) l
+    | PureFun (t,b) ->
+        let x,f = vopen b in
+        let env = Env.add_var env x (Ty.Generalize.empty,t) in
+        plam x (tyfun env t) (term env f) l
+    | Ite (e1,e2,e3) ->
+        ite (term env e1) (term env e2) (term env e3) l
+    | Let (g ,e1,b,r) ->
+        let x,e2 = vopen b in
+        let env', g = genfun env g in
+        let e1 = term env' e1 in
+        let env = Env.add_var env x (g,e1.t) in
+        let_ g e1 x (term env e2) r l
+    | Lam _ | LetReg _ | Param _ | HoareTriple _ ->
+        assert false
 
 let rec decl env d =
   match d with
@@ -237,4 +261,8 @@ let rec decl env d =
       env, DGen (tl@rl@el,[],[])
 and theory env t = ExtList.fold_map decl env t
 
-let theory t = snd (theory Env.empty t)
+let theory t =
+  List.filter (fun d ->
+    match d with
+    | Logic (n,_,_) when Predefined.is_effect_var n -> false
+    | _ -> true) (snd (theory Env.empty t))
