@@ -2,24 +2,24 @@ type unit
 logic tt  : unit
 type region['u||]
 type refty['reg 'ty||]
-logic ref_get ['reg1 'u1||] : region[reg1||] -> refty[reg1,u1||] -> u1
+logic ref_get ['reg 'u||] : region[reg||] -> refty[reg,u||] -> u
 logic get_2_1_tuple ['a 'b||] : (a * b) -> a
-logic get_2_2_tuple ['a1 'b1||] : (a1 * b1) -> b1
-logic mk_2tuple ['a2 'b2||] : a2 -> b2 -> a2 * b2
-logic = ['a3||] : a3 -> a3 -> prop
+logic get_2_2_tuple ['a 'b||] : (a * b) -> b
+logic mk_2tuple ['a 'b||] : a -> b -> a * b
+logic = ['a||] : a -> a -> prop
 logic ->  : prop -> prop -> prop
 logic z  : int
-INTROS ['b3 'a4||]
-goal g : forall (u2:region[a4||]).
-         forall (v:region[b3||]).
-         forall (x:refty[a4,int||]).
-         forall (k:refty[b3,int||]).
+INTROS ['b 'a||]
+goal g : forall (u:region[a||]).
+         forall (v:region[b||]).
+         forall (x:refty[a,int||]).
+         forall (k:refty[b,int||]).
          let
          f =
-            (fun (c:region[b3||] * region[a4||]) ->
-            (ref_get [a4,int||]
-             (get_2_2_tuple [region[b3||],region[a4||]||] c) x)
+            (fun (c:region[b||] * region[a||]) ->
+            (ref_get [a,int||] (get_2_2_tuple [region[b||],region[a||]||] c)
+             x)
             =[int||]
-            (ref_get [b3,int||]
-             (get_2_1_tuple [region[b3||],region[a4||]||] c) k))
-         in f (mk_2tuple [region[b3||],region[a4||]||] v u2)
+            (ref_get [b,int||] (get_2_1_tuple [region[b||],region[a||]||] c)
+             k))
+         in f (mk_2tuple [region[b||],region[a||]||] v u)

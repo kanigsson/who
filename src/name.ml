@@ -88,16 +88,20 @@ let strip_numbers s =
   let n = aux (String.length s) in
   if n = 0 then default_string else String.sub s 0 n
 
-let fresh_string name =
+let fresh_string_env env name =
   let s = strip_numbers name in
   try
-    let i = Hashtbl.find name_map s in
-    let s' = s ^ (string_of_int !i) in
-    incr i; s'
-  with Not_found ->
-    let x = ref 1 in
-    Hashtbl.add name_map s x;
-    s
+    let i = Misc.StringMap.find s env in
+    let s' = s ^ (string_of_int i) in
+    Misc.StringMap.add s (i+1) env, s'
+  with Not_found -> Misc.StringMap.add s 1 env, s
+
+
+let name_map = ref Misc.StringMap.empty
+
+let fresh_string x = 
+  let env, s = fresh_string_env !name_map x in
+  name_map := env; s
 
 let to_string n = fresh_string (unsafe_to_string n)
 
@@ -105,7 +109,7 @@ let reserved_names =
   [ "Definition"; "for"; "end"; "Lemma"; "Parameter"; ]
 
 let reset () =
-  Hashtbl.clear name_map;
+  name_map := Misc.StringMap.empty;
   List.iter (fun s -> ignore (fresh_string s)) reserved_names
 
 let print fmt x = Format.pp_print_string fmt (unsafe_to_string x)
@@ -147,13 +151,23 @@ let hash_set s =
 
 module Env = struct
   type name = t
-  type t = string M.t
+  type t = 
+    { names : string M.t;
+      gen : int Misc.StringMap.t
+    }
 
-  let empty = M.empty
+  let empty = 
+    { names = M.empty;
+      gen = Misc.StringMap.empty
+    }
+
   let id env x =
-    try M.find x env
+    try M.find x env.names
     with Not_found -> get_cur_name x
-  let add_id env x = M.add x (to_string x) env
+
+  let add_id env x = 
+    let gen, s = fresh_string_env env.gen (unsafe_to_string x) in
+    { names = M.add x s env.names; gen = gen }
 
   let add_id_list = List.fold_left add_id
 end

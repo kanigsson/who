@@ -88,7 +88,7 @@ module Print = struct
           (* there are no impure arrow types in Coq or Pangoline, so simply
            * print it as you wish *)
           fprintf fmt "%a ->{%a%a} %a" mayp t1
-          effect eff (maycap string) cap print t2
+          effect_no_sep eff (maycap string) cap print t2
       | Map e -> fprintf fmt "<%a>" effect_no_sep e
       | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 print t2
       | Tuple tl ->

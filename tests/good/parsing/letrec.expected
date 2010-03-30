@@ -1,17 +1,16 @@
 logic fst ['a 'b||] : (a * b) -> a
-logic snd ['a1 'b1||] : (a1 * b1) -> b1
-let pre ['a2 'b2||] = (fun (x:a2 * b2) -> fst [a2,b2||] x) 
-let post ['a3 'b3||] = (fun (x1:a3 * b3) -> snd [a3,b3||] x1) 
-let rec((a4 ->{{ 'e}} a4) ->
-  a4 ->{{ 'e}} a4) apply ['a4||'e] = (fun (g:a4 ->{{ 'e}} a4) ->
-                                     (fun (x2:a4) ->
-                                     {(fun (cur:< 'e>) ->
-                                      pre [a4 -> < 'e> -> prop,a4 -> < 'e> ->
-                                      < 'e> -> a4 -> prop||] g x2 cur)}
-                                     g x2
-                                     {(fun (old:< 'e>) ->
-                                      (fun (cur1:< 'e>) ->
-                                      (fun (r:a4) ->
-                                      post [a4 -> < 'e> -> prop,a4 ->
-                                      < 'e> -> < 'e> -> a4 -> prop||] g x2
-                                      old cur1 r)))})) 
+logic snd ['a 'b||] : (a * b) -> b
+let pre ['a 'b||] = (fun (x:a * b) -> fst [a,b||] x) 
+let post ['a 'b||] = (fun (x:a * b) -> snd [a,b||] x) 
+let rec((a ->{ 'e} a) ->
+  a ->{ 'e} a) apply ['a||'e] = (fun (g:a ->{ 'e} a) ->
+                                (fun (x:a) ->
+                                {(fun (cur:< 'e>) ->
+                                 pre [a -> < 'e> -> prop,a -> < 'e> ->
+                                 < 'e> -> a -> prop||] g x cur)}
+                                g x
+                                {(fun (old:< 'e>) ->
+                                 (fun (cur:< 'e>) ->
+                                 (fun (r:a) ->
+                                 post [a -> < 'e> -> prop,a -> < 'e> ->
+                                 < 'e> -> a -> prop||] g x old cur r)))})) 

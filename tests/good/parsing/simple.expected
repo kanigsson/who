@@ -1,3 +1,3 @@
 let
   f  = (fun (x:int) -> {(fun (cur:< >) -> True)} x
-       {(fun (old:< >) -> (fun (cur1:< >) -> (fun (anon:int) -> True)))}) 
+       {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:int) -> True)))}) 

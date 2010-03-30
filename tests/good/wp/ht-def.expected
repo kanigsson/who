@@ -7,14 +7,14 @@ logic \/  : prop -> prop -> prop
 logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 logic ->  : prop -> prop -> prop
 logic ~  : prop -> prop
-logic = ['a1||] : a1 -> a1 -> prop
-logic mk_2tuple ['a2 'b||] : a2 -> b -> a2 * b
-logic fst ['a3 'b1||] : (a3 * b1) -> a3
-logic snd ['a4 'b2||] : (a4 * b2) -> b2
-type hmap['a5 'b3||]
-logic hmem ['a6 'b4||] : a6 -> hmap[a6,b4||] -> bool
-logic hget ['a7 'b5||] : a7 -> hmap[a7,b5||] -> b5
-logic hset ['a8 'b6||] : a8 -> b6 -> hmap[a8,b6||] -> hmap[a8,b6||]
+logic = ['a||] : a -> a -> prop
+logic mk_2tuple ['a 'b||] : a -> b -> a * b
+logic fst ['a 'b||] : (a * b) -> a
+logic snd ['a 'b||] : (a * b) -> b
+type hmap['a 'b||]
+logic hmem ['a 'b||] : a -> hmap[a,b||] -> bool
+logic hget ['a 'b||] : a -> hmap[a,b||] -> b
+logic hset ['a 'b||] : a -> b -> hmap[a,b||] -> hmap[a,b||]
 let
   logic stores  = (fun (f:int -> int) ->
                   (fun (m:hmap[int,int||]) ->
@@ -24,17 +24,17 @@ let
 INTROS [|t|]
 logic table  : ref(t,hmap[int,int||])
 let
-  logic realizes  = (fun (f1:int -> int) ->
-                    (fun (f2:(int -> <t > -> prop) * (int -> <t > -> <t > ->
+  logic realizes  = (fun (f:int -> int) ->
+                    (fun (f1:(int -> <t > -> prop) * (int -> <t > -> <t > ->
                     int -> prop)) ->
-                    forall (x1:int).
+                    forall (x:int).
                     forall (s:<t >).
-                    (stores f1 (!! [hmap[int,int||]| t| { }] table s)) ->
+                    (stores f (!! [hmap[int,int||]| t| { }] table s)) ->
                     ((fst [int -> <t > -> prop,int -> <t > -> <t > -> int ->
-                      prop||] f2 x1 s)
+                      prop||] f1 x s)
                      /\
                      (forall (s1:<t >).
                       forall (anon:int).
                       (snd [int -> <t > -> prop,int -> <t > -> <t > -> int ->
-                       prop||] f2 x1 s s1 anon)
-                      -> (stores f1 (!! [hmap[int,int||]| t| { }] table s1)))))) 
+                       prop||] f1 x s s1 anon)
+                      -> (stores f (!! [hmap[int,int||]| t| { }] table s1)))))) 

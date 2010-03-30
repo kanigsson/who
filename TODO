@@ -28,7 +28,6 @@ INTERNAL
 * do not allow effect variables in abstract type definitions
   put types in variables
 
-* pretty printing
 * simplification for "or"
 
 

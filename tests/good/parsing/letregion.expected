@@ -1,25 +1,23 @@
 type unit
 logic = ['a||] : a -> a -> prop
 logic /\  : prop -> prop -> prop
-logic !! ['a1|r|'e] : ref(r,a1) -> <r 'e> -> a1
+logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
-  ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {(fun (cur:<r1 >) -> True)}
-                parameter(a2,{r1 })
-                {(fun (old:<r1 >) ->
-                 (fun (cur1:<r1 >) ->
-                 (fun (r2:a2) ->
-                 ((!! [a2| r1| { }] x cur1) =[a2||] r2) /\
-                 ((!! [a2| r1| { }] x old) =[a2||] (!! [a2| r1| { }] x cur1)))))}) 
+  ! ['a|r|] = (fun (x:ref(r,a)) -> {(fun (cur:<r >) -> True)}
+              parameter(a,{r })
+              {(fun (old:<r >) ->
+               (fun (cur:<r >) ->
+               (fun (r1:a) ->
+               ((!! [a| r| { }] x cur) =[a||] r1) /\
+               ((!! [a| r| { }] x old) =[a||] (!! [a| r| { }] x cur)))))}) 
 let
-  ref ['a3|r3|] = (fun (v:a3) ->allocates r3 {(fun (cur2:<r3 >) -> True)}
-                  parameter(ref(r3,a3),{r3 })
-                  {(fun (old1:<r3 >) ->
-                   (fun (cur3:<r3 >) ->
-                   (fun (x1:ref(r3,a3)) ->
-                   (!! [a3| r3| { }] x1 cur3) =[a3||] v)))}) 
+  ref ['a|r|] = (fun (v:a) ->allocates r {(fun (cur:<r >) -> True)}
+                parameter(ref(r,a),{r })
+                {(fun (old:<r >) ->
+                 (fun (cur:<r >) ->
+                 (fun (x:ref(r,a)) -> (!! [a| r| { }] x cur) =[a||] v)))}) 
 let
-  main  = (fun (z:unit) -> {(fun (cur4:< >) -> True)}
-          letregion rho in
-          let x2 = ref [int| rho|]{rho} 5 in ! [int| rho|] x2
-          {(fun (old2:< >) ->
-           (fun (cur5:< >) -> (fun (r4:int) -> r4 =[int||] 5)))}) 
+  main  = (fun (z:unit) -> {(fun (cur:< >) -> True)}
+          letregion rho in let x = ref [int| rho|]{rho} 5 in ! [int| rho|] x
+          {(fun (old:< >) ->
+           (fun (cur:< >) -> (fun (r:int) -> r =[int||] 5)))}) 

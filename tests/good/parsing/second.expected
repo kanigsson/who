@@ -3,13 +3,12 @@ logic true  : bool
 logic false  : bool
 logic == ['a||] : a -> a -> bool
 let
-  f ['a1||] = (fun (x:a1) ->
-              (fun (y:a1) -> {(fun (cur:< >) -> True)} x ==[a1||] y
-              {(fun (old:< >) ->
-               (fun (cur1:< >) -> (fun (anon:bool) -> True)))})) 
+  f ['a||] = (fun (x:a) ->
+             (fun (y:a) -> {(fun (cur:< >) -> True)} x ==[a||] y
+             {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:bool) -> True)))})) 
 let
-  f1 ['a2||] = (fun (x1:a2) -> {(fun (cur2:< >) -> True)} true
-               {(fun (old1:< >) ->
-                (fun (cur3:< >) -> (fun (anon1:bool) -> True)))}) 
+  f1 ['a||] = (fun (x:a) -> {(fun (cur:< >) -> True)} true
+              {(fun (old:< >) ->
+               (fun (cur:< >) -> (fun (anon:bool) -> True)))}) 
 let g  = f1 [bool||] true 
 let h  = f1 [int||] 5 

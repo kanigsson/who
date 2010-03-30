@@ -5,9 +5,9 @@ logic /\  : prop -> prop -> prop
 logic \/  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
 logic ~  : prop -> prop
-logic mk_2tuple ['a1 'b||] : a1 -> b -> a1 * b
-logic fst ['a2 'b1||] : (a2 * b1) -> a2
-logic snd ['a3 'b2||] : (a3 * b2) -> b2
+logic mk_2tuple ['a 'b||] : a -> b -> a * b
+logic fst ['a 'b||] : (a * b) -> a
+logic snd ['a 'b||] : (a * b) -> b
 logic t  : prop
 let
   logic myget [|r|] = mk_2tuple [unit -> <r > -> prop,unit -> <r > -> <r > ->
@@ -15,7 +15,7 @@ let
                       (fun (x:unit) -> (fun (c:<r >) -> True))
                       (fun (x:unit) ->
                       (fun (o:<r >) ->
-                      (fun (c1:<r >) -> (fun (r1:unit) -> True)))) 
+                      (fun (c:<r >) -> (fun (r1:unit) -> True)))) 
 goal blit_correct : forall [|s|]. forall (s1:<s >).
                                   (9 =[int||] 0) ->
                                   (t ->
@@ -25,8 +25,7 @@ goal blit_correct : forall [|s|]. forall (s1:<s >).
 let
   logic blit [|s|] = mk_2tuple [unit -> <s > -> prop,unit -> <s > -> <s > ->
                      unit -> prop||]
-                     (fun (x1:unit) ->
-                     (fun (c2:<s >) -> t /\ (9 =[int||] 0)))
-                     (fun (x1:unit) ->
-                     (fun (a4:<s >) ->
-                     (fun (c3:<s >) -> (fun (a5:unit) -> True)))) 
+                     (fun (x:unit) -> (fun (c:<s >) -> t /\ (9 =[int||] 0)))
+                     (fun (x:unit) ->
+                     (fun (a:<s >) ->
+                     (fun (c:<s >) -> (fun (a1:unit) -> True)))) 

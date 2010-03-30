@@ -1,4 +1,4 @@
 type bool
 let
   f  = (fun (b:bool) -> {(fun (cur:< >) -> True)} if b then 5 else 3
-       {(fun (old:< >) -> (fun (cur1:< >) -> (fun (anon:int) -> True)))}) 
+       {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:int) -> True)))}) 

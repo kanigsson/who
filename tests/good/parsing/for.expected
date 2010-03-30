@@ -4,71 +4,69 @@ logic = ['a||] : a -> a -> prop
 logic /\  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
 logic ~  : prop -> prop
-logic !! ['a1|r|'e] : ref(r,a1) -> <r 'e> -> a1
+logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
-  ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {(fun (cur:<r1 >) -> True)}
-                parameter(a2,{r1 })
-                {(fun (old:<r1 >) ->
-                 (fun (cur1:<r1 >) ->
-                 (fun (r2:a2) ->
-                 ((!! [a2| r1| { }] x cur1) =[a2||] r2) /\
-                 ((!! [a2| r1| { }] x old) =[a2||] (!! [a2| r1| { }] x cur1)))))}) 
-logic fst ['a3 'b||] : (a3 * b) -> a3
-logic snd ['a4 'b1||] : (a4 * b1) -> b1
-let pre ['a5 'b2||] = (fun (x1:a5 * b2) -> fst [a5,b2||] x1) 
-let post ['a6 'b3||] = (fun (x2:a6 * b3) -> snd [a6,b3||] x2) 
+  ! ['a|r|] = (fun (x:ref(r,a)) -> {(fun (cur:<r >) -> True)}
+              parameter(a,{r })
+              {(fun (old:<r >) ->
+               (fun (cur:<r >) ->
+               (fun (r1:a) ->
+               ((!! [a| r| { }] x cur) =[a||] r1) /\
+               ((!! [a| r| { }] x old) =[a||] (!! [a| r| { }] x cur)))))}) 
+logic fst ['a 'b||] : (a * b) -> a
+logic snd ['a 'b||] : (a * b) -> b
+let pre ['a 'b||] = (fun (x:a * b) -> fst [a,b||] x) 
+let post ['a 'b||] = (fun (x:a * b) -> snd [a,b||] x) 
 logic <=  : int -> int -> prop
 logic <  : int -> int -> prop
 logic +  : int -> int -> int
 logic *  : int -> int -> int
 logic int_max  : int -> int -> int
 let
-  := ['a7|r3|] = (fun (x3:ref(r3,a7)) ->
-                 (fun (v:a7) -> {(fun (cur2:<r3 >) -> True)}
-                 parameter(unit,{r3 })
-                 {(fun (old1:<r3 >) ->
-                  (fun (cur3:<r3 >) ->
-                  (fun (anon:unit) -> (!! [a7| r3| { }] x3 cur3) =[a7||] v)))})) 
-logic combine [||'e1 'e2 'e3] : < 'e1 'e2> -> < 'e2 'e3> -> < 'e1 'e2 'e3>
+  := ['a|r|] = (fun (x:ref(r,a)) ->
+               (fun (v:a) -> {(fun (cur:<r >) -> True)} parameter(unit,{r })
+               {(fun (old:<r >) ->
+                (fun (cur:<r >) ->
+                (fun (anon:unit) -> (!! [a| r| { }] x cur) =[a||] v)))})) 
+logic combine [||'e 'e1 'e2] : < 'e 'e1> -> < 'e1 'e2> -> < 'e 'e1 'e2>
 let
-  forto [||'e4] = (fun (inv:int -> < 'e4> -> prop) ->
-                  (fun (start:int) ->
-                  (fun (end_:int) ->
-                  (fun (f:int ->{{ 'e4}} unit) ->
-                  {(fun (cur4:< 'e4>) ->
-                   (inv start cur4) /\
-                   (forall (i:int).
-                    ((start <= i) /\ (i <= end_)) ->
-                    (forall (m:< 'e4>).
-                     (inv i m) ->
-                     ((pre [int -> < 'e4> -> prop,int -> < 'e4> -> < 'e4> ->
-                       unit -> prop||] f i m)
-                      /\
-                      (forall (n:< 'e4>).
-                       (post [int -> < 'e4> -> prop,int -> < 'e4> ->
-                        < 'e4> -> unit -> prop||] f i m n tt)
-                       -> (inv (i + 1) n))))))}
-                  parameter(unit,{ 'e4})
-                  {(fun (old2:< 'e4>) ->
-                   (fun (cur5:< 'e4>) ->
-                   (fun (anon1:unit) -> inv (int_max start (end_ + 1)) cur5)))})))) 
+  forto [||'e] = (fun (inv:int -> < 'e> -> prop) ->
+                 (fun (start:int) ->
+                 (fun (end_:int) ->
+                 (fun (f:int ->{ 'e} unit) ->
+                 {(fun (cur:< 'e>) ->
+                  (inv start cur) /\
+                  (forall (i:int).
+                   ((start <= i) /\ (i <= end_)) ->
+                   (forall (m:< 'e>).
+                    (inv i m) ->
+                    ((pre [int -> < 'e> -> prop,int -> < 'e> -> < 'e> ->
+                      unit -> prop||] f i m)
+                     /\
+                     (forall (n:< 'e>).
+                      (post [int -> < 'e> -> prop,int -> < 'e> -> < 'e> ->
+                       unit -> prop||] f i m n tt)
+                      -> (inv (i + 1) n))))))}
+                 parameter(unit,{ 'e})
+                 {(fun (old:< 'e>) ->
+                  (fun (cur:< 'e>) ->
+                  (fun (anon:unit) -> inv (int_max start (end_ + 1)) cur)))})))) 
 let
-  f1 [|r4|] = (fun (b4:unit) ->
-              (fun (x4:ref(r4,int)) -> {(fun (cur6:<r4 >) -> True)}
-              let __start = 1 in
-              let __end = 5 in
-              forto [|| {r4 }]
-              (fun (i1:int) ->
-              (fun (cur7:<r4 >) -> (!! [int| r4| { }] x4 cur7) < (i1 * 10)))
-              __start __end
-              (fun (i1:int) ->
-              {(fun (cur8:<r4 >) ->
-               ((__start <= i1) /\ (i1 <= __end)) /\
-               ((!! [int| r4| { }] x4 cur8) < (i1 * 10)))}
-              x4 :=[int| r4|] ((! [int| r4|] x4) + i1)
-              {(fun (anon2:<r4 >) ->
-               (fun (cur8:<r4 >) ->
-               (fun (anon3:unit) ->
-               (!! [int| r4| { }] x4 cur8) < ((i1 + 1) * 10))))})
-              {(fun (old3:<r4 >) ->
-               (fun (cur9:<r4 >) -> (fun (anon4:unit) -> True)))})) 
+  f [|r|] = (fun (b:unit) ->
+            (fun (x:ref(r,int)) -> {(fun (cur:<r >) -> True)}
+            let __start = 1 in
+            let __end = 5 in
+            forto [|| {r }]
+            (fun (i:int) ->
+            (fun (cur:<r >) -> (!! [int| r| { }] x cur) < (i * 10))) __start
+            __end
+            (fun (i:int) ->
+            {(fun (cur:<r >) ->
+             ((__start <= i) /\ (i <= __end)) /\
+             ((!! [int| r| { }] x cur) < (i * 10)))}
+            x :=[int| r|] ((! [int| r|] x) + i)
+            {(fun (anon:<r >) ->
+             (fun (cur:<r >) ->
+             (fun (anon1:unit) -> (!! [int| r| { }] x cur) < ((i + 1) * 10))))})
+            {(fun (old:<r >) ->
+             (fun (cur:<r >) -> (fun (anon:unit) -> True)))})) 

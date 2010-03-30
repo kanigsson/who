@@ -4,4 +4,4 @@ let
   f  = (fun (x:int) ->
        (fun (y:int) -> {(fun (cur:< >) -> True)} x + y
        {(fun (old:< >) ->
-        (fun (cur1:< >) -> (fun (r:int) -> (x + y) =[int||] r)))})) 
+        (fun (cur:< >) -> (fun (r:int) -> (x + y) =[int||] r)))})) 

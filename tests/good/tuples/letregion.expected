@@ -1,11 +1,11 @@
 type region['u||]
 type refty['reg 'ty||]
-logic ref_get ['reg1 'u1||] : region[reg1||] -> refty[reg1,u1||] -> u1
+logic ref_get ['reg 'u||] : region[reg||] -> refty[reg,u||] -> u
 logic = ['a||] : a -> a -> prop
 logic ->  : prop -> prop -> prop
 logic y  : int
 logic z  : int
 INTROS ['r||]
 goal g : forall (x:refty[r,int||]).
-         forall (u2:region[r||]).
-         (y =[int||] z) -> ((ref_get [r,int||] u2 x) =[int||] 1)
+         forall (u:region[r||]).
+         (y =[int||] z) -> ((ref_get [r,int||] u x) =[int||] 1)

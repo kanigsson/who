@@ -3,9 +3,8 @@ let
   := ['a|r|] = (fun (x:ref(r,a)) ->
                (fun (v:a) -> {(fun (cur:<r >) -> True)} parameter(unit,{r })
                {(fun (old:<r >) ->
-                (fun (cur1:<r >) -> (fun (anon:unit) -> True)))})) 
+                (fun (cur:<r >) -> (fun (anon:unit) -> True)))})) 
 let
-  x1 [|r1|] = (fun (z:ref(r1,int)) -> {(fun (c:<r1 >) -> True)}
-              z :=[int| r1|] 0
-              {(fun (old1:<r1 >) ->
-               (fun (cur2:<r1 >) -> (fun (anon1:unit) -> True)))}) 
+  x [|r|] = (fun (z:ref(r,int)) -> {(fun (c:<r >) -> True)} z :=[int| r|] 0
+            {(fun (old:<r >) ->
+             (fun (cur:<r >) -> (fun (anon:unit) -> True)))}) 

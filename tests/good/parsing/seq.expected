@@ -1,31 +1,29 @@
 logic = ['a||] : a -> a -> prop
 logic /\  : prop -> prop -> prop
-logic !! ['a1|r|'e] : ref(r,a1) -> <r 'e> -> a1
+logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
-  ! ['a2|r1|] = (fun (x:ref(r1,a2)) -> {(fun (cur:<r1 >) -> True)}
-                parameter(a2,{r1 })
-                {(fun (old:<r1 >) ->
-                 (fun (cur1:<r1 >) ->
-                 (fun (r2:a2) ->
-                 ((!! [a2| r1| { }] x cur1) =[a2||] r2) /\
-                 ((!! [a2| r1| { }] x old) =[a2||] (!! [a2| r1| { }] x cur1)))))}) 
-let seq ['a3 'b 'c||'e1
-  'e2] = (fun (f:a3 ->{{ 'e1}} b) ->
-         (fun (g:b ->{{ 'e2}} c) ->
-         (fun (x1:a3) -> {(fun (cur2:< 'e1 'e2>) -> True)} g (f x1)
-         {(fun (old1:< 'e1 'e2>) ->
-          (fun (cur3:< 'e1 'e2>) -> (fun (anon:c) -> True)))}))) 
-let h [|r3
-  r4|] = (fun (x2:ref(r3,int)) ->
-         (fun (y:ref(r4,int)) -> {(fun (cur4:< >) -> True)}
-         seq [int,int,int|| {r3 } {r4 }]
-         (fun (z:int) -> {(fun (cur5:<r3 >) -> True)} ! [int| r3|] x2
-         {(fun (old2:<r3 >) ->
-          (fun (cur6:<r3 >) -> (fun (anon1:int) -> True)))})
-         (fun (z1:int) -> {(fun (cur7:<r4 >) -> True)} ! [int| r4|] y
-         {(fun (old3:<r4 >) ->
-          (fun (cur8:<r4 >) -> (fun (anon2:int) -> True)))})
-         {(fun (old4:< >) ->
-          (fun (cur9:< >) ->
-          (fun (anon3:(int -> <r3 r4 > -> prop) * (int -> <r3 r4 > -> <r3
-          r4 > -> int -> prop)) -> True)))})) 
+  ! ['a|r|] = (fun (x:ref(r,a)) -> {(fun (cur:<r >) -> True)}
+              parameter(a,{r })
+              {(fun (old:<r >) ->
+               (fun (cur:<r >) ->
+               (fun (r1:a) ->
+               ((!! [a| r| { }] x cur) =[a||] r1) /\
+               ((!! [a| r| { }] x old) =[a||] (!! [a| r| { }] x cur)))))}) 
+let seq ['a 'b 'c||'e
+  'e1] = (fun (f:a ->{ 'e} b) ->
+         (fun (g:b ->{ 'e1} c) ->
+         (fun (x:a) -> {(fun (cur:< 'e 'e1>) -> True)} g (f x)
+         {(fun (old:< 'e 'e1>) ->
+          (fun (cur:< 'e 'e1>) -> (fun (anon:c) -> True)))}))) 
+let h [|r
+  r1|] = (fun (x:ref(r,int)) ->
+         (fun (y:ref(r1,int)) -> {(fun (cur:< >) -> True)}
+         seq [int,int,int|| {r } {r1 }]
+         (fun (z:int) -> {(fun (cur:<r >) -> True)} ! [int| r|] x
+         {(fun (old:<r >) -> (fun (cur:<r >) -> (fun (anon:int) -> True)))})
+         (fun (z:int) -> {(fun (cur:<r1 >) -> True)} ! [int| r1|] y
+         {(fun (old:<r1 >) -> (fun (cur:<r1 >) -> (fun (anon:int) -> True)))})
+         {(fun (old:< >) ->
+          (fun (cur:< >) ->
+          (fun (anon:(int -> <r r1 > -> prop) * (int -> <r r1 > -> <r r1 > ->
+          int -> prop)) -> True)))})) 

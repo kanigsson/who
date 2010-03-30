@@ -1,25 +1,23 @@
 type region['u||]
 type refty['reg 'ty||]
-logic ref_get ['reg1 'u1||] : region[reg1||] -> refty[reg1,u1||] -> u1
+logic ref_get ['reg 'u||] : region[reg||] -> refty[reg,u||] -> u
 logic get_2_1_tuple ['a 'b||] : (a * b) -> a
-logic get_2_2_tuple ['a1 'b1||] : (a1 * b1) -> b1
-logic mk_2tuple ['a2 'b2||] : a2 -> b2 -> a2 * b2
-logic = ['a3||] : a3 -> a3 -> prop
+logic get_2_2_tuple ['a 'b||] : (a * b) -> b
+logic mk_2tuple ['a 'b||] : a -> b -> a * b
+logic = ['a||] : a -> a -> prop
 logic ->  : prop -> prop -> prop
 logic z  : int
-logic f ['a4 'e||] : refty[a4,int||] -> (region[a4||] * e) -> int
-INTROS ['c 'b3||]
-goal g : forall (x:refty[b3,int||]).
+logic f ['a 'e||] : refty[a,int||] -> (region[a||] * e) -> int
+INTROS ['c 'b||]
+goal g : forall (x:refty[b,int||]).
          forall (k:refty[c,int||]).
-         forall (u2:region[c||] * region[b3||]).
+         forall (u:region[c||] * region[b||]).
          (z =[int||]
-          (f [b3,region[c||]||] x
-           (mk_2tuple [region[b3||],region[c||]||]
-            (get_2_2_tuple [region[c||],region[b3||]||] u2)
-            (get_2_1_tuple [region[c||],region[b3||]||] u2))))
+          (f [b,region[c||]||] x
+           (mk_2tuple [region[b||],region[c||]||]
+            (get_2_2_tuple [region[c||],region[b||]||] u)
+            (get_2_1_tuple [region[c||],region[b||]||] u))))
          ->
-         ((ref_get [b3,int||] (get_2_2_tuple [region[c||],region[b3||]||] u2)
-           x)
+         ((ref_get [b,int||] (get_2_2_tuple [region[c||],region[b||]||] u) x)
           =[int||]
-          (ref_get [c,int||] (get_2_1_tuple [region[c||],region[b3||]||] u2)
-           k))
+          (ref_get [c,int||] (get_2_1_tuple [region[c||],region[b||]||] u) k))
