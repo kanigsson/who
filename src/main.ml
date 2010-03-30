@@ -120,4 +120,5 @@ let _ =
   | Predefty.Error e -> Error.bad (Predefty.explain e)
   | CommonInternalize.Error e ->
       Error.bad (CommonInternalize.explain e)
+  | Recon.Error (loc,e) -> Error.with_loc (Recon.explain e) loc
 

@@ -36,9 +36,13 @@
 %token <Loc.loc> LOGIC TYPE FORALL EXISTS PARAMETER TO DOWNTO FOR DONE GOAL
 %token COLON MID THEN ELSE TINT PROP DOT DO INTROS
 
+%nonassoc below_SEMI
+%nonassoc SEMICOLON                          /* below EQUAL ({lbl=...; lbl=...}) */
+%nonassoc ELSE                          /* (if ... then ... else ...) */
+%nonassoc below_COMMA
+%left     COMMA                         /* expr/expr_comma_list (e,e,e) */
 %nonassoc forall
 %right ARROW
-%right SEMICOLON
 %left AND OR
 %nonassoc LE LT GE GT BLE BLT BGT BGE
 %nonassoc ASSIGN

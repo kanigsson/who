@@ -1,5 +1,11 @@
 type unit
 logic :=  : int -> int -> unit
+logic +  : int -> int -> int
 let
   f  = (fun (x:int) -> {(fun (cur:< >) -> True)} let anon = x := 0 in 5
        {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:int) -> True)))}) 
+let
+  g  = (fun (x:int) ->
+       let anon = x := 0 in
+       let z = 3 in
+       let anon1 = x := z in let x1 = 1 in (x1 + 1) + (let x2 = 2 in x2)) 

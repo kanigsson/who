@@ -20,7 +20,6 @@ INTERNAL
 
 BUGS
 
-* sequences ';' still not fixed
 * find bug with "nil" - postponed
 * check types for well-formedness
 

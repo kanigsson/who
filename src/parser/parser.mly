@@ -75,6 +75,7 @@
     let_ em start s (let_ em end_ e forterm NoRec end_.loc)
       NoRec start.loc
 
+
 %}
 
 %start <ParseTree.theory> main
@@ -106,61 +107,57 @@ aterm:
   | l = LPAREN x = infix e = RPAREN { var (snd x) (embrace l e) }
   | t = protected_nterm { t }
 
-(* applicative terms *)
-appterm:
-  | t = aterm { t }
-  | t1 = appterm DLCURL l = IDENT* DRCURL t2 = aterm
-    {cap_app t1 t2 (strip_info l) (embrace t1.loc t2.loc) }
-  | t1 = appterm t2 = aterm { app t1 t2 (embrace t1.loc t2.loc) }
+tuple_list:
+  | t1 = nterm COMMA t2 = nterm { [t2; t1] }
+  | tl = tuple_list COMMA t1 = nterm { t1 :: tl }
 
-infix_term:
-  | t = appterm { t }
-  | t1 = infix_term i = infix t2 = infix_term
+
+seq_term:
+  | t = nterm %prec below_SEMI { t }
+  | t1 = nterm SEMICOLON t2 = seq_term
+    { mk (Seq (t1,t2)) (embrace t1.loc t2.loc) }
+
+(* all the more complex terms *)
+nterm:
+  | t = aterm { t }
+  | t = aterm l = aterm+
+    { appn t l }
+  | t1 = aterm DLCURL l = IDENT* DRCURL tl = aterm+
+    { cap_appn t1 tl (strip_info l) }
+  | tl = tuple_list %prec below_COMMA
+    {
+      let n = List.length tl in
+      let tl = List.rev tl in
+      appni (Identifiers.mk_tuple_id n) tl (List.hd tl).loc
+    }
+  | t1 = nterm i = infix t2 = nterm
     { appi (snd i) t1 t2 (embrace t1.loc t2.loc) }
-  | sp = FORALL l = arglist DOT e = infix_term %prec forall
+  | sp = FUN l = arglist ARROW body = funcbody
+    { let cap, p,e,q = body in
+      mk_efflam l cap (snd p) e (snd q) (embrace sp (fst q)) }
+  | sp = FUN l = arglist ARROW e = seq_term
+    { mk_pure_lam l e (embrace sp e.loc) }
+  | st = IF it = seq_term THEN tb = nterm ELSE eb = nterm
+    { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
+  (* a local let is like a global one, but with an IN following *)
+  | f = alllet IN e2 = seq_term
+    { let g, e, x, r = f in let_ g e x e2 r e2.loc }
+  | p = LETREGION l = IDENT* IN t = seq_term
+    { mk (LetReg (strip_info l,t)) p }
+  | st = FOR i = IDENT EQUAL e1 = seq_term dir = todownto e2 = seq_term DO
+       p = precond
+       e3 = seq_term
+    en = DONE
+    { forfunction dir i e1 e2 (snd p) e3 (embrace st en) }
+  | sp = FORALL l = arglist DOT e = nterm %prec forall
     { mk_quant `FA l e (embrace sp e.loc) }
-  | sp = EXISTS l = arglist DOT e = infix_term %prec forall
+  | sp = EXISTS l = arglist DOT e = nterm %prec forall
     { mk_quant `EX l e (embrace sp e.loc) }
   | l = DLBRACKET p = nterm? DRBRACKET
      e = nterm
     DLBRACKET q = postcond_int r = DRBRACKET
     { mk (HoareTriple (p,e,q)) (embrace l r) }
 
-tuple_list:
-  | t1 = infix_term COMMA t2 = infix_term { [t1; t2] }
-  | t1 = infix_term COMMA tl = tuple_list { t1 :: tl }
-
-
-seq_term:
-  | t = infix_term { t }
-  | tl = tuple_list
-    {
-      let n = List.length tl in
-      appni (Identifiers.mk_tuple_id n) tl (List.hd tl).loc
-    }
-  | t1 = seq_term SEMICOLON t2 = seq_term
-    { mk (Seq (t1,t2)) (embrace t1.loc t2.loc) }
-
-(* all the more complex terms *)
-nterm:
-  | t1 = seq_term { t1 }
-  | sp = FUN l = arglist ARROW body = funcbody
-    { let cap, p,e,q = body in
-      mk_efflam l cap (snd p) e (snd q) (embrace sp (fst q)) }
-  | sp = FUN l = arglist ARROW e = nterm
-    { mk_pure_lam l e (embrace sp e.loc) }
-  | st = IF it = nterm THEN tb = nterm ELSE eb = nterm
-    { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
-  (* a local let is like a global one, but with an IN following *)
-  | f = alllet IN e2 = nterm
-    { let g, e, x, r = f in let_ g e x e2 r e2.loc }
-  | p = LETREGION l = IDENT* IN t = nterm
-    { mk (LetReg (strip_info l,t)) p }
-  | st = FOR i = IDENT EQUAL e1 = nterm dir = todownto e2 = nterm DO
-       p = precond
-       e3 = nterm
-    en = DONE
-    { forfunction dir i e1 e2 (snd p) e3 (embrace st en) }
 todownto:
   | TO { "forto" }
   | DOWNTO { "fordownto" }
@@ -181,7 +178,7 @@ letcommon:
 
 alllet:
 (* the simplest case *)
-  | b = letcommon t = nterm
+  | b = letcommon t = seq_term
     { let p,x,l,args = b in
       l, mk_pure_lam args t p, x, NoRec }
 (* the function definition case *)
@@ -199,7 +196,7 @@ alllet:
     }
 
 funcbody:
-  cap = maycapdef p = precond e = nterm q = postcond { cap, p,e,q }
+  cap = maycapdef p = precond e = seq_term q = postcond { cap, p,e,q }
 
 postcond_int:
   | {PNone }

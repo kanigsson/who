@@ -23,6 +23,8 @@
 
 module Uf = Unionfind
 
+exception UndeterminedType
+
 type ty =
   | U
   | Const of Const.ty
@@ -270,20 +272,18 @@ module Ht = Hashtbl.Make(HBt)
 
 let to_region r =
   match Uf.desc r with
-  | RU ->
-      failwith "cannot determine the type of some object, please help me"
+  | RU -> raise UndeterminedType
   | RT s -> s
 let to_effect (r,e) = Effect.from_u_effect (List.map to_region r) e
 
-let rec to_ty =
+let to_ty =
   let h = Ht.create 17 in
-  fun t ->
+  let rec to_ty t =
     try Ht.find h t
     with Not_found ->
       let r =
         match Uf.desc t with
-        | U ->
-            failwith "cannot determine the type of some object, please help me"
+        | U -> raise UndeterminedType
         | Arrow (t1,t2,e,cap) ->
             Ty.caparrow (to_ty t1) (to_ty t2)
               (to_effect e) (List.map to_region cap)
@@ -294,7 +294,8 @@ let rec to_ty =
         | PureArr (t1,t2) -> Ty.parr (to_ty t1) (to_ty t2)
         | App (v,i) -> Ty.app v (List.map to_ty i) in
       Ht.add h t r;
-      r
+      r in
+  to_ty
 
 let base_pre_ty eff = parr (map eff) prop
 let base_post_ty eff t = parr (map eff) (parr (map eff) (parr t prop))

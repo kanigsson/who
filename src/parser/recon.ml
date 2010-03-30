@@ -25,12 +25,34 @@ open Ast
 module I = InferTree
 module M = MutableType
 
-let rec recon' = function
-  | I.Var (x,i) -> Var (x,inst i)
+type error =
+  | UndeterminedType
+exception Error of Loc.loc * error
+
+let explain e =
+  match e with
+  | UndeterminedType -> "cannot determine the type of this object."
+
+let error loc k = raise (Error (loc,k))
+
+let to_ty loc t =
+  try M.to_ty t
+  with MutableType.UndeterminedType -> error loc UndeterminedType
+
+let to_region loc t =
+  try M.to_region t
+  with MutableType.UndeterminedType -> error loc UndeterminedType
+
+let to_effect loc t =
+  try M.to_effect t
+  with MutableType.UndeterminedType -> error loc UndeterminedType
+
+let rec recon' loc = function
+  | I.Var (x,i) -> Var (x,inst loc i)
   | I.Const c -> Const c
   | I.App (e1,e2,k,cap) -> App (recon e1, recon e2,k,cap)
-  | I.PureFun (t,(s,x,e)) -> PureFun (M.to_ty t,(s,x, recon e))
-  | I.Quant (k,t,(s,x,e)) -> Quant (k,M.to_ty t,(s,x, recon e))
+  | I.PureFun (t,(s,x,e)) -> PureFun (to_ty loc t,(s,x, recon e))
+  | I.Quant (k,t,(s,x,e)) -> Quant (k,to_ty loc t,(s,x, recon e))
   | I.Lam (x,ot,cap,(p,e,q)) -> Lam (x,ot, cap, (recon p, recon e, recon q))
   | I.Param (t,e) -> Param (t,e)
   | I.Let (g,e1,(_,x,e2),r) ->
@@ -88,8 +110,9 @@ and get_pre (_,x) =
   | None -> assert false
   | Some x -> recon x
 and recon (t : InferTree.t) : Ast.t =
-  { v = recon' t.I.v; t = M.to_ty t.I.t; e = M.to_effect t.I.e; loc = t.I.loc }
-and inst i = Inst.map M.to_ty M.to_region M.to_effect i
+  let loc = t.I.loc in
+  { v = recon' loc t.I.v; t = to_ty loc t.I.t; e = to_effect loc t.I.e; loc = loc }
+and inst loc i = Inst.map (to_ty loc) (to_region loc) (to_effect loc) i
 let rec recon_decl x =
   match x with
   | I.Logic (x,g,t) ->

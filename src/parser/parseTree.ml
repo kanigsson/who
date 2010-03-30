@@ -74,8 +74,17 @@ let const c = mk (Const c)
 let app2 s t1 t2 loc = app (app (var s loc) t1 loc) t2 loc
 let appi s t1 t2 loc = app ~kind:`Infix (app (var s loc) t1 loc) t2 loc
 
-let appn t1 tl loc = List.fold_left (fun t1 t2 -> app t1 t2 loc) t1 tl
-let appni s tl loc = appn (var s loc) tl loc
+let appn t1 tl =
+  List.fold_left (fun t1 t2 -> app t1 t2 (Loc.embrace t1.loc t2.loc)) t1 tl
+
+let appni s tl loc = appn (var s loc) tl
+
+let cap_appn s tl cap =
+  match tl with
+  | [] -> assert false
+  | hd::tl ->
+      List.fold_left (fun acc t -> app acc t (Loc.embrace acc.loc t.loc))
+        (cap_app s hd cap (Loc.embrace s.loc hd.loc)) tl
 
 let let_ l e1 x e2 r = mk (Let (l,e1,x,e2,r))
 let lam x t p e q = mk (Lam (x,t,[],p,e,q))
