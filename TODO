@@ -15,22 +15,11 @@ COQ
 
 INTERNAL
 
-* only inline effect polymorphic definitions
-
-* separate simplifications for effect records:
-  - inlining of effect polymorphic lets
-  - modelisation of effect vars by regions
-  - elimination of regions
-
 * "inference" for partial effect instantiations:
   example: eff_var2.who
 
 * do not allow effect variables in abstract type definitions
   put types in variables
-
-* simplification for "or"
-
-
 
 BUGS
 

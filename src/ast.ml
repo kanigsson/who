@@ -526,7 +526,7 @@ let rec app ?kind ?cap t1 t2 l : t =
     | App (op,t1,_,_) ->
         begin match destruct_varname op with
         | Some (v,_) when PL.equal v I.and_id -> and_ t1 t2 l
-(*         | Some (v,_) when PL.equal v I.or_id -> or_ t1 t2 l *)
+        | Some (v,_) when PL.equal v I.or_id -> or_ t1 t2 l
         | Some (v,_) when PL.equal v I.impl_id -> impl t1 t2 l
         | Some (v,_) when PL.equal v I.equal_id -> eq t1 t2 l
         | Some (v,_) when PL.equal v I.combine_id -> combine t1 t2 l
@@ -650,6 +650,14 @@ and and_ t1 t2 l =
   | Const Const.Pfalse, _ -> t1
   | _, Const Const.Pfalse -> t2
   | _ -> simple_appi (spredef I.and_id l) t1 t2 l
+
+and or_ t1 t2 l =
+  match t1.v,t2.v with
+  | Const Const.Ptrue, _ -> t1
+  | _, Const Const.Ptrue -> t2
+  | Const Const.Pfalse, _ -> t2
+  | _, Const Const.Pfalse -> t1
+  | _ -> simple_appi (spredef I.or_id l) t1 t2 l
 and subst x v e =
 (*     Myformat.printf "subst: %a@." Name.print x ; *)
   rebuild_map
