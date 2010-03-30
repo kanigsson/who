@@ -2,7 +2,7 @@ type unit
 logic tt  : unit
 type region['u||]
 type refty['reg 'ty||]
-logic ref_get ['reg 'u||] : region[reg||] -> refty[reg,u||] -> u
+logic ref_get ['reg 'u||] : region[reg] -> refty[reg,u] -> u
 logic get_2_1_tuple ['a 'b||] : (a * b) -> a
 logic get_2_2_tuple ['a 'b||] : (a * b) -> b
 logic mk_2tuple ['a 'b||] : a -> b -> a * b

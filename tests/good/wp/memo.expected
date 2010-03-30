@@ -33,19 +33,19 @@ logic combine [||'e 'e1 'e2] : < 'e 'e1> -> < 'e1 'e2> -> < 'e 'e1 'e2>
 logic restrict [||'e 'e1] : < 'e 'e1> -> < 'e1>
 logic empty  : < >
 type hmap['a 'b||]
-logic hmem ['a 'b||] : a -> hmap[a,b||] -> bool
-logic hget ['a 'b||] : a -> hmap[a,b||] -> b
-logic hset ['a 'b||] : a -> b -> hmap[a,b||] -> hmap[a,b||]
-goal memo_correct : forall [|t|]. forall (table:ref(t,hmap[int,int||])).
+logic hmem ['a 'b||] : a -> hmap[a,b] -> bool
+logic hget ['a 'b||] : a -> hmap[a,b] -> b
+logic hset ['a 'b||] : a -> b -> hmap[a,b] -> hmap[a,b]
+goal memo_correct : forall [|t|]. forall (table:ref(t,hmap[int,int])).
                                   forall (f:int -> int).
                                   forall (x:int).
                                   forall (s:<t >).
-                                  fst [ref(t,hmap[int,int||]) -> <t > ->
-                                  prop,ref(t,hmap[int,int||]) -> <t > ->
-                                  <t > -> hmap[int,int||] -> prop||]
-                                  ! [hmap[int,int||]| t|] table s
+                                  fst [ref(t,hmap[int,int]) -> <t > ->
+                                  prop,ref(t,hmap[int,int]) -> <t > ->
+                                  <t > -> hmap[int,int] -> prop||]
+                                  ! [hmap[int,int]| t|] table s
 let
-  logic memo [|t|] = (fun (table:ref(t,hmap[int,int||])) ->
+  logic memo [|t|] = (fun (table:ref(t,hmap[int,int])) ->
                      (fun (f:int -> int) ->
                      mk_2tuple [int -> <t > -> prop,int -> <t > -> <t > ->
                      int -> prop||] (fun (x:int) -> (fun (cur:<t >) -> True))

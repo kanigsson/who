@@ -51,6 +51,7 @@
 %public gen:
   | LBRACKET tl = TYVAR* MID rl=IDENT* MID el = TYVAR* RBRACKET
     { tl, strip_info rl, el }
+  | LBRACKET tl = TYVAR* RBRACKET { tl, [], [] }
   | { [], [], [] }
 
 (* infix operators - can be used in definitions *)
@@ -98,9 +99,11 @@ prover:
   | p = prover t = takeover { p, t }
 
 %public inst:
-  LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
-  MID el = sepeffect* RBRACKET
-  { tl, strip_info rl, el }
+  | LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
+    MID el = sepeffect* RBRACKET
+    { tl, strip_info rl, el }
+  | LBRACKET tl = separated_list(COMMA,ty) RBRACKET
+    { tl, [] ,[] }
 
 (* basic types *)
 stype:

@@ -31,7 +31,7 @@ type t =
   | App of Name.t * inst
   | Ref of Name.t * t
   | Map of Effect.t
-and inst = (t,Name.t,Effect.t) Inst.t
+and inst = t list
 
 open Myformat
 
@@ -49,12 +49,11 @@ module Convert = struct
           P.Arrow (aux t1, aux t2, effect e, List.map id cap)
       | Map e -> P.Map (effect e)
       | App (n,i) ->
-          P.TApp (id n, Inst.map aux id effect i)
+          P.TApp (id n, List.map aux i)
     and id x = Name.Env.id env x
     and effect e = Effect.Convert.t env e in
     aux
 
-  let inst env i = Inst.map (t env) (Name.Env.id env) (Effect.Convert.t env) i
   let add_id = Name.Env.add_id_list
   let map env = List.map (Name.Env.id env)
   let gen env (tl,rl,el) =
@@ -82,16 +81,15 @@ let const c = Const c
 let ref_ r t = Ref (r,t)
 let map e = Map e
 let app v i = App (v,i)
-let var v = App (v,Inst.empty)
-let ty_app v tl = app v (tl,[],[])
+let var v = App (v,[])
 
 module PI = Predefty.Identifier
 
 let prop = const (Const.TProp)
 let bool () = var (Predefty.var PI.bool_id)
 let unit () = var (Predefty.var PI.unit_id)
-let region x = ty_app (Predefty.var PI.region_id) [x]
-let refty x y = ty_app (Predefty.var PI.refty_id) [x;y]
+let region x = app (Predefty.var PI.region_id) [x]
+let refty x y = app (Predefty.var PI.refty_id) [x;y]
 let int = const (Const.TInt)
 
 let tuple tl =
@@ -104,7 +102,7 @@ let emptymap = map (Effect.empty)
 
 let is_unit t =
   match t with
-  | App (v,([],[],[])) -> Predefty.equal v PI.unit_id
+  | App (v,[]) -> Predefty.equal v PI.unit_id
   | _ -> false
 
 let tuple_list t =
@@ -178,7 +176,7 @@ let node_map ?(rfun=Misc.id) ?(effectfun=Misc.id) f t =
       | Arrow (t1,t2,e,rl) ->
           caparrow (aux t1) (aux t2) (effectfun e) (List.map rfun rl)
       | Ref (r,t) -> ref_ (rfun r) (aux t)
-      | App (v,i) -> app v (Inst.map aux rfun effectfun i) in
+      | App (v,i) -> app v (List.map aux i) in
     f t in
   aux t
 
@@ -203,7 +201,7 @@ let build_var_map nl il =
 let tlsubst xl tl =
   let map = build_var_map xl tl in
   let f t = match t with
-  | App (y,([],[],[])) as t ->
+  | App (y,[]) as t ->
       begin try Name.M.find y map with Not_found -> t end
   | _ -> t in
   node_map f
@@ -282,7 +280,7 @@ let rec equal t1 t2 =
   | Ref (r1,t1), Ref (r2,t2) -> Name.equal r1 r2 && equal t1 t2
   | Map e1, Map e2 -> Effect.equal e1 e2
   | App (v1,i1), App (v2,i2) ->
-      v1 = v2 && Inst.equal equal Name.equal (Effect.equal) i1 i2
+      v1 = v2 && ExtList.equal equal i1 i2
   | _ -> false
 
 let forty () =
@@ -307,7 +305,7 @@ let find_type_of_r name x =
         | None -> aux t2
         end
     | Tuple tl
-    | App (_,(tl,_,_)) ->
+    | App (_,tl) ->
         try List.iter
           (fun t ->
             match aux t with
@@ -341,7 +339,7 @@ exception TypeMismatch
 let matching vars =
   let rec matching s ty1 ty2 =
     match ty1, ty2 with
-    | App (v,([],[],[])), _ when Name.S.mem v vars ->
+    | App (v,[]), _ when Name.S.mem v vars ->
         begin try if equal (Name.M.find v s) ty2 then s else raise TypeMismatch
         with Not_found -> Name.M.add v ty2 s end
     | Const c1, Const c2 when Const.equal_t c1 c2 -> s
@@ -355,10 +353,8 @@ let matching vars =
     | App (v1,i1), App (v2,i2) when Name.equal v1 v2 ->
         inst_matching s i1 i2
     | _ -> raise TypeMismatch
-  and inst_matching s (tl1,rl1,el1) (tl2,rl2,el2) =
-    if ExtList.equal Name.equal rl1 rl2 && ExtList.equal Effect.equal el1 el2
-      && List.length tl1 = List.length tl2 then
-        List.fold_left2 matching s tl1 tl2
+  and inst_matching s tl1 tl2 =
+    if List.length tl1 = List.length tl2 then List.fold_left2 matching s tl1 tl2
     else raise TypeMismatch
   in
   matching

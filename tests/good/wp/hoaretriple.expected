@@ -27,8 +27,8 @@ logic +  : int -> int -> int
 logic -  : int -> int -> int
 logic int_max  : int -> int -> int
 type array['a||]
-logic len ['a||] : array[a||] -> int
-logic get ['a||] : int -> array[a||] -> a
+logic len ['a||] : array[a] -> int
+logic get ['a||] : int -> array[a] -> a
 let
   logic forto [||'e] = (fun (inv:int -> < 'e> -> prop) ->
                        (fun (start:int) ->
@@ -60,7 +60,7 @@ let
                        (fun (anon:unit) ->
                        inv (int_max start (end_ + 1)) cur))))))) 
 goal iter_correct : forall ['a|t|'e]. forall (inv:<t 'e> -> int -> prop).
-                                      forall (ar:ref(t,array[a||])).
+                                      forall (ar:ref(t,array[a])).
                                       forall (f:(a -> <t 'e> -> prop) * (a ->
                                       <t 'e> -> <t 'e> -> unit -> prop)).
                                       forall (s:<t 'e>).
@@ -69,23 +69,22 @@ goal iter_correct : forall ['a|t|'e]. forall (inv:<t 'e> -> int -> prop).
                                         (0 <= i) ->
                                         ((i <
                                           (len [a||]
-                                           (!! [array[a||]| t| { 'e}] ar s)))
+                                           (!! [array[a]| t| { 'e}] ar s)))
                                          ->
                                          (forall (s1:<t 'e>).
                                           (inv s1 i) ->
-                                          ((fst [ref(t,array[a||]) -> <t > ->
-                                            prop,ref(t,array[a||]) -> <t > ->
-                                            <t > -> array[a||] -> prop||]
-                                            ! [array[a||]| t|] ar
+                                          ((fst [ref(t,array[a]) -> <t > ->
+                                            prop,ref(t,array[a]) -> <t > ->
+                                            <t > -> array[a] -> prop||]
+                                            ! [array[a]| t|] ar
                                             (restrict [|| { 'e} {t }] s1))
                                            /\
                                            (forall (s2:<t >).
-                                            forall (anon:array[a||]).
-                                            (snd [ref(t,array[a||]) ->
-                                             <t > ->
-                                             prop,ref(t,array[a||]) ->
-                                             <t > -> <t > -> array[a||] ->
-                                             prop||] ! [array[a||]| t|] ar
+                                            forall (anon:array[a]).
+                                            (snd [ref(t,array[a]) -> <t > ->
+                                             prop,ref(t,array[a]) -> <t > ->
+                                             <t > -> array[a] -> prop||]
+                                             ! [array[a]| t|] ar
                                              (restrict [|| { 'e} {t }] s1) s2
                                              anon)
                                             ->
@@ -105,18 +104,18 @@ goal iter_correct : forall ['a|t|'e]. forall (inv:<t 'e> -> int -> prop).
                                               -> (inv s3 (i + 1)))))))))
                                        ->
                                        (let logic __start = 0 in
-                                        (fst [ref(t,array[a||]) -> <t > ->
-                                         prop,ref(t,array[a||]) -> <t > ->
-                                         <t > -> array[a||] -> prop||]
-                                         ! [array[a||]| t|] ar
+                                        (fst [ref(t,array[a]) -> <t > ->
+                                         prop,ref(t,array[a]) -> <t > ->
+                                         <t > -> array[a] -> prop||]
+                                         ! [array[a]| t|] ar
                                          (restrict [|| { 'e} {t }] s))
                                         /\
                                         (forall (s1:<t >).
-                                         forall (anon:array[a||]).
-                                         (snd [ref(t,array[a||]) -> <t > ->
-                                          prop,ref(t,array[a||]) -> <t > ->
-                                          <t > -> array[a||] -> prop||]
-                                          ! [array[a||]| t|] ar
+                                         forall (anon:array[a]).
+                                         (snd [ref(t,array[a]) -> <t > ->
+                                          prop,ref(t,array[a]) -> <t > ->
+                                          <t > -> array[a] -> prop||]
+                                          ! [array[a]| t|] ar
                                           (restrict [|| { 'e} {t }] s) s1
                                           anon)
                                          ->
@@ -128,21 +127,20 @@ goal iter_correct : forall ['a|t|'e]. forall (inv:<t 'e> -> int -> prop).
                                             (__start <= i) ->
                                             ((i <= __end) ->
                                              ((inv s2 i) ->
-                                              ((fst [ref(t,array[a||]) ->
+                                              ((fst [ref(t,array[a]) ->
                                                 <t > ->
-                                                prop,ref(t,array[a||]) ->
-                                                <t > -> <t > -> array[a||] ->
-                                                prop||] ! [array[a||]| t|] ar
+                                                prop,ref(t,array[a]) ->
+                                                <t > -> <t > -> array[a] ->
+                                                prop||] ! [array[a]| t|] ar
                                                 (restrict [|| { 'e} {t }] s2))
                                                /\
                                                (forall (s3:<t >).
-                                                forall (anon1:array[a||]).
-                                                (snd [ref(t,array[a||]) ->
+                                                forall (anon1:array[a]).
+                                                (snd [ref(t,array[a]) ->
                                                  <t > ->
-                                                 prop,ref(t,array[a||]) ->
-                                                 <t > -> <t > ->
-                                                 array[a||] -> prop||]
-                                                 ! [array[a||]| t|] ar
+                                                 prop,ref(t,array[a]) ->
+                                                 <t > -> <t > -> array[a] ->
+                                                 prop||] ! [array[a]| t|] ar
                                                  (restrict [|| { 'e} {t }] s2)
                                                  s3 anon1)
                                                 ->
@@ -217,10 +215,10 @@ goal iter_correct : forall ['a|t|'e]. forall (inv:<t 'e> -> int -> prop).
                                            ->
                                            (inv s2
                                             (len [a||]
-                                             (!! [array[a||]| t| { 'e}] ar s))))))))
+                                             (!! [array[a]| t| { 'e}] ar s))))))))
 let
   logic iter ['a|t|'e] = (fun (inv:<t 'e> -> int -> prop) ->
-                         (fun (ar:ref(t,array[a||])) ->
+                         (fun (ar:ref(t,array[a])) ->
                          mk_2tuple [((a -> <t 'e> -> prop) * (a -> <t 'e> ->
                          <t 'e> -> unit -> prop)) -> <t 'e> -> prop,((a ->
                          <t 'e> -> prop) * (a -> <t 'e> -> <t 'e> -> unit ->
@@ -231,21 +229,20 @@ let
                          (inv cur 0) /\
                          (forall (i:int).
                           (0 <= i) ->
-                          ((i <
-                            (len [a||] (!! [array[a||]| t| { 'e}] ar cur)))
+                          ((i < (len [a||] (!! [array[a]| t| { 'e}] ar cur)))
                            ->
                            (forall (s:<t 'e>).
                             (inv s i) ->
-                            ((fst [ref(t,array[a||]) -> <t > ->
-                              prop,ref(t,array[a||]) -> <t > -> <t > ->
-                              array[a||] -> prop||] ! [array[a||]| t|] ar
+                            ((fst [ref(t,array[a]) -> <t > ->
+                              prop,ref(t,array[a]) -> <t > -> <t > ->
+                              array[a] -> prop||] ! [array[a]| t|] ar
                               (restrict [|| { 'e} {t }] s))
                              /\
                              (forall (s1:<t >).
-                              forall (anon:array[a||]).
-                              (snd [ref(t,array[a||]) -> <t > ->
-                               prop,ref(t,array[a||]) -> <t > -> <t > ->
-                               array[a||] -> prop||] ! [array[a||]| t|] ar
+                              forall (anon:array[a]).
+                              (snd [ref(t,array[a]) -> <t > ->
+                               prop,ref(t,array[a]) -> <t > -> <t > ->
+                               array[a] -> prop||] ! [array[a]| t|] ar
                                (restrict [|| { 'e} {t }] s) s1 anon)
                               ->
                               ((fst [a -> <t 'e> -> prop,a -> <t 'e> ->
@@ -264,5 +261,4 @@ let
                          (fun (old:<t 'e>) ->
                          (fun (cur:<t 'e>) ->
                          (fun (anon:unit) ->
-                         inv cur
-                         (len [a||] (!! [array[a||]| t| { 'e}] ar old)))))))) 
+                         inv cur (len [a||] (!! [array[a]| t| { 'e}] ar old)))))))) 

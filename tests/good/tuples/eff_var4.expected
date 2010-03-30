@@ -2,7 +2,7 @@ type unit
 logic tt  : unit
 type region['u||]
 type refty['reg 'ty||]
-logic ref_get ['reg 'u||] : region[reg||] -> refty[reg,u||] -> u
+logic ref_get ['reg 'u||] : region[reg] -> refty[reg,u] -> u
 logic get_2_1_tuple ['a 'b||] : (a * b) -> a
 logic get_2_2_tuple ['a 'b||] : (a * b) -> b
 logic mk_2tuple ['a 'b||] : a -> b -> a * b
@@ -10,8 +10,8 @@ logic = ['a||] : a -> a -> prop
 logic ->  : prop -> prop -> prop
 logic z  : int
 INTROS ['b||]
-logic f ['e||] : (region[b||] * e) -> int
-goal g : forall (x:refty[b,int||]).
-         forall (u:region[b||]).
-         (z =[int||] (f [unit||] (mk_2tuple [region[b||],unit||] u tt))) ->
+logic f ['e||] : (region[b] * e) -> int
+goal g : forall (x:refty[b,int]).
+         forall (u:region[b]).
+         (z =[int||] (f [unit||] (mk_2tuple [region[b],unit||] u tt))) ->
          ((ref_get [b,int||] u x) =[int||] 3)

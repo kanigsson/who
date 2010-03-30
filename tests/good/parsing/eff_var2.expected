@@ -1,6 +1,6 @@
 type region
 type refty['u||]
-logic ref_get ['u||] : region -> refty[u||] -> u
+logic ref_get ['u||] : region -> refty[u] -> u
 logic get_2_1_tuple ['a 'b||] : (a * b) -> a
 logic get_2_2_tuple ['a 'b||] : (a * b) -> b
 logic = ['a||] : a -> a -> prop

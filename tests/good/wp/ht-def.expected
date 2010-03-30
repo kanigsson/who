@@ -12,24 +12,24 @@ logic mk_2tuple ['a 'b||] : a -> b -> a * b
 logic fst ['a 'b||] : (a * b) -> a
 logic snd ['a 'b||] : (a * b) -> b
 type hmap['a 'b||]
-logic hmem ['a 'b||] : a -> hmap[a,b||] -> bool
-logic hget ['a 'b||] : a -> hmap[a,b||] -> b
-logic hset ['a 'b||] : a -> b -> hmap[a,b||] -> hmap[a,b||]
+logic hmem ['a 'b||] : a -> hmap[a,b] -> bool
+logic hget ['a 'b||] : a -> hmap[a,b] -> b
+logic hset ['a 'b||] : a -> b -> hmap[a,b] -> hmap[a,b]
 let
   logic stores  = (fun (f:int -> int) ->
-                  (fun (m:hmap[int,int||]) ->
+                  (fun (m:hmap[int,int]) ->
                   forall (x:int).
                   (true =[bool||] (hmem [int,int||] x m)) ->
                   ((hget [int,int||] x m) =[int||] (f x)))) 
 INTROS [|t|]
-logic table  : ref(t,hmap[int,int||])
+logic table  : ref(t,hmap[int,int])
 let
   logic realizes  = (fun (f:int -> int) ->
                     (fun (f1:(int -> <t > -> prop) * (int -> <t > -> <t > ->
                     int -> prop)) ->
                     forall (x:int).
                     forall (s:<t >).
-                    (stores f (!! [hmap[int,int||]| t| { }] table s)) ->
+                    (stores f (!! [hmap[int,int]| t| { }] table s)) ->
                     ((fst [int -> <t > -> prop,int -> <t > -> <t > -> int ->
                       prop||] f1 x s)
                      /\
@@ -37,4 +37,4 @@ let
                       forall (anon:int).
                       (snd [int -> <t > -> prop,int -> <t > -> <t > -> int ->
                        prop||] f1 x s s1 anon)
-                      -> (stores f (!! [hmap[int,int||]| t| { }] table s1)))))) 
+                      -> (stores f (!! [hmap[int,int]| t| { }] table s1)))))) 

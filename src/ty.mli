@@ -29,7 +29,7 @@ type t =
   | App of Name.t * inst
   | Ref of Name.t * t
   | Map of Effect.t
-and inst = (t,Name.t,Effect.t) Inst.t
+and inst = t list
 
 val print : t Myformat.fmt
 val print_list : unit Myformat.fmt -> t list Myformat.fmt
@@ -78,7 +78,7 @@ val tlsubst : Name.t list -> t list -> t -> t
 val rlsubst : Name.t list -> Name.t list -> t -> t
 val elsubst : Name.t list -> Effect.t list -> t -> t
 val rsubst : Name.t list -> Name.t list -> Name.t -> Name.t
-val app : Name.t -> (t,Name.t,Effect.t) Inst.t -> t
+val app : Name.t -> t list -> t
 
 val equal : t -> t -> bool
 
@@ -122,7 +122,6 @@ val matching : Name.S.t -> t Name.M.t -> t -> t -> t Name.M.t
 
 module Convert : sig
   val t : Name.Env.t -> t -> PrintTree.ty
-  val inst : Name.Env.t -> inst -> PrintTree.inst
   val scheme : Name.Env.t -> scheme -> PrintTree.scheme
   val gen : Name.Env.t -> Generalize.t -> Name.Env.t * PrintTree.gen
 end

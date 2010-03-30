@@ -6,11 +6,11 @@ type ty =
   | Tuple of ty list
   | Arrow of ty * ty * effect * string list
   | PureArr of ty * ty
-  | TApp of string * inst
+  | TApp of string * ty list
   | Ref of string * ty
   | Map of effect
 
-and inst = ty list * string list * effect list
+type inst = ty list * string list * effect list
 type gen = string list * string list * string list
 type scheme = gen * ty
 
@@ -32,7 +32,7 @@ type t =
 and funcbody = t * t * t
 and isrec = ty Const.isrec
 
-type decl = 
+type decl =
   | Logic of string * scheme
   | Formula of string * t * [ `Proved | `Assumed ]
   | Section of string * Const.takeover list * decl list
@@ -102,7 +102,8 @@ module Print = struct
           | `Coq -> fprintf fmt "ref@ %a@ %a" mayp t string r
           | `Pangoline -> fprintf fmt "%a ref" mayp t
           end
-      | TApp (v,i) -> fprintf fmt "%a%a" string v (inst ~kind ~intype:true) i
+      | TApp (v,[]) -> fprintf fmt "%a" string v
+      | TApp (v,i) -> fprintf  fmt "%a[%a]" string v (list comma print) i
     and mayp fmt t = if is_compound t then paren print fmt t else print fmt t in
     print
 
@@ -233,7 +234,7 @@ module Print = struct
           fprintf fmt "@[<hov 2>section %s@, %a@, %a@] end" s
           (list newline Const.takeover) cl theory d
       | Program (x,g,t,r) ->
-          fprintf fmt "@[<hov 2>let@ %a%a %a = %a @]" prrec r string x gen g 
+          fprintf fmt "@[<hov 2>let@ %a%a %a = %a @]" prrec r string x gen g
             term t
       | DGen g ->
           fprintf fmt "@[INTROS %a@]" gen g

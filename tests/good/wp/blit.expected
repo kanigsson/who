@@ -136,24 +136,24 @@ section basiclogic coq predefined
   section Array coq "WhoArray"
     pangoline takeover
      type array['a||]
-    logic ar_empty ['a||] : array[a||]
-    logic get ['a||] : int -> array[a||] -> a
-    logic set ['a||] : int -> a -> array[a||] -> array[a||]
-    logic len ['a||] : array[a||] -> int
-    logic create ['a||] : int -> a -> array[a||]
-    axiom update_length : forall ['a||]. forall (t:array[a||]).
+    logic ar_empty ['a||] : array[a]
+    logic get ['a||] : int -> array[a] -> a
+    logic set ['a||] : int -> a -> array[a] -> array[a]
+    logic len ['a||] : array[a] -> int
+    logic create ['a||] : int -> a -> array[a]
+    axiom update_length : forall ['a||]. forall (t:array[a]).
                                          forall (i:int).
                                          forall (z:a).
                                          (len [a||] t) =[int||]
                                          (len [a||] (set [a||] i z t))
-    axiom get_set_eq : forall ['a||]. forall (t:array[a||]).
+    axiom get_set_eq : forall ['a||]. forall (t:array[a]).
                                       forall (i:int).
                                       forall (z:a).
                                       (i < (len [a||] t)) ->
                                       (z =[a||]
                                        (get [a||] i (set [a||] i z t)))
     axiom length_empty : forall ['a||]. (len [a||] ar_empty [a||]) =[int||] 0
-    axiom get_set_neq : forall ['a||]. forall (t:array[a||]).
+    axiom get_set_neq : forall ['a||]. forall (t:array[a]).
                                        forall (i:int).
                                        forall (j:int).
                                        forall (z:a).
@@ -162,7 +162,7 @@ section basiclogic coq predefined
                                         ((i <>[int||] j) ->
                                          ((get [a||] i (set [a||] j z t))
                                           =[a||] (get [a||] i t))))
-    axiom length_nonnegative : forall ['a||]. forall (t:array[a||]).
+    axiom length_nonnegative : forall ['a||]. forall (t:array[a]).
                                               0 <= (len [a||] t)
     axiom length_create : forall ['a||]. forall (l:int).
                                          forall (v:a).
@@ -179,13 +179,13 @@ section basiclogic coq predefined
   section List coq "WhoList"
     pangoline takeover
      type list['a||]
-    logic nil ['a||] : list[a||]
-    logic cons ['a||] : a -> list[a||] -> list[a||]
-    logic is_nil ['a||] : list[a||] -> bool
-    logic l_in ['a||] : a -> list[a||] -> prop end
+    logic nil ['a||] : list[a]
+    logic cons ['a||] : a -> list[a] -> list[a]
+    logic is_nil ['a||] : list[a] -> bool
+    logic l_in ['a||] : a -> list[a] -> prop end
   goal blit_correct : forall ['a|r
-    r1|]. forall (ar:ref(r,array[a||])).
-          forall (ar1:ref(r1,array[a||])).
+    r1|]. forall (ar:ref(r,array[a])).
+          forall (ar1:ref(r1,array[a])).
           forall (ofs:int).
           forall (ofs1:int).
           forall (l:int).
@@ -193,30 +193,28 @@ section basiclogic coq predefined
           (0 <= l) ->
           ((0 <= ofs) ->
            ((0 <= ofs1) ->
-            ((ofs <= ((len [a||] (!! [array[a||]| r| {r r1 }] ar s)) - l)) ->
-             ((ofs1 <= ((len [a||] (!! [array[a||]| r1| {r r1 }] ar1 s)) - l))
+            ((ofs <= ((len [a||] (!! [array[a]| r| {r r1 }] ar s)) - l)) ->
+             ((ofs1 <= ((len [a||] (!! [array[a]| r1| {r r1 }] ar1 s)) - l))
               ->
-              ((fst [ref(r,array[a||]) -> <r > -> prop,ref(r,array[a||]) ->
-                <r > -> <r > -> array[a||] -> prop||] ! [array[a||]| r|] ar
+              ((fst [ref(r,array[a]) -> <r > -> prop,ref(r,array[a]) ->
+                <r > -> <r > -> array[a] -> prop||] ! [array[a]| r|] ar
                 (restrict [|| {r1 } {r }] s))
                /\
                (forall (s1:<r >).
-                forall (anon:array[a||]).
-                (snd [ref(r,array[a||]) -> <r > -> prop,ref(r,array[a||]) ->
-                 <r > -> <r > -> array[a||] -> prop||] ! [array[a||]| r|] ar
+                forall (anon:array[a]).
+                (snd [ref(r,array[a]) -> <r > -> prop,ref(r,array[a]) ->
+                 <r > -> <r > -> array[a] -> prop||] ! [array[a]| r|] ar
                  (restrict [|| {r1 } {r }] s) s1 anon)
                 ->
-                ((fst [ref(r1,array[a||]) -> <r1 > ->
-                  prop,ref(r1,array[a||]) -> <r1 > -> <r1 > -> array[a||] ->
-                  prop||] ! [array[a||]| r1|] ar1
+                ((fst [ref(r1,array[a]) -> <r1 > -> prop,ref(r1,array[a]) ->
+                  <r1 > -> <r1 > -> array[a] -> prop||] ! [array[a]| r1|] ar1
                   (restrict [|| {r } {r1 }] s))
                  /\
                  (forall (s2:<r1 >).
-                  forall (anon1:array[a||]).
-                  (snd [ref(r1,array[a||]) -> <r1 > ->
-                   prop,ref(r1,array[a||]) -> <r1 > -> <r1 > -> array[a||] ->
-                   prop||] ! [array[a||]| r1|] ar1
-                   (restrict [|| {r } {r1 }] s) s2 anon1)
+                  forall (anon1:array[a]).
+                  (snd [ref(r1,array[a]) -> <r1 > -> prop,ref(r1,array[a]) ->
+                   <r1 > -> <r1 > -> array[a] -> prop||] ! [array[a]| r1|]
+                   ar1 (restrict [|| {r } {r1 }] s) s2 anon1)
                   ->
                   (let logic l1 = len [a||] anon1 in
                    ((ofs < ofs1) ->
@@ -224,11 +222,10 @@ section basiclogic coq predefined
                      let logic __end = 0 in
                      ((forall (i:int).
                        forall (s3:<r r1 >).
-                       (anon =[array[a||]||]
-                        (!! [array[a||]| r| {r r1 }] ar s3))
+                       (anon =[array[a]||] (!! [array[a]| r| {r r1 }] ar s3))
                        ->
                        ((l1 =[int||]
-                         (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 s3)))
+                         (len [a||] (!! [array[a]| r1| {r r1 }] ar1 s3)))
                         ->
                         ((__end <= i) ->
                          ((i <= __start) ->
@@ -236,69 +233,68 @@ section basiclogic coq predefined
                             (i < k) ->
                             ((k <= (l1 - 1)) ->
                              ((get [a||] (ofs1 + k)
-                               (!! [array[a||]| r1| {r r1 }] ar1 s3))
+                               (!! [array[a]| r1| {r r1 }] ar1 s3))
                               =[a||]
                               (get [a||] (ofs + k)
-                               (!! [array[a||]| r| {r r1 }] ar s3)))))
+                               (!! [array[a]| r| {r r1 }] ar s3)))))
                            ->
-                           ((fst [ref(r,array[a||]) -> <r > ->
-                             prop,ref(r,array[a||]) -> <r > -> <r > ->
-                             array[a||] -> prop||] ! [array[a||]| r|] ar
+                           ((fst [ref(r,array[a]) -> <r > ->
+                             prop,ref(r,array[a]) -> <r > -> <r > ->
+                             array[a] -> prop||] ! [array[a]| r|] ar
                              (restrict [|| {r1 } {r }] s3))
                             /\
                             (forall (s4:<r >).
-                             forall (anon2:array[a||]).
-                             (snd [ref(r,array[a||]) -> <r > ->
-                              prop,ref(r,array[a||]) -> <r > -> <r > ->
-                              array[a||] -> prop||] ! [array[a||]| r|] ar
+                             forall (anon2:array[a]).
+                             (snd [ref(r,array[a]) -> <r > ->
+                              prop,ref(r,array[a]) -> <r > -> <r > ->
+                              array[a] -> prop||] ! [array[a]| r|] ar
                               (restrict [|| {r1 } {r }] s3) s4 anon2)
                              ->
-                             ((fst [ref(r1,array[a||]) -> <r1 > ->
-                               prop,ref(r1,array[a||]) -> <r1 > -> <r1 > ->
-                               array[a||] -> prop||] ! [array[a||]| r1|] ar1
+                             ((fst [ref(r1,array[a]) -> <r1 > ->
+                               prop,ref(r1,array[a]) -> <r1 > -> <r1 > ->
+                               array[a] -> prop||] ! [array[a]| r1|] ar1
                                (restrict [|| {r } {r1 }] s3))
                               /\
                               (forall (s5:<r1 >).
-                               forall (anon3:array[a||]).
-                               (snd [ref(r1,array[a||]) -> <r1 > ->
-                                prop,ref(r1,array[a||]) -> <r1 > -> <r1 > ->
-                                array[a||] -> prop||] ! [array[a||]| r1|] ar1
+                               forall (anon3:array[a]).
+                               (snd [ref(r1,array[a]) -> <r1 > ->
+                                prop,ref(r1,array[a]) -> <r1 > -> <r1 > ->
+                                array[a] -> prop||] ! [array[a]| r1|] ar1
                                 (restrict [|| {r } {r1 }] s3) s5 anon3)
                                ->
-                               ((fst [array[a||] -> <r1 > ->
-                                 prop,array[a||] -> <r1 > -> <r1 > -> unit ->
-                                 prop||] ((:= [array[a||]| r1|]) ar1)
+                               ((fst [array[a] -> <r1 > -> prop,array[a] ->
+                                 <r1 > -> <r1 > -> unit -> prop||]
+                                 ((:= [array[a]| r1|]) ar1)
                                  (set [a||] (ofs1 + i)
                                   (get [a||] (ofs + i) anon2) anon3)
                                  s5)
                                 /\
                                 (forall (s6:<r1 >).
-                                 (snd [array[a||] -> <r1 > ->
-                                  prop,array[a||] -> <r1 > -> <r1 > ->
-                                  unit -> prop||]
-                                  ((:= [array[a||]| r1|]) ar1)
+                                 (snd [array[a] -> <r1 > -> prop,array[a] ->
+                                  <r1 > -> <r1 > -> unit -> prop||]
+                                  ((:= [array[a]| r1|]) ar1)
                                   (set [a||] (ofs1 + i)
                                    (get [a||] (ofs + i) anon2) anon3)
                                   s5 s6 tt)
                                  ->
-                                 (((anon =[array[a||]||]
-                                    (!! [array[a||]| r| {r r1 }] ar
+                                 (((anon =[array[a]||]
+                                    (!! [array[a]| r| {r r1 }] ar
                                      (combine [|| {r } { } {r1 }] s4 s6)))
                                    /\
                                    (l1 =[int||]
                                     (len [a||]
-                                     (!! [array[a||]| r1| {r r1 }] ar1
+                                     (!! [array[a]| r1| {r r1 }] ar1
                                       (combine [|| {r } { } {r1 }] s4 s6)))))
                                   /\
                                   (forall (k:int).
                                    ((i - 1) < k) ->
                                    ((k <= (l1 - 1)) ->
                                     ((get [a||] (ofs1 + k)
-                                      (!! [array[a||]| r1| {r r1 }] ar1
+                                      (!! [array[a]| r1| {r r1 }] ar1
                                        (combine [|| {r } { } {r1 }] s4 s6)))
                                      =[a||]
                                      (get [a||] (ofs + k)
-                                      (!! [array[a||]| r| {r r1 }] ar
+                                      (!! [array[a]| r| {r r1 }] ar
                                        (combine [|| {r } { } {r1 }] s4 s6))))))))))))))))))
                       /\
                       (fst [((int -> <r r1 > -> prop) * (int -> <r r1 > -> <r
@@ -308,58 +304,58 @@ section basiclogic coq predefined
                        (fordownto [|| {r r1 }]
                         (fun (i:int) ->
                         (fun (cur:<r r1 >) ->
-                        ((anon =[array[a||]||]
-                          (!! [array[a||]| r| {r r1 }] ar cur))
+                        ((anon =[array[a]||]
+                          (!! [array[a]| r| {r r1 }] ar cur))
                          /\
                          (l1 =[int||]
-                          (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur))))
+                          (len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur))))
                         /\
                         (forall (k:int).
                          (i < k) ->
                          ((k <= (l1 - 1)) ->
                           ((get [a||] (ofs1 + k)
-                            (!! [array[a||]| r1| {r r1 }] ar1 cur))
+                            (!! [array[a]| r1| {r r1 }] ar1 cur))
                            =[a||]
                            (get [a||] (ofs + k)
-                            (!! [array[a||]| r| {r r1 }] ar cur)))))))
+                            (!! [array[a]| r| {r r1 }] ar cur)))))))
                         __start __end)
                        (mk_2tuple [int -> <r r1 > -> prop,int -> <r r1 > ->
                         <r r1 > -> unit -> prop||]
                         (fun (i:int) ->
                         (fun (cur:<r r1 >) ->
                         ((__end <= i) /\ (i <= __start)) /\
-                        (((anon =[array[a||]||]
-                           (!! [array[a||]| r| {r r1 }] ar cur))
+                        (((anon =[array[a]||]
+                           (!! [array[a]| r| {r r1 }] ar cur))
                           /\
                           (l1 =[int||]
-                           (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur))))
+                           (len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur))))
                          /\
                          (forall (k:int).
                           (i < k) ->
                           ((k <= (l1 - 1)) ->
                            ((get [a||] (ofs1 + k)
-                             (!! [array[a||]| r1| {r r1 }] ar1 cur))
+                             (!! [array[a]| r1| {r r1 }] ar1 cur))
                             =[a||]
                             (get [a||] (ofs + k)
-                             (!! [array[a||]| r| {r r1 }] ar cur))))))))
+                             (!! [array[a]| r| {r r1 }] ar cur))))))))
                         (fun (i:int) ->
                         (fun (anon2:<r r1 >) ->
                         (fun (cur:<r r1 >) ->
                         (fun (anon3:unit) ->
-                        ((anon =[array[a||]||]
-                          (!! [array[a||]| r| {r r1 }] ar cur))
+                        ((anon =[array[a]||]
+                          (!! [array[a]| r| {r r1 }] ar cur))
                          /\
                          (l1 =[int||]
-                          (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur))))
+                          (len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur))))
                         /\
                         (forall (k:int).
                          ((i - 1) < k) ->
                          ((k <= (l1 - 1)) ->
                           ((get [a||] (ofs1 + k)
-                            (!! [array[a||]| r1| {r r1 }] ar1 cur))
+                            (!! [array[a]| r1| {r r1 }] ar1 cur))
                            =[a||]
                            (get [a||] (ofs + k)
-                            (!! [array[a||]| r| {r r1 }] ar cur))))))))))
+                            (!! [array[a]| r| {r r1 }] ar cur))))))))))
                        (combine [|| {r } { } {r1 }] s1 s2)))
                      /\
                      (forall (s3:<r r1 >).
@@ -370,86 +366,85 @@ section basiclogic coq predefined
                        (fordownto [|| {r r1 }]
                         (fun (i:int) ->
                         (fun (cur:<r r1 >) ->
-                        ((anon =[array[a||]||]
-                          (!! [array[a||]| r| {r r1 }] ar cur))
+                        ((anon =[array[a]||]
+                          (!! [array[a]| r| {r r1 }] ar cur))
                          /\
                          (l1 =[int||]
-                          (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur))))
+                          (len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur))))
                         /\
                         (forall (k:int).
                          (i < k) ->
                          ((k <= (l1 - 1)) ->
                           ((get [a||] (ofs1 + k)
-                            (!! [array[a||]| r1| {r r1 }] ar1 cur))
+                            (!! [array[a]| r1| {r r1 }] ar1 cur))
                            =[a||]
                            (get [a||] (ofs + k)
-                            (!! [array[a||]| r| {r r1 }] ar cur)))))))
+                            (!! [array[a]| r| {r r1 }] ar cur)))))))
                         __start __end)
                        (mk_2tuple [int -> <r r1 > -> prop,int -> <r r1 > ->
                         <r r1 > -> unit -> prop||]
                         (fun (i:int) ->
                         (fun (cur:<r r1 >) ->
                         ((__end <= i) /\ (i <= __start)) /\
-                        (((anon =[array[a||]||]
-                           (!! [array[a||]| r| {r r1 }] ar cur))
+                        (((anon =[array[a]||]
+                           (!! [array[a]| r| {r r1 }] ar cur))
                           /\
                           (l1 =[int||]
-                           (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur))))
+                           (len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur))))
                          /\
                          (forall (k:int).
                           (i < k) ->
                           ((k <= (l1 - 1)) ->
                            ((get [a||] (ofs1 + k)
-                             (!! [array[a||]| r1| {r r1 }] ar1 cur))
+                             (!! [array[a]| r1| {r r1 }] ar1 cur))
                             =[a||]
                             (get [a||] (ofs + k)
-                             (!! [array[a||]| r| {r r1 }] ar cur))))))))
+                             (!! [array[a]| r| {r r1 }] ar cur))))))))
                         (fun (i:int) ->
                         (fun (anon2:<r r1 >) ->
                         (fun (cur:<r r1 >) ->
                         (fun (anon3:unit) ->
-                        ((anon =[array[a||]||]
-                          (!! [array[a||]| r| {r r1 }] ar cur))
+                        ((anon =[array[a]||]
+                          (!! [array[a]| r| {r r1 }] ar cur))
                          /\
                          (l1 =[int||]
-                          (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur))))
+                          (len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur))))
                         /\
                         (forall (k:int).
                          ((i - 1) < k) ->
                          ((k <= (l1 - 1)) ->
                           ((get [a||] (ofs1 + k)
-                            (!! [array[a||]| r1| {r r1 }] ar1 cur))
+                            (!! [array[a]| r1| {r r1 }] ar1 cur))
                            =[a||]
                            (get [a||] (ofs + k)
-                            (!! [array[a||]| r| {r r1 }] ar cur))))))))))
+                            (!! [array[a]| r| {r r1 }] ar cur))))))))))
                        (combine [|| {r } { } {r1 }] s1 s2) s3 tt)
                       ->
-                      ((((!! [array[a||]| r| {r r1 }] ar s) =[array[a||]||]
-                         (!! [array[a||]| r| {r r1 }] ar s3))
+                      ((((!! [array[a]| r| {r r1 }] ar s) =[array[a]||]
+                         (!! [array[a]| r| {r r1 }] ar s3))
                         /\
-                        ((len [a||] (!! [array[a||]| r1| {r r1 }] ar1 s3))
+                        ((len [a||] (!! [array[a]| r1| {r r1 }] ar1 s3))
                          =[int||]
-                         (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 s))))
+                         (len [a||] (!! [array[a]| r1| {r r1 }] ar1 s))))
                        /\
                        (forall (k:int).
                         (0 <= k) ->
                         ((k < l) ->
                          ((get [a||] (ofs1 + k)
-                           (!! [array[a||]| r1| {r r1 }] ar1 s3))
+                           (!! [array[a]| r1| {r r1 }] ar1 s3))
                           =[a||]
                           (get [a||] (ofs + k)
-                           (!! [array[a||]| r| {r r1 }] ar s3)))))))))
+                           (!! [array[a]| r| {r r1 }] ar s3)))))))))
                    /\
                    ((~ (ofs < ofs1)) ->
                     (let logic __start = 0 in
                      let logic __end = l1 - 1 in
                      ((forall (i:int).
                        forall (s3:<r r1 >).
-                       (anon =[array[a||]||]
-                        (!! [array[a||]| r| {r r1 }] ar s3))
+                       (anon =[array[a]||] (!! [array[a]| r| {r r1 }] ar s3))
                        ->
                        ((l1 =[int||]
-                         (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 s3)))
+                         (len [a||] (!! [array[a]| r1| {r r1 }] ar1 s3)))
                         ->
                         ((__start <= i) ->
                          ((i <= __end) ->
@@ -457,69 +452,68 @@ section basiclogic coq predefined
                             (0 <= k) ->
                             ((k < i) ->
                              ((get [a||] (ofs1 + k)
-                               (!! [array[a||]| r1| {r r1 }] ar1 s3))
+                               (!! [array[a]| r1| {r r1 }] ar1 s3))
                               =[a||]
                               (get [a||] (ofs + k)
-                               (!! [array[a||]| r| {r r1 }] ar s3)))))
+                               (!! [array[a]| r| {r r1 }] ar s3)))))
                            ->
-                           ((fst [ref(r,array[a||]) -> <r > ->
-                             prop,ref(r,array[a||]) -> <r > -> <r > ->
-                             array[a||] -> prop||] ! [array[a||]| r|] ar
+                           ((fst [ref(r,array[a]) -> <r > ->
+                             prop,ref(r,array[a]) -> <r > -> <r > ->
+                             array[a] -> prop||] ! [array[a]| r|] ar
                              (restrict [|| {r1 } {r }] s3))
                             /\
                             (forall (s4:<r >).
-                             forall (anon2:array[a||]).
-                             (snd [ref(r,array[a||]) -> <r > ->
-                              prop,ref(r,array[a||]) -> <r > -> <r > ->
-                              array[a||] -> prop||] ! [array[a||]| r|] ar
+                             forall (anon2:array[a]).
+                             (snd [ref(r,array[a]) -> <r > ->
+                              prop,ref(r,array[a]) -> <r > -> <r > ->
+                              array[a] -> prop||] ! [array[a]| r|] ar
                               (restrict [|| {r1 } {r }] s3) s4 anon2)
                              ->
-                             ((fst [ref(r1,array[a||]) -> <r1 > ->
-                               prop,ref(r1,array[a||]) -> <r1 > -> <r1 > ->
-                               array[a||] -> prop||] ! [array[a||]| r1|] ar1
+                             ((fst [ref(r1,array[a]) -> <r1 > ->
+                               prop,ref(r1,array[a]) -> <r1 > -> <r1 > ->
+                               array[a] -> prop||] ! [array[a]| r1|] ar1
                                (restrict [|| {r } {r1 }] s3))
                               /\
                               (forall (s5:<r1 >).
-                               forall (anon3:array[a||]).
-                               (snd [ref(r1,array[a||]) -> <r1 > ->
-                                prop,ref(r1,array[a||]) -> <r1 > -> <r1 > ->
-                                array[a||] -> prop||] ! [array[a||]| r1|] ar1
+                               forall (anon3:array[a]).
+                               (snd [ref(r1,array[a]) -> <r1 > ->
+                                prop,ref(r1,array[a]) -> <r1 > -> <r1 > ->
+                                array[a] -> prop||] ! [array[a]| r1|] ar1
                                 (restrict [|| {r } {r1 }] s3) s5 anon3)
                                ->
-                               ((fst [array[a||] -> <r1 > ->
-                                 prop,array[a||] -> <r1 > -> <r1 > -> unit ->
-                                 prop||] ((:= [array[a||]| r1|]) ar1)
+                               ((fst [array[a] -> <r1 > -> prop,array[a] ->
+                                 <r1 > -> <r1 > -> unit -> prop||]
+                                 ((:= [array[a]| r1|]) ar1)
                                  (set [a||] (ofs1 + i)
                                   (get [a||] (ofs + i) anon2) anon3)
                                  s5)
                                 /\
                                 (forall (s6:<r1 >).
-                                 (snd [array[a||] -> <r1 > ->
-                                  prop,array[a||] -> <r1 > -> <r1 > ->
-                                  unit -> prop||]
-                                  ((:= [array[a||]| r1|]) ar1)
+                                 (snd [array[a] -> <r1 > -> prop,array[a] ->
+                                  <r1 > -> <r1 > -> unit -> prop||]
+                                  ((:= [array[a]| r1|]) ar1)
                                   (set [a||] (ofs1 + i)
                                    (get [a||] (ofs + i) anon2) anon3)
                                   s5 s6 tt)
                                  ->
-                                 (((anon =[array[a||]||]
-                                    (!! [array[a||]| r| {r r1 }] ar
+                                 (((anon =[array[a]||]
+                                    (!! [array[a]| r| {r r1 }] ar
                                      (combine [|| {r } { } {r1 }] s4 s6)))
                                    /\
                                    (l1 =[int||]
                                     (len [a||]
-                                     (!! [array[a||]| r1| {r r1 }] ar1
+                                     (!! [array[a]| r1| {r r1 }] ar1
                                       (combine [|| {r } { } {r1 }] s4 s6)))))
                                   /\
                                   (forall (k:int).
                                    (0 <= k) ->
                                    ((k < (i + 1)) ->
                                     ((get [a||] (ofs1 + k)
-                                      (!! [array[a||]| r1| {r r1 }] ar1
+                                      (!! [array[a]| r1| {r r1 }] ar1
                                        (combine [|| {r } { } {r1 }] s4 s6)))
                                      =[a||]
                                      (get [a||] (ofs + k)
-                                      (!! [array[a||]| r| {r r1 }] ar
+                                      (!! [array[a]| r| {r r1 }] ar
                                        (combine [|| {r } { } {r1 }] s4 s6))))))))))))))))))
                       /\
                       (fst [((int -> <r r1 > -> prop) * (int -> <r r1 > -> <r
@@ -529,58 +523,58 @@ section basiclogic coq predefined
                        (forto [|| {r r1 }]
                         (fun (i:int) ->
                         (fun (cur:<r r1 >) ->
-                        ((anon =[array[a||]||]
-                          (!! [array[a||]| r| {r r1 }] ar cur))
+                        ((anon =[array[a]||]
+                          (!! [array[a]| r| {r r1 }] ar cur))
                          /\
                          (l1 =[int||]
-                          (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur))))
+                          (len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur))))
                         /\
                         (forall (k:int).
                          (0 <= k) ->
                          ((k < i) ->
                           ((get [a||] (ofs1 + k)
-                            (!! [array[a||]| r1| {r r1 }] ar1 cur))
+                            (!! [array[a]| r1| {r r1 }] ar1 cur))
                            =[a||]
                            (get [a||] (ofs + k)
-                            (!! [array[a||]| r| {r r1 }] ar cur)))))))
+                            (!! [array[a]| r| {r r1 }] ar cur)))))))
                         __start __end)
                        (mk_2tuple [int -> <r r1 > -> prop,int -> <r r1 > ->
                         <r r1 > -> unit -> prop||]
                         (fun (i:int) ->
                         (fun (cur:<r r1 >) ->
                         ((__start <= i) /\ (i <= __end)) /\
-                        (((anon =[array[a||]||]
-                           (!! [array[a||]| r| {r r1 }] ar cur))
+                        (((anon =[array[a]||]
+                           (!! [array[a]| r| {r r1 }] ar cur))
                           /\
                           (l1 =[int||]
-                           (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur))))
+                           (len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur))))
                          /\
                          (forall (k:int).
                           (0 <= k) ->
                           ((k < i) ->
                            ((get [a||] (ofs1 + k)
-                             (!! [array[a||]| r1| {r r1 }] ar1 cur))
+                             (!! [array[a]| r1| {r r1 }] ar1 cur))
                             =[a||]
                             (get [a||] (ofs + k)
-                             (!! [array[a||]| r| {r r1 }] ar cur))))))))
+                             (!! [array[a]| r| {r r1 }] ar cur))))))))
                         (fun (i:int) ->
                         (fun (anon2:<r r1 >) ->
                         (fun (cur:<r r1 >) ->
                         (fun (anon3:unit) ->
-                        ((anon =[array[a||]||]
-                          (!! [array[a||]| r| {r r1 }] ar cur))
+                        ((anon =[array[a]||]
+                          (!! [array[a]| r| {r r1 }] ar cur))
                          /\
                          (l1 =[int||]
-                          (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur))))
+                          (len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur))))
                         /\
                         (forall (k:int).
                          (0 <= k) ->
                          ((k < (i + 1)) ->
                           ((get [a||] (ofs1 + k)
-                            (!! [array[a||]| r1| {r r1 }] ar1 cur))
+                            (!! [array[a]| r1| {r r1 }] ar1 cur))
                            =[a||]
                            (get [a||] (ofs + k)
-                            (!! [array[a||]| r| {r r1 }] ar cur))))))))))
+                            (!! [array[a]| r| {r r1 }] ar cur))))))))))
                        (combine [|| {r } { } {r1 }] s1 s2)))
                      /\
                      (forall (s3:<r r1 >).
@@ -591,78 +585,78 @@ section basiclogic coq predefined
                        (forto [|| {r r1 }]
                         (fun (i:int) ->
                         (fun (cur:<r r1 >) ->
-                        ((anon =[array[a||]||]
-                          (!! [array[a||]| r| {r r1 }] ar cur))
+                        ((anon =[array[a]||]
+                          (!! [array[a]| r| {r r1 }] ar cur))
                          /\
                          (l1 =[int||]
-                          (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur))))
+                          (len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur))))
                         /\
                         (forall (k:int).
                          (0 <= k) ->
                          ((k < i) ->
                           ((get [a||] (ofs1 + k)
-                            (!! [array[a||]| r1| {r r1 }] ar1 cur))
+                            (!! [array[a]| r1| {r r1 }] ar1 cur))
                            =[a||]
                            (get [a||] (ofs + k)
-                            (!! [array[a||]| r| {r r1 }] ar cur)))))))
+                            (!! [array[a]| r| {r r1 }] ar cur)))))))
                         __start __end)
                        (mk_2tuple [int -> <r r1 > -> prop,int -> <r r1 > ->
                         <r r1 > -> unit -> prop||]
                         (fun (i:int) ->
                         (fun (cur:<r r1 >) ->
                         ((__start <= i) /\ (i <= __end)) /\
-                        (((anon =[array[a||]||]
-                           (!! [array[a||]| r| {r r1 }] ar cur))
+                        (((anon =[array[a]||]
+                           (!! [array[a]| r| {r r1 }] ar cur))
                           /\
                           (l1 =[int||]
-                           (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur))))
+                           (len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur))))
                          /\
                          (forall (k:int).
                           (0 <= k) ->
                           ((k < i) ->
                            ((get [a||] (ofs1 + k)
-                             (!! [array[a||]| r1| {r r1 }] ar1 cur))
+                             (!! [array[a]| r1| {r r1 }] ar1 cur))
                             =[a||]
                             (get [a||] (ofs + k)
-                             (!! [array[a||]| r| {r r1 }] ar cur))))))))
+                             (!! [array[a]| r| {r r1 }] ar cur))))))))
                         (fun (i:int) ->
                         (fun (anon2:<r r1 >) ->
                         (fun (cur:<r r1 >) ->
                         (fun (anon3:unit) ->
-                        ((anon =[array[a||]||]
-                          (!! [array[a||]| r| {r r1 }] ar cur))
+                        ((anon =[array[a]||]
+                          (!! [array[a]| r| {r r1 }] ar cur))
                          /\
                          (l1 =[int||]
-                          (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur))))
+                          (len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur))))
                         /\
                         (forall (k:int).
                          (0 <= k) ->
                          ((k < (i + 1)) ->
                           ((get [a||] (ofs1 + k)
-                            (!! [array[a||]| r1| {r r1 }] ar1 cur))
+                            (!! [array[a]| r1| {r r1 }] ar1 cur))
                            =[a||]
                            (get [a||] (ofs + k)
-                            (!! [array[a||]| r| {r r1 }] ar cur))))))))))
+                            (!! [array[a]| r| {r r1 }] ar cur))))))))))
                        (combine [|| {r } { } {r1 }] s1 s2) s3 tt)
                       ->
-                      ((((!! [array[a||]| r| {r r1 }] ar s) =[array[a||]||]
-                         (!! [array[a||]| r| {r r1 }] ar s3))
+                      ((((!! [array[a]| r| {r r1 }] ar s) =[array[a]||]
+                         (!! [array[a]| r| {r r1 }] ar s3))
                         /\
-                        ((len [a||] (!! [array[a||]| r1| {r r1 }] ar1 s3))
+                        ((len [a||] (!! [array[a]| r1| {r r1 }] ar1 s3))
                          =[int||]
-                         (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 s))))
+                         (len [a||] (!! [array[a]| r1| {r r1 }] ar1 s))))
                        /\
                        (forall (k:int).
                         (0 <= k) ->
                         ((k < l) ->
                          ((get [a||] (ofs1 + k)
-                           (!! [array[a||]| r1| {r r1 }] ar1 s3))
+                           (!! [array[a]| r1| {r r1 }] ar1 s3))
                           =[a||]
                           (get [a||] (ofs + k)
-                           (!! [array[a||]| r| {r r1 }] ar s3))))))))))))))))))
+                           (!! [array[a]| r| {r r1 }] ar s3))))))))))))))))))
   let logic blit ['a|r
-    r1|] = (fun (ar:ref(r,array[a||])) ->
-           (fun (ar1:ref(r1,array[a||])) ->
+    r1|] = (fun (ar:ref(r,array[a])) ->
+           (fun (ar1:ref(r1,array[a])) ->
            (fun (ofs:int) ->
            (fun (ofs1:int) ->
            mk_2tuple [int -> <r r1 > -> prop,int -> <r r1 > -> <r r1 > ->
@@ -670,22 +664,21 @@ section basiclogic coq predefined
            (fun (l:int) ->
            (fun (cur:<r r1 >) ->
            ((((0 <= l) /\ (0 <= ofs)) /\ (0 <= ofs1)) /\
-            (ofs <= ((len [a||] (!! [array[a||]| r| {r r1 }] ar cur)) - l)))
+            (ofs <= ((len [a||] (!! [array[a]| r| {r r1 }] ar cur)) - l)))
            /\
-           (ofs1 <= ((len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur)) - l))))
+           (ofs1 <= ((len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur)) - l))))
            (fun (l:int) ->
            (fun (old:<r r1 >) ->
            (fun (cur:<r r1 >) ->
            (fun (anon:unit) ->
-           (((!! [array[a||]| r| {r r1 }] ar old) =[array[a||]||]
-             (!! [array[a||]| r| {r r1 }] ar cur))
+           (((!! [array[a]| r| {r r1 }] ar old) =[array[a]||]
+             (!! [array[a]| r| {r r1 }] ar cur))
             /\
-            ((len [a||] (!! [array[a||]| r1| {r r1 }] ar1 cur)) =[int||]
-             (len [a||] (!! [array[a||]| r1| {r r1 }] ar1 old))))
+            ((len [a||] (!! [array[a]| r1| {r r1 }] ar1 cur)) =[int||]
+             (len [a||] (!! [array[a]| r1| {r r1 }] ar1 old))))
            /\
            (forall (k:int).
             (0 <= k) ->
             ((k < l) ->
-             ((get [a||] (ofs1 + k) (!! [array[a||]| r1| {r r1 }] ar1 cur))
-              =[a||]
-              (get [a||] (ofs + k) (!! [array[a||]| r| {r r1 }] ar cur)))))))))))))  end
+             ((get [a||] (ofs1 + k) (!! [array[a]| r1| {r r1 }] ar1 cur))
+              =[a||] (get [a||] (ofs + k) (!! [array[a]| r| {r r1 }] ar cur)))))))))))))  end

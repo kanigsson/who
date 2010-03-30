@@ -124,58 +124,58 @@ module Convert = struct
   let scheme = Ty.Convert.scheme
   let effect = Effect.Convert.t
 
-  let rrec env r = 
+  let inst env i = Inst.map (ty env) (id env) (effect env) i
+  let rrec env r =
     match r with
     | Const.LogicDef -> Const.LogicDef
     | Const.NoRec -> Const.NoRec
     | Const.Rec t -> Const.Rec (ty env t)
 
-  let rec t env term = 
+  let rec t env term =
     match term.v with
     | Const c -> P.Const c
     | Param (t,e) -> P.Param ( ty env t, effect env e)
     | Var (v,i) -> P.Var (id env v, inst env i)
-    | App (t1,t2,p,cap) -> 
+    | App (t1,t2,p,cap) ->
         P.App (t env t1, t env t2, p, List.map (id env) cap)
-    | LetReg (l,e) -> 
+    | LetReg (l,e) ->
         let env = Name.Env.add_id_list env l in
         P.LetReg (List.map (id env) l,t env e)
     | Lam (x,at,cap,b) ->
         let env = Name.Env.add_id env x in
         P.Lam (id env x,ty env at, List.map (id env) cap, body env b )
     | HoareTriple b -> P.HoareTriple (body env b)
-    | PureFun (at,b) -> 
+    | PureFun (at,b) ->
         let x,e = vopen b in
         let env = Name.Env.add_id env x in
         P.PureFun (id env x, ty env at, t env e )
-    | Quant (k,at,b) -> 
+    | Quant (k,at,b) ->
         let x,e = vopen b in
         let env = Name.Env.add_id env x in
         P.Quant (k,id env x, ty env at,t env e)
-    | Let (g,e1,b,r) -> 
+    | Let (g,e1,b,r) ->
         let x, e2 = vopen b in
         let env', g = gen env g in
         let e1 = t env' e1 in
         let env = Name.Env.add_id env x in
         P.Let (g,e1,id env x, t env e2, rrec env r)
     | Ite (e1,e2,e3) -> P.Ite (t env e1, t env e2, t env e3)
-    | Gen (g,e) -> 
+    | Gen (g,e) ->
         let env, g = gen env g in
         P.Gen (g,t env e)
-  and inst env t = Ty.Convert.inst env t
   and body env (t1,t2,t3) = t env t1, t env t2, t env t3
 
   let add_id = Name.Env.add_id
   let add_ids = Name.Env.add_id_list
 
-  let rec decl env d = 
+  let rec decl env d =
     match d with
-    | Logic (n,s) -> 
+    | Logic (n,s) ->
         let env = add_id env n in
         env, P.Logic (id env n, scheme env s)
-    | Formula (s,f,k) -> 
+    | Formula (s,f,k) ->
         env, P.Formula (s,t env f, k)
-    | DLetReg nl -> 
+    | DLetReg nl ->
         let env = add_ids env nl in
         env, P.DLetReg (List.map (id env) nl)
     | DGen g ->
@@ -200,148 +200,9 @@ module Convert = struct
 
 end
 module Print = struct
-  open Myformat
 
-  let is_compound = function
-    | Const _ | Var _ | Lam _ | PureFun _ -> false
-    | App _ | Let _ | Ite _
-    | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
-  let is_compound_node t = is_compound t.v
-
-  type sup = [ `Coq | `Who | `Pangoline ]
-  let name_print ?(kind : sup =`Who) fmt x =
-    match kind with
-    | `Pangoline ->
-        begin try
-          let s = PL.get_pangoline_id x in
-          pp_print_string fmt s
-        with Not_found -> Name.print fmt x end
-    | `Coq | `Who -> Name.print fmt x
-
-  let maycaplist fmt l =
-    if l = [] then ()
-    else fprintf fmt "allocates %a" (list space Name.print) l
-
-  let prrec fmt = function
-    | Const.NoRec -> ()
-    | Const.Rec t -> fprintf fmt "rec(%a) " Ty.print t
-    | Const.LogicDef -> fprintf fmt "logic "
-
-  let lname s fmt l =
-    if l = [] then () else
-    fprintf fmt "(%a :@ %s)" (list space Name.print) l s
-
-  let inst ~kind =
-    Inst.print ~kind ~intype:false
-      (Ty.gen_print ~kind) Name.print Effect.print
-
-  (* TODO factorize the different branches *)
-  let term ?(kind : sup =`Who) fmt t =
-    let typrint = Ty.gen_print ~kind in
-    let rec print' fmt = function
-      | Const c -> Const.print fmt c
-      | App ({v = App ({ v = Var(v,i)},t1,_,_)},t2,`Infix,_) ->
-          fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 (name_print ~kind) v
-            (inst ~kind) i with_paren t2
-      | App (t1,t2,_,cap) ->
-            fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
-      | Ite (e1,e2,e3) ->
-          fprintf fmt "@[if %a then@ %a else@ %a@]" print e1 print e2 print e3
-      | PureFun (t,b) ->
-          let x,e = sopen b in
-          fprintf fmt "@[(fun %a@ %a@ %a)@]" binder (x,t)
-            Const.funsep kind print e
-      | Let (g,e1,b,r) ->
-          let x,e2 = sopen b in
-          fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]"
-            prrec r Name.print x G.print g print e1 print e2
-      | Var (v,i) ->
-          begin match kind with
-          | `Who | `Pangoline ->
-              let pr fmt () =
-                if Inst.is_empty i then (name_print ~kind) fmt v
-                else fprintf fmt "%a %a" (name_print ~kind) v (inst ~kind) i
-              in
-              if Predefined.is_infix v then paren pr fmt () else pr fmt ()
-          | `Coq -> Name.print fmt v
-          end
-      | Quant (k,t,b) ->
-          let x,e = sopen b in
-          let bind = if k = `FA then binder else binder' false in
-          fprintf fmt "@[%a %a%a@ %a@]" Const.quant k bind (x,t)
-            Const.quantsep kind print e
-      | Gen ((tl,_,_) as g,t) ->
-          if G.is_empty g then print fmt t else
-            begin match kind with
-            | `Coq ->
-                fprintf fmt "forall@ %a,@ %a " (lname "Type") tl print t
-            | `Pangoline  ->
-                fprintf fmt "forall type %a. %a"
-                  (list space Name.print) tl print t
-            | `Who ->
-                fprintf fmt "forall %a%a %a"
-                  G.print g Const.quantsep kind print t
-            end
-      (* specific to Who, will not be printed in backends *)
-      | Param (t,e) ->
-          fprintf fmt "parameter(%a,%a)"
-            typrint t Effect.print e
-      | HoareTriple (p,f,q) ->
-          fprintf fmt "[[%a]]%a[[%a]]" print p print f print q
-      | LetReg (v,t) ->
-          fprintf fmt "@[letregion %a in@ %a@]"
-            (list space Name.print) v print t
-      | Lam (x,t,cap,(p,e,q)) ->
-          fprintf fmt "@[(fun %a@ ->%a@ {%a}@ %a@ {%a})@]"
-            binder (x,t) maycaplist cap print p print e print q
-
-    and print fmt t = print' fmt t.v
-    and binder' par =
-      let p fmt (x,t) = fprintf fmt "%a:%a"
-        Name.print x typrint t in
-      if par then paren p else p
-    and binder fmt b = binder' true fmt b
-    and maycap fmt = function
-      | [] -> ()
-      | l -> fprintf fmt "{%a}" (list space Name.print) l
-    and with_paren fmt x =
-      if is_compound_node x then paren print fmt x else print fmt x in
-    print fmt t
-
-  let term ?(kind=`Who) fmt t = 
+  let term ?(kind=`Who) fmt t =
     PrintTree.Print.term ~kind fmt (Convert.t Name.Env.empty t)
-
-  let decl ?(kind=`Who) fmt d =
-    let typrint = Ty.gen_print ~kind in
-    let term = term ~kind in
-    let rec decl fmt d =
-      match d with
-      | Logic (x,(g,t)) ->
-          fprintf fmt "@[<hov 2>logic %a %a : %a@]"
-            Name.print x G.print g typrint t
-      | Formula (s,t,`Assumed) ->
-          fprintf fmt "@[<hov 2>axiom %s : %a@]" s term t
-      | Formula (s,t,`Proved) ->
-          fprintf fmt "@[<hov 2>goal %s : %a@]" s term t
-      | TypeDef (g,t,x) ->
-          begin match t with
-          | None -> fprintf fmt "@[type %a%a@]" Name.print x G.print g
-          | Some t ->
-              fprintf fmt "@[<hov 2>type %a%a =@ %a@]"
-                Name.print x G.print g typrint t
-          end
-      | DLetReg l ->
-          fprintf fmt "@[letregion %a@]" (list space Name.print) l
-      | Section (s,cl,d) ->
-          fprintf fmt "@[<hov 2>section %s@, %a@, %a@] end" s
-          (list newline Const.takeover) cl decl_list d
-      | Program (x,g,t,r) ->
-          fprintf fmt "@[<hov 2>let@ %a%a %a = %a @]" prrec r
-          Name.print x G.print g term t
-      | DGen g ->
-          fprintf fmt "@[INTROS %a@]" G.print g
-    and decl_list fmt d = list newline decl fmt d in
-    decl fmt d
 
   let decl ?kind fmt d =
     let _, d = Convert.decl Name.Env.empty d in

@@ -52,7 +52,8 @@ let rec unify a b =
   | Ref (r1,t1), Ref (r2,t2) -> runify r1 r2; unify t1 t2
   | Map e1, Map e2 -> eunify e1 e2
   | App (v1,i1), App (v2,i2) when v1 = v2 ->
-      Inst.iter2 unify runify eunify i1 i2
+      begin try List.iter2 unify i1 i2
+      with Invalid_argument _ -> raise CannotUnify end
   | _ , _ -> raise CannotUnify
   end;
   (* We really have to unify afterwards, in case of an exception being

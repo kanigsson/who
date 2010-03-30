@@ -16,7 +16,7 @@ section encoding coq takeover
   pangoline takeover
    type region['u||]
   type refty['reg 'ty||]
-  logic ref_get ['reg 'u||] : region[reg||] -> refty[reg,u||] -> u end
+  logic ref_get ['reg 'u||] : region[reg] -> refty[reg,u] -> u end
 section tuples coq predefined
   pangoline predefined
    logic mk_2tuple ['a 'b||] : a -> b -> a * b
@@ -176,24 +176,24 @@ let
 section Array coq "WhoArray"
   pangoline takeover
    type array['a||]
-  logic ar_empty ['a||] : array[a||]
-  logic get ['a||] : int -> array[a||] -> a
-  logic set ['a||] : int -> a -> array[a||] -> array[a||]
-  logic len ['a||] : array[a||] -> int
-  logic create ['a||] : int -> a -> array[a||]
-  axiom update_length : forall ['a||]. forall (t:array[a||]).
+  logic ar_empty ['a||] : array[a]
+  logic get ['a||] : int -> array[a] -> a
+  logic set ['a||] : int -> a -> array[a] -> array[a]
+  logic len ['a||] : array[a] -> int
+  logic create ['a||] : int -> a -> array[a]
+  axiom update_length : forall ['a||]. forall (t:array[a]).
                                        forall (i:int).
                                        forall (z:a).
                                        ((0 <= i) /\ (i < (len [a||] t))) ->
                                        ((len [a||] t) =[int||]
                                         (len [a||] (set [a||] i z t)))
-  axiom get_set_eq : forall ['a||]. forall (t:array[a||]).
+  axiom get_set_eq : forall ['a||]. forall (t:array[a]).
                                     forall (i:int).
                                     forall (z:a).
                                     ((0 <= i) /\ (i < (len [a||] t))) ->
                                     ((get [a||] i (set [a||] i z t)) =[a||] z)
   axiom length_empty : forall ['a||]. (len [a||] ar_empty [a||]) =[int||] 0
-  axiom get_set_neq : forall ['a||]. forall (t:array[a||]).
+  axiom get_set_neq : forall ['a||]. forall (t:array[a]).
                                      forall (i:int).
                                      forall (j:int).
                                      forall (z:a).
@@ -202,7 +202,7 @@ section Array coq "WhoArray"
                                       ((i <>[int||] j) ->
                                        ((get [a||] i (set [a||] j z t))
                                         =[a||] (get [a||] i t))))
-  axiom length_nonnegative : forall ['a||]. forall (t:array[a||]).
+  axiom length_nonnegative : forall ['a||]. forall (t:array[a]).
                                             0 <= (len [a||] t)
   axiom length_create : forall ['a||]. forall (l:int).
                                        forall (v:a).
@@ -219,10 +219,10 @@ section Array coq "WhoArray"
 section List coq "WhoList"
   pangoline takeover
    type list['a||]
-  logic nil ['a||] : list[a||]
-  logic cons ['a||] : a -> list[a||] -> list[a||]
-  logic is_nil ['a||] : list[a||] -> bool
-  logic l_in ['a||] : a -> list[a||] -> prop end
+  logic nil ['a||] : list[a]
+  logic cons ['a||] : a -> list[a] -> list[a]
+  logic is_nil ['a||] : list[a] -> bool
+  logic l_in ['a||] : a -> list[a] -> prop end
 type t = int * int * int
 let x  = mk_3tuple [int,int,int||] 1 2 3 
 let y  = mk_3tuple [bool,int,int -> int||] true 5 (fun (x1:int) -> x1 + 1) 

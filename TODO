@@ -18,15 +18,10 @@ INTERNAL
 * "inference" for partial effect instantiations:
   example: eff_var2.who
 
-* do not allow effect variables in abstract type definitions
-  put types in variables
-
 BUGS
 
 * sequences ';' still not fixed
 * find bug with "nil" - postponed
 * check types for well-formedness
-* syntax for type-only abstraction and instantiation should ressemble ocaml a
-  bit more
 
 * binding!!!!

@@ -1,2 +1,2 @@
 type array['a||]
-logic get ['a||] : array[a||] -> int -> a
+logic get ['a||] : array[a] -> int -> a

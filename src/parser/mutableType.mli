@@ -27,7 +27,7 @@ type ty =
   | Tuple of t list
   | Arrow of t * t * effect * r list
   | PureArr of t * t
-  | App of Name.t * (t,r,effect) Inst.t
+  | App of Name.t * t list
   | Ref of r * t
   | Map of effect
 and t = ty Unionfind.t

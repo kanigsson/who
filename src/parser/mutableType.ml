@@ -29,7 +29,7 @@ type ty =
   | Tuple of t list
   | Arrow of t * t * effect * r list
   | PureArr of t * t
-  | App of Name.t * (t,r,effect) Inst.t
+  | App of Name.t * t list
   | Ref of r * t
   | Map of effect
 and t = ty Uf.t
@@ -55,7 +55,7 @@ let hash_ty t =
   | Ref (r,t) -> Hash.combine2 2 (Uf.hash r) (Uf.hash t)
   | Map e -> hash_effect e
   | App (n,i) ->
-      Hash.combine2 3 (Name.hash n) (Inst.hash Uf.hash Uf.hash hash_effect i)
+      Hash.combine 3 (ExtList.hash Uf.hash (Name.hash n) i)
   | Arrow (t1,t2,e,rl) ->
       Hash.combine3 4 (Uf.hash t1) (Uf.hash t2)
         (ExtList.hash Uf.hash (hash_effect e) rl)
@@ -80,7 +80,7 @@ let equal_ty t1 t2 =
   | Ref (r1,t1), Ref (r2,t2) -> Uf.equal r1 r2 && Uf.equal t1 t2
   | Map e1, Map e2 -> equal_effect e1 e2
   | App (n1,i1), App (n2,i2) ->
-      Name.equal n1 n2 && Inst.equal Uf.equal Uf.equal equal_effect i1 i2
+      Name.equal n1 n2 && ExtList.equal Uf.equal i1 i2
   | Arrow (t1a, t1b, e1, rl1), Arrow (t2a, t2b, e2, rl2) ->
       Uf.equal t1a t2a && Uf.equal t1b t2b && ExtList.equal Uf.equal rl1 rl2 &&
         equal_effect e1 e2
@@ -122,7 +122,7 @@ module Print = struct
     | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 ty t2
     | Map e -> fprintf fmt "<%a>" effect e
     | Const c -> Const.print_ty `Who fmt c
-    | App (v,i) -> fprintf fmt "%a%a" Name.print v inst i
+    | App (v,i) -> fprintf fmt "%a%a" Name.print v (list comma ty) i
     | Arrow (t1,t2,eff,cap) ->
         fprintf fmt "%a ->{%a%a} %a" mayp t1 effect eff maycap cap ty t2
   and maycap fmt = function
@@ -151,7 +151,7 @@ let parr t1 t2 = memo (PureArr (t1,t2))
 let arrow t1 t2 e c = memo (Arrow (t1,t2,e,c))
 let tuple tl = memo (Tuple tl)
 let ref_ r t = memo (Ref (r,t))
-let var s = memo (App (s,([],[],[])))
+let var s = memo (App (s,[]))
 let map e = memo (Map e)
 let app v i = memo (App (v,i))
 
@@ -196,7 +196,7 @@ let rec from_ty (x : Ty.t) =
   | Ty.Ref (r,t) -> ref_ (from_region r) (from_ty t)
   | Ty.Map e -> map (from_effect e)
   | Ty.PureArr (t1,t2) -> parr (from_ty t1) (from_ty t2)
-  | Ty.App (v,i) -> app v (Inst.map from_ty from_region from_effect i)
+  | Ty.App (v,i) -> app v (List.map from_ty i)
 and from_effect eff =
   let rl, e = Effect.to_u_effect eff in
   List.map from_region rl, e
@@ -209,9 +209,9 @@ let node_map ~f ~eff_fun ~rfun t : t =
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)
     | Ref (r,t) -> ref_ (rfun r) (aux t)
     | Map e -> map (eff_fun e)
-    | Arrow (t1,t2,e,rl) -> 
+    | Arrow (t1,t2,e,rl) ->
         arrow (aux t1) (aux t2) (eff_fun e) (List.map rfun rl)
-    | App (n,i) -> app n (Inst.map aux Misc.id eff_fun i) in
+    | App (n,i) -> app n (List.map aux i) in
     f t in
   aux t
 
@@ -241,7 +241,7 @@ let refresh (tvl, rvl, evl) el t =
   let t = esubst evl el t in
   let f x =
     match Uf.desc x with
-    | App (v,i) when Inst.is_empty i ->
+    | App (v,[]) ->
         begin try Name.H.find th v
         with Not_found -> x end
     | _ -> x in
@@ -292,7 +292,7 @@ let rec to_ty =
         | Ref (r,t) -> Ty.ref_ (to_region r) (to_ty t)
         | Map e -> Ty.map (to_effect e)
         | PureArr (t1,t2) -> Ty.parr (to_ty t1) (to_ty t2)
-        | App (v,i) -> Ty.app v (Inst.map to_ty to_region to_effect i) in
+        | App (v,i) -> Ty.app v (List.map to_ty i) in
       Ht.add h t r;
       r
 

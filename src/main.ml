@@ -118,4 +118,6 @@ let _ =
       Error.with_loc (Infer.explain e) loc
   | Predefined.Error e -> Error.bad (Predefined.explain e)
   | Predefty.Error e -> Error.bad (Predefty.explain e)
+  | CommonInternalize.Error e ->
+      Error.bad (CommonInternalize.explain e)
 
