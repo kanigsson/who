@@ -43,3 +43,4 @@ val is_infix : Name.t -> bool
 val is_effect_var : Name.t -> bool
 
 val pangoline_map : unit -> string Name.M.t
+val coq_map : unit -> string Name.M.t

@@ -63,6 +63,12 @@ let pangoline_predefined =
   @ ExtList.repeat ~from:2 (preinstantiated_tuple + 1) (fun i ->
     mk_tuple_id i, Myformat.sprintf "mk_tuple%d" i)
 
+let coq_predefined =
+  [
+    fst_id, "fst";
+    snd_id, "snd";
+  ]
+
 let add_symbol s n =
   env.name_map <- Misc.StringMap.add s n env.name_map
 
@@ -98,7 +104,7 @@ let is_infix x = belongs_to x infix_ids
 
 let is_effect_var x = belongs_to x effect_ids
 
-let pangoline_map =
+let build_map list =
   let map = ref None in
   fun () ->
     match !map with
@@ -107,5 +113,8 @@ let pangoline_map =
         let r =
           List.fold_left (fun acc (id,s) ->
             try Name.M.add (var id) s acc
-            with _ -> acc) Name.M.empty pangoline_predefined in
+            with _ -> acc) Name.M.empty list in
         map := Some r; r
+
+let pangoline_map = build_map pangoline_predefined
+let coq_map = build_map coq_predefined

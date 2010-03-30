@@ -1,8 +1,12 @@
 IMPORTANT FEATURES
 
 inductive declarations
+polymorphic arguments
+assert
+transformation to destroy tuples
+
+
 MINOR ISSUES
-error messages for unknown variables in internalize
 
 PROOFS
 
@@ -10,8 +14,9 @@ Hashtbl
 
 COQ
 
-* Sections need a dot
+* remove the stuff about copying etc
 * void/ unit type
+* instantiation for polymorphic constants
 
 INTERNAL
 

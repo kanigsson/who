@@ -1,16 +1,16 @@
 logic sub ['a||] : 'a array -> int -> 'a array
 
-axiom sub_equal ['a||] : 
+axiom sub_equal ['a||] :
   forall (i k : int) (a : 'a array).
     0 <= k  /\ k < i /\
     0 <= k /\ k < len a ->
     get k (sub a i) = get k a
 
-axiom sub_length_1 ['a||] : 
+axiom sub_length_1 ['a||] :
   forall (i : int) (a : 'a array).
     0 <= i /\ i <= len a -> len (sub a i) = i
-    
-axiom sub_length_2 ['a||] : 
+
+axiom sub_length_2 ['a||] :
   forall (i : int) (a : 'a array).
     i > len a -> len (sub a i) = len a
 
@@ -25,18 +25,18 @@ axiom array_ext ['a||] :
       a = b
 
 let init ['a|out| 'e]
-  (inv : <'e> -> 'a array -> int -> prop ) (l : int) (f : int ->{'e} 'a) = 
+  (inv : <'e> -> 'a array -> int -> prop ) (l : int) (f : int ->{'e} 'a) =
     allocates out
   { 0 <= l /\
     (forall (k : 'a array). inv cur|{'e} k 0) /\
-    forall (k : 'a array) (i:int). 
+    forall (k : 'a array) (i:int).
       0 <= i /\ i < l ->
     [[ inv cur (sub k i) i ]] f i [[ r : inv cur (sub (set i r k) (i+1)) (i+1) ]]
       }
   if l == 0 then ref{{out}} ar_empty
-  else 
+  else
     let res = ref{{out}} (create l (f 0)) in
-    let z = 
+    let z =
       for i = 1 to l - 1 do
         {inv cur|{'e} (sub !!res i) i /\ len !!res = l}
         res := set i (f i) !res

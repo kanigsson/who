@@ -204,7 +204,7 @@ module Print = struct
   let predef kind =
     match kind with
     | `Who -> Name.M.empty
-    | `Coq -> Name.M.empty
+    | `Coq -> Predefined.coq_map ()
     | `Pangoline -> Predefined.pangoline_map ()
 
   let empty ?(kind=`Who) () = Name.Env.empty (predef kind)

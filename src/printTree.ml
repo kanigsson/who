@@ -51,8 +51,10 @@ module Print = struct
   let effect fmt e = fprintf fmt "{%a}" effect_no_sep e
 
 
-  let is_compound = function
-    | TConst _ | Ref _ | Map _ | TApp _ -> false
+  let is_compound kind = function
+    | TConst _ | Ref _ | Map _ -> false
+    | TApp (_,_ :: _) -> kind = `Coq
+    | TApp _ -> false
     | Tuple _ | Arrow _ | PureArr _ -> true
 
   let maycap pr fmt = function
@@ -103,8 +105,13 @@ module Print = struct
           | `Pangoline -> fprintf fmt "%a ref" mayp t
           end
       | TApp (v,[]) -> fprintf fmt "%a" string v
-      | TApp (v,i) -> fprintf  fmt "%a[%a]" string v (list comma print) i
-    and mayp fmt t = if is_compound t then paren print fmt t else print fmt t in
+      | TApp (v,i) ->
+          begin match kind with
+          | `Coq -> fprintf fmt "%a %a" string v (list space mayp) i
+          | _ -> fprintf  fmt "%a[%a]" string v (list comma print) i
+          end
+    and mayp fmt t =
+      if is_compound kind t then paren print fmt t else print fmt t in
     print
 
   let varprint kind fmt x =
