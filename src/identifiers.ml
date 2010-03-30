@@ -18,9 +18,6 @@ let and_id = "/\\"
 let or_id = "\\/"
 let impl_id = "->"
 
-let fst_id = "fst"
-let snd_id = "snd"
-
 let plus_id = "+"
 let minus_id = "-"
 
@@ -39,6 +36,9 @@ let void_id = "tt"
 let mk_tuple_id n = "mk_" ^ string_of_int n ^ "tuple"
 let get_tuple_id i j =
   "get_" ^ string_of_int i ^ "_" ^ string_of_int j ^ "_tuple"
+
+let fst_id = get_tuple_id 2 1
+let snd_id = get_tuple_id 2 2
 
 let unsafe_equal v id =
   Name.unsafe_to_string v = id

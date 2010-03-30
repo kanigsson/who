@@ -99,7 +99,7 @@ end
 module Print = struct
   open PrintTree
 
-  let emp = Name.Env.empty
+  let emp = Name.Env.empty Name.M.empty
   let nosep fmt e = Print.effect_no_sep fmt (Convert.t emp e)
   let effect fmt e = Print.effect fmt (Convert.t emp e)
   let list sep = Myformat.list sep effect

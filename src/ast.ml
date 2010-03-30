@@ -134,7 +134,7 @@ module Convert = struct
   let rec t env term =
     match term.v with
     | Const c -> P.Const c
-    | Param (t,e) -> P.Param ( ty env t, effect env e)
+    | Param (t,e) -> P.Param (ty env t, effect env e)
     | Var (v,i) -> P.Var (id env v, inst env i)
     | App (t1,t2,p,cap) ->
         P.App (t env t1, t env t2, p, List.map (id env) cap)
@@ -201,15 +201,23 @@ module Convert = struct
 end
 module Print = struct
 
-  let term ?(kind=`Who) fmt t =
-    PrintTree.Print.term ~kind fmt (Convert.t Name.Env.empty t)
+  let predef kind =
+    match kind with
+    | `Who -> Name.M.empty
+    | `Coq -> Name.M.empty
+    | `Pangoline -> Predefined.pangoline_map ()
+
+  let empty ?(kind=`Who) () = Name.Env.empty (predef kind)
+
+  let term ?kind fmt t =
+    PrintTree.Print.term ?kind fmt (Convert.t (empty ?kind ()) t)
 
   let decl ?kind fmt d =
-    let _, d = Convert.decl Name.Env.empty d in
+    let _, d = Convert.decl (empty ?kind ()) d in
     PrintTree.Print.decl ?kind fmt d
 
   let theory ?kind fmt th =
-    let _, th = Convert.theory Name.Env.empty th in
+    let _, th = Convert.theory (empty ?kind ()) th in
     PrintTree.Print.theory ?kind fmt th
 
 end
@@ -637,16 +645,33 @@ let le t1 t2 loc =
 let get_tuple_var tl i j l =
   (predef (I.get_tuple_id i j) (tl,[],[])) l
 
+let destr_tuple i =
+  assert (i>1);
+  let rec aux k acc t =
+    if k = 0 then
+      match t.v with
+      | Var (v,_) when PL.equal v (I.mk_tuple_id i) -> Some acc
+      | _ -> None
+    else
+      match t.v with
+      | App (t1,t2,_,_) -> aux (k-1) (t2::acc) t1
+      | _ -> None in
+  aux i []
+
 let get_tuple i t l =
-  try
-    let tl = Ty.tuple_list t.t in
-    let n = List.length tl in
-    app (get_tuple_var tl n i l) t l
-  with Invalid_argument "tuple_list" ->
-    (* in this case, we hope that our "tuple" is a singleton, and we just return
-       it *)
-    assert (i = 1);
-    t
+  let n, tl =
+    (** compute the length of the tuple along with the list of types, but take
+       care of the singleton case. *)
+    try
+      let tl = Ty.tuple_list t.t in
+      List.length tl, tl
+    with Invalid_argument _ -> 1, [t.t] in
+  if n = 1 then begin assert (i = 1); t end
+  else
+    begin match destr_tuple n t with
+    | None -> app (get_tuple_var tl n i l) t l
+    | Some l -> List.nth l (i-1)
+    end
 
 let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
 let efflam x eff e = plam x (Ty.map eff) e

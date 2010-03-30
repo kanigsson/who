@@ -6,5 +6,5 @@ let fill ['a|r|] (ar : ref(r,'a array)) (ofs : int) (lenf : int) (v:'a) =
       forall (k : int). ofs <= k -> k < i -> get k !!ar = v }
     ar := set i v !ar
   done
-  {forall (i : int). 
+  {forall (i : int).
     ofs <= i -> i <= ofs + lenf - 1 -> get i !!ar = v }

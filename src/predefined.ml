@@ -55,9 +55,13 @@ let pangoline_predefined =
     not_id, "not" ;
     and_id, "and" ;
     or_id, "or" ;
-    fst_id, "proj_2_0_tuple" ;
-    snd_id, "proj_2_1_tuple" ;
-  ]
+  ] @
+  (List.flatten
+    (ExtList.repeat ~from:2 (preinstantiated_tuple + 1) (fun i ->
+      ExtList.repeat ~from:1 (i + 1) (fun j ->
+        get_tuple_id i j, Myformat.sprintf "proj_%d_%d_tuple" i (j-1)))))
+  @ ExtList.repeat ~from:2 (preinstantiated_tuple + 1) (fun i ->
+    mk_tuple_id i, Myformat.sprintf "mk_tuple%d" i)
 
 let add_symbol s n =
   env.name_map <- Misc.StringMap.add s n env.name_map
@@ -90,8 +94,18 @@ let equal x id =
 let belongs_to var id_list = List.exists (equal var) id_list
 let find var id_list = List.find (fun (a,_) -> equal var a) id_list
 
-let get_pangoline_id x = snd (find x pangoline_predefined)
-
 let is_infix x = belongs_to x infix_ids
 
 let is_effect_var x = belongs_to x effect_ids
+
+let pangoline_map =
+  let map = ref None in
+  fun () ->
+    match !map with
+    | Some x -> x
+    | None ->
+        let r =
+          List.fold_left (fun acc (id,s) ->
+            try Name.M.add (var id) s acc
+            with _ -> acc) Name.M.empty pangoline_predefined in
+        map := Some r; r

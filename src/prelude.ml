@@ -110,8 +110,6 @@ section tuples
   logic get_7_7_tuple ['a 'b 'c 'd 'e 'f 'g||] :
       'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'g
 
-  logic fst ['a 'b||] : 'a * 'b -> 'a
-  logic snd ['a 'b||] : 'a * 'b -> 'b
 end
 section arith
   coq \"WhoArith\"
@@ -180,8 +178,10 @@ section Whoref
   logic restrict [||'e1 'e2] : <'e1 'e2> -> <'e2>
   logic empty : < >
 
-  let pre ['a 'b||] (x : 'a * 'b) = fst x
-  let post ['a 'b||] (x : 'a * 'b) = snd x
+  let fst ['a 'b] (x : 'a * 'b) = get_2_1_tuple x
+  let snd ['a 'b] (x : 'a * 'b) = get_2_2_tuple x
+  let pre ['a 'b||] (x : 'a * 'b) = get_2_1_tuple x
+  let post ['a 'b||] (x : 'a * 'b) = get_2_2_tuple x
 
 end
 

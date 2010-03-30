@@ -99,7 +99,7 @@ let fresh_string_env env name =
 
 let name_map = ref Misc.StringMap.empty
 
-let fresh_string x = 
+let fresh_string x =
   let env, s = fresh_string_env !name_map x in
   name_map := env; s
 
@@ -151,24 +151,30 @@ let hash_set s =
 
 module Env = struct
   type name = t
-  type t = 
+  type t =
     { names : string M.t;
-      gen : int Misc.StringMap.t
+      gen : int Misc.StringMap.t ;
+      predefined : string M.t;
     }
 
-  let empty = 
+  let empty predefined =
     { names = M.empty;
-      gen = Misc.StringMap.empty
+      gen = Misc.StringMap.empty ;
+      predefined = predefined
     }
 
   let id env x =
     try M.find x env.names
-    with Not_found -> get_cur_name x
+    with Not_found ->
+      try M.find x env.predefined
+      with Not_found -> get_cur_name x
 
-  let add_id env x = 
+  let add_id env x =
     let gen, s = fresh_string_env env.gen (unsafe_to_string x) in
-    { names = M.add x s env.names; gen = gen }
+    { env with names = M.add x s env.names; gen = gen }
 
   let add_id_list = List.fold_left add_id
+
+  let is_predefined env n = M.mem n env.predefined
 end
 

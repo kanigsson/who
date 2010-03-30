@@ -88,9 +88,11 @@ val get_cur_name : t -> string
 module Env : sig
   type name = t
   type t
-  val empty : t
+  val empty : string M.t -> t
   val id : t -> name -> string
   val add_id : t -> name -> t
   val add_id_list : t -> name list -> t
+
+  val is_predefined : t -> name -> bool
 end
 

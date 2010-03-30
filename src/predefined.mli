@@ -27,7 +27,6 @@ exception Error of error
 
 val explain : error -> string
 
-val get_pangoline_id : Name.t -> string
 val var_and_type : string -> Name.t * (Ty.Generalize.t * Ty.t)
 val var : string -> Name.t
 
@@ -42,3 +41,5 @@ val belongs_to : Name.t -> string list -> bool
 
 val is_infix : Name.t -> bool
 val is_effect_var : Name.t -> bool
+
+val pangoline_map : unit -> string Name.M.t

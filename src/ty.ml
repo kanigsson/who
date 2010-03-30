@@ -66,13 +66,14 @@ module Convert = struct
 
 end
 
+let emp = Name.Env.empty Name.M.empty
 let gen_print ?kind fmt x =
-  PrintTree.Print.ty ?kind fmt (Convert.t Name.Env.empty x)
+  PrintTree.Print.ty ?kind fmt (Convert.t emp x)
 let print fmt x = gen_print ~kind:`Who fmt x
 let coq_print fmt x = gen_print ~kind:`Coq fmt x
 let print_list sep fmt t = list sep print fmt t
 let print_scheme fmt s =
-  PrintTree.Print.scheme fmt (Convert.scheme Name.Env.empty s)
+  PrintTree.Print.scheme fmt (Convert.scheme emp s)
 
 let arrow t1 t2 eff = Arrow (t1,t2,eff,[])
 let caparrow t1 t2 eff cap = Arrow (t1,t2,eff,cap)
@@ -234,7 +235,7 @@ module Generalize = struct
     | _ -> false
 
   let print fmt g =
-    let _, g = Convert.gen Name.Env.empty g in
+    let _, g = Convert.gen emp g in
     PrintTree.Print.gen fmt g
 
   open Myformat

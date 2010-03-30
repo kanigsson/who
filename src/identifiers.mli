@@ -21,10 +21,11 @@ val and_id : string
 val impl_id : string
 val combine_id : string
 val get_id : string
-val fst_id : string
-val snd_id : string
 val not_id : string
 val restrict_id : string
+
+val fst_id : string
+val snd_id : string
 
 val plus_id : string
 val minus_id : string

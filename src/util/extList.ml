@@ -86,7 +86,7 @@ let repeat ?(from=0) n f =
 
 let hash = Hash.combine_list
 
-let find_pos eq x l = 
+let find_pos eq x l =
   let rec aux n l =
     match l with
     | [] -> raise Not_found

@@ -1,6 +1,6 @@
 IMPORTANT FEATURES
-allow non-values at top-level
 
+inductive declarations
 MINOR ISSUES
 error messages for unknown variables in internalize
 
@@ -20,7 +20,6 @@ INTERNAL
 
 BUGS
 
-* find bug with "nil" - postponed
 * check types for well-formedness
 
 * binding!!!!
