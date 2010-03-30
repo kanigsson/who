@@ -26,7 +26,7 @@ open Const
 open Ast
 open Recon
 module PL = Predefined
-module PI = Predefined.Identifier
+module I = Identifiers
 
 exception Error of string
 
@@ -224,7 +224,7 @@ and varbind env k x t e l =
     if Ty.is_ref t then e
     else aquant k x (Ty.selim_map (rtype env) t) e l
 
-let effrec_set = [ PI.empty_id ; PI.restrict_id ; PI.get_id ; PI.combine_id ]
+let effrec_set = [ I.empty_id ; I.restrict_id ; I.get_id ; I.combine_id ]
 
 let rec theory env th =
   match th with

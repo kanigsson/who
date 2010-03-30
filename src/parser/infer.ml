@@ -23,7 +23,7 @@
 
 module I = InternalParseTree
 open InferTree
-module PI = Predefined.Identifier
+module PI = Identifiers
 module M = MutableType
 module SM = Misc.StringMap
 module G = Ty.Generalize

@@ -27,7 +27,7 @@
   open Loc
   open Const
   open ParseTree
-  module PI = Predefined.Identifier
+  module I = Identifiers
 
   (* build a new location out of two old ones by forming the large region
   containing both *)
@@ -88,7 +88,7 @@ protected_nterm:
     { mk (Annot (e,t)) (embrace l r) }
 
 aterm:
-  | p = VOID { var PI.void_id p }
+  | p = VOID { var I.void_id p }
   | p = REF { var "ref" p}
   | p = prefix x = IDENT
     { app (var (snd p) (fst p)) (var x.c x.info) (embrace (fst p) x.info) }
@@ -136,7 +136,7 @@ seq_term:
   | tl = tuple_list
     {
       let n = List.length tl in
-      appni (Predefined.Identifier.mk_tuple_id n) tl (List.hd tl).loc
+      appni (Identifiers.mk_tuple_id n) tl (List.hd tl).loc
     }
   | t1 = seq_term SEMICOLON t2 = seq_term
     { mk (Seq (t1,t2)) (embrace t1.loc t2.loc) }

@@ -24,7 +24,7 @@
 open Ast
 open CommonInternalize
 module I = AnnotParseTree
-module PI = Predefined.Identifier
+module PI = Identifiers
 
 let dummy = Name.new_anon ()
 

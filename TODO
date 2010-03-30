@@ -29,6 +29,7 @@ INTERNAL
   put types in variables
 
 * pretty printing
+* simplification for "or"
 
 
 

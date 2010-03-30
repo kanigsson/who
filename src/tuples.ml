@@ -175,14 +175,14 @@ let rec term env t =
       get_to_select reg ref dom m l
   | _ ->
       match destruct_app2_var t with
-      | Some (v,_, m1,m2) when PL.equal v PI.combine_id ->
+      | Some (v,_, m1,m2) when PL.equal v I.combine_id ->
           let m1 = term env m1 and m2 = term env m2 in
           let t = tyfun env t.t in
           combine_to_tuple t m1 m2 l
       | _ ->
           match destruct_app t with
           | Some ({v = Var (v,([],[],_))}, m)
-            when PL.equal v PI.restrict_id ->
+            when PL.equal v I.restrict_id ->
               let m = term env m in
               let t = tyfun env t.t in
               restrict_to_tuple t m l

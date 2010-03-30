@@ -28,9 +28,10 @@ type t =
   | Tuple of t list
   | Arrow of t * t * Effect.t * Name.t list
   | PureArr of t * t
-  | App of Name.t * (t,Name.t,Effect.t) Inst.t
+  | App of Name.t * inst
   | Ref of Name.t * t
   | Map of Effect.t
+and inst = (t,Name.t,Effect.t) Inst.t
 
 open Myformat
 
@@ -53,13 +54,14 @@ module Convert = struct
     and effect e = Effect.Convert.t env e in
     aux
 
+  let inst env i = Inst.map (t env) (Name.Env.id env) (Effect.Convert.t env) i
   let add_id = Name.Env.add_id_list
   let map env = List.map (Name.Env.id env)
   let gen env (tl,rl,el) =
     let env = add_id (add_id (add_id env tl) rl) el in
     env, (map env tl, map env rl, map env el)
 
-  let scheme env (g,ty) = 
+  let scheme env (g,ty) =
     let env', g = gen env g in
     g, t env' ty
 
@@ -70,7 +72,7 @@ let gen_print ?kind fmt x =
 let print fmt x = gen_print ~kind:`Who fmt x
 let coq_print fmt x = gen_print ~kind:`Coq fmt x
 let print_list sep fmt t = list sep print fmt t
-let print_scheme fmt s = 
+let print_scheme fmt s =
   PrintTree.Print.scheme fmt (Convert.scheme Name.Env.empty s)
 
 let arrow t1 t2 eff = Arrow (t1,t2,eff,[])
@@ -233,7 +235,7 @@ module Generalize = struct
     | [],[],[] -> true
     | _ -> false
 
-  let print fmt g = 
+  let print fmt g =
     let _, g = Convert.gen Name.Env.empty g in
     PrintTree.Print.gen fmt g
 
