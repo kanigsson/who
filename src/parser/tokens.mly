@@ -37,10 +37,10 @@
 %token COLON MID THEN ELSE TINT PROP DOT DO INTROS
 
 %nonassoc below_SEMI
-%nonassoc SEMICOLON                          /* below EQUAL ({lbl=...; lbl=...}) */
-%nonassoc ELSE                          /* (if ... then ... else ...) */
+%nonassoc SEMICOLON
+%nonassoc ELSE
 %nonassoc below_COMMA
-%left     COMMA                         /* expr/expr_comma_list (e,e,e) */
+%left     COMMA
 %nonassoc forall
 %right ARROW
 %left AND OR
