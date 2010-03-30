@@ -1,0 +1,4 @@
+type list ['a]
+logic nil ['a] : 'a list
+
+let x = (nil : int list)
