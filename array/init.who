@@ -17,25 +17,30 @@ axiom sub_length_2 ['a||] :
 axiom sub_ident ['a||] :
   forall (a : 'a array). sub a (len a) = a
 
-axiom array_ext ['a||] :
-  forall (a b : 'a array).
-    (len a = len b /\
-    forall (i : int).
-      0 <= i /\ i < len a -> get i a = get i b) ->
-      a = b
+(*
+axiom set_create ['a] :
+  forall (k : 'a) (i l : int).
+    0 <= i -> i < l -> set i k (create l k) = create l k
+*)
+
+axiom set_equal ['a] :
+  forall (a : 'a array) (i l : int) (k : 'a).
+    0 <= i -> i < l -> get i a = k -> set i k a = a
 
 let init ['a|out| 'e]
   (inv : <'e> -> 'a array -> int -> prop ) (l : int) (f : int ->{'e} 'a) =
     allocates out
-  { 0 <= l /\
-    (forall (k : 'a array). inv cur|{'e} k 0) /\
+  { 0 <= l /\ inv cur|{'e} ar_empty 0 /\
+     [[ ]] f 0 [[ r : forall (k : 'a array). inv cur (sub (set 0 r k) 1) 1 ]] /\
     forall (k : 'a array) (i:int).
-      0 <= i /\ i < l ->
-    [[ inv cur (sub k i) i ]] f i [[ r : inv cur (sub (set i r k) (i+1)) (i+1) ]]
+      1 <= i /\ i < l ->
+    [[ inv cur (sub k i) i ]] f i [[ r: inv cur (sub (set i r k) (i+1)) (i+1) ]]
       }
   if l == 0 then ref{{out}} ar_empty
   else
-    let res = ref{{out}} (create l (f 0)) in
+    let k = f 0 in
+    let res = ref{{out}} (create l k) in
+    assert ( !res = set 0 k !res);
     let z =
       for i = 1 to l - 1 do
         {inv cur|{'e} (sub !!res i) i /\ len !!res = l}
