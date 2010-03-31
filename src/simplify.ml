@@ -239,7 +239,7 @@ let rec theory env th =
         | DGen g ->
             let env, g = genbind g env (fun r -> find_type_decl r ds) in
             env, if G.is_empty g then [] else [DGen g]
-        | TypeDef _ -> env, [d]
+        | TypeDef _ | Decl _ -> env, [d]
         | Formula (n,f,k) ->
             env, [Formula (n, term env f, k)]
         | Section (s,cl,th) ->

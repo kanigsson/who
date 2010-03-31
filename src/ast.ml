@@ -55,6 +55,7 @@ type decl =
   | Program of Name.t * G.t * t * isrec
   | DLetReg of Name.t list
   | DGen of G.t
+  | Decl of string
 
 type theory = decl list
 
@@ -197,6 +198,7 @@ module Convert = struct
         let env = add_id env s in
         let env, th = theory env dl in
         env, P.Section (id env s,cl, th)
+    | Decl s -> env, P.Decl s
   and theory env th = ExtList.fold_map decl env th
 
 
@@ -781,7 +783,7 @@ let get ref map l =
 let rec decl_map ?varfun ?termfun ?(declfun=ExtList.singleton) d : decl list =
   let d =
     match d with
-    | Logic _ | TypeDef _ | DLetReg _ | DGen _ -> d
+    | Logic _ | TypeDef _ | DLetReg _ | DGen _ | Decl _ -> d
     | Formula (s,t,k) -> Formula (s,rebuild_map ?varfun ?termfun t, k)
     | Section (s,cl,th) ->
         Section (s,cl,theory_map ?varfun ?termfun ~declfun th)

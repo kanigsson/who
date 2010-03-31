@@ -154,7 +154,7 @@ let correct_name n =
 let rec decl d =
   match d with
   | Logic _ | Formula _ | TypeDef _
-  | Program (_,_,_,Const.LogicDef) | DGen _ -> [d]
+  | Program (_,_,_,Const.LogicDef) | DGen _ | Decl _ -> [d]
   | DLetReg rl ->
       (* FIXME is this correct? *)
       [DGen ([],rl,[])]

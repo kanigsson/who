@@ -56,6 +56,7 @@ let to_section kind th =
     match d with
     | DLetReg _ | Program _ -> assert false
     | DGen g ->  [Gen g]
+    | Ast.Decl s -> [Decl s]
     | TypeDef (g,_,n) -> [Type (n,g)]
     | Formula (s,f, k) ->
         begin match k with

@@ -259,7 +259,7 @@ let rec decl env d =
   match d with
   | Formula (_,f,_) -> fis_oftype env prop f; env
   | Section (_,_,th) -> theory env th
-  | TypeDef _ | DLetReg _ | DGen _ -> env
+  | TypeDef _ | DLetReg _ | DGen _ | Decl _ -> env
   | Logic (n,(g,t)) -> add_var env n g t
   | Program (x,g,e,r) ->
       let env,  _, _ = letgen env x g e r in

@@ -63,6 +63,7 @@ type decl =
   | Program of string * gen * t * isrec
   | DLetReg of string list
   | DGen of gen
+  | Decl of string
 
 module Print = struct
   open Myformat
@@ -268,6 +269,7 @@ module Print = struct
             term t
       | DGen g ->
           fprintf fmt "@[INTROS %a@]" gen g
+      | Decl s -> string fmt s
     and theory fmt t = list newline decl fmt t in
     decl
 

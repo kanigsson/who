@@ -259,6 +259,7 @@ let rec decl env d =
       let env, rl = Env.add_region_list env rl in
       let env,el = Env.add_effect_var_list env el in
       env, DGen (tl@rl@el,[],[])
+  | Decl _ -> env, d
 and theory env t = ExtList.fold_map decl env t
 
 let theory t =

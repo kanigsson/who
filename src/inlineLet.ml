@@ -41,7 +41,7 @@ let term env t =
 
 let rec decl env d =
   match d with
-  | Logic _ | TypeDef _ | DLetReg _ | DGen _ -> env, [d]
+  | Logic _ | TypeDef _ | DLetReg _ | DGen _ | Decl _ -> env, [d]
   | Formula (n,f,k) -> env, [Formula (n, term env f, k) ]
   | Section (s,cl,th) ->
       let env, th = theory env th in
