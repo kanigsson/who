@@ -59,7 +59,7 @@ let to_section kind th =
     | TypeDef (g,_,n) -> [Type (n,g)]
     | Formula (s,f, k) ->
         begin match k with
-        | `Assumed -> [Axiom (Name.from_string s,f)]
+        | `Assumed -> [Axiom (s,f)]
         | `Proved -> mk_Section ~namehint:s f
         end
     | Logic (x,(g,t)) ->
@@ -89,7 +89,7 @@ let to_section kind th =
               aux (Axiom (Name.from_string "H", f1)::acc) f2
           | _ -> List.rev acc, f in
     aux [] f
-  and make_PO ?(namehint="goal") ( f : Ast.t) : outdecl list =
+  and make_PO ?namehint ( f : Ast.t) : outdecl list =
     let rec aux acc f =
       match f.v with
       | Quant (`FA,_,_) | Ast.Gen _ ->
@@ -98,7 +98,12 @@ let to_section kind th =
           match destruct_app2_var' f' with
           | Some (v,_,_,_) when PL.equal v I.impl_id -> mk_Section f @ acc
           | Some (v,_,f1,f2) when PL.equal v I.and_id -> aux (aux acc f2) f1
-          | _ -> PO (Name.from_string namehint, f) :: acc
+          | _ ->
+              let n =
+                match namehint with
+                | None -> Name.from_string "goal"
+                | Some n -> n in
+              PO (n, f) :: acc
     in
     aux [] f
   and mk_Section ?namehint (f : Ast.t) :outdecl list =

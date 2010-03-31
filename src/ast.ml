@@ -49,8 +49,8 @@ and inst = (Ty.t, Name.t, Effect.t) Inst.t
 
 type decl =
   | Logic of Name.t * Ty.scheme
-  | Formula of string * t * [ `Proved | `Assumed ]
-  | Section of string * Const.takeover list * decl list
+  | Formula of Name.t * t * [ `Proved | `Assumed ]
+  | Section of Name.t * Const.takeover list * decl list
   | TypeDef of G.t * Ty.t option * Name.t
   | Program of Name.t * G.t * t * isrec
   | DLetReg of Name.t list
@@ -174,7 +174,8 @@ module Convert = struct
         let env = add_id env n in
         env, P.Logic (id env n, scheme env s)
     | Formula (s,f,k) ->
-        env, P.Formula (s,t env f, k)
+        let env = add_id env s in
+        env, P.Formula (id env s,t env f, k)
     | DLetReg nl ->
         let env = add_ids env nl in
         env, P.DLetReg (List.map (id env) nl)
@@ -193,8 +194,9 @@ module Convert = struct
         let env = add_id env n in
         env, P.TypeDef (g,t,id env n)
     | Section (s,cl, dl) ->
+        let env = add_id env s in
         let env, th = theory env dl in
-        env, P.Section (s,cl, th)
+        env, P.Section (id env s,cl, th)
   and theory env th = ExtList.fold_map decl env th
 
 

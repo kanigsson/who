@@ -130,12 +130,12 @@ let rec decl env d =
       Predefined.add_symbol_and_binding n nv s;
       env, Logic (nv,s)
   | I.Axiom (s,t) ->
-      env,Formula (s, term true env t, `Assumed)
+      env,Formula (Name.from_string s, term true env t, `Assumed)
   | I.Goal (s,t) ->
-      env,Formula (s, term true env t, `Proved)
+      env,Formula (Name.from_string s, term true env t, `Proved)
   | I.Section (s,cl, dl) ->
       let env, dl = theory env dl in
-      env, Section (s,cl,dl)
+      env, Section (Name.from_string s,cl,dl)
   | I.TypeDef (g,t,n) ->
       let env', g = Env.add_gen env g in
       let t = Opt.map (ty env') t in

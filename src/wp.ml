@@ -148,6 +148,9 @@ let main e =
     effFA e.e (fun m -> (wp_node m q e)) l
 
 
+let correct_name n = 
+  Name.from_string (Name.unsafe_to_string n ^ "_correct")
+
 let rec decl d =
   match d with
   | Logic _ | Formula _ | TypeDef _
@@ -161,7 +164,7 @@ let rec decl d =
       let lv = lift_value e in
       let f = gen g (correct e) e.loc in
       let def = Program (x,g,lv, Const.LogicDef) in
-      begin match mk_goal (Name.unsafe_to_string x ^ "_correct") f with
+      begin match mk_goal (correct_name x) f with
       | None -> [def]
       | Some goal -> [goal ; def ]
       end

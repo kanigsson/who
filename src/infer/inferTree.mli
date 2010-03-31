@@ -47,8 +47,8 @@ and funcbody = pre * t * post
 
 type decl =
   | Logic of Name.t * Ty.Generalize.t * Ty.t
-  | Formula of string * t * [ `Proved | `Assumed ]
-  | Section of string * Const.takeover list * decl list
+  | Formula of Name.t * t * [ `Proved | `Assumed ]
+  | Section of Name.t * Const.takeover list * decl list
   | TypeDef of Ty.Generalize.t * Ty.t option * Name.t
   | Program of Name.t * Ty.Generalize.t * t * isrec
   | DLetReg of Name.t list

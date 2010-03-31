@@ -116,14 +116,14 @@ let rec decl env d =
   | I.Axiom (s,g,t) ->
       let env', g = Env.add_gen env g in
       let t = ast env' t in
-      env,Formula (s, gen g t t.loc, `Assumed)
+      env,Formula (Name.from_string s, gen g t t.loc, `Assumed)
   | I.Goal (s,g,t) ->
       let env', g = Env.add_gen env g in
       let t = ast env' t in
-      env,Formula (s, gen g t t.loc, `Proved)
+      env,Formula (Name.from_string s, gen g t t.loc, `Proved)
   | I.Section (s,cl, dl) ->
       let env, dl = theory env dl in
-      env, Section (s,cl,dl)
+      env, Section (Name.from_string s,cl,dl)
   | I.TypeDef (g,t,n) ->
       let env', g = Env.add_gen env g in
       let t = Opt.map (ty env') t in
