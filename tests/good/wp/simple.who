@@ -6,8 +6,8 @@ logic \/ : prop -> prop -> prop
 logic -> : prop -> prop -> prop
 logic ~ : prop -> prop
 logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
-  logic fst ['a 'b||] : 'a * 'b -> 'a
-  logic snd ['a 'b||] : 'a * 'b -> 'b
+logic get_2_2_tuple ['a 'b] : 'a * 'b -> 'b
+logic get_2_1_tuple ['a 'b] : 'a * 'b -> 'a
 logic t : prop
 let myget [|r|] = (fun (x:unit) ->
   {fun (c:<r>) -> True}

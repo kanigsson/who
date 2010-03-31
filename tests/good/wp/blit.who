@@ -12,8 +12,8 @@ section basiclogic coq predefined
   logic ~  : prop -> prop
   logic = ['a||] : 'a -> 'a -> prop
   logic <> ['a1||] : 'a1 -> 'a1 -> prop
-  logic fst ['a2 'b||] : ('a2 * 'b) -> 'a2
-  logic snd ['a3 'b1||] : ('a3 * 'b1) -> 'b1
+logic get_2_2_tuple ['a 'b] : 'a * 'b -> 'b
+logic get_2_1_tuple ['a 'b] : 'a * 'b -> 'a
 section arith coq "WhoArith"
   pangoline predefined
    logic +  : int -> int -> int
@@ -65,8 +65,8 @@ section Whoref coq "WhoMap"
     >
   logic restrict [||'e11 'e21] : < 'e11 'e21 > -> < 'e21 >
   logic empty  : < >
-  let pre ['a11 'b3||] = (fun (x3:'a11 * 'b3) -> fst ['a11,'b3||] x3) 
-  let post ['a12 'b4||] = (fun (x4:'a12 * 'b4) -> snd ['a12,'b4||] x4)  end
+  let pre ['a11 'b3||] = (fun (x3:'a11 * 'b3) -> get_2_1_tuple ['a11,'b3||] x3) 
+  let post ['a12 'b4||] = (fun (x4:'a12 * 'b4) -> get_2_2_tuple ['a12,'b4||] x4)  end
 let
   forto [||'e1] = (fun (inv:int -> < 'e1 > -> prop) ->
                   (fun (start:int) ->

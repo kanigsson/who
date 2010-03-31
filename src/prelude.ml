@@ -157,6 +157,10 @@ section beq
   logic != ['a||] : 'a -> 'a -> bool
 end
 
+parameter assert (f : prop) : unit,{} = { f } { f }
+parameter check (f : prop) : unit, {} = { f } { }
+parameter assume (f : prop) : unit,{} = {  }  { f }
+
 section Whoref
   coq \"WhoMap\"
   pangoline predefined

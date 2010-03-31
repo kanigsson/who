@@ -12,8 +12,8 @@ section basiclogic coq predefined
   logic ~  : prop -> prop
   logic = ['a||] : a -> a -> prop
   logic <> ['a||] : a -> a -> prop
-  logic fst ['a 'b||] : (a * b) -> a
-  logic snd ['a 'b||] : (a * b) -> b
+  logic get_2_2_tuple ['a 'b||] : (a * b) -> b
+  logic get_2_1_tuple ['a 'b||] : (a * b) -> a
   section arith coq "WhoArith"
     pangoline predefined
      logic +  : int -> int -> int
@@ -70,8 +70,8 @@ section basiclogic coq predefined
     logic combine [||'e 'e1 'e2] : < 'e 'e1> -> < 'e1 'e2> -> < 'e 'e1 'e2>
     logic restrict [||'e 'e1] : < 'e 'e1> -> < 'e1>
     logic empty  : < >
-    let logic pre ['a 'b||] = (fun (x:a * b) -> fst [a,b||] x) 
-    let logic post ['a 'b||] = (fun (x:a * b) -> snd [a,b||] x)  end
+    let logic pre ['a 'b||] = (fun (x:a * b) -> get_2_1_tuple [a,b||] x) 
+    let logic post ['a 'b||] = (fun (x:a * b) -> get_2_2_tuple [a,b||] x)  end
   let
     logic forto [||'e] = (fun (inv:int -> < 'e> -> prop) ->
                          (fun (start:int) ->
@@ -196,25 +196,26 @@ section basiclogic coq predefined
             ((ofs <= ((len [a||] (!! [array[a]| r| {r r1 }] ar s)) - l)) ->
              ((ofs1 <= ((len [a||] (!! [array[a]| r1| {r r1 }] ar1 s)) - l))
               ->
-              ((fst [ref(r,array[a]) -> <r > -> prop,ref(r,array[a]) ->
-                <r > -> <r > -> array[a] -> prop||] ! [array[a]| r|] ar
-                (restrict [|| {r1 } {r }] s))
+              ((get_2_1_tuple [ref(r,array[a]) -> <r > ->
+                prop,ref(r,array[a]) -> <r > -> <r > -> array[a] -> prop||]
+                ! [array[a]| r|] ar (restrict [|| {r1 } {r }] s))
                /\
                (forall (s1:<r >).
                 forall (anon:array[a]).
-                (snd [ref(r,array[a]) -> <r > -> prop,ref(r,array[a]) ->
-                 <r > -> <r > -> array[a] -> prop||] ! [array[a]| r|] ar
-                 (restrict [|| {r1 } {r }] s) s1 anon)
+                (get_2_2_tuple [ref(r,array[a]) -> <r > ->
+                 prop,ref(r,array[a]) -> <r > -> <r > -> array[a] -> prop||]
+                 ! [array[a]| r|] ar (restrict [|| {r1 } {r }] s) s1 anon)
                 ->
-                ((fst [ref(r1,array[a]) -> <r1 > -> prop,ref(r1,array[a]) ->
-                  <r1 > -> <r1 > -> array[a] -> prop||] ! [array[a]| r1|] ar1
-                  (restrict [|| {r } {r1 }] s))
+                ((get_2_1_tuple [ref(r1,array[a]) -> <r1 > ->
+                  prop,ref(r1,array[a]) -> <r1 > -> <r1 > -> array[a] ->
+                  prop||] ! [array[a]| r1|] ar1 (restrict [|| {r } {r1 }] s))
                  /\
                  (forall (s2:<r1 >).
                   forall (anon1:array[a]).
-                  (snd [ref(r1,array[a]) -> <r1 > -> prop,ref(r1,array[a]) ->
-                   <r1 > -> <r1 > -> array[a] -> prop||] ! [array[a]| r1|]
-                   ar1 (restrict [|| {r } {r1 }] s) s2 anon1)
+                  (get_2_2_tuple [ref(r1,array[a]) -> <r1 > ->
+                   prop,ref(r1,array[a]) -> <r1 > -> <r1 > -> array[a] ->
+                   prop||] ! [array[a]| r1|] ar1 (restrict [|| {r } {r1 }] s)
+                   s2 anon1)
                   ->
                   (let logic l1 = len [a||] anon1 in
                    ((ofs < ofs1) ->
@@ -238,41 +239,41 @@ section basiclogic coq predefined
                               (get [a||] (ofs + k)
                                (!! [array[a]| r| {r r1 }] ar s3)))))
                            ->
-                           ((fst [ref(r,array[a]) -> <r > ->
+                           ((get_2_1_tuple [ref(r,array[a]) -> <r > ->
                              prop,ref(r,array[a]) -> <r > -> <r > ->
                              array[a] -> prop||] ! [array[a]| r|] ar
                              (restrict [|| {r1 } {r }] s3))
                             /\
                             (forall (s4:<r >).
                              forall (anon2:array[a]).
-                             (snd [ref(r,array[a]) -> <r > ->
+                             (get_2_2_tuple [ref(r,array[a]) -> <r > ->
                               prop,ref(r,array[a]) -> <r > -> <r > ->
                               array[a] -> prop||] ! [array[a]| r|] ar
                               (restrict [|| {r1 } {r }] s3) s4 anon2)
                              ->
-                             ((fst [ref(r1,array[a]) -> <r1 > ->
+                             ((get_2_1_tuple [ref(r1,array[a]) -> <r1 > ->
                                prop,ref(r1,array[a]) -> <r1 > -> <r1 > ->
                                array[a] -> prop||] ! [array[a]| r1|] ar1
                                (restrict [|| {r } {r1 }] s3))
                               /\
                               (forall (s5:<r1 >).
                                forall (anon3:array[a]).
-                               (snd [ref(r1,array[a]) -> <r1 > ->
+                               (get_2_2_tuple [ref(r1,array[a]) -> <r1 > ->
                                 prop,ref(r1,array[a]) -> <r1 > -> <r1 > ->
                                 array[a] -> prop||] ! [array[a]| r1|] ar1
                                 (restrict [|| {r } {r1 }] s3) s5 anon3)
                                ->
-                               ((fst [array[a] -> <r1 > -> prop,array[a] ->
-                                 <r1 > -> <r1 > -> unit -> prop||]
-                                 ((:= [array[a]| r1|]) ar1)
+                               ((get_2_1_tuple [array[a] -> <r1 > ->
+                                 prop,array[a] -> <r1 > -> <r1 > -> unit ->
+                                 prop||] ((:= [array[a]| r1|]) ar1)
                                  (set [a||] (ofs1 + i)
                                   (get [a||] (ofs + i) anon2) anon3)
                                  s5)
                                 /\
                                 (forall (s6:<r1 >).
-                                 (snd [array[a] -> <r1 > -> prop,array[a] ->
-                                  <r1 > -> <r1 > -> unit -> prop||]
-                                  ((:= [array[a]| r1|]) ar1)
+                                 (get_2_2_tuple [array[a] -> <r1 > ->
+                                  prop,array[a] -> <r1 > -> <r1 > -> unit ->
+                                  prop||] ((:= [array[a]| r1|]) ar1)
                                   (set [a||] (ofs1 + i)
                                    (get [a||] (ofs + i) anon2) anon3)
                                   s5 s6 tt)
@@ -297,10 +298,11 @@ section basiclogic coq predefined
                                       (!! [array[a]| r| {r r1 }] ar
                                        (combine [|| {r } { } {r1 }] s4 s6))))))))))))))))))
                       /\
-                      (fst [((int -> <r r1 > -> prop) * (int -> <r r1 > -> <r
-                       r1 > -> unit -> prop)) -> <r r1 > -> prop,((int -> <r
-                       r1 > -> prop) * (int -> <r r1 > -> <r r1 > -> unit ->
-                       prop)) -> <r r1 > -> <r r1 > -> unit -> prop||]
+                      (get_2_1_tuple [((int -> <r r1 > -> prop) * (int -> <r
+                       r1 > -> <r r1 > -> unit -> prop)) -> <r r1 > ->
+                       prop,((int -> <r r1 > -> prop) * (int -> <r r1 > -> <r
+                       r1 > -> unit -> prop)) -> <r r1 > -> <r r1 > ->
+                       unit -> prop||]
                        (fordownto [|| {r r1 }]
                         (fun (i:int) ->
                         (fun (cur:<r r1 >) ->
@@ -359,10 +361,11 @@ section basiclogic coq predefined
                        (combine [|| {r } { } {r1 }] s1 s2)))
                      /\
                      (forall (s3:<r r1 >).
-                      (snd [((int -> <r r1 > -> prop) * (int -> <r r1 > -> <r
-                       r1 > -> unit -> prop)) -> <r r1 > -> prop,((int -> <r
-                       r1 > -> prop) * (int -> <r r1 > -> <r r1 > -> unit ->
-                       prop)) -> <r r1 > -> <r r1 > -> unit -> prop||]
+                      (get_2_2_tuple [((int -> <r r1 > -> prop) * (int -> <r
+                       r1 > -> <r r1 > -> unit -> prop)) -> <r r1 > ->
+                       prop,((int -> <r r1 > -> prop) * (int -> <r r1 > -> <r
+                       r1 > -> unit -> prop)) -> <r r1 > -> <r r1 > ->
+                       unit -> prop||]
                        (fordownto [|| {r r1 }]
                         (fun (i:int) ->
                         (fun (cur:<r r1 >) ->
@@ -457,41 +460,41 @@ section basiclogic coq predefined
                               (get [a||] (ofs + k)
                                (!! [array[a]| r| {r r1 }] ar s3)))))
                            ->
-                           ((fst [ref(r,array[a]) -> <r > ->
+                           ((get_2_1_tuple [ref(r,array[a]) -> <r > ->
                              prop,ref(r,array[a]) -> <r > -> <r > ->
                              array[a] -> prop||] ! [array[a]| r|] ar
                              (restrict [|| {r1 } {r }] s3))
                             /\
                             (forall (s4:<r >).
                              forall (anon2:array[a]).
-                             (snd [ref(r,array[a]) -> <r > ->
+                             (get_2_2_tuple [ref(r,array[a]) -> <r > ->
                               prop,ref(r,array[a]) -> <r > -> <r > ->
                               array[a] -> prop||] ! [array[a]| r|] ar
                               (restrict [|| {r1 } {r }] s3) s4 anon2)
                              ->
-                             ((fst [ref(r1,array[a]) -> <r1 > ->
+                             ((get_2_1_tuple [ref(r1,array[a]) -> <r1 > ->
                                prop,ref(r1,array[a]) -> <r1 > -> <r1 > ->
                                array[a] -> prop||] ! [array[a]| r1|] ar1
                                (restrict [|| {r } {r1 }] s3))
                               /\
                               (forall (s5:<r1 >).
                                forall (anon3:array[a]).
-                               (snd [ref(r1,array[a]) -> <r1 > ->
+                               (get_2_2_tuple [ref(r1,array[a]) -> <r1 > ->
                                 prop,ref(r1,array[a]) -> <r1 > -> <r1 > ->
                                 array[a] -> prop||] ! [array[a]| r1|] ar1
                                 (restrict [|| {r } {r1 }] s3) s5 anon3)
                                ->
-                               ((fst [array[a] -> <r1 > -> prop,array[a] ->
-                                 <r1 > -> <r1 > -> unit -> prop||]
-                                 ((:= [array[a]| r1|]) ar1)
+                               ((get_2_1_tuple [array[a] -> <r1 > ->
+                                 prop,array[a] -> <r1 > -> <r1 > -> unit ->
+                                 prop||] ((:= [array[a]| r1|]) ar1)
                                  (set [a||] (ofs1 + i)
                                   (get [a||] (ofs + i) anon2) anon3)
                                  s5)
                                 /\
                                 (forall (s6:<r1 >).
-                                 (snd [array[a] -> <r1 > -> prop,array[a] ->
-                                  <r1 > -> <r1 > -> unit -> prop||]
-                                  ((:= [array[a]| r1|]) ar1)
+                                 (get_2_2_tuple [array[a] -> <r1 > ->
+                                  prop,array[a] -> <r1 > -> <r1 > -> unit ->
+                                  prop||] ((:= [array[a]| r1|]) ar1)
                                   (set [a||] (ofs1 + i)
                                    (get [a||] (ofs + i) anon2) anon3)
                                   s5 s6 tt)
@@ -516,10 +519,11 @@ section basiclogic coq predefined
                                       (!! [array[a]| r| {r r1 }] ar
                                        (combine [|| {r } { } {r1 }] s4 s6))))))))))))))))))
                       /\
-                      (fst [((int -> <r r1 > -> prop) * (int -> <r r1 > -> <r
-                       r1 > -> unit -> prop)) -> <r r1 > -> prop,((int -> <r
-                       r1 > -> prop) * (int -> <r r1 > -> <r r1 > -> unit ->
-                       prop)) -> <r r1 > -> <r r1 > -> unit -> prop||]
+                      (get_2_1_tuple [((int -> <r r1 > -> prop) * (int -> <r
+                       r1 > -> <r r1 > -> unit -> prop)) -> <r r1 > ->
+                       prop,((int -> <r r1 > -> prop) * (int -> <r r1 > -> <r
+                       r1 > -> unit -> prop)) -> <r r1 > -> <r r1 > ->
+                       unit -> prop||]
                        (forto [|| {r r1 }]
                         (fun (i:int) ->
                         (fun (cur:<r r1 >) ->
@@ -578,10 +582,11 @@ section basiclogic coq predefined
                        (combine [|| {r } { } {r1 }] s1 s2)))
                      /\
                      (forall (s3:<r r1 >).
-                      (snd [((int -> <r r1 > -> prop) * (int -> <r r1 > -> <r
-                       r1 > -> unit -> prop)) -> <r r1 > -> prop,((int -> <r
-                       r1 > -> prop) * (int -> <r r1 > -> <r r1 > -> unit ->
-                       prop)) -> <r r1 > -> <r r1 > -> unit -> prop||]
+                      (get_2_2_tuple [((int -> <r r1 > -> prop) * (int -> <r
+                       r1 > -> <r r1 > -> unit -> prop)) -> <r r1 > ->
+                       prop,((int -> <r r1 > -> prop) * (int -> <r r1 > -> <r
+                       r1 > -> unit -> prop)) -> <r r1 > -> <r r1 > ->
+                       unit -> prop||]
                        (forto [|| {r r1 }]
                         (fun (i:int) ->
                         (fun (cur:<r r1 >) ->

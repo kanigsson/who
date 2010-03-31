@@ -61,9 +61,7 @@ section tuples coq predefined
   logic get_7_6_tuple ['a 'b 'c 'd 'e 'f 'g||] : (a * b * c * d * e * f *
     g) -> f
   logic get_7_7_tuple ['a 'b 'c 'd 'e 'f 'g||] : (a * b * c * d * e * f *
-    g) -> g
-  logic fst ['a 'b||] : (a * b) -> a
-  logic snd ['a 'b||] : (a * b) -> b end
+    g) -> g end
 section arith coq "WhoArith"
   pangoline takeover
    logic +  : int -> int -> int
@@ -100,6 +98,15 @@ section beq coq predefined
   pangoline takeover
    logic == ['a||] : a -> a -> bool
   logic != ['a||] : a -> a -> bool end
+let
+  assert  = (fun (f:prop) -> {(fun (cur:< >) -> f)} parameter(unit,{ })
+            {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit) -> f)))}) 
+let
+  check  = (fun (f:prop) -> {(fun (cur:< >) -> f)} parameter(unit,{ })
+           {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit) -> True)))}) 
+let
+  assume  = (fun (f:prop) -> {(fun (cur:< >) -> True)} parameter(unit,{ })
+            {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit) -> f)))}) 
 section Whoref coq "WhoMap"
   pangoline predefined
    logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
@@ -127,8 +134,10 @@ section Whoref coq "WhoMap"
   logic combine [||'e 'e1 'e2] : < 'e 'e1> -> < 'e1 'e2> -> < 'e 'e1 'e2>
   logic restrict [||'e 'e1] : < 'e 'e1> -> < 'e1>
   logic empty  : < >
-  let pre ['a 'b||] = (fun (x:a * b) -> fst [a,b||] x) 
-  let post ['a 'b||] = (fun (x:a * b) -> snd [a,b||] x)  end
+  let fst ['a 'b||] = (fun (x:a * b) -> get_2_1_tuple [a,b||] x) 
+  let snd ['a 'b||] = (fun (x:a * b) -> get_2_2_tuple [a,b||] x) 
+  let pre ['a 'b||] = (fun (x:a * b) -> get_2_1_tuple [a,b||] x) 
+  let post ['a 'b||] = (fun (x:a * b) -> get_2_2_tuple [a,b||] x)  end
 let
   forto [||'e] = (fun (inv:int -> < 'e> -> prop) ->
                  (fun (start:int) ->

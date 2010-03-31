@@ -2,8 +2,8 @@ type unit
 logic tt  : unit
 logic empty  : < >
 logic mk_2tuple ['a 'b||] : a -> b -> a * b
-logic fst ['a 'b||] : (a * b) -> a
-logic snd ['a 'b||] : (a * b) -> b
+logic get_2_2_tuple ['a 'b||] : (a * b) -> b
+logic get_2_1_tuple ['a 'b||] : (a * b) -> a
 logic /\  : prop -> prop -> prop
 logic \/  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
@@ -13,18 +13,18 @@ logic <  : int -> int -> prop
 goal f_correct : forall (g:(unit -> < > -> prop) * (unit -> < > -> < > ->
                  unit -> prop)).
                  ((0 < 5) ->
-                  ((fst [unit -> < > -> prop,unit -> < > -> < > -> unit ->
-                    prop||] g tt empty)
+                  ((get_2_1_tuple [unit -> < > -> prop,unit -> < > -> < > ->
+                    unit -> prop||] g tt empty)
                    /\
-                   ((snd [unit -> < > -> prop,unit -> < > -> < > -> unit ->
-                     prop||] g tt empty empty tt)
+                   ((get_2_2_tuple [unit -> < > -> prop,unit -> < > -> < > ->
+                     unit -> prop||] g tt empty empty tt)
                     -> (3 < 6))))
                  ->
-                 ((fst [unit -> < > -> prop,unit -> < > -> < > -> unit ->
-                   prop||] g tt empty)
+                 ((get_2_1_tuple [unit -> < > -> prop,unit -> < > -> < > ->
+                   unit -> prop||] g tt empty)
                   /\
-                  ((snd [unit -> < > -> prop,unit -> < > -> < > -> unit ->
-                    prop||] g tt empty empty tt)
+                  ((get_2_2_tuple [unit -> < > -> prop,unit -> < > -> < > ->
+                    unit -> prop||] g tt empty empty tt)
                    -> (3 < 6)))
 let
   logic f  = mk_2tuple [((unit -> < > -> prop) * (unit -> < > -> < > ->
@@ -34,11 +34,11 @@ let
              prop)) ->
              (fun (cur:< >) ->
              (0 < 5) ->
-             ((fst [unit -> < > -> prop,unit -> < > -> < > -> unit -> prop||]
-               g tt empty)
+             ((get_2_1_tuple [unit -> < > -> prop,unit -> < > -> < > ->
+               unit -> prop||] g tt empty)
               /\
-              ((snd [unit -> < > -> prop,unit -> < > -> < > -> unit ->
-                prop||] g tt empty empty tt)
+              ((get_2_2_tuple [unit -> < > -> prop,unit -> < > -> < > ->
+                unit -> prop||] g tt empty empty tt)
                -> (3 < 6)))))
              (fun (g:(unit -> < > -> prop) * (unit -> < > -> < > -> unit ->
              prop)) ->

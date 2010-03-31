@@ -3,13 +3,13 @@ logic \/  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
 logic = ['a||] : a -> a -> prop
 logic mk_2tuple ['a 'b||] : a -> b -> a * b
-logic fst ['a 'b||] : (a * b) -> a
-logic snd ['a 'b||] : (a * b) -> b
 type bool
 logic true  : bool
 logic false  : bool
 type unit
 logic tt  : unit
+logic get_2_2_tuple ['a 'b||] : (a * b) -> b
+logic get_2_1_tuple ['a 'b||] : (a * b) -> a
 logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
   logic ! ['a|r|] = mk_2tuple [ref(r,a) -> <r > -> prop,ref(r,a) -> <r > ->
@@ -40,9 +40,9 @@ goal memo_correct : forall [|t|]. forall (table:ref(t,hmap[int,int])).
                                   forall (f:int -> int).
                                   forall (x:int).
                                   forall (s:<t >).
-                                  fst [ref(t,hmap[int,int]) -> <t > ->
-                                  prop,ref(t,hmap[int,int]) -> <t > ->
-                                  <t > -> hmap[int,int] -> prop||]
+                                  get_2_1_tuple [ref(t,hmap[int,int]) ->
+                                  <t > -> prop,ref(t,hmap[int,int]) ->
+                                  <t > -> <t > -> hmap[int,int] -> prop||]
                                   ! [hmap[int,int]| t|] table s
 let
   logic memo [|t|] = (fun (table:ref(t,hmap[int,int])) ->

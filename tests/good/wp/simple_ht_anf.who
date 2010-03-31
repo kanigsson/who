@@ -2,8 +2,8 @@ type unit
 logic tt : unit
 logic empty  : < >
   logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
-  logic fst ['a2 'b||] : ('a2 * 'b) -> 'a2
-  logic snd ['a3 'b1||] : ('a3 * 'b1) -> 'b1
+logic get_2_2_tuple ['a 'b] : 'a * 'b -> 'b
+logic get_2_1_tuple ['a 'b] : 'a * 'b -> 'a
    logic /\  : prop -> prop -> prop
   logic \/  : prop -> prop -> prop
   logic ->  : prop -> prop -> prop

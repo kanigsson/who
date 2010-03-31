@@ -3,13 +3,13 @@ logic \/  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
 logic = ['a||] : (a) -> (a) -> prop
 logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
-logic fst ['a2 'b1||] : ((a2) * (b1)) -> a2
-logic snd ['a3 'b2||] : ((a3) * (b2)) -> b2
 type bool
 logic true  : bool
 logic false : bool
 type unit
 logic tt  : unit
+logic get_2_2_tuple ['a 'b] : 'a * 'b -> 'b
+logic get_2_1_tuple ['a 'b] : 'a * 'b -> 'a
  logic !! ['a7|r|'e] : ref(r,a7) -> <r  'e > -> a7
 let
   ! ['a8|r1|] = (fun (x4:ref(r1,a8)) -> {(fun (cur:<r1  >) -> True)}

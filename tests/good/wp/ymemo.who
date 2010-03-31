@@ -8,8 +8,8 @@ logic -> : prop -> prop -> prop
 logic ~ : prop -> prop
 logic = ['a||] : 'a -> 'a -> prop
   logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
-  logic fst ['a 'b||] : 'a * 'b -> 'a
-  logic snd ['a 'b||] : 'a * 'b -> 'b
+logic get_2_2_tuple ['a 'b] : 'a * 'b -> 'b
+logic get_2_1_tuple ['a 'b] : 'a * 'b -> 'a
 type hmap['a1
 'b||]
 logic hmem ['a2 'b1||] : (a2) -> (hmap[(a2),(b1)||]) -> bool
