@@ -1,0 +1,5 @@
+logic = ['a||] : a -> a -> prop
+logic get_2_1_tuple ['a 'b||] : (a * b) -> a
+logic get_2_2_tuple ['a 'b||] : (a * b) -> b
+logic mk_2tuple ['a 'b||] : a -> b -> a * b
+axiom a : forall (z:int). forall (z1:int). z1 =[int||] 0

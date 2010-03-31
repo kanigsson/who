@@ -21,7 +21,7 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-open PrintTree
+open RemoveTuples
 
 let parse p buf close fn =
   let abort () = close (); exit 1 in

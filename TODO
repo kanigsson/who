@@ -2,11 +2,11 @@ IMPORTANT FEATURES
 
 inductive declarations
 polymorphic arguments
-assert
 transformation to destroy tuples
 
-
 MINOR ISSUES
+
+simplification of tuples directly in [get_tuple]
 
 PROOFS
 

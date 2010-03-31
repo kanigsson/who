@@ -39,3 +39,4 @@ val fold_map : ('a  -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
 val hash : ('a -> int) -> int -> 'a list -> int
 
 val repeat : ?from:int -> int -> (int -> 'a) -> 'a list
+val split_map : ('a -> 'b * 'c) -> 'a list -> 'b list * 'c list

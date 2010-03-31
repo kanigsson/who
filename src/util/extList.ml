@@ -77,6 +77,17 @@ let fold_map f init l =
   in
     flm init [] l
 
+let split_map f =
+  let rec aux l = 
+    match l with
+    | [] -> [], []
+    | x::xs -> 
+        let al, bl = aux xs in
+        let a,b = f x in
+        a :: al, b :: bl
+  in
+  aux
+
 let repeat ?(from=0) n f =
   let rec loop i accu =
     if i = n then List.rev accu

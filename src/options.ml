@@ -43,9 +43,7 @@ let transforms =
     Wp.theory ;
     Tuples.theory;
     InlineLet.theory ;
-(*
-    Simplify.theory;
-*)
+    RemoveTuples.theory;
     RemoveTrivialGoals.theory;
 ])
 
@@ -79,6 +77,8 @@ let opt_spec =
       " remove trivial goals";
     "--tuples", Arg.Unit (append_trans Tuples.theory),
       " introduce tuples instead of maps";
+    "--removetuples", Arg.Unit (append_trans RemoveTuples.theory),
+      " remove quantification over tuples";
     "-o", Arg.Set_string outfile,
             "<arg> use <arg> instead of default filename for output";
     "--pangoline", Arg.Unit (fun () -> backend := `Pangoline),

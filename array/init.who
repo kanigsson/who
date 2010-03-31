@@ -17,12 +17,6 @@ axiom sub_length_2 ['a||] :
 axiom sub_ident ['a||] :
   forall (a : 'a array). sub a (len a) = a
 
-(*
-axiom set_create ['a] :
-  forall (k : 'a) (i l : int).
-    0 <= i -> i < l -> set i k (create l k) = create l k
-*)
-
 axiom set_equal ['a] :
   forall (a : 'a array) (i l : int) (k : 'a).
     0 <= i -> i < l -> get i a = k -> set i k a = a
