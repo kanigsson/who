@@ -82,10 +82,10 @@ let fold_map_flatten f init l =
   acc, List.flatten l
 
 let split_map f =
-  let rec aux l = 
+  let rec aux l =
     match l with
     | [] -> [], []
-    | x::xs -> 
+    | x::xs ->
         let al, bl = aux xs in
         let a,b = f x in
         a :: al, b :: bl
@@ -108,3 +108,30 @@ let find_pos eq x l =
     | (y::ys) -> if eq x y then n else aux (n+1) ys
   in
   aux 0 l
+
+module Ordered (X : Map.OrderedType) = struct
+
+  let sort = List.sort X.compare
+
+  let mem x =
+    let rec aux l =
+      match l with
+      | [] -> false
+      | y::ys ->
+          let c = X.compare x y in
+          if c = 0 then true else
+            if c < 0 then false
+            else aux ys in
+    aux
+
+  let inter l1 l2 =
+    List.filter (fun x -> mem x l2) l1
+
+  let diff l1 l2 =
+    List.filter (fun x -> not (mem x l2)) l1
+
+  let symmdiff l1 l2 =
+    let i = inter l1 l2 in
+    diff l1 i, diff l2 i
+
+end

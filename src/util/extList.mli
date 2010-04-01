@@ -35,7 +35,7 @@ val union : 'a eq -> 'a t -> 'a t -> 'a t
 val equal_unsorted : 'a eq -> 'a t -> 'a t -> bool
 
 val fold_map : ('a  -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
-val fold_map_flatten : ('a  -> 'b -> 'a * 'c list) -> 
+val fold_map_flatten : ('a  -> 'b -> 'a * 'c list) ->
     'a -> 'b list -> 'a * 'c list
 
 val hash : ('a -> int) -> int -> 'a list -> int

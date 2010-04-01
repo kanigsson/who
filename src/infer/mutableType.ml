@@ -122,11 +122,11 @@ module Print = struct
         list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
     | Ref (r,t) -> fprintf fmt "ref(%a,%a)" region r ty t
     | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 ty t2
-    | Map e -> fprintf fmt "<%a>" effect e
+    | Map e -> fprintf fmt "<%a>" effect_no_sep e
     | Const c -> Const.print_ty `Who fmt c
     | App (v,i) -> fprintf fmt "%a%a" Name.print v (list comma ty) i
     | Arrow (t1,t2,eff,cap) ->
-        fprintf fmt "%a ->{%a%a} %a" mayp t1 effect eff maycap cap ty t2
+        fprintf fmt "%a ->{%a%a} %a" mayp t1 effect_no_sep eff maycap cap ty t2
   and maycap fmt = function
     | [] -> ()
     | l -> fprintf fmt "|%a" region_list l
@@ -135,10 +135,10 @@ module Print = struct
     | RU -> fprintf fmt "%d" (Uf.tag x)
     | RT n -> Name.print fmt n
   and region_list fmt l = list space region fmt l
-  and effect fmt (rl,el) =
-    fprintf fmt "{%a|" region_list rl;
+  and effect_no_sep fmt (rl,el) =
+    fprintf fmt "%a|" region_list rl;
     Name.S.iter (Name.print fmt) el;
-    pp_print_string fmt "}"
+  and effect fmt e = fprintf fmt "{%a}" effect_no_sep e
 end
 
 let memo =
@@ -312,3 +312,4 @@ let to_logic_type t =
 let print = Print.ty
 let print_region = Print.region
 let region_list = Print.region_list
+let print_effect = Print.effect

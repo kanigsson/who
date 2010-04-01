@@ -12,8 +12,8 @@ logic -> : prop -> prop -> prop
 logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
 
 logic z : int
-logic f [|a|'e] : ref(a,int) ->  <a 'e> -> int
+logic f [|a|'e] : <a 'e> -> int
 letregion b c
 goal g :
   forall (x : ref(b,int)) (k : ref(c,int)) (u : <b c>).
-    z = f[{c}] x u -> !!x|u = !!k|u
+    z = f[{c}] u -> !!x|u = !!k|u

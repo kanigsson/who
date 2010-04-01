@@ -1,8 +1,8 @@
 type bool
 logic true  : bool
 logic false  : bool
-type unit1
-logic tt  : unit1
+type unit
+logic tt  : unit
 logic /\  : prop -> prop -> prop
 logic \/  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
@@ -85,14 +85,14 @@ axiom int_min_is_some:
 logic == ['a||] : a -> a -> bool
 logic != ['a||] : a -> a -> bool
 let
-  assert  = (fun (f:prop) -> {(fun (cur:< >) -> f)} parameter(unit1,{ })
-            {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit1) -> f)))}) 
+  assert  = (fun (f:prop) -> {(fun (cur:< >) -> f)} parameter(unit,{ })
+            {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit) -> f)))}) 
 let
-  check  = (fun (f:prop) -> {(fun (cur:< >) -> f)} parameter(unit1,{ })
-           {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit1) -> True)))}) 
+  check  = (fun (f:prop) -> {(fun (cur:< >) -> f)} parameter(unit,{ })
+           {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit) -> True)))}) 
 let
-  assume  = (fun (f:prop) -> {(fun (cur:< >) -> True)} parameter(unit1,{ })
-            {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit1) -> f)))}) 
+  assume  = (fun (f:prop) -> {(fun (cur:< >) -> True)} parameter(unit,{ })
+            {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit) -> f)))}) 
 logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
   ! ['a|r|] = (fun (x:ref(r,a)) -> {(fun (cur:<r >) -> True)}
@@ -104,10 +104,10 @@ let
                ((!! [a| r| { }] x old) =[a||] (!! [a| r| { }] x cur)))))}) 
 let
   := ['a|r|] = (fun (x:ref(r,a)) ->
-               (fun (v:a) -> {(fun (cur:<r >) -> True)} parameter(unit1,{r })
+               (fun (v:a) -> {(fun (cur:<r >) -> True)} parameter(unit,{r })
                {(fun (old:<r >) ->
                 (fun (cur:<r >) ->
-                (fun (anon:unit1) -> (!! [a| r| { }] x cur) =[a||] v)))})) 
+                (fun (anon:unit) -> (!! [a| r| { }] x cur) =[a||] v)))})) 
 let
   ref ['a|r|] = (fun (v:a) ->allocates r {(fun (cur:<r >) -> True)}
                 parameter(ref(r,a),{r })
@@ -125,7 +125,7 @@ let
   forto [||'e] = (fun (inv:int -> < 'e> -> prop) ->
                  (fun (start:int) ->
                  (fun (end_:int) ->
-                 (fun (f:int ->{ 'e} unit1) ->
+                 (fun (f:int ->{ 'e} unit) ->
                  {(fun (cur:< 'e>) ->
                   (inv start cur) /\
                   (forall (i:int).
@@ -133,21 +133,21 @@ let
                    (forall (m:< 'e>).
                     (inv i m) ->
                     ((pre [int -> < 'e> -> prop,int -> < 'e> -> < 'e> ->
-                      unit1 -> prop||] f i m)
+                      unit -> prop||] f i m)
                      /\
                      (forall (n:< 'e>).
                       (post [int -> < 'e> -> prop,int -> < 'e> -> < 'e> ->
-                       unit1 -> prop||] f i m n tt)
+                       unit -> prop||] f i m n tt)
                       -> (inv (i + 1) n))))))}
-                 parameter(unit1,{ 'e})
+                 parameter(unit,{ 'e})
                  {(fun (old:< 'e>) ->
                   (fun (cur:< 'e>) ->
-                  (fun (anon:unit1) -> inv (int_max start (end_ + 1)) cur)))})))) 
+                  (fun (anon:unit) -> inv (int_max start (end_ + 1)) cur)))})))) 
 let
   fordownto [||'e] = (fun (inv:int -> < 'e> -> prop) ->
                      (fun (start:int) ->
                      (fun (end_:int) ->
-                     (fun (f:int ->{ 'e} unit1) ->
+                     (fun (f:int ->{ 'e} unit) ->
                      {(fun (cur:< 'e>) ->
                       (inv start cur) /\
                       (forall (i:int).
@@ -155,17 +155,16 @@ let
                        (forall (m:< 'e>).
                         (inv i m) ->
                         ((pre [int -> < 'e> -> prop,int -> < 'e> -> < 'e> ->
-                          unit1 -> prop||] f i m)
+                          unit -> prop||] f i m)
                          /\
                          (forall (n:< 'e>).
                           (post [int -> < 'e> -> prop,int -> < 'e> ->
-                           < 'e> -> unit1 -> prop||] f i m n tt)
+                           < 'e> -> unit -> prop||] f i m n tt)
                           -> (inv (i - 1) n))))))}
-                     parameter(unit1,{ 'e})
+                     parameter(unit,{ 'e})
                      {(fun (old:< 'e>) ->
                       (fun (cur:< 'e>) ->
-                      (fun (anon:unit1) ->
-                      inv (int_min start (end_ - 1)) cur)))})))) 
+                      (fun (anon:unit) -> inv (int_min start (end_ - 1)) cur)))})))) 
 type array['a||]
 logic ar_empty ['a||] : array[a]
 logic get ['a||] : int -> array[a] -> a

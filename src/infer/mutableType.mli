@@ -80,3 +80,4 @@ val eff_union3 : effect -> effect -> effect -> effect
 val print : t Myformat.fmt
 val print_region : r Myformat.fmt
 val region_list : r list Myformat.fmt
+val print_effect : effect Myformat.fmt

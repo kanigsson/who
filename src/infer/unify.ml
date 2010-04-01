@@ -25,10 +25,18 @@ module Uf = Unionfind
 
 open MutableType
 
+let split_ru_rt l =
+  List.fold_left
+    (fun (rul, rtl) x ->
+      match Uf.desc x with
+      | RU -> x::rul, rtl
+      | RT n -> rul, Name.S.add n rtl) ([],Name.S.empty) l
+
 let union a b = Uf.union (fun a _ -> a) a b
 exception CannotUnify
 
-open Format
+let cons_set = Name.S.fold (fun x acc -> from_region x :: acc)
+
 let rec unify a b =
 (*   printf "unify: %a and %a@." print_node a print_node b; *)
   if Uf.equal a b then () else
@@ -71,6 +79,23 @@ and runify a b =
 (*       printf "runify: %a and %a@." prvar a prvar b; *)
       raise CannotUnify
 and eunify (r1,e1) (r2,e2) =
-  if Effect.s_equal e1 e2 && ExtList.equal_unsorted r_equal r1 r2 then ()
+  (** TODO here some work could be done to do inference on effects
+     * extract all known regions from both effects
+     * remove known regions that are in both lists
+     * now extract lists l1 l2 of unknown regions (RU) from r1 and r2
+     * they must be of the same length
+     * unify them using List.iter2 runify
+     *)
+  if Effect.s_equal e1 e2 then begin
+
+    let ru1, rd1 = split_ru_rt r1 and ru2, rd2 = split_ru_rt r2 in
+    let rd1, rd2 =
+      let inter = Name.S.inter rd1 rd2 in
+      Name.S.diff rd1 inter, Name.S.diff rd2 inter
+    in
+    let ru1 = cons_set rd1 ru1 and ru2 = cons_set rd2 ru2 in
+    try List.iter2 runify ru1 ru2
+    with Invalid_argument _ -> raise CannotUnify
+  end
   else raise CannotUnify
 

@@ -7,14 +7,14 @@ logic mk_2tuple ['a 'b||] : a -> b -> a * b
 logic = ['a||] : a -> a -> prop
 logic ->  : prop -> prop -> prop
 logic z  : int
-logic f ['a 'e||] : refty[a,int] -> (region[a] * e) -> int
+logic f ['a 'e||] : (region[a] * e) -> int
 INTROS ['c 'b||]
 goal g:
   forall (x:refty[b,int]).
   forall (k:refty[c,int]).
   forall (u:region[c] * region[b]).
   (z =[int||]
-   (f [b,region[c]||] x
+   (f [b,region[c]||]
     (mk_2tuple [region[b],region[c]||]
      (get_2_2_tuple [region[c],region[b]||] u)
      (get_2_1_tuple [region[c],region[b]||] u))))
