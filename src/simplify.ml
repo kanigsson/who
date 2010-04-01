@@ -242,9 +242,9 @@ let rec theory env th =
         | TypeDef _ | Decl _ -> env, [d]
         | Formula (n,f,k) ->
             env, [Formula (n, term env f, k)]
-        | Section (s,cl,th) ->
+        | Section (s,th, kind) ->
             let env, th = theory env th in
-            env, if th = [] then [] else [Section (s,cl,th)]
+            env, if th = [] then [] else [Section (s,th, kind)]
         | Program (n,g,t,LogicDef) ->
             let env', g = genbind g env (fun r -> find_type r t) in
             let t = term env' t in

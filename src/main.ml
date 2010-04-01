@@ -108,8 +108,7 @@ let _ =
         Recon.theory p in
     maybe_abort !Options.parse_only Ast.print_theory p;
     let p = apply_all_trans p in
-    let kind = !Options.backend in
-    let s = Sectionize.to_section kind p in
+    let s = Sectionize.to_section p in
     if !Options.backend = `Coq then Regen2.main s else Pangoline.out s
   with
   | Sys_error e -> Error.bad e

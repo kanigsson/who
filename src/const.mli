@@ -43,7 +43,7 @@ type 'a isrec =
   | NoRec
   | Rec of 'a
 
-type takeover = [`Coq | `Pangoline ] * choice
+type takeover = [`Coq | `Pangoline | `Who ] * choice
 and choice = 
   | Include of string
   | TakeOver 

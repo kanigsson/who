@@ -52,13 +52,14 @@ module Env : sig
   val effvar : t -> string -> Name.t
   val tyvar : t -> string -> Name.t
 
-  val typedef : t -> Name.t -> Ty.Generalize.t * Ty.t
+  val typedef : t -> string -> Ty.Generalize.t * Ty.t
 
   val add_var : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string -> t * Name.t
   val add_ex_var : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string -> Name.t -> t
   val add_rvars : t -> string list -> t * Name.t list
-  val add_tvar : t -> string -> Ty.Generalize.t -> Ty.t option -> t * Name.t
-
+  val add_tvars : t -> string list -> t * Name.t list
+  val add_global_tyvar : t -> string -> t * Name.t
+  val add_type_def : t -> string -> Ty.Generalize.t -> Ty.t -> t
   val add_gen : t -> ParseTree.generalize -> t * Ty.Generalize.t
 
   val only_add_type : t -> Name.t -> Ty.Generalize.t * Ty.t -> t
@@ -72,14 +73,14 @@ end = struct
       t : Name.t SM.t ;
       r : Name.t SM.t ;
       e : Name.t SM.t ;
-      tyrepl : (Ty.Generalize.t * Ty.t) NM.t ;
+      tyrepl : (Ty.Generalize.t * Ty.t) Misc.StringMap.t ;
       typing : (Ty.Generalize.t * Ty.t) NM.t
     }
 
   let empty =
     { v = SM.empty; t = SM.empty;
       r = SM.empty; e = SM.empty;
-      tyrepl = NM.empty;
+      tyrepl = Misc.StringMap.empty;
       typing = NM.empty ;
     }
 
@@ -104,15 +105,9 @@ end = struct
     let y = Name.from_string x in
     add_ex_var env ?ty x y, y
 
-  let add_tvar env x g t =
+  let add_tvar env x =
     let y = Name.from_string x in
-    Predefty.add_symbol x y;
-    { env with t = SM.add x y env.t;
-      tyrepl =
-         match t with
-         | None -> env.tyrepl
-         | Some t -> NM.add y (g,t) env.tyrepl
-    }, y
+    { env with t = SM.add x y env.t; }, y
 
   let add_rvars env l =
     let r, nl =
@@ -124,8 +119,16 @@ end = struct
 
   let add_tvars env l =
     List.fold_left (fun (acc,l) x ->
-      let env, nv = add_tvar acc x Ty.Generalize.empty None in
+      let env, nv = add_tvar acc x in
       env, nv::l) (env,[]) l
+
+  let add_global_tyvar env s =
+    let env, n = add_tvar env s in
+    Predefty.add_symbol s n;
+    env, n
+
+  let add_type_def env n g t =
+    { env with tyrepl = Misc.StringMap.add n (g,t) env.tyrepl }
 
   let add_evars env l =
     let e, nl =
@@ -141,7 +144,7 @@ end = struct
     let env, el = add_evars env el in
     env, (List.rev tl,List.rev rl,List.rev el)
 
-  let typedef env x = NM.find x env.tyrepl
+  let typedef env x = Misc.StringMap.find x env.tyrepl
 
   let lookup_type env x =
     NM.find x env.typing
@@ -166,12 +169,12 @@ let ty env t =
           (List.map (Env.rvar env) cap)
     | IT.PureArr (t1,t2) -> Ty.parr (aux t1) (aux t2)
     | IT.TApp (v,i) ->
-        let v = Env.tyvar env v in
         let i = inst i in
         begin try
           let g,t = Env.typedef env v in
           Ty.allsubst g i t
         with Not_found ->
+          let v = Env.tyvar env v in
           let tl,rl,el = i in
           if rl = [] && el = [] then Ty.app v tl
           else error EffectOrRegionArgumentsToAbstractType

@@ -50,12 +50,14 @@ and inst = (Ty.t, Name.t, Effect.t) Inst.t
 type decl =
   | Logic of Name.t * Ty.scheme
   | Formula of Name.t * t * [ `Proved | `Assumed ]
-  | Section of Name.t * Const.takeover list * decl list
-  | TypeDef of G.t * Ty.t option * Name.t
+  | Section of Name.t *  decl list * section_kind
+  | TypeDef of Name.t list * Name.t
   | Program of Name.t * G.t * t * isrec
   | DLetReg of Name.t list
   | DGen of G.t
   | Decl of string
+and section_kind =
+    [ `Block of Const.takeover list | `Structure ]
 
 type theory = decl list
 
@@ -189,15 +191,14 @@ module Convert = struct
         let r = rrec env r in
         let env = add_id env n in
         env, P.Program (id env n,g,e,r)
-    | TypeDef (g,t,n) ->
-        let env',g = gen env g in
-        let t = Opt.map (ty env') t in
+    | TypeDef (tl,n) ->
         let env = add_id env n in
-        env, P.TypeDef (g,t,id env n)
-    | Section (s,cl, dl) ->
+        let env' = add_ids env tl in
+        env, P.TypeDef (List.map (id env') tl,id env n)
+    | Section (s,dl, kind) ->
         let env = add_id env s in
         let env, th = theory env dl in
-        env, P.Section (id env s,cl, th)
+        env, P.Section (id env s,th, kind)
     | Decl s -> env, P.Decl s
   and theory env th = ExtList.fold_map decl env th
 
@@ -218,7 +219,7 @@ module Print = struct
 
   let decl ?kind fmt d =
     let _, d = Convert.decl (empty ?kind ()) d in
-    PrintTree.Print.decl ?kind fmt d
+    PrintTree.Print.decl false ?kind fmt d
 
   let theory ?kind fmt th =
     let _, th = Convert.theory (empty ?kind ()) th in
@@ -785,8 +786,8 @@ let rec decl_map ?varfun ?termfun ?(declfun=ExtList.singleton) d : decl list =
     match d with
     | Logic _ | TypeDef _ | DLetReg _ | DGen _ | Decl _ -> d
     | Formula (s,t,k) -> Formula (s,rebuild_map ?varfun ?termfun t, k)
-    | Section (s,cl,th) ->
-        Section (s,cl,theory_map ?varfun ?termfun ~declfun th)
+    | Section (s,th,kind) ->
+        Section (s,theory_map ?varfun ?termfun ~declfun th, kind)
     | Program (n,g,t,r) -> Program (n,g,rebuild_map ?varfun ?termfun t, r) in
   declfun d
 and theory_map ?varfun ?termfun ?declfun th =

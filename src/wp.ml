@@ -158,7 +158,7 @@ let rec decl d =
   | DLetReg rl ->
       (* FIXME is this correct? *)
       [DGen ([],rl,[])]
-  | Section (s,cl,dl) -> [Section (s,cl, theory dl)]
+  | Section (s,dl, kind) -> [Section (s, theory dl, kind)]
   | Program (x,g,e,_) when is_value e ->
       (* TODO recursive functions *)
       let lv = lift_value e in

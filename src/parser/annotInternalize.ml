@@ -128,30 +128,37 @@ let rec decl env d =
       let s = g,t in
       let env, nv = add_var env n s in
       Predefined.add_symbol_and_binding n nv s;
-      env, Logic (nv,s)
+      env, [Logic (nv,s)]
   | I.Axiom (s,t) ->
-      env,Formula (Name.from_string s, term true env t, `Assumed)
+      env,[Formula (Name.from_string s, term true env t, `Assumed)]
   | I.Goal (s,t) ->
-      env,Formula (Name.from_string s, term true env t, `Proved)
+      env,[Formula (Name.from_string s, term true env t, `Proved)]
   | I.Section (s,cl, dl) ->
       let env, dl = theory env dl in
-      env, Section (Name.from_string s,cl,dl)
+      env, [Section (Name.from_string s,dl, `Block cl)]
   | I.TypeDef (g,t,n) ->
-      let env', g = Env.add_gen env g in
-      let t = Opt.map (ty env') t in
-      let env,nv = Env.add_tvar env n g t in
-      env, TypeDef (g, t, nv)
+      let env', ((tl,rl,el) as g) = Env.add_gen env g in
+      begin match t with
+      | None ->
+            (* TODO error message *)
+          if rl <> [] || el <> [] then assert false;
+          let env, nv = Env.add_global_tyvar env n in
+          env, [TypeDef (tl,nv)]
+      | Some t ->
+          let env = Env.add_type_def env n g (ty env' t) in
+          env, []
+      end
   | I.DLetReg rl ->
       let env, nrl = Env.add_rvars env rl in
-      env, DLetReg nrl
+      env, [DLetReg nrl]
   | I.Program (x,g,e,r) ->
       let env, nv, g , e, r = letgen env x g e r in
       Predefined.add_symbol_and_binding x nv (g,e.t);
-      env, Program (nv, g, e, r)
+      env, [Program (nv, g, e, r)]
   | I.DGen g ->
       let env, g = Env.add_gen env g in
-      env, DGen g
-and theory env th = ExtList.fold_map decl env th
+      env, [DGen g]
+and theory env th = ExtList.fold_map_flatten decl env th
 
 
 let theory th =

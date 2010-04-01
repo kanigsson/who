@@ -43,9 +43,9 @@ let rec decl env d =
   match d with
   | Logic _ | TypeDef _ | DLetReg _ | DGen _ | Decl _ -> env, [d]
   | Formula (n,f,k) -> env, [Formula (n, term env f, k) ]
-  | Section (s,cl,th) ->
+  | Section (s,th, kind) ->
       let env, th = theory env th in
-      env, [Section (s,cl,th)]
+      env, [Section (s,th, kind)]
   | Program (n,g,t,Const.LogicDef) -> Name.M.add n (g,term env t) env, []
   | Program _ -> assert false
 and theory env th =

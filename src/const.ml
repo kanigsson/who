@@ -41,7 +41,7 @@ let type_of_constant = function
   | Int _ -> TInt
   | Ptrue | Pfalse -> TProp
 
-type takeover = [`Coq | `Pangoline ] * choice
+type takeover = [`Coq | `Pangoline | `Who ] * choice
 and choice =
   | Include of string
   | TakeOver
@@ -81,6 +81,7 @@ let quantsep fmt kind =
 let prover fmt = function
   | `Pangoline -> string fmt "pangoline"
   | `Coq -> string fmt "coq"
+  | `Who -> string fmt "who"
 let choice fmt = function
   | Predefined -> string fmt "predefined"
   | Include s -> printf "\"%s\"" s

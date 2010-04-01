@@ -242,12 +242,11 @@ let rec decl env d =
       env', Logic (n,s)
   | Formula (s,t,k) ->
       env, Formula (s, term env t, k)
-  | Section (s,cl,th) ->
+  | Section (s,th, kind) ->
       let env, th = theory env th in
-      env, Section (s,cl, th)
-  | TypeDef (g,d,n) ->
-      let _, g = genfun env g in
-      env, TypeDef (g,d,n)
+      env, Section (s,th, kind)
+  | TypeDef (tl,n) ->
+      env, TypeDef (tl,n)
   | Program (n,g,t,k) ->
       let env_passed = Env.add_var env n (g,t.t) in
       let env', g = genfun env g in

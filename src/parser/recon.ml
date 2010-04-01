@@ -120,9 +120,9 @@ let rec recon_decl x =
       Predefined.add_binding x s;
       Logic (x,s)
   | I.Formula (s,t,k) -> Formula (s, recon t, k)
-  | I.Section (s,cl, dl) -> Section (s,cl, recon_th dl)
+  | I.Section (s,cl, dl) -> Section (s,recon_th dl, `Block cl)
   | I.DLetReg rl -> DLetReg rl
-  | I.TypeDef (g,t,n) -> TypeDef (g,t,n)
+  | I.TypeDef (tl,n) -> TypeDef (tl,n)
   | I.Program (n,g,t,r) ->
       let t = recon t in
       Predefined.add_binding n (g,t.t);

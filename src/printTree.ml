@@ -58,12 +58,14 @@ and isrec = ty Const.isrec
 type decl =
   | Logic of string * scheme
   | Formula of string * t * [ `Proved | `Assumed ]
-  | Section of string * Const.takeover list * decl list
-  | TypeDef of gen * ty option * string
+  | Section of string * decl list * section_kind
+  | TypeDef of string list * string
   | Program of string * gen * t * isrec
   | DLetReg of string list
   | DGen of gen
   | Decl of string
+
+and section_kind = [ `Block of Const.takeover list | `Structure ]
 
 module Print = struct
   open Myformat
@@ -73,7 +75,6 @@ module Print = struct
         (list space string) (List.map (fun s -> "'" ^ s) e)
 
   let effect fmt e = fprintf fmt "{%a}" effect_no_sep e
-
 
   let is_compound kind = function
     | TConst _ | Ref _ | Map _ -> false
@@ -175,6 +176,17 @@ module Print = struct
     | App _ | Let _ | Ite _
     | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
 
+  let pr_generalize in_term kind fmt tl =
+    if tl = [] then ()
+    else
+      match kind with
+      | `Coq -> fprintf fmt "forall@ %a@ ,@ " (lname "Type") tl
+      | `Pangoline ->
+          let in_term fmt = if in_term then string fmt "type" else () in
+          fprintf fmt "forall %t %a." in_term (list space string) tl
+      | `Who -> fprintf fmt "[%a]" (list space string) tl
+
+
   let term ?(kind : sup =`Who) =
     let ty = ty ~kind in
     let rec print fmt x =
@@ -240,39 +252,122 @@ module Print = struct
     and inst' fmt i = inst ~kind ~intype:false fmt i in
     print
 
+let is_infix_symbol s =
+  match s.[0] with
+  | '=' | '!' | '+' | '-' | '*' | '<' | '>'  -> true
+  | _ -> false
+
+  let def kind fmt insection =
+    match kind, insection with
+    | `Coq, true -> string fmt "Variable"
+    | `Coq, false -> string fmt "Definition"
+    | `Pangoline, _ -> string fmt "logic"
+    | `Who,_ -> string fmt "logic"
+
+  let print_proof fmt = function
+    | `Pangoline | `Who -> ()
+    | `Coq -> fprintf fmt "@\nProof.@\nAdmitted.@\n"
+
+  let print_def_end kind fmt insection =
+    if insection then print_proof fmt kind
+
+  let beginsec kind fmt n =
+    match kind with
+    | `Pangoline -> string fmt "begin"
+    | `Coq -> fprintf fmt "Section %s." n
+    | `Who -> fprintf fmt "section %s" n
+
+  let endsec kind fmt n =
+    match kind with
+    | `Pangoline | `Who -> string fmt "end"
+    | `Coq -> fprintf fmt "End %s." n
+
+  let hypo fmt = function
+    | `Pangoline -> string fmt "hypothesis"
+    | `Coq -> string fmt "Hypothesis"
+    | `Who -> string fmt "axiom"
+
+  let lemma fmt = function
+    | `Pangoline -> string fmt "lemma"
+    | `Coq -> string fmt "Lemma"
+    | `Who -> string fmt "goal"
+
+  let print_stop fmt = function
+    | `Pangoline | `Who -> ()
+    | `Coq -> string fmt "."
+
+  let intro_name s fmt l =
+    if l = [] then () else
+    fprintf fmt "Variables %a :@ %s.@ " (list space string) l s
 
   let decl ?(kind=`Who) =
     let ty = ty ~kind in
     let term = term ~kind in
-    let rec decl fmt d =
+    let rec decl insection fmt d =
       match d with
-      | Logic (x,(g,t)) ->
-          fprintf fmt "@[<hov 2>logic %a %a : %a@]"
-            string x gen g ty t
+      | Logic (x,((tl,_,_) as g,t)) ->
+          if kind = `Who then
+            fprintf fmt "@[<hov 2>logic %a %a : %a@]" string x gen g ty t
+          else begin
+            if kind = `Pangoline && is_infix_symbol x then
+              fprintf fmt "infix %a %d" string x 0;
+            let npr fmt n =
+              match kind with
+              | `Pangoline when is_infix_symbol n -> 
+                  fprintf fmt "( %a )" string n
+              | _ -> string fmt n in
+            fprintf fmt "@[<hov 2>%a %a:@ %a %a%a%a @]" 
+              (def kind) insection npr x (pr_generalize false kind) tl
+              ty t print_stop kind (print_def_end kind) insection
+          end
+
       | Formula (s,t,`Assumed) ->
-          fprintf fmt "@[<hov 2>axiom %s : %a@]" s term t
+          fprintf fmt "@[<hov 2>%a %a:@ %a%a @]" hypo kind string s term t
+            print_stop kind
       | Formula (s,t,`Proved) ->
-          fprintf fmt "@[<hov 2>goal %s : %a@]" s term t
-      | TypeDef (g,t,x) ->
-          begin match t with
-          | None -> fprintf fmt "@[type %a%a@]" string x gen g
-          | Some t ->
-              fprintf fmt "@[<hov 2>type %a%a =@ %a@]" string x gen g ty t
+          fprintf fmt "@[<hov 2>%a %a:@ %a%a%a@]" lemma kind string s term t
+          print_stop kind print_proof kind
+      | TypeDef (tl,x) ->
+          begin match kind with
+          | `Coq ->
+              fprintf fmt "@[<hov 2>Definition %a :@ %a%s. @]" string x
+              (pr_generalize true `Coq) tl "Type"
+          | `Pangoline ->
+              fprintf fmt "@[<hov 2> type (%d) %a @]" (List.length tl) string x
+          | `Who -> fprintf fmt "@[type %a%a@]" string x gen (tl,[],[])
           end
       | DLetReg l ->
           fprintf fmt "@[letregion %a@]" (list space string) l
-      | Section (s,cl,d) ->
-          fprintf fmt "@[<hov 2>section %s@, %a@, %a@] end" s
-          (list newline Const.takeover) cl theory d
+      | Section (_,d, `Block cl) ->
+          let choice = List.fold_left (fun acc (p,c) ->
+            if p = kind then c else acc) Const.TakeOver cl in
+          begin match choice with
+          | Const.Predefined -> ()
+          | Const.Include f -> fprintf fmt "Require Import %s." f
+          | Const.TakeOver -> theory true fmt d
+          end
+      | Section (s,d, `Structure) ->
+          fprintf fmt "@[<hov 2>%a@\n %a@] %a"
+          (beginsec kind) s (theory true) d (endsec kind) s;
       | Program (x,g,t,r) ->
           fprintf fmt "@[<hov 2>let@ %a%a %a = %a @]" prrec r string x gen g
             term t
-      | DGen g ->
-          fprintf fmt "@[INTROS %a@]" gen g
+      | DGen ((tl,_,_) as g) ->
+          begin match kind with
+          | `Coq -> intro_name "Type" fmt tl
+          | `Pangoline ->
+              list newline (fun fmt s -> 
+                fprintf fmt "type (0) %a" string s) fmt tl
+          | `Who -> fprintf fmt "@[INTROS %a@]" gen g
+          end
       | Decl s -> string fmt s
-    and theory fmt t = list newline decl fmt t in
+    and theory insection fmt t = list newline (decl insection) fmt t in
     decl
 
-  let theory ?kind fmt t =
-    list newline (decl ?kind) fmt t
+  let theory ?(kind=`Who) fmt t =
+    let t =
+      match kind with
+      | `Coq -> Decl "Set Implicit Arguments." :: t 
+      | _ -> t in
+    list newline (decl false ~kind) fmt t
 end

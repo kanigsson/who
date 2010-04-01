@@ -77,6 +77,10 @@ let fold_map f init l =
   in
     flm init [] l
 
+let fold_map_flatten f init l =
+  let acc, l = fold_map f init l in
+  acc, List.flatten l
+
 let split_map f =
   let rec aux l = 
     match l with

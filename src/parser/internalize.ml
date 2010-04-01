@@ -112,31 +112,38 @@ let rec decl env d =
       let env, g = Env.add_gen env g in
       let env, nv = Env.add_var env n in
       Predefined.add_symbol n nv;
-      env, Logic (nv,g, ty env t)
+      env, [Logic (nv,g, ty env t)]
   | I.Axiom (s,g,t) ->
       let env', g = Env.add_gen env g in
       let t = ast env' t in
-      env,Formula (Name.from_string s, gen g t t.loc, `Assumed)
+      env,[Formula (Name.from_string s, gen g t t.loc, `Assumed)]
   | I.Goal (s,g,t) ->
       let env', g = Env.add_gen env g in
       let t = ast env' t in
-      env,Formula (Name.from_string s, gen g t t.loc, `Proved)
+      env,[Formula (Name.from_string s, gen g t t.loc, `Proved)]
   | I.Section (s,cl, dl) ->
       let env, dl = theory env dl in
-      env, Section (Name.from_string s,cl,dl)
-  | I.TypeDef (g,t,n) ->
-      let env', g = Env.add_gen env g in
-      let t = Opt.map (ty env') t in
-      let env,nv = Env.add_tvar env n g t in
-      env, TypeDef (g, t, nv)
+      env, [Section (Name.from_string s,cl,dl)]
+  | I.TypeDef ((tl,rl,el) as g,t,n) ->
+      let env', ((tl,rl,el) as g) = Env.add_gen env g in
+      begin match t with
+      | None ->
+            (* TODO error message *)
+          if rl <> [] || el <> [] then assert false;
+          let env, nv = Env.add_global_tyvar env n in
+          env, [TypeDef (tl,nv)]
+      | Some t ->
+          let env = Env.add_type_def env n g (ty env' t) in
+          env, []
+      end
   | I.DLetReg rl ->
       let env, nrl = Env.add_rvars env rl in
-      env, DLetReg nrl
+      env, [DLetReg nrl]
   | I.Program (x,g,e,r) ->
       let env, nv, g , e, r = letgen env x g e r in
       Predefined.add_symbol x nv;
-      env, Program (nv, g, e, r)
-and theory x = ExtList.fold_map decl x
+      env, [Program (nv, g, e, r)]
+and theory x = ExtList.fold_map_flatten decl x
 
 let theory th =
   let _, th = theory Env.empty th in
