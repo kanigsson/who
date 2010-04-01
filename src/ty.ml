@@ -288,14 +288,20 @@ let rec equal t1 t2 =
       v1 = v2 && ExtList.equal equal i1 i2
   | _ -> false
 
+(*
 let forty () =
-  let e = Name.from_string "e" in
-  let eff = Effect.esingleton e in
+  let e1 = Name.from_string "e" in
+  let e2 = Name.from_string "e" in
+  let e3 = Name.from_string "e" in
+  let read = Effect.eadd (Effect.singleton e1) e2 in
+  let write = Effect.eadd (Effect.singleton e2) e3 in
+  let kern = Effect.eadd (Effect.singleton
   let unit = unit () in
-  ([],[],[e]),
+  ([],[],[e e1 e2]),
    parr
      (parr int (parr (map eff) prop))
      (parr int (parr int (arrow (arrow int unit (eff,eff)) unit (eff,eff))))
+*)
 
 exception Found of t option
 

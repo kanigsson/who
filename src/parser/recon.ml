@@ -63,36 +63,36 @@ let rec recon' loc = function
       Let (g, recon e1, Name.close_bind x (recon e2),r)
   | I.Ite (e1,e2,e3) -> Ite (recon e1, recon e2, recon e3)
   | I.For (dir,inv,i,st,en,body) ->
-      let bdir = match dir with {Name.name = Some "forto"} -> true|_ -> false in
+      let bdir = match dir with "forto" -> true|_ -> false in
       let body = recon body in
       let rw = body.e and l = body.loc in
-      let e = Rw.overapprox rw in
+      let read,write = rw and kern = Rw.kernel rw in
       let inv = recon inv in
       let inv' = plam i Ty.int inv l in
       let intvar s = svar s Ty.int l in
       let cur = Name.from_string "cur" in
-      let curvar = svar cur (Ty.map e) l in
       let sv = intvar st and ev = intvar en and iv = intvar i in
       let pre =
+        let curvar = restrict kern (svar cur (Ty.map read) l) l in
         if bdir then
         (* forto: λcur. start <= i /\ i <= end_ /\ inv *)
-          efflam cur e (and_ (encl sv iv ev l) (app inv curvar l) l) l
+          efflam cur read (and_ (encl sv iv ev l) (app inv curvar l) l) l
         else
         (* fordownto: λcur. end_ <= i /\ i <= start /\ inv *)
-          efflam cur e (and_ (encl ev iv sv l) (app inv curvar l) l) l in
-      let old = Name.new_anon () in
+          efflam cur read (and_ (encl ev iv sv l) (app inv curvar l) l) l in
       let post =
+        let curvar = restrict kern (svar cur (Ty.map write) l) l in
         let next = if bdir then succ iv l else prev iv l in
         (* forto : λold.λcurλ(). inv (i+1) cur *)
         (* fordownto : λold.λcurλ(). inv (i-1) cur *)
-        efflam old e
-          (efflam cur e
-            (plam (Name.new_anon ()) (Ty.unit ())
-              (app2 inv' next curvar l) l) l) l in
+        efflamho read (fun _ ->
+          efflam cur write
+            (plamho (Ty.unit ()) (fun _ ->
+              app2 inv' next curvar l) l) l) l in
       let bodyfun = lam i Ty.int pre body post l in
       (* forvar inv start end bodyfun *)
-      (app2 (app2
-        (var dir ([],[],[e]) (Ty.forty ()) l) inv' sv l)
+      let read = Effect.diff read kern and write = Effect.diff write kern in
+      (app2 (app2 (predef dir ([],[],[read;kern;write]) l) inv' sv l)
         ev bodyfun l).v
   | I.HoareTriple (p,e,q) -> HoareTriple (recon p, recon e, recon q)
 (*
@@ -137,4 +137,6 @@ let rec recon_decl x =
   | I.DGen g -> DGen g
 and recon_th l = List.map recon_decl l
 
-let theory = recon_th
+let theory th =
+  Myformat.printf "here@.";
+  recon_th th

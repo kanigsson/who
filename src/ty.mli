@@ -106,8 +106,6 @@ val allsubst :
   Generalize.t -> t list * Name.t list * Effect.t list ->
     t -> t
 
-val forty : unit -> Generalize.t * t
-
 val find_type_of_r : Name.t -> t -> t option
 
 val get_reg : t -> Name.t

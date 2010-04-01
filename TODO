@@ -4,6 +4,8 @@ inductive declarations
 polymorphic arguments
 read/write
 remove stuff about singleton regions
+subtyping
+initial label for beginning of function
 
 MINOR ISSUES
 

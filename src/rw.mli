@@ -9,6 +9,7 @@ val union3 : t -> t -> t -> t
 val rremove : t -> Name.t list -> t
 
 val overapprox : t -> Effect.t
+val kernel : t -> Effect.t
 
 module Convert : sig
   val t : Name.Env.t -> t -> PrintTree.rw

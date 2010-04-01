@@ -166,9 +166,9 @@ section Whoref
   pangoline predefined
 
   logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
-  parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
+  parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r + } =
     {}
-    {r : !!x = r /\\ !!x|old = !!x}
+    {r : !!x|old = r }
 
   parameter := ['a|r|] (x : ref(r,'a)) (v : 'a) : unit, {r} =
     {}
@@ -189,24 +189,27 @@ section Whoref
 
 end
 
-parameter forto [||'e] (inv : int -> <'e> -> prop) (start end_ : int)
-  (f : int ->{'e} unit) : unit, {'e} =
-    { inv start cur /\\
-          forall (i : int). start <= i /\\ i <= end_ ->
-          forall (m : <'e>) . inv i m -> pre f i m /\\
-          forall (n : <'e>). post f i m n () -> inv (i+1) n
+parameter forto [||'e1 'e2 'e3 ] (inv : int -> <'e2> -> prop)
+  (start end_ : int)
+  (f : int ->{'e1 'e2 + 'e2 'e3} unit) : unit, {'e1 'e2 + 'e2 'e3} =
+    {
+      inv start cur|{'e2} /\\
+          forall (i : int). start <= i -> i <= end_ ->
+          [[ inv i cur|{'e2} ]] f i [[inv (i+1) cur|{'e2}]]
     }
-    { inv (int_max start (end_ + 1)) cur}
+    {
+      inv (int_max start (end_ + 1)) cur|{'e2}
+      }
 
 
-parameter fordownto [||'e] (inv :  int -> <'e> -> prop) (start end_ : int)
-  (f : int ->{'e} unit) : unit, {'e} =
-    { inv start cur /\\
+parameter fordownto [||'e1 'e2 'e3 ] (inv : int -> <'e2> -> prop)
+  (start end_ : int) (f : int ->{'e1 'e2 + 'e2 'e3} unit)
+  : unit, {'e1 'e2 + 'e2 'e3} =
+    { inv start cur|{'e2} /\\
           forall (i : int). end_ <= i /\\ i <= start ->
-          forall (m : <'e>) . inv i m -> pre f i m /\\
-          forall (n : <'e>). post f i m n () -> inv (i-1) n
+          [[ inv i cur|{'e2} ]] f i [[inv (i-1) cur|{'e2}]]
     }
-    { inv (int_min start (end_ - 1)) cur }
+    { inv (int_min start (end_ - 1)) cur|{'e2} }
 
 section Array
   coq \"WhoArray\"

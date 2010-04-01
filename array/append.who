@@ -25,7 +25,7 @@ let append ['a|x y z|] (ar : ref(x,'a array)) (ar2 : ref(y,'a array)) =
     done);
       res
     { r:
-      let l1 = len (!!ar) in
-      let l2 = len (!!ar2) in
-      id_bet (!!ar) (!!r) 0 0 l1 /\ id_bet (!!ar2) (!!r) 0 l1 l2
-       /\ !!ar|old = !!ar /\ !!ar2|old = !!ar2 /\ len (!!r) = l1 + l2 }
+      let l1 = len (!!ar|old) in
+      let l2 = len (!!ar2|old) in
+      id_bet (!!ar|old) (!!r) 0 0 l1 /\ id_bet (!!ar2|old) (!!r) 0 l1 l2 /\
+      len (!!r) = l1 + l2 }

@@ -35,7 +35,7 @@ type t' =
   | Quant of [`FA | `EX ] * MutableType.t * t Name.bind
   | Param of Ty.t * Rw.t
   | Gen of Ty.Generalize.t * t
-  | For of Name.t * pre * Name.t * Name.t * Name.t * t
+  | For of string * pre * Name.t * Name.t * Name.t * t
   | HoareTriple of funcbody
   | LetReg of Name.t list * t
 and t = { v : t' ; t : MutableType.t ;

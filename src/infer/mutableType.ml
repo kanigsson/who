@@ -143,7 +143,7 @@ module Print = struct
   and region_list fmt l = list space region fmt l
   and effect_no_sep fmt (rl,el) =
     fprintf fmt "%a|" region_list rl;
-    Name.S.iter (Name.print fmt) el;
+    Name.print_set fmt el;
   and effect fmt e = fprintf fmt "{%a}" effect_no_sep e
   and rw fmt (e1,e2) = fprintf fmt "%a + %a" effect e1 effect e2
 end

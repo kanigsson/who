@@ -13,6 +13,8 @@ let rremove (e1,e2) rl = Effect.rremove e1 rl, Effect.rremove e2 rl
 
 let overapprox (e1,e2) = Effect.union e1 e2
 
+let kernel (e1,e2) = Effect.inter e1 e2
+
 module Convert = struct
   let t env (e1,e2) = Effect.Convert.t env e1, Effect.Convert.t env e2
 end

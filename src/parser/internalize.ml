@@ -58,9 +58,8 @@ let rec ast' env = function
   | I.Annot (e,t) -> Annot (ast env e, ty env t)
   | I.Param (t,e) -> Param (ty env t, rw env e)
   | I.For (dir,p,i,st,en,e) ->
-      let d = Env.var env dir in
       let env,i = Env.add_var env i in
-      For (d, pre env p, i,Env.var env st, Env.var env en, ast env e)
+      For (dir, pre env p, i,Env.var env st, Env.var env en, ast env e)
   | I.LetReg (rl,e) ->
       let env, nrl = Env.add_rvars env rl in
       LetReg (nrl, ast env e)
