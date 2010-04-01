@@ -73,6 +73,7 @@ let open_listbind f ((_,vl,_) as k) =
 
 let close_listbind nvl t = ([],nvl,t)
 
+let append n s = from_string (unsafe_to_string n ^ s)
 
 (* Clean name generation *)
 (* map which gives the next index of a new variable *)
@@ -98,6 +99,7 @@ let fresh_string_env env name =
 
 
 let name_map = ref Misc.StringMap.empty
+
 
 let fresh_string x =
   let env, s = fresh_string_env !name_map x in

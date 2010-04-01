@@ -33,6 +33,7 @@ val new_anon : unit -> t
 val to_string : t -> string
 val unsafe_to_string : t -> string
 val from_string : string -> t
+val append : t -> string -> t
 val print : t Myformat.fmt
 val print_list : t list Myformat.fmt
 

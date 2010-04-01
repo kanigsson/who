@@ -269,7 +269,7 @@ let is_infix_symbol s =
     | `Coq -> fprintf fmt "@\nProof.@\nAdmitted.@\n"
 
   let print_def_end kind fmt insection =
-    if insection then print_proof fmt kind
+    if not insection then print_proof fmt kind
 
   let beginsec kind fmt n =
     match kind with
@@ -313,10 +313,10 @@ let is_infix_symbol s =
               fprintf fmt "infix %a %d@\n" string x 0;
             let npr fmt n =
               match kind with
-              | `Pangoline when is_infix_symbol n -> 
+              | `Pangoline when is_infix_symbol n ->
                   fprintf fmt "( %a )" string n
               | _ -> string fmt n in
-            fprintf fmt "@[<hov 2>%a %a:@ %a %a%a%a @]" 
+            fprintf fmt "@[<hov 2>%a %a:@ %a %a%a%a @]"
               (def kind) insection npr x (pr_generalize false kind) tl
               ty t print_stop kind (print_def_end kind) insection
           end
@@ -344,7 +344,7 @@ let is_infix_symbol s =
           begin match choice with
           | Const.Predefined -> ()
           | Const.Include f -> fprintf fmt "Require Import %s." f
-          | Const.TakeOver -> theory true fmt d
+          | Const.TakeOver -> theory insection fmt d
           end
       | Section (s,d, `Structure) ->
           fprintf fmt "@[<hov 2>%a@\n %a@] %a"
@@ -356,7 +356,7 @@ let is_infix_symbol s =
           begin match kind with
           | `Coq -> intro_name "Type" fmt tl
           | `Pangoline ->
-              list newline (fun fmt s -> 
+              list newline (fun fmt s ->
                 fprintf fmt "type (0) %a" string s) fmt tl
           | `Who -> fprintf fmt "@[INTROS %a@]" gen g
           end
@@ -367,7 +367,7 @@ let is_infix_symbol s =
   let theory ?(kind=`Who) fmt t =
     let t =
       match kind with
-      | `Coq -> Decl "Set Implicit Arguments." :: t 
+      | `Coq -> Decl "Set Implicit Arguments." :: t
       | _ -> t in
     list newline (decl false ~kind) fmt t
 end

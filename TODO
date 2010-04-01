@@ -3,6 +3,7 @@ IMPORTANT FEATURES
 inductive declarations
 polymorphic arguments
 transformation to destroy tuples
+read/write
 
 MINOR ISSUES
 
@@ -14,9 +15,9 @@ Hashtbl
 
 COQ
 
-* remove the stuff about copying etc
 * void/ unit type
 * instantiation for polymorphic constants
+* int_max, int_min
 
 INTERNAL
 

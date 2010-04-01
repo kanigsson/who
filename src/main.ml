@@ -109,7 +109,7 @@ let _ =
     maybe_abort !Options.parse_only Ast.print_theory p;
     let p = apply_all_trans p in
     let s = Sectionize.to_section p in
-    if !Options.backend = `Coq then Regen2.main s else Pangoline.out s
+    Cmd.print_to_file (!Options.backend :> Const.prover) !Options.outfile s
   with
   | Sys_error e -> Error.bad e
   | Typing.Error (s,loc) -> Error.with_loc s loc

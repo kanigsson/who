@@ -56,7 +56,7 @@ section encoding
   logic ref_get ['reg 'u||] : 'reg region -> ('reg,'u) refty -> 'u
 end
 section tuples
-  coq predefined
+  coq \"WhoTuples\"
   pangoline predefined
 
   logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b

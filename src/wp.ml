@@ -148,8 +148,7 @@ let main e =
     effFA e.e (fun m -> (wp_node m q e)) l
 
 
-let correct_name n = 
-  Name.from_string (Name.unsafe_to_string n ^ "_correct")
+let correct_name n = Name.append n "_correct"
 
 let rec decl d =
   match d with

@@ -23,13 +23,25 @@
 
 open Ast
 
+module P = Predefty
+module I = Predefty.Identifier
+
+let find_name hint t =
+  match t with
+  | Ty.PureArr (_,Ty.PureArr (_, Ty.PureArr (_,Ty.PureArr (_,_)))) ->
+      Name.append hint "_post"
+  | Ty.PureArr (_,Ty.PureArr (_, _)) -> Name.append hint "_pre"
+  | Ty.App (v,[Ty.App (n,[])]) when Predefty.equal v I.region_id ->
+      Name.new_name n
+  | _ -> Name.from_string "p"
+
 let termfun t =
   let l = t.loc in
   match t.v with
   | Quant (k,Ty.Tuple tl, b) ->
     let x,f = vopen b in
     let vl, vtl = ExtList.split_map (fun t ->
-      let v = Name.from_string "z" in
+      let v = find_name x t in
       (v,t), svar v t l) tl in
     let tuple = mk_tuple vtl l in
     let f = subst x (fun _ -> tuple) f in

@@ -1,4 +1,4 @@
-OBJ:= who_map.vo tactics.vo simple_map.vo WhoMap.vo WhoArray.vo WhoArith.vo WhoList.vo
+OBJ:= who_map.vo tactics.vo simple_map.vo WhoMap.vo WhoArray.vo WhoArith.vo WhoList.vo WhoTuples.vo
 
 all: $(OBJ)
 
