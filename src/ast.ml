@@ -138,7 +138,9 @@ module Convert = struct
     match term.v with
     | Const c -> P.Const c
     | Param (t,e) -> P.Param (ty env t, effect env e)
-    | Var (v,i) -> P.Var (id env v, inst env i)
+    | Var (v,i) -> 
+        let s = id env v in
+        P.Var (s, inst env i)
     | App (t1,t2,p,cap) ->
         P.App (t env t1, t env t2, p, List.map (id env) cap)
     | LetReg (l,e) ->
@@ -200,7 +202,8 @@ module Convert = struct
         let env, th = theory env dl in
         env, P.Section (id env s,th, kind)
     | Decl s -> env, P.Decl s
-  and theory env th = ExtList.fold_map decl env th
+  and theory env th = 
+    ExtList.fold_map decl env th
 
 
 end

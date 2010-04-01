@@ -1,5 +1,5 @@
-let identical ['a||] (x y : 'a array) = 
-  len x = len y /\ 
+let identical ['a||] (x y : 'a array) =
+  len x = len y /\
     forall (k : int).
       0 <= k -> k < len x -> get k x = get k y
 
@@ -11,10 +11,10 @@ let copy ['a| r1 r2|] (ar : ref(r1,'a array)) = allocates r2
   else
     let r = ref{{r2}} (create l (get 0 !ar)) in
     (for i = 0 to l - 1 do
-      {  
-      identical oldar !!ar /\ len !!r = l /\ 
-          forall (k : int).  
-            0 <= k /\ k < i -> get k !!r = get k !!ar } 
+      {
+      identical oldar !!ar /\ len !!r = l /\
+          forall (k : int).
+            0 <= k /\ k < i -> get k !!r = get k !!ar }
       r := set i (get i !ar) !r
     done );
     r

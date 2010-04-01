@@ -43,16 +43,18 @@ type 'a isrec =
   | NoRec
   | Rec of 'a
 
-type takeover = [`Coq | `Pangoline | `Who ] * choice
+type prover = [`Coq | `Pangoline | `Who ]
+type takeover = prover  * choice
 and choice = 
   | Include of string
   | TakeOver 
   | Predefined
 
-val print_ty : [`Coq | `Who | `Pangoline ] -> ty Myformat.fmt
+val print_ty : prover -> ty Myformat.fmt
 val print : t Myformat.fmt
-val funsep : [`Coq | `Who | `Pangoline ] Myformat.fmt
+val funsep : prover Myformat.fmt
 val quant : [`FA | `EX ] Myformat.fmt
-val quantsep : [`Coq | `Who | `Pangoline ] Myformat.fmt
+val quantsep : prover Myformat.fmt
 val takeover : takeover Myformat.fmt
+val prover : prover Myformat.fmt
 

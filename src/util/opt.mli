@@ -30,3 +30,5 @@ val force : 'a t -> 'a
 val get_lazy : (unit -> 'a) -> 'a t -> 'a
 
 val map : ('a -> 'b) -> 'a t -> 'b t
+
+val print : 'a Myformat.fmt -> 'a t Myformat.fmt

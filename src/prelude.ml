@@ -30,7 +30,7 @@ section boolean
   logic false : bool
 end
 
-section unit
+section singleton
   coq predefined
   pangoline takeover
   type unit

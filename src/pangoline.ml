@@ -21,8 +21,8 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-let out s = 
+let out s =
   let f = !Options.outfile in
   Cmd.print_to_file `Pangoline f s
-  
-  
+
+

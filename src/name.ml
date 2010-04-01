@@ -164,14 +164,19 @@ module Env = struct
     }
 
   let id env x =
-    try M.find x env.names
+    try M.find x env.predefined
     with Not_found ->
-      try M.find x env.predefined
+      try M.find x env.names
       with Not_found -> get_cur_name x
 
   let add_id env x =
-    let gen, s = fresh_string_env env.gen (unsafe_to_string x) in
-    { env with names = M.add x s env.names; gen = gen }
+    (* ignore predefined names *)
+    if M.mem x env.predefined then begin
+      env
+    end else begin
+      let gen, s = fresh_string_env env.gen (unsafe_to_string x) in
+      { env with names = M.add x s env.names; gen = gen }
+    end
 
   let add_id_list = List.fold_left add_id
 

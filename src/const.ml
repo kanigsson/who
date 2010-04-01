@@ -41,7 +41,8 @@ let type_of_constant = function
   | Int _ -> TInt
   | Ptrue | Pfalse -> TProp
 
-type takeover = [`Coq | `Pangoline | `Who ] * choice
+type prover = [`Coq | `Pangoline | `Who ]
+type takeover = prover * choice
 and choice =
   | Include of string
   | TakeOver

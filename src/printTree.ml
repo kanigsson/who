@@ -310,7 +310,7 @@ let is_infix_symbol s =
             fprintf fmt "@[<hov 2>logic %a %a : %a@]" string x gen g ty t
           else begin
             if kind = `Pangoline && is_infix_symbol x then
-              fprintf fmt "infix %a %d" string x 0;
+              fprintf fmt "infix %a %d@\n" string x 0;
             let npr fmt n =
               match kind with
               | `Pangoline when is_infix_symbol n -> 
@@ -330,8 +330,8 @@ let is_infix_symbol s =
       | TypeDef (tl,x) ->
           begin match kind with
           | `Coq ->
-              fprintf fmt "@[<hov 2>Definition %a :@ %a%s. @]" string x
-              (pr_generalize true `Coq) tl "Type"
+              fprintf fmt "@[<hov 2>Definition %a :@ %a%s. %a @]" string x
+              (pr_generalize true `Coq) tl "Type" print_proof kind
           | `Pangoline ->
               fprintf fmt "@[<hov 2> type (%d) %a @]" (List.length tl) string x
           | `Who -> fprintf fmt "@[type %a%a@]" string x gen (tl,[],[])
