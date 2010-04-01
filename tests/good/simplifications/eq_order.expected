@@ -2,4 +2,4 @@ type unit
 logic = ['a||] : a -> a -> prop
 logic ->  : prop -> prop -> prop
 logic <  : int -> int -> prop
-axiom z : True
+axiom z: True 

@@ -1,4 +1,4 @@
-section A coq "toto.v" type t
-  logic create  : int -> t
-  logic add  : t -> t -> t end
+type t
+logic create  : int -> t
+logic add  : t -> t -> t
 logic f  : int -> int -> t

@@ -5,4 +5,4 @@ type bool
 logic true  : bool
 logic false  : bool
 type hmap['a 'b||]
-goal ymemo_correct : forall (t:hmap[int,int]). 0 =[int||] 1
+goal ymemo_correct: forall (t:hmap[int,int]). 0 =[int||] 1

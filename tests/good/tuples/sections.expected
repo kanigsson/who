@@ -1,4 +1,3 @@
-section basiclogic coq predefined
-  pangoline predefined logic \/  : prop -> prop -> prop end
+logic \/  : prop -> prop -> prop
 logic int_min  : int -> int -> int
-axiom int_min_is_some : True
+axiom int_min_is_some: True 

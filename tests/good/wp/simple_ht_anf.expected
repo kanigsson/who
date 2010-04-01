@@ -10,22 +10,22 @@ logic ->  : prop -> prop -> prop
 logic ~  : prop -> prop
 logic = ['a||] : a -> a -> prop
 logic <  : int -> int -> prop
-goal f_correct : forall (g:(unit -> < > -> prop) * (unit -> < > -> < > ->
-                 unit -> prop)).
-                 ((0 < 5) ->
-                  ((get_2_1_tuple [unit -> < > -> prop,unit -> < > -> < > ->
-                    unit -> prop||] g tt empty)
-                   /\
-                   ((get_2_2_tuple [unit -> < > -> prop,unit -> < > -> < > ->
-                     unit -> prop||] g tt empty empty tt)
-                    -> (3 < 6))))
-                 ->
-                 ((get_2_1_tuple [unit -> < > -> prop,unit -> < > -> < > ->
-                   unit -> prop||] g tt empty)
-                  /\
-                  ((get_2_2_tuple [unit -> < > -> prop,unit -> < > -> < > ->
-                    unit -> prop||] g tt empty empty tt)
-                   -> (3 < 6)))
+goal f_correct:
+  forall (g:(unit -> < > -> prop) * (unit -> < > -> < > -> unit -> prop)).
+  ((0 < 5) ->
+   ((get_2_1_tuple [unit -> < > -> prop,unit -> < > -> < > -> unit -> prop||]
+     g tt empty)
+    /\
+    ((get_2_2_tuple [unit -> < > -> prop,unit -> < > -> < > -> unit ->
+      prop||] g tt empty empty tt)
+     -> (3 < 6))))
+  ->
+  ((get_2_1_tuple [unit -> < > -> prop,unit -> < > -> < > -> unit -> prop||]
+    g tt empty)
+   /\
+   ((get_2_2_tuple [unit -> < > -> prop,unit -> < > -> < > -> unit -> prop||]
+     g tt empty empty tt)
+    -> (3 < 6)))
 let
   logic f  = mk_2tuple [((unit -> < > -> prop) * (unit -> < > -> < > ->
              unit -> prop)) -> < > -> prop,((unit -> < > -> prop) * (unit ->

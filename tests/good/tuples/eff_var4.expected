@@ -11,7 +11,8 @@ logic ->  : prop -> prop -> prop
 logic z  : int
 INTROS ['b||]
 logic f ['e||] : (region[b] * e) -> int
-goal g : forall (x:refty[b,int]).
-         forall (u:region[b]).
-         (z =[int||] (f [unit||] (mk_2tuple [region[b],unit||] u tt))) ->
-         ((ref_get [b,int||] u x) =[int||] 3)
+goal g:
+  forall (x:refty[b,int]).
+  forall (u:region[b]).
+  (z =[int||] (f [unit||] (mk_2tuple [region[b],unit||] u tt))) ->
+  ((ref_get [b,int||] u x) =[int||] 3)

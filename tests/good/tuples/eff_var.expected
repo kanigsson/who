@@ -8,10 +8,10 @@ logic ->  : prop -> prop -> prop
 logic z  : int
 logic f ['e||] : e -> int
 INTROS ['r 'r1||]
-goal g : forall (x:refty[r1,int]).
-         forall (k:refty[r,int]).
-         forall (u:region[r] * region[r1]).
-         (z =[int||] (f [region[r] * region[r1]||] u)) ->
-         ((ref_get [r1,int||] (get_2_2_tuple [region[r],region[r1]||] u) x)
-          =[int||]
-          (ref_get [r,int||] (get_2_1_tuple [region[r],region[r1]||] u) k))
+goal g:
+  forall (x:refty[r1,int]).
+  forall (k:refty[r,int]).
+  forall (u:region[r] * region[r1]).
+  (z =[int||] (f [region[r] * region[r1]||] u)) ->
+  ((ref_get [r1,int||] (get_2_2_tuple [region[r],region[r1]||] u) x) =[int||]
+   (ref_get [r,int||] (get_2_1_tuple [region[r],region[r1]||] u) k))

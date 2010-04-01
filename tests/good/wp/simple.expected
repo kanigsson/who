@@ -16,12 +16,12 @@ let
                       (fun (x:unit) ->
                       (fun (o:<r >) ->
                       (fun (c:<r >) -> (fun (r1:unit) -> True)))) 
-goal blit_correct : forall [|s|]. forall (s1:<s >).
-                                  (9 =[int||] 0) ->
-                                  (t ->
-                                   (get_2_1_tuple [unit -> <s > ->
-                                    prop,unit -> <s > -> <s > -> unit ->
-                                    prop||] myget [| s|] tt s1))
+goal blit_correct:
+  forall [|s|]. forall (s1:<s >).
+                (9 =[int||] 0) ->
+                (t ->
+                 (get_2_1_tuple [unit -> <s > -> prop,unit -> <s > -> <s > ->
+                  unit -> prop||] myget [| s|] tt s1))
 let
   logic blit [|s|] = mk_2tuple [unit -> <s > -> prop,unit -> <s > -> <s > ->
                      unit -> prop||]

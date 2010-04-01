@@ -60,136 +60,115 @@ let
                       (get_2_2_tuple [int -> <t > -> prop,int -> <t > ->
                        <t > -> int -> prop||] f1 x s s1 anon)
                       -> (stores f (!! [hmap[int,int]| t| { }] table s1)))))) 
-goal ymemo_correct : forall (f:int -> int).
-                     forall (ff:(((int -> <t > -> prop) * (int -> <t > ->
-                     <t > -> int -> prop)) -> < > -> prop) * (((int ->
-                     <t > -> prop) * (int -> <t > -> <t > -> int -> prop)) ->
-                     < > -> < > -> ((int -> <t > -> prop) * (int -> <t > ->
-                     <t > -> int -> prop)) -> prop)).
-                     (forall (k:(int -> <t > -> prop) * (int -> <t > ->
-                      <t > -> int -> prop)).
-                      (realizes f k) ->
-                      ((get_2_1_tuple [((int -> <t > -> prop) * (int ->
-                        <t > -> <t > -> int -> prop)) -> < > -> prop,((int ->
-                        <t > -> prop) * (int -> <t > -> <t > -> int ->
-                        prop)) -> < > -> < > -> ((int -> <t > -> prop) *
-                        (int -> <t > -> <t > -> int -> prop)) -> prop||] ff k
-                        empty)
-                       /\
-                       (forall (anon:(int -> <t > -> prop) * (int -> <t > ->
-                        <t > -> int -> prop)).
-                        (get_2_2_tuple [((int -> <t > -> prop) * (int ->
-                         <t > -> <t > -> int -> prop)) -> < > ->
-                         prop,((int -> <t > -> prop) * (int -> <t > ->
-                         <t > -> int -> prop)) -> < > -> < > -> ((int ->
-                         <t > -> prop) * (int -> <t > -> <t > -> int ->
-                         prop)) -> prop||] ff k empty empty anon)
-                        -> (realizes f anon))))
-                     ->
-                     (let
-                      logic f1 =
-                                mk_2tuple [int -> <t > -> prop,int -> <t > ->
-                                <t > -> int -> prop||]
-                                (fun (x:int) ->
-                                (fun (cur:<t >) ->
-                                stores f
-                                (!! [hmap[int,int]| t| { }] table cur)))
-                                (fun (x:int) ->
-                                (fun (old:<t >) ->
-                                (fun (cur:<t >) ->
-                                (fun (r:int) ->
-                                (r =[int||] (f x)) /\
-                                (stores f
-                                 (!! [hmap[int,int]| t| { }] table cur))))))
-                      in
-                      (forall (x:int).
-                       forall (s:<t >).
-                       (stores f (!! [hmap[int,int]| t| { }] table s)) ->
-                       ((get_2_1_tuple [ref(t,hmap[int,int]) -> <t > ->
-                         prop,ref(t,hmap[int,int]) -> <t > -> <t > ->
-                         hmap[int,int] -> prop||] ! [hmap[int,int]| t|] table
-                         s)
-                        /\
-                        (forall (s1:<t >).
-                         forall (anon:hmap[int,int]).
-                         (get_2_2_tuple [ref(t,hmap[int,int]) -> <t > ->
-                          prop,ref(t,hmap[int,int]) -> <t > -> <t > ->
-                          hmap[int,int] -> prop||] ! [hmap[int,int]| t|]
-                          table s s1 anon)
-                         ->
-                         (((true =[bool||] (hmem [int,int||] x anon)) ->
-                           ((get_2_1_tuple [ref(t,hmap[int,int]) -> <t > ->
-                             prop,ref(t,hmap[int,int]) -> <t > -> <t > ->
-                             hmap[int,int] -> prop||] ! [hmap[int,int]| t|]
-                             table s1)
-                            /\
-                            (forall (s2:<t >).
-                             forall (anon1:hmap[int,int]).
-                             (get_2_2_tuple [ref(t,hmap[int,int]) -> <t > ->
-                              prop,ref(t,hmap[int,int]) -> <t > -> <t > ->
-                              hmap[int,int] -> prop||] ! [hmap[int,int]| t|]
-                              table s1 s2 anon1)
-                             ->
-                             (((hget [int,int||] x anon1) =[int||] (f x)) /\
-                              (stores f (!! [hmap[int,int]| t| { }] table s2))))))
-                          /\
-                          ((false =[bool||] (hmem [int,int||] x anon)) ->
-                           ((get_2_1_tuple [((int -> <t > -> prop) * (int ->
-                             <t > -> <t > -> int -> prop)) -> < > ->
-                             prop,((int -> <t > -> prop) * (int -> <t > ->
-                             <t > -> int -> prop)) -> < > -> < > -> ((int ->
-                             <t > -> prop) * (int -> <t > -> <t > -> int ->
-                             prop)) -> prop||] ff f1
-                             (restrict [|| {t } { }] s1))
-                            /\
-                            (forall (anon1:(int -> <t > -> prop) * (int ->
-                             <t > -> <t > -> int -> prop)).
-                             (get_2_2_tuple [((int -> <t > -> prop) * (int ->
-                              <t > -> <t > -> int -> prop)) -> < > ->
-                              prop,((int -> <t > -> prop) * (int -> <t > ->
-                              <t > -> int -> prop)) -> < > -> < > -> ((int ->
-                              <t > -> prop) * (int -> <t > -> <t > -> int ->
-                              prop)) -> prop||] ff f1
-                              (restrict [|| {t } { }] s1) empty anon1)
-                             ->
-                             ((get_2_1_tuple [int -> <t > -> prop,int ->
-                               <t > -> <t > -> int -> prop||] anon1 x s1)
-                              /\
-                              (forall (s2:<t >).
-                               forall (anon2:int).
-                               (get_2_2_tuple [int -> <t > -> prop,int ->
-                                <t > -> <t > -> int -> prop||] anon1 x s1 s2
-                                anon2)
-                               ->
-                               ((get_2_1_tuple [ref(t,hmap[int,int]) ->
-                                 <t > -> prop,ref(t,hmap[int,int]) -> <t > ->
-                                 <t > -> hmap[int,int] -> prop||]
-                                 ! [hmap[int,int]| t|] table s2)
-                                /\
-                                (forall (s3:<t >).
-                                 forall (anon3:hmap[int,int]).
-                                 (get_2_2_tuple [ref(t,hmap[int,int]) ->
-                                  <t > -> prop,ref(t,hmap[int,int]) ->
-                                  <t > -> <t > -> hmap[int,int] -> prop||]
-                                  ! [hmap[int,int]| t|] table s2 s3 anon3)
-                                 ->
-                                 ((get_2_1_tuple [hmap[int,int] -> <t > ->
-                                   prop,hmap[int,int] -> <t > -> <t > ->
-                                   unit -> prop||]
-                                   ((:= [hmap[int,int]| t|]) table)
-                                   (hset [int,int||] x anon2 anon3) s3)
-                                  /\
-                                  (forall (s4:<t >).
-                                   (get_2_2_tuple [hmap[int,int] -> <t > ->
-                                    prop,hmap[int,int] -> <t > -> <t > ->
-                                    unit -> prop||]
-                                    ((:= [hmap[int,int]| t|]) table)
-                                    (hset [int,int||] x anon2 anon3) s3 s4 tt)
-                                   ->
-                                   ((anon2 =[int||] (f x)) /\
-                                    (stores f
-                                     (!! [hmap[int,int]| t| { }] table s4))))))))))))))))
-                      /\ (realizes f f1))
+goal ymemo_correct:
+  forall (f:int -> int).
+  forall (ff:(((int -> <t > -> prop) * (int -> <t > -> <t > -> int ->
+  prop)) -> < > -> prop) * (((int -> <t > -> prop) * (int -> <t > -> <t > ->
+  int -> prop)) -> < > -> < > -> ((int -> <t > -> prop) * (int -> <t > ->
+  <t > -> int -> prop)) -> prop)).
+  (forall (k:(int -> <t > -> prop) * (int -> <t > -> <t > -> int -> prop)).
+   (realizes f k) ->
+   ((get_2_1_tuple [((int -> <t > -> prop) * (int -> <t > -> <t > -> int ->
+     prop)) -> < > -> prop,((int -> <t > -> prop) * (int -> <t > -> <t > ->
+     int -> prop)) -> < > -> < > -> ((int -> <t > -> prop) * (int -> <t > ->
+     <t > -> int -> prop)) -> prop||] ff k empty)
+    /\
+    (forall (anon:(int -> <t > -> prop) * (int -> <t > -> <t > -> int ->
+     prop)).
+     (get_2_2_tuple [((int -> <t > -> prop) * (int -> <t > -> <t > -> int ->
+      prop)) -> < > -> prop,((int -> <t > -> prop) * (int -> <t > -> <t > ->
+      int -> prop)) -> < > -> < > -> ((int -> <t > -> prop) * (int -> <t > ->
+      <t > -> int -> prop)) -> prop||] ff k empty empty anon)
+     -> (realizes f anon))))
+  ->
+  (let
+   logic f1 =
+             mk_2tuple [int -> <t > -> prop,int -> <t > -> <t > -> int ->
+             prop||]
+             (fun (x:int) ->
+             (fun (cur:<t >) ->
+             stores f (!! [hmap[int,int]| t| { }] table cur)))
+             (fun (x:int) ->
+             (fun (old:<t >) ->
+             (fun (cur:<t >) ->
+             (fun (r:int) ->
+             (r =[int||] (f x)) /\
+             (stores f (!! [hmap[int,int]| t| { }] table cur))))))
+   in
+   (forall (x:int).
+    forall (s:<t >).
+    (stores f (!! [hmap[int,int]| t| { }] table s)) ->
+    ((get_2_1_tuple [ref(t,hmap[int,int]) -> <t > ->
+      prop,ref(t,hmap[int,int]) -> <t > -> <t > -> hmap[int,int] -> prop||]
+      ! [hmap[int,int]| t|] table s)
+     /\
+     (forall (s1:<t >).
+      forall (anon:hmap[int,int]).
+      (get_2_2_tuple [ref(t,hmap[int,int]) -> <t > ->
+       prop,ref(t,hmap[int,int]) -> <t > -> <t > -> hmap[int,int] -> prop||]
+       ! [hmap[int,int]| t|] table s s1 anon)
+      ->
+      (((true =[bool||] (hmem [int,int||] x anon)) ->
+        ((get_2_1_tuple [ref(t,hmap[int,int]) -> <t > ->
+          prop,ref(t,hmap[int,int]) -> <t > -> <t > -> hmap[int,int] ->
+          prop||] ! [hmap[int,int]| t|] table s1)
+         /\
+         (forall (s2:<t >).
+          forall (anon1:hmap[int,int]).
+          (get_2_2_tuple [ref(t,hmap[int,int]) -> <t > ->
+           prop,ref(t,hmap[int,int]) -> <t > -> <t > -> hmap[int,int] ->
+           prop||] ! [hmap[int,int]| t|] table s1 s2 anon1)
+          ->
+          (((hget [int,int||] x anon1) =[int||] (f x)) /\
+           (stores f (!! [hmap[int,int]| t| { }] table s2))))))
+       /\
+       ((false =[bool||] (hmem [int,int||] x anon)) ->
+        ((get_2_1_tuple [((int -> <t > -> prop) * (int -> <t > -> <t > ->
+          int -> prop)) -> < > -> prop,((int -> <t > -> prop) * (int ->
+          <t > -> <t > -> int -> prop)) -> < > -> < > -> ((int -> <t > ->
+          prop) * (int -> <t > -> <t > -> int -> prop)) -> prop||] ff f1
+          (restrict [|| {t } { }] s1))
+         /\
+         (forall (anon1:(int -> <t > -> prop) * (int -> <t > -> <t > ->
+          int -> prop)).
+          (get_2_2_tuple [((int -> <t > -> prop) * (int -> <t > -> <t > ->
+           int -> prop)) -> < > -> prop,((int -> <t > -> prop) * (int ->
+           <t > -> <t > -> int -> prop)) -> < > -> < > -> ((int -> <t > ->
+           prop) * (int -> <t > -> <t > -> int -> prop)) -> prop||] ff f1
+           (restrict [|| {t } { }] s1) empty anon1)
+          ->
+          ((get_2_1_tuple [int -> <t > -> prop,int -> <t > -> <t > -> int ->
+            prop||] anon1 x s1)
+           /\
+           (forall (s2:<t >).
+            forall (anon2:int).
+            (get_2_2_tuple [int -> <t > -> prop,int -> <t > -> <t > -> int ->
+             prop||] anon1 x s1 s2 anon2)
+            ->
+            ((get_2_1_tuple [ref(t,hmap[int,int]) -> <t > ->
+              prop,ref(t,hmap[int,int]) -> <t > -> <t > -> hmap[int,int] ->
+              prop||] ! [hmap[int,int]| t|] table s2)
+             /\
+             (forall (s3:<t >).
+              forall (anon3:hmap[int,int]).
+              (get_2_2_tuple [ref(t,hmap[int,int]) -> <t > ->
+               prop,ref(t,hmap[int,int]) -> <t > -> <t > -> hmap[int,int] ->
+               prop||] ! [hmap[int,int]| t|] table s2 s3 anon3)
+              ->
+              ((get_2_1_tuple [hmap[int,int] -> <t > -> prop,hmap[int,int] ->
+                <t > -> <t > -> unit -> prop||]
+                ((:= [hmap[int,int]| t|]) table)
+                (hset [int,int||] x anon2 anon3) s3)
+               /\
+               (forall (s4:<t >).
+                (get_2_2_tuple [hmap[int,int] -> <t > ->
+                 prop,hmap[int,int] -> <t > -> <t > -> unit -> prop||]
+                 ((:= [hmap[int,int]| t|]) table)
+                 (hset [int,int||] x anon2 anon3) s3 s4 tt)
+                ->
+                ((anon2 =[int||] (f x)) /\
+                 (stores f (!! [hmap[int,int]| t| { }] table s4))))))))))))))))
+   /\ (realizes f f1))
 let
   logic ymemo  = (fun (f:int -> int) ->
                  mk_2tuple [((((int -> <t > -> prop) * (int -> <t > ->

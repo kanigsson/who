@@ -36,14 +36,14 @@ type hmap['a 'b||]
 logic hmem ['a 'b||] : a -> hmap[a,b] -> bool
 logic hget ['a 'b||] : a -> hmap[a,b] -> b
 logic hset ['a 'b||] : a -> b -> hmap[a,b] -> hmap[a,b]
-goal memo_correct : forall [|t|]. forall (table:ref(t,hmap[int,int])).
-                                  forall (f:int -> int).
-                                  forall (x:int).
-                                  forall (s:<t >).
-                                  get_2_1_tuple [ref(t,hmap[int,int]) ->
-                                  <t > -> prop,ref(t,hmap[int,int]) ->
-                                  <t > -> <t > -> hmap[int,int] -> prop||]
-                                  ! [hmap[int,int]| t|] table s
+goal memo_correct:
+  forall [|t|]. forall (table:ref(t,hmap[int,int])).
+                forall (f:int -> int).
+                forall (x:int).
+                forall (s:<t >).
+                get_2_1_tuple [ref(t,hmap[int,int]) -> <t > ->
+                prop,ref(t,hmap[int,int]) -> <t > -> <t > -> hmap[int,int] ->
+                prop||] ! [hmap[int,int]| t|] table s
 let
   logic memo [|t|] = (fun (table:ref(t,hmap[int,int])) ->
                      (fun (f:int -> int) ->

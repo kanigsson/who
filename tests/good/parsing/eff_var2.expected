@@ -9,8 +9,9 @@ logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 logic z  : int
 logic f [|r|'e] : ref(r,int) -> <r 'e> -> int
 letregion r r1
-goal g : forall (x:ref(r1,int)).
-         forall (k:ref(r,int)).
-         forall (u:<r1 r >).
-         (z =[int||] (f [| r1| {r }] x u)) ->
-         ((!! [int| r1| {r }] x u) =[int||] (!! [int| r| {r1 }] k u))
+goal g:
+  forall (x:ref(r1,int)).
+  forall (k:ref(r,int)).
+  forall (u:<r1 r >).
+  (z =[int||] (f [| r1| {r }] x u)) ->
+  ((!! [int| r1| {r }] x u) =[int||] (!! [int| r| {r1 }] k u))

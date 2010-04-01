@@ -1,3 +1,2 @@
-type t = int
 logic +  : int -> int -> int
 let f  = (fun (x:int) -> x + 1) 
