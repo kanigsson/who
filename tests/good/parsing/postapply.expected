@@ -6,12 +6,13 @@ logic snd ['a 'b||] : (a * b) -> b
 logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
   := ['a|r|] = (fun (x:ref(r,a)) ->
-               (fun (v:a) -> {(fun (cur:<r >) -> True)} parameter(unit,{r })
+               (fun (v:a) -> {(fun (cur:<r >) -> True)}
+               parameter(unit,{r } + {r })
                {(fun (old:<r >) ->
                 (fun (cur:<r >) ->
                 (fun (anon:unit) -> (!! [a| r| { }] x cur) =[a||] v)))})) 
 let apply ['a
-  'b||'e] = (fun (f:a ->{ 'e} b) ->
+  'b||'e] = (fun (f:a ->{{ 'e} + { 'e}} b) ->
             (fun (x:a) ->
             {(fun (cur:< 'e>) ->
              fst [a -> < 'e> -> prop,a -> < 'e> -> < 'e> -> b -> prop||] f x

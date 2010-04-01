@@ -101,10 +101,10 @@ exception FindFirst of Name.t
 let pref eff cur p =
   I.pure_lam cur (Some (M.map eff)) p p.I.loc
 
-let postf eff t old cur res p =
+let postf (eff1,eff2) t old cur res p =
   let l = p.I.loc in
-  let lameff s body = I.pure_lam s (Some (M.map eff)) body l in
-  lameff old (lameff cur (I.pure_lam res t p l))
+  let lameff e s body = I.pure_lam s (Some (M.map e)) body l in
+  lameff eff1 old (lameff eff2 cur (I.pure_lam res t p l))
 
 module Uf = Unionfind
 
@@ -163,50 +163,50 @@ and infer env (x : I.t) =
               | Unify.CannotUnify -> error l WrongRegionCap
               | Invalid_argument _ -> error l WrongRegionCapNumber
         end
-          | M.PureArr (t1,t2) -> t1, t2, M.eff_empty
+          | M.PureArr (t1,t2) -> t1, t2, M.rw_empty
           | _ -> error l (NotAFunction e1.t)
         in
         let e2 = check_type env t1 e2 in
-        App (e1,e2,k, cap), t2, M.eff_union3 e1.e e2.e eff
+        App (e1,e2,k, cap), t2, M.rw_union3 e1.e e2.e eff
     | I.Annot (e,t) ->
         let t' = M.from_ty t in
         let e = check_type env t' e in
         Annot (e,t), t', e.e
-    | I.Const c -> Const c, M.const (Const.type_of_constant c), M.eff_empty
+    | I.Const c -> Const c, M.const (Const.type_of_constant c), M.rw_empty
     | I.PureFun (nt,(_,x,e)) ->
         let nt = Opt.get_lazy M.new_ty nt in
         let env = Env.add_svar env x nt in
         let e = infer env e in
-        PureFun (nt, Name.close_bind x e), M.parr nt e.t, M.eff_empty
+        PureFun (nt, Name.close_bind x e), M.parr nt e.t, M.rw_empty
     | I.Quant (k,nt,(_,x,e)) ->
         let nt = Opt.get_lazy M.new_ty nt in
         let env = Env.add_svar env x nt in
         let e = check_type env M.prop e in
-        Quant (k, nt, Name.close_bind x e), M.prop, M.eff_empty
+        Quant (k, nt, Name.close_bind x e), M.prop, M.rw_empty
     | I.LetReg (rl,e) ->
         let e = infer env e in
-        let eff = M.rremove e.e (List.map M.from_region rl) in
+        let eff = M.rw_rremove e.e (List.map M.from_region rl) in
         LetReg (rl,e), e.t, eff
     | I.Ite (e1,e2,e3) ->
         let e1 = check_type env (M.bool ()) e1 in
         let e2 = infer env e2 in
         let e3 = check_type env e2.t e3 in
-        Ite (e1,e2,e3), e2.t, M.eff_union3 e1.e e2.e e3.e
+        Ite (e1,e2,e3), e2.t, M.rw_union3 e1.e e2.e e3.e
     | I.Gen (g,e) ->
         let e = infer env e in
         Gen (g,e), e.t, e.e
     | I.Param (t,eff) ->
-        Param (t,eff), M.from_ty t, M.from_effect eff
+        Param (t,eff), M.from_ty t, M.from_rw eff
     | I.For (dir,inv,i,s,e,body) ->
         let env = Env.add_svar env i M.int in
         let body = check_type env (M.unit ()) body in
-        let inv = pre env body.e inv l in
+        let inv = pre env (fst body.e) inv l in
         For (dir, inv, i, s, e, body), (M.unit ()), body.e
     | I.HoareTriple (p,e,q) ->
         let e = infer (Env.to_program_env env) e in
-        let p = pre env e.e p l in
+        let p = pre env (fst e.e) p l in
         let q = post env e.e e.t q l in
-        HoareTriple (p,e,q), M.prop, M.eff_empty
+        HoareTriple (p,e,q), M.prop, M.rw_empty
     | I.Var (v,el) ->
 (*         Myformat.printf "treating var: %a@." Name.print v; *)
         let (_,_,evl) as m ,xt =
@@ -217,19 +217,19 @@ and infer env (x : I.t) =
           try M.refresh m el xt
           with Invalid_argument _ ->
             error l (WrongNumberEffects(v, List.length evl, List.length el)) in
-        Var (v, i), nt, M.eff_empty
+        Var (v, i), nt, M.rw_empty
     | I.Let (g,e1,(_,x,e2),r) ->
         let env, e1 = letgen env x g e1 r in
         let e2 = infer env e2 in
-        Let (g, e1,Name.close_bind x e2,r), e2.t, M.eff_union e1.e e2.e
+        Let (g, e1,Name.close_bind x e2,r), e2.t, M.rw_union e1.e e2.e
     | I.Lam (x,xt,cap,(p,e,q)) ->
         let nt = M.from_ty xt in
         let env = Env.add_svar env x nt in
         let e = infer (Env.to_program_env env) e in
-        let p = pre env e.e p l in
+        let p = pre env (fst e.e) p l in
         let q = post env e.e e.t q l in
         Lam (x,xt,cap,(p,e,q)), M.arrow nt e.t e.e (List.map M.from_region cap),
-        M.eff_empty
+        M.rw_empty
   in
   { v = e ; t = t ; e  = eff ; loc = l }
 and pre env eff (cur,x) l =

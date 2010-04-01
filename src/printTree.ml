@@ -24,10 +24,11 @@
 module SS = Misc.StringSet
 
 type effect = string list * string list
+type rw = effect * effect
 type ty =
   | TConst of Const.ty
   | Tuple of ty list
-  | Arrow of ty * ty * effect * string list
+  | Arrow of ty * ty * rw * string list
   | PureArr of ty * ty
   | TApp of string * ty list
   | Ref of string * ty
@@ -48,7 +49,7 @@ type t =
   | PureFun of string * ty * t
   | Ite of t * t * t
   | Quant of [`FA | `EX ] * string * ty * t
-  | Param of ty * effect
+  | Param of ty * rw
   | Gen of gen *  t
   | HoareTriple of funcbody
   | LetReg of string list * t
@@ -75,6 +76,9 @@ module Print = struct
         (list space string) (List.map (fun s -> "'" ^ s) e)
 
   let effect fmt e = fprintf fmt "{%a}" effect_no_sep e
+
+  let rw fmt (e1,e2) =
+    fprintf fmt "%a + %a" effect e1 effect e2
 
   let is_compound kind = function
     | TConst _ | Ref _ | Map _ -> false
@@ -115,7 +119,7 @@ module Print = struct
           (* there are no impure arrow types in Coq or Pangoline, so simply
            * print it as you wish *)
           fprintf fmt "%a ->{%a%a} %a" mayp t1
-          effect_no_sep eff (maycap string) cap print t2
+          rw eff (maycap string) cap print t2
       | Map e -> fprintf fmt "<%a>" effect_no_sep e
       | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 print t2
       | Tuple tl ->
@@ -231,7 +235,7 @@ module Print = struct
             end
       (* specific to Who, will not be printed in backends *)
       | Param (t,e) ->
-          fprintf fmt "parameter(%a,%a)" ty t effect e
+          fprintf fmt "parameter(%a,%a)" ty t rw e
       | HoareTriple (p,f,q) ->
           fprintf fmt "[[%a]]%a[[%a]]" print p print f print q
       | LetReg (v,t) ->

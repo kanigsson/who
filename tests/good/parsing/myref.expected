@@ -2,7 +2,7 @@ logic = ['a||] : a -> a -> prop
 logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
   ref ['a|r|] = (fun (v:a) ->allocates r {(fun (cur:<r >) -> True)}
-                parameter(ref(r,a),{r })
+                parameter(ref(r,a),{r } + {r })
                 {(fun (old:<r >) ->
                  (fun (cur:<r >) ->
                  (fun (x:ref(r,a)) -> (!! [a| r| { }] x cur) =[a||] v)))}) 

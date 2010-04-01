@@ -106,7 +106,7 @@ let rec term logic env (t : I.t) =
       let mktup = R.predef (PI.mk_tuple_id n) (tyl,[],[]) l in
       R.appn mktup tl l
 *)
-  | I.Param (t,e) -> param (ty env t) (effect env e) l
+  | I.Param (t,e) -> param (ty env t) (rw env e) l
 and letgen env x g e r =
   let env', g = Env.add_gen env g in
   let nv = Name.from_string x in

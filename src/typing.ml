@@ -57,9 +57,8 @@ let ftype_of_var env x =
 (*   Format.printf "ftype_of_var : %a of type %a@." Vars.var x Ty.print t; *)
   m, to_logic_type t
 
-let prety eff = parr (map eff) prop
-let postty eff t =
-  parr (map eff) (parr (map eff) (parr (Ty.to_logic_type t) prop))
+let prety = Ty.base_pretype
+let postty eff t = Ty.base_posttype (Ty.to_logic_type t) eff
 
 let set_list_contained l s =
   RS.for_all (fun x -> List.exists (fun y -> Name.equal x y) l) s
@@ -108,7 +107,7 @@ let rec formtyping' env loc = function
       let t',eff, capreal = typing env e in
       if not (set_list_contained cap capreal) then
         error loc "wrong declaration of capacities on lambda";
-      pre env eff p;
+      pre env (fst eff) p;
       post env eff t' q;
       to_logic_type (caparrow t t' eff cap)
   | Gen (_,e)-> formtyping env e
@@ -124,7 +123,7 @@ let rec formtyping' env loc = function
       if not (RS.is_empty capreal) then
         error loc "allocation is forbidden in hoaretriples"
       else
-        pre env eff p;
+        pre env (fst eff) p;
         post env eff t' q;
         prop
   | Param _ -> error loc "effectful parameter in logic"
@@ -133,29 +132,29 @@ and formtyping env (e : Ast.t) : Ty.t =
 (*   Myformat.printf "formtyping %a@." Ast.print e; *)
   let t = formtyping' env e.loc e.v in
   if Ty.equal e.t t then
-    if Effect.is_empty e.e then t
-    else error e.loc "not empty: %a" Effect.print e.e
+    if Rw.is_empty e.e then t
+    else error e.loc "not empty: %a" Rw.print e.e
   else
     error e.loc "fannotation mismatch on %a: %a and %a@."
       Ast.print e Ty.print e.t Ty.print t
 
 and pre env eff f = fis_oftype env (prety eff) f
-and post env eff t f = fis_oftype env (postty eff t) f
+and post env (eff : Rw.t) t f = fis_oftype env (postty eff t) f
 
 and typing' env loc = function
   | Ast.Const c ->
-      Ty.const (Const.type_of_constant c), Effect.empty, RS.empty
+      Ty.const (Const.type_of_constant c), Rw.empty, RS.empty
   |Ast.Var (s,i) ->
       begin try
         let g, t = type_of_var env s in
-        Ty.allsubst g i t, Effect.empty, RS.empty
+        Ty.allsubst g i t, Rw.empty, RS.empty
       with Not_found ->
         error loc "unknown variable: %a" Name.print s
       end
   | Ast.App (e1,e2,_,capapp) ->
       let t1, eff1, cap1 = typing env e1 in
       let t2,eff2, cap2 = typing env e2 in
-      let effi = Effect.union eff2 eff1 in
+      let effi = Rw.union eff2 eff1 in
 (*
       printf "app of %a and %a: eff1:%a eff2:%a@."
       Recon.print e1 Recon.print e2 Effect.print eff1 Effect.print eff2;
@@ -164,7 +163,7 @@ and typing' env loc = function
       | Arrow (ta,tb,eff,caparg) ->
           if Ty.equal ta t2 then
             if ExtList.equal Name.equal capapp caparg then
-              tb, Effect.union eff effi,
+              tb, Rw.union eff effi,
               disj_union3 loc cap1 cap2 (Name.list_to_set caparg)
             else
               error loc "mismatch on creation permissions: \
@@ -181,27 +180,27 @@ and typing' env loc = function
       let t',eff,capreal = typing env e in
       if not (set_list_contained cap capreal) then
         error loc "wrong declaration of capacities";
-      pre env eff p;
+      pre env (fst eff) p;
       post env eff t' q;
-      caparrow t t' eff cap, Effect.empty, RS.empty
+      caparrow t t' eff cap, Rw.empty, RS.empty
   | Let (g,e1,b,r) ->
       let x, e2 = sopen b in
 (*       Myformat.printf "plet: %a@." Name.print x; *)
       let env, eff1, cap1 = letgen env x g e1 r in
       let t, eff2, cap2 = typing env e2 in
-      t, Effect.union eff1 eff2, disjoint_union loc cap1 cap2
+      t, Rw.union eff1 eff2, disjoint_union loc cap1 cap2
   | Param (t,e) -> t,e, RS.empty
   | PureFun (t,b) ->
       let x,e = sopen b in
       let env = add_svar env x t in
       let t', eff, cap = typing env e in
-      if Effect.is_empty eff && RS.is_empty cap then parr t t', eff, cap
+      if Rw.is_empty eff && RS.is_empty cap then parr t t', eff, cap
       else error loc "effectful pure function"
   | Quant (_,t,b) ->
       let x, e = sopen b in
       let env = add_svar env x t in
       let t', eff, cap = typing env e in
-      if Effect.is_empty eff && RS.is_empty cap && Ty.equal t' Ty.prop
+      if Rw.is_empty eff && RS.is_empty cap && Ty.equal t' Ty.prop
       then Ty.prop, eff, cap
       else error loc "not of type prop"
   | Ite (e1,e2,e3) ->
@@ -210,7 +209,7 @@ and typing' env loc = function
         let t2, eff2, cap2 = typing env e2 in
         let t3, eff3, cap3 = typing env e3 in
         if Ty.equal t2 t3 then
-          t2, Effect.union3 eff1 eff2 eff3,
+          t2, Rw.union3 eff1 eff2 eff3,
           (* we have the right to create the same ref on both sides of the
             branch *)
           disjoint_union loc cap1 (RS.union cap2 cap3)
@@ -218,18 +217,18 @@ and typing' env loc = function
       else error loc "condition is not of boolean type"
   | LetReg (vl,e) ->
       let t, eff, cap = typing env e in
-      t, Effect.rremove eff vl, Name.remove_list_from_set vl cap
+      t, Rw.rremove eff vl, Name.remove_list_from_set vl cap
   | Gen _ -> assert false
   | HoareTriple (p,e,q) ->
       let t', eff, capreal = typing env e in
       if not (RS.is_empty capreal) then
         error loc "allocation is forbidden in hoaretriples"
       else
-        pre env eff p;
+        pre env (fst eff) p;
         post env eff t' q;
-        prop, Effect.empty, RS.empty
+        prop, Rw.empty, RS.empty
 
-and typing env (e : Ast.t) : Ty.t * Effect.t * RS.t =
+and typing env (e : Ast.t) : Ty.t * Rw.t * RS.t =
 (*   Myformat.printf "typing %a@." Ast.print e; *)
   let ((t',_,_) as x) = typing' env e.loc e.v in
   if Ty.equal e.t t' then x else
@@ -250,7 +249,7 @@ and letgen env x g e r =
     | Const.NoRec | Const.LogicDef -> env
     | Const.Rec t -> add_svar env x t in
   let t, eff, cap =
-    if r = Const.LogicDef then formtyping env' e, Effect.empty, RS.empty
+    if r = Const.LogicDef then formtyping env' e, Rw.empty, RS.empty
     else typing env' e in
   let env = add_var env x g t in
   env, eff, cap

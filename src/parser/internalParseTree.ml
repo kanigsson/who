@@ -37,7 +37,7 @@ type t' =
   | Ite of t * t * t
   | Annot of t * Ty.t
   | Quant of [`FA | `EX ] * MutableType.t option * t Name.bind
-  | Param of Ty.t * Effect.t
+  | Param of Ty.t * Rw.t
   | Gen of G.t * t
   | For of Name.t * pre * Name.t * Name.t * Name.t * t
   | HoareTriple of funcbody

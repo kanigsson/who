@@ -56,7 +56,7 @@ let rec ast' env = function
       Quant (k, Opt.map (to_mutable env) t, Name.close_bind x (ast env e))
   | I.Ite (e1,e2,e3) -> Ite (ast env e1, ast env e2, ast env e3)
   | I.Annot (e,t) -> Annot (ast env e, ty env t)
-  | I.Param (t,e) -> Param (ty env t, effect env e)
+  | I.Param (t,e) -> Param (ty env t, rw env e)
   | I.For (dir,p,i,st,en,e) ->
       let d = Env.var env dir in
       let env,i = Env.add_var env i in

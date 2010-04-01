@@ -53,7 +53,7 @@ let rec unify a b =
   | Arrow (ta1,ta2,e1,c1), Arrow (tb1,tb2,e2,c2) ->
       unify ta1 tb1;
       unify ta2 tb2;
-      eunify e1 e2;
+      rwunify e1 e2;
       List.iter2 runify c1 c2;
   | Tuple tl1, Tuple tl2 when List.length tl1 = List.length tl2 ->
       List.iter2 unify tl1 tl2
@@ -98,4 +98,6 @@ and eunify (r1,e1) (r2,e2) =
     with Invalid_argument _ -> raise CannotUnify
   end
   else raise CannotUnify
+and rwunify (ea1, ea2) (eb1, eb2) =
+  eunify ea1 eb1; eunify ea2 eb2
 

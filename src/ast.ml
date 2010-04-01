@@ -38,11 +38,11 @@ type node =
   | PureFun of Ty.t * t Name.bind
   | Ite of t * t * t
   | Quant of [`FA | `EX ] * Ty.t * t Name.bind
-  | Param of Ty.t * Effect.t
+  | Param of Ty.t * Rw.t
   | Gen of G.t *  t
   | HoareTriple of funcbody
   | LetReg of Name.t list * t
-and t = { v : node ; t : Ty.t ; e : Effect.t; loc : Loc.loc }
+and t = { v : node ; t : Ty.t ; e : Rw.t; loc : Loc.loc }
 and isrec = Ty.t Const.isrec
 and funcbody = t * t * t
 and inst = (Ty.t, Name.t, Effect.t) Inst.t
@@ -64,7 +64,7 @@ type theory = decl list
 let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
   let rec aux' = function
     | (Const _ ) as t -> t
-    | Param (t,e) -> Param (tyfun t, effectfun e)
+    | Param (t,e) -> Param (tyfun t, rwfun e)
     | Var (v,i) -> varfun v (Inst.map tyfun rvarfun effectfun i)
     | App (t1,t2,p,cap) -> App (aux t1, aux t2, p, List.map rvarfun cap)
     | Lam (x,t,cap,b) ->
@@ -76,8 +76,9 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
     | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
     | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
     | Gen (g,e) -> Gen (g,aux e)
+  and rwfun (e1,e2) = effectfun e1, effectfun e2
   and body (p,e,q) = aux p, aux e, aux q
-  and aux t = {t with v = aux' t.v; t = tyfun t.t} in
+  and aux t = {t with v = aux' t.v; t = tyfun t.t; e = rwfun t.e} in
   aux f
 
 let refresh s t =
@@ -126,6 +127,7 @@ module Convert = struct
   let ty = Ty.Convert.t
   let scheme = Ty.Convert.scheme
   let effect = Effect.Convert.t
+  let rw = Rw.Convert.t
 
   let inst env i = Inst.map (ty env) (id env) (effect env) i
   let rrec env r =
@@ -137,8 +139,8 @@ module Convert = struct
   let rec t env term =
     match term.v with
     | Const c -> P.Const c
-    | Param (t,e) -> P.Param (ty env t, effect env e)
-    | Var (v,i) -> 
+    | Param (t,e) -> P.Param (ty env t, rw env e)
+    | Var (v,i) ->
         let s = id env v in
         P.Var (s, inst env i)
     | App (t1,t2,p,cap) ->
@@ -202,7 +204,7 @@ module Convert = struct
         let env, th = theory env dl in
         env, P.Section (id env s,th, kind)
     | Decl s -> env, P.Decl s
-  and theory env th = 
+  and theory env th =
     ExtList.fold_map decl env th
 
 
@@ -302,10 +304,10 @@ let print_decl = Print.decl ~kind:`Who
 let print_theory = Print.theory ~kind:`Who
 
 let print' fmt t =
-  print fmt {v = t; t = Ty.prop; e = Effect.empty; loc = Loc.dummy }
+  print fmt {v = t; t = Ty.prop; e = Rw.empty; loc = Loc.dummy }
 
 let mk v t e loc = { v = v; t = t; e = e; loc = loc }
-let mk_val v t loc = { v = v; t = t; e = Effect.empty; loc = loc }
+let mk_val v t loc = { v = v; t = t; e = Rw.empty; loc = loc }
 
 let ptrue_ loc = mk_val (Const Const.Ptrue) Ty.prop loc
 let pfalse_ loc = mk_val (Const Const.Pfalse) Ty.prop loc
@@ -353,7 +355,7 @@ let domain t =
 let let_ g e1 x e2 r l =
   true_or e2
     (mk (Let (g, e1,Name.close_bind x e2,r)) e2.t
-      (Effect.union e1.e e2.e) l)
+      (Rw.union e1.e e2.e) l)
 
 let plam x t e loc =
   mk_val (PureFun (t,Name.close_bind x e)) (Ty.parr t e.t) loc
@@ -369,7 +371,7 @@ let simple_app ?(kind=`Prefix) ?(cap=[]) t1 t2 l =
     and argument %a has type %a@." print t1 Ty.print t1.t
     print t2 Ty.print t2.t ; invalid_arg "app" end
   else
-    mk (App (t1,t2,kind,cap)) t (Effect.union t1.e (Effect.union t2.e e)) l
+    mk (App (t1,t2,kind,cap)) t (Rw.union3 t1.e t2.e e) l
 
 let simple_app2 ?kind t t1 t2 loc =
   simple_app ?kind (simple_app t t1 loc) t2 loc
@@ -501,7 +503,7 @@ and ite ?(logic=true) e1 e2 e3 l =
   let im b c = impl (eq e1 (b l) l) c l in
   if logic then and_ (im btrue_ e2) (im bfalse_ e3) l
   else
-    mk (Ite (e1,e2,e3)) e2.t (Effect.union e1.e (Effect.union e2.e e3.e)) l
+    mk (Ite (e1,e2,e3)) e2.t (Rw.union3 e1.e e2.e e3.e) l
 and eq t1 t2 l =
   if equal t1 t2 then ptrue_ l
   else
@@ -708,7 +710,7 @@ let mk_tuple tl = mk_tuple (List.length tl) tl
 
 let mk_pair t1 t2 = mk_tuple [t1;t2]
 
-let letreg l e = mk (LetReg (l,e)) e.t (Effect.rremove e.e l)
+let letreg l e = mk (LetReg (l,e)) e.t (Rw.rremove e.e l)
 let andlist l loc =
   match l with
   | [] | [ _ ] -> failwith "not enough arguments given"

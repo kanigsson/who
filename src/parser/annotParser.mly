@@ -98,7 +98,8 @@ infix_term:
     { let x,t = l in mk_term (Quant (`EX,t,x,e)) (embrace sp e.loc) }
   | sp = FORALL l = one_binding DOT e = infix_term %prec forall
     { let x,t = l in mk_term (Quant (`FA,t,x,e)) (embrace sp e.loc) }
-  | l = DLBRACKET p = nterm DRBRACKET e = nterm DLBRACKET q = nterm r = DRBRACKET
+  | l = DLBRACKET p = nterm DRBRACKET e = nterm
+    DLBRACKET q = nterm r = DRBRACKET
     { mk_term (HoareTriple (p,e,q)) (embrace l r) }
 
 
@@ -123,7 +124,7 @@ nterm:
     { mk_term (Let (g,t1,x,t2, Rec t)) (embrace st t2.loc) }
   | p = LETREGION l = IDENT* IN t = nterm
     { mk_term (LetReg (strip_info l,t)) (embrace p t.loc) }
-  | p = PARAMETER LPAREN t = ty COMMA e = sepeffect r = RPAREN
+  | p = PARAMETER LPAREN t = ty COMMA e = sep_readwrite r = RPAREN
     { mk_term (Param (t,e)) (embrace p r) }
 
 funcbody:

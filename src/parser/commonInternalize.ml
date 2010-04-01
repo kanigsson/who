@@ -159,13 +159,16 @@ let effect env (rl,el) =
     (List.map (Env.rvar env) rl)
     (List.map (Env.effvar env) el)
 
+let rw env (e1,e2) =
+  effect env e1, effect env e2
+
 let ty env t =
   let rec aux = function
     | IT.TVar v -> Ty.var (Env.tyvar env v)
     | IT.TConst c -> Ty.const c
     | IT.Tuple tl -> Ty.tuple (List.map aux tl)
     | IT.Arrow (t1,t2,e,cap) ->
-        Ty.caparrow (aux t1) (aux t2) (effect env e)
+        Ty.caparrow (aux t1) (aux t2) (rw env e)
           (List.map (Env.rvar env) cap)
     | IT.PureArr (t1,t2) -> Ty.parr (aux t1) (aux t2)
     | IT.TApp (v,i) ->

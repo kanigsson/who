@@ -26,7 +26,7 @@
 type t =
   | Const of Const.ty
   | Tuple of t list
-  | Arrow of t * t * Effect.t * Name.t list
+  | Arrow of t * t * Rw.t * Name.t list
   | PureArr of t * t
   | App of Name.t * inst
   | Ref of Name.t * t
@@ -46,12 +46,13 @@ module Convert = struct
       | PureArr (t1,t2) -> P.PureArr (aux t1, aux t2)
       | Ref (n,t) -> P.Ref (id n, aux t)
       | Arrow (t1,t2,e,cap) ->
-          P.Arrow (aux t1, aux t2, effect e, List.map id cap)
+          P.Arrow (aux t1, aux t2, rw e, List.map id cap)
       | Map e -> P.Map (effect e)
       | App (n,i) ->
           P.TApp (id n, List.map aux i)
     and id x = Name.Env.id env x
-    and effect e = Effect.Convert.t env e in
+    and effect e = Effect.Convert.t env e
+    and rw e = Rw.Convert.t env e in
     aux
 
   let add_id = Name.Env.add_id_list
@@ -120,7 +121,7 @@ let destr_pair t =
 
 let latent_effect = function
   | Arrow (_,_,e,_) -> e
-  | PureArr _ -> Effect.empty
+  | PureArr _ -> Rw.empty
   | _ -> assert false
 
 let split t =
@@ -162,9 +163,11 @@ let destr_ref = function
   | Ref (_,t) -> t
   | _ -> invalid_arg "destr_ref"
 
-let pretype a e = parr a (parr (map e) prop)
-let posttype a b e = parr a (parr (map e) (parr (map e) (parr b prop)))
-let prepost_type a b e = tuple [pretype a e ; posttype a b e ]
+let base_pretype e = parr (map e) prop
+let pretype a e = parr a (base_pretype e)
+let base_posttype b (e1, e2) = parr (map e1) (parr (map e2) (parr b prop))
+let posttype a b rw = parr a (base_posttype b rw)
+let prepost_type a b ((e1,_) as rw) = tuple [pretype a e1 ; posttype a b rw ]
 
 let node_map ?(rfun=Misc.id) ?(effectfun=Misc.id) f t =
   let rec aux t =
@@ -175,10 +178,11 @@ let node_map ?(rfun=Misc.id) ?(effectfun=Misc.id) f t =
       | Tuple tl -> tuple (List.map aux tl)
       | PureArr (t1,t2) -> parr (aux t1) (aux t2)
       | Arrow (t1,t2,e,rl) ->
-          caparrow (aux t1) (aux t2) (effectfun e) (List.map rfun rl)
+          caparrow (aux t1) (aux t2) (rw e) (List.map rfun rl)
       | Ref (r,t) -> ref_ (rfun r) (aux t)
       | App (v,i) -> app v (List.map aux i) in
-    f t in
+    f t
+  and rw (e1,e2) = effectfun e1, effectfun e2 in
   aux t
 
 let to_logic_type =
@@ -276,7 +280,7 @@ let rec equal t1 t2 =
   | Tuple tl1, Tuple tl2 when List.length tl1 = List.length tl2 ->
       List.for_all2 equal tl1 tl2
   | Arrow (ta1,ta2,e1, cap1), Arrow (tb1,tb2,e2, cap2) ->
-      equal ta1 tb1 && equal ta2 tb2 && Effect.equal e1 e2 &&
+      equal ta1 tb1 && equal ta2 tb2 && Rw.equal e1 e2 &&
       ExtList.equal Name.equal cap1 cap2
   | Ref (r1,t1), Ref (r2,t2) -> Name.equal r1 r2 && equal t1 t2
   | Map e1, Map e2 -> Effect.equal e1 e2
@@ -291,7 +295,7 @@ let forty () =
   ([],[],[e]),
    parr
      (parr int (parr (map eff) prop))
-     (parr int (parr int (arrow (arrow int unit eff) unit eff)))
+     (parr int (parr int (arrow (arrow int unit (eff,eff)) unit (eff,eff))))
 
 exception Found of t option
 

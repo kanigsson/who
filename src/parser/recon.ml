@@ -47,6 +47,10 @@ let to_effect loc t =
   try M.to_effect t
   with MutableType.UndeterminedType -> error loc UndeterminedType
 
+let to_rw loc t =
+  try M.to_rw t
+  with MutableType.UndeterminedType -> error loc UndeterminedType
+
 let rec recon' loc = function
   | I.Var (x,i) -> Var (x,inst loc i)
   | I.Const c -> Const c
@@ -61,7 +65,8 @@ let rec recon' loc = function
   | I.For (dir,inv,i,st,en,body) ->
       let bdir = match dir with {Name.name = Some "forto"} -> true|_ -> false in
       let body = recon body in
-      let e = body.e and l = body.loc in
+      let rw = body.e and l = body.loc in
+      let e = Rw.overapprox rw in
       let inv = recon inv in
       let inv' = plam i Ty.int inv l in
       let intvar s = svar s Ty.int l in
@@ -98,7 +103,8 @@ let rec recon' loc = function
         effFA e (fun m -> effFA e (fun n -> forall t2 (fun r ->
           let lhs = impl (app p m l) (applist [AR.pre f l; x; m] l) l in
           let rhs =
-            impl (applist [AR.post f l; x; m ; n; r] l) (applist [q;m;n;r] l) l in
+            impl (applist [AR.post f l; x; m ; n; r] l)
+              (applist [q;m;n;r] l) l in
           and_ lhs rhs l) l) l) l in
       f.v
 *)
@@ -111,7 +117,8 @@ and get_pre (_,x) =
   | Some x -> recon x
 and recon (t : InferTree.t) : Ast.t =
   let loc = t.I.loc in
-  { v = recon' loc t.I.v; t = to_ty loc t.I.t; e = to_effect loc t.I.e; loc = loc }
+  { v = recon' loc t.I.v; t = to_ty loc t.I.t;
+    e = to_rw loc t.I.e; loc = loc }
 and inst loc i = Inst.map (to_ty loc) (to_region loc) (to_effect loc) i
 let rec recon_decl x =
   match x with

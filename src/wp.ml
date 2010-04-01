@@ -80,11 +80,13 @@ and scan f =
   rebuild_map ~varfun:(fun _ _ def -> def) ~termfun ~tyfun:ty f
 and bodyfun p e q =
   let l = e.loc in
-  effFA e.e (fun r ->
+  let read, _ = e.e in
+  effFA read (fun r ->
     let p = app (scan p) r l and q = app (scan q) r l in
     impl p (wp_node r q e) l) l
 and wp m q e =
   let ft = ty e.t and l = e.loc in
+  let _, write = e.e in
   if is_value e then
     and_ (applist [q;m;lift_value e] l) (correct e) l
   else
@@ -94,14 +96,14 @@ and wp m q e =
         rgen rl
         (effFA ef (fun cur ->
           wp_node (combine m cur l)
-            (efflamho (Effect.union se.e ef) (fun s ->
-              app q (restrict e.e s l) l) l) se) l) l
+            (efflamho (Effect.union (snd se.e) ef) (fun s ->
+              app q (restrict write s l) l) l) se) l) l
     | App (v1,v2,_,_) ->
         let lv1 = lift_value v1 and lv2 = lift_value v2 in
         andlist
         [ correct v1; correct v2;
           applist [pre lv1 l; lv2; m ] l;
-          effFA e.e (fun m2 ->
+          effFA write (fun m2 ->
             forall ft (fun x ->
               impl (applist [post lv1 l; lv2; m; m2; x] l)
                 (applist [q;m2; x] l) l) l) l ] l
@@ -122,8 +124,8 @@ and wp m q e =
           | Const.Rec _ -> gen (and_ f wp l)
           | Const.LogicDef -> assert false
         else
-          let t = ty e1.t and eff = e.e in
-          let f = efflamho eff (fun m2 ->
+          let t = ty e1.t in
+          let f = efflamho write (fun m2 ->
             plam x t (wp_node (combine m m2 l) q e2) l) l in
           wp_node m f e1
     | Ite (c,th,el) -> ite (lift_value c) (wp_node m q th) (wp_node m q el) l
@@ -131,12 +133,13 @@ and wp m q e =
     | _ -> assert false
 and wp_node m q e =
 (*   Myformat.printf "wp:%a@." print e; *)
+  let read, write = e.e in
   let r =
-  if Effect.equal (domain m) e.e then wp m q e
+  if Effect.equal (domain m) read then wp m q e
   else begin
     let l = e.loc in
-    wp (restrict e.e m l)
-      (efflamho e.e (fun m2 -> app q (combine m m2 l) l) l)
+    wp (restrict read m l)
+      (efflamho write (fun m2 -> app q (combine m m2 l) l) l)
       e
   end in
 (*   Myformat.printf "--end@.";  *)
@@ -144,8 +147,9 @@ and wp_node m q e =
 
 let main e =
   let l = e.loc in
-  let q = efflamho e.e (fun _ -> plamho e.t (fun _ -> ptrue_ l) l) l in
-    effFA e.e (fun m -> (wp_node m q e)) l
+  let read, write = e.e in
+  let q = efflamho write (fun _ -> plamho e.t (fun _ -> ptrue_ l) l) l in
+    effFA read (fun m -> (wp_node m q e)) l
 
 
 let correct_name n = Name.append n "_correct"

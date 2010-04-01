@@ -2,15 +2,17 @@ logic fst ['a 'b||] : (a * b) -> a
 logic snd ['a 'b||] : (a * b) -> b
 let pre ['a 'b||] = (fun (x:a * b) -> fst [a,b||] x) 
 let post ['a 'b||] = (fun (x:a * b) -> snd [a,b||] x) 
-let rec((a ->{ 'e} a) ->
-  a ->{ 'e} a) apply ['a||'e] = (fun (g:a ->{ 'e} a) ->
-                                (fun (x:a) ->
-                                {(fun (cur:< 'e>) ->
-                                 pre [a -> < 'e> -> prop,a -> < 'e> ->
-                                 < 'e> -> a -> prop||] g x cur)}
-                                g x
-                                {(fun (old:< 'e>) ->
-                                 (fun (cur:< 'e>) ->
-                                 (fun (r:a) ->
-                                 post [a -> < 'e> -> prop,a -> < 'e> ->
-                                 < 'e> -> a -> prop||] g x old cur r)))})) 
+let rec((a ->{{ 'e} + { 'e}} a) ->
+  a ->{{ 'e} + { 'e}} a) apply ['a||'e] = (fun (g:a ->{{ 'e} + { 'e}} a) ->
+                                          (fun (x:a) ->
+                                          {(fun (cur:< 'e>) ->
+                                           pre [a -> < 'e> -> prop,a ->
+                                           < 'e> -> < 'e> -> a -> prop||] g x
+                                           cur)}
+                                          g x
+                                          {(fun (old:< 'e>) ->
+                                           (fun (cur:< 'e>) ->
+                                           (fun (r:a) ->
+                                           post [a -> < 'e> -> prop,a ->
+                                           < 'e> -> < 'e> -> a -> prop||] g x
+                                           old cur r)))})) 

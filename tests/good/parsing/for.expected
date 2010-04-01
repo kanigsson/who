@@ -7,7 +7,7 @@ logic ~  : prop -> prop
 logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
   ! ['a|r|] = (fun (x:ref(r,a)) -> {(fun (cur:<r >) -> True)}
-              parameter(a,{r })
+              parameter(a,{r } + {r })
               {(fun (old:<r >) ->
                (fun (cur:<r >) ->
                (fun (r1:a) ->
@@ -24,7 +24,8 @@ logic *  : int -> int -> int
 logic int_max  : int -> int -> int
 let
   := ['a|r|] = (fun (x:ref(r,a)) ->
-               (fun (v:a) -> {(fun (cur:<r >) -> True)} parameter(unit,{r })
+               (fun (v:a) -> {(fun (cur:<r >) -> True)}
+               parameter(unit,{r } + {r })
                {(fun (old:<r >) ->
                 (fun (cur:<r >) ->
                 (fun (anon:unit) -> (!! [a| r| { }] x cur) =[a||] v)))})) 
@@ -33,7 +34,7 @@ let
   forto [||'e] = (fun (inv:int -> < 'e> -> prop) ->
                  (fun (start:int) ->
                  (fun (end_:int) ->
-                 (fun (f:int ->{ 'e} unit) ->
+                 (fun (f:int ->{{ 'e} + { 'e}} unit) ->
                  {(fun (cur:< 'e>) ->
                   (inv start cur) /\
                   (forall (i:int).
@@ -47,7 +48,7 @@ let
                       (post [int -> < 'e> -> prop,int -> < 'e> -> < 'e> ->
                        unit -> prop||] f i m n tt)
                       -> (inv (i + 1) n))))))}
-                 parameter(unit,{ 'e})
+                 parameter(unit,{ 'e} + { 'e})
                  {(fun (old:< 'e>) ->
                   (fun (cur:< 'e>) ->
                   (fun (anon:unit) -> inv (int_max start (end_ + 1)) cur)))})))) 

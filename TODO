@@ -2,8 +2,8 @@ IMPORTANT FEATURES
 
 inductive declarations
 polymorphic arguments
-transformation to destroy tuples
 read/write
+remove stuff about singleton regions
 
 MINOR ISSUES
 

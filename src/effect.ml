@@ -24,6 +24,7 @@
 module S = Name.S
 type t = S.t * S.t
 
+
 let empty = S.empty, S.empty
 let is_empty (r,e) = S.is_empty r && S.is_empty e
 let no_effvar (_,e) = S.is_empty e
@@ -94,6 +95,7 @@ module Convert = struct
     List.rev (S.fold (fun x acc -> Name.Env.id env x :: acc) s [])
 
   let t env (r,e) = build_string_list env r, build_string_list env e
+
 end
 
 module Print = struct

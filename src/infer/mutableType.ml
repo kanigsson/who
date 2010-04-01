@@ -29,7 +29,7 @@ type ty =
   | U
   | Const of Const.ty
   | Tuple of t list
-  | Arrow of t * t * effect * r list
+  | Arrow of t * t * rw * r list
   | PureArr of t * t
   | App of Name.t * t list
   | Ref of r * t
@@ -40,6 +40,7 @@ and rnode =
   | RU
   | RT of Name.t
 and effect = r list * Name.S.t
+and rw = effect * effect
 
 let is_compound x =
   match Uf.desc x with
@@ -48,6 +49,8 @@ let is_compound x =
 
 let hash_effect (rl,s) =
   ExtList.hash Uf.hash (Name.hash_set s) rl
+
+let hash_rw (e1,e2) = Hash.combine2 6 (hash_effect e1) (hash_effect e2)
 
 let hash_ty t =
   match t with
@@ -60,7 +63,7 @@ let hash_ty t =
       Hash.combine 3 (ExtList.hash Uf.hash (Name.hash n) i)
   | Arrow (t1,t2,e,rl) ->
       Hash.combine3 4 (Uf.hash t1) (Uf.hash t2)
-        (ExtList.hash Uf.hash (hash_effect e) rl)
+        (ExtList.hash Uf.hash (hash_rw e) rl)
   | PureArr (t1,t2) ->
       Hash.combine2 5 (Uf.hash t1) (Uf.hash t2)
 
@@ -72,6 +75,9 @@ let equal_r r1 r2 =
 
 let equal_effect (r1,e1) (r2,e2) =
   Effect.s_equal e1 e2 && ExtList.equal_unsorted equal_r r1 r2
+
+let equal_rw (a1,a2) (b1,b2) =
+  equal_effect a1 b1 && equal_effect a2 b2
 
 let equal_ty t1 t2 =
   match t1, t2 with
@@ -85,7 +91,7 @@ let equal_ty t1 t2 =
       Name.equal n1 n2 && ExtList.equal Uf.equal i1 i2
   | Arrow (t1a, t1b, e1, rl1), Arrow (t2a, t2b, e2, rl2) ->
       Uf.equal t1a t2a && Uf.equal t1b t2b && ExtList.equal Uf.equal rl1 rl2 &&
-        equal_effect e1 e2
+        equal_rw e1 e2
   | PureArr (t1a, t1b), PureArr (t2a, t2b) ->
       Uf.equal t1a t2a && Uf.equal t1b t2b
   | _, _ -> false
@@ -126,7 +132,7 @@ module Print = struct
     | Const c -> Const.print_ty `Who fmt c
     | App (v,i) -> fprintf fmt "%a%a" Name.print v (list comma ty) i
     | Arrow (t1,t2,eff,cap) ->
-        fprintf fmt "%a ->{%a%a} %a" mayp t1 effect_no_sep eff maycap cap ty t2
+        fprintf fmt "%a ->{%a%a} %a" mayp t1 rw eff maycap cap ty t2
   and maycap fmt = function
     | [] -> ()
     | l -> fprintf fmt "|%a" region_list l
@@ -139,6 +145,7 @@ module Print = struct
     fprintf fmt "%a|" region_list rl;
     Name.S.iter (Name.print fmt) el;
   and effect fmt e = fprintf fmt "{%a}" effect_no_sep e
+  and rw fmt (e1,e2) = fprintf fmt "%a + %a" effect e1 effect e2
 end
 
 let memo =
@@ -158,6 +165,7 @@ let map e = memo (Map e)
 let app v i = memo (App (v,i))
 
 let eff_empty = [], Name.S.empty
+let rw_empty = eff_empty, eff_empty
 
 let new_r () = Uf.fresh RU
 let from_region =
@@ -172,10 +180,19 @@ let r_equal a b = Uf.tag a = Uf.tag b
 
 let rremove (r,e) rl =
   List.filter (fun x -> not (ExtList.mem r_equal x rl)) r, e
+
 let eff_union (r1,e1) (r2,e2) =
   ExtList.union r_equal r1 r2, Name.S.union e1 e2
 
 let eff_union3 a b c = eff_union a (eff_union b c)
+
+let rw_union (ea1, ea2) (eb1,eb2) =
+  eff_union ea1 eb1, eff_union ea2 eb2
+
+let rw_union3 e1 e2 e3 = rw_union e1 (rw_union e2 e3)
+
+let rw_rremove (e1,e2) rl =
+  rremove e1 rl, rremove e2 rl
 
 
 let const =
@@ -193,7 +210,7 @@ let rec from_ty (x : Ty.t) =
   match x with
   | Ty.Const c -> const c
   | Ty.Arrow (t1,t2,e, c) ->
-      arrow (from_ty t1) (from_ty t2) (from_effect e) (List.map from_region c)
+      arrow (from_ty t1) (from_ty t2) (from_rw e) (List.map from_region c)
   | Ty.Tuple tl -> tuple (List.map from_ty tl)
   | Ty.Ref (r,t) -> ref_ (from_region r) (from_ty t)
   | Ty.Map e -> map (from_effect e)
@@ -202,6 +219,8 @@ let rec from_ty (x : Ty.t) =
 and from_effect eff =
   let rl, e = Effect.to_u_effect eff in
   List.map from_region rl, e
+and from_rw (e1,e2) =
+  from_effect e1, from_effect e2
 
 let node_map ~f ~eff_fun ~rfun t : t =
   let rec aux t =
@@ -212,9 +231,10 @@ let node_map ~f ~eff_fun ~rfun t : t =
     | Ref (r,t) -> ref_ (rfun r) (aux t)
     | Map e -> map (eff_fun e)
     | Arrow (t1,t2,e,rl) ->
-        arrow (aux t1) (aux t2) (eff_fun e) (List.map rfun rl)
+        arrow (aux t1) (aux t2) (rw_fun e) (List.map rfun rl)
     | App (n,i) -> app n (List.map aux i) in
-    f t in
+    f t
+  and rw_fun (e1,e2) = eff_fun e1, eff_fun e2 in
   aux t
 
 let effect_subst h acc =
@@ -275,6 +295,7 @@ let to_region r =
   | RU -> raise UndeterminedType
   | RT s -> s
 let to_effect (r,e) = Effect.from_u_effect (List.map to_region r) e
+let to_rw (e1,e2) = to_effect e1, to_effect e2
 
 let to_ty =
   let h = Ht.create 17 in
@@ -286,7 +307,7 @@ let to_ty =
         | U -> raise UndeterminedType
         | Arrow (t1,t2,e,cap) ->
             Ty.caparrow (to_ty t1) (to_ty t2)
-              (to_effect e) (List.map to_region cap)
+              (to_rw e) (List.map to_region cap)
         | Tuple tl -> Ty.tuple (List.map to_ty tl)
         | Const c -> Ty.const c
         | Ref (r,t) -> Ty.ref_ (to_region r) (to_ty t)
@@ -298,10 +319,11 @@ let to_ty =
   to_ty
 
 let base_pre_ty eff = parr (map eff) prop
-let base_post_ty eff t = parr (map eff) (parr (map eff) (parr t prop))
+let base_post_ty (e1,e2) t = parr (map e1) (parr (map e2) (parr t prop))
 let pretype a e = parr a (base_pre_ty e)
-let posttype a b e = parr a (base_post_ty e b)
-let prepost_type a b e = tuple [ pretype a e ; posttype a b e ]
+let posttype a b rw = parr a (base_post_ty rw b)
+let prepost_type a b ((e1,e2) as rw) =
+  tuple [ pretype a e1 ; posttype a b rw ]
 
 let to_logic_type t =
   node_map ~rfun:Misc.id ~eff_fun:Misc.id ~f:(fun t ->

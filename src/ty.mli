@@ -24,7 +24,7 @@
 type t =
   | Const of Const.ty
   | Tuple of t list
-  | Arrow of t * t * Effect.t * Name.t list
+  | Arrow of t * t * Rw.t * Name.t list
   | PureArr of t * t
   | App of Name.t * inst
   | Ref of Name.t * t
@@ -38,8 +38,8 @@ val gen_print : ?kind:[`Coq | `Who | `Pangoline ] -> t Myformat.fmt
 
 val var : Name.t -> t
 val const : Const.ty -> t
-val arrow : t -> t -> Effect.t -> t
-val caparrow : t -> t -> Effect.t -> Name.t list -> t
+val arrow : t -> t -> Rw.t -> t
+val caparrow : t -> t -> Rw.t -> Name.t list -> t
 val parr : t -> t -> t
 val tuple : t list -> t
 val ref_ : Name.t -> t -> t
@@ -58,7 +58,7 @@ val arg : t -> t
 val result : t -> t
 val split : t -> t * t
 val nsplit : t -> t list * t
-val latent_effect : t -> Effect.t
+val latent_effect : t -> Rw.t
 val domain : t -> Effect.t
 val is_map : t -> bool
 val is_ref : t -> bool
@@ -114,9 +114,11 @@ val get_reg : t -> Name.t
 
 val selim_map : (Name.t -> t) -> t -> t
 
+val base_pretype : Effect.t -> t
+val base_posttype : t -> Rw.t -> t
 val pretype : t -> Effect.t -> t
-val posttype : t -> t -> Effect.t -> t
-val prepost_type: t -> t -> Effect.t -> t
+val posttype : t -> t -> Rw.t -> t
+val prepost_type: t -> t -> Rw.t -> t
 
 val matching : Name.S.t -> t Name.M.t -> t -> t -> t Name.M.t
 

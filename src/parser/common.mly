@@ -120,29 +120,30 @@ rvar_or_effectvar:
   | x = IDENT { `Rvar x.c }
   | e = TYVAR { `Effvar e }
 
-sepcreateeffect:
-  | LCURL e = createeffect RCURL { e }
-
-createeffect:
-  | e = effect cl = maycap
-    { let rl, el = e in rl, el, cl }
-
 maycap:
   | { [] }
   | MID l = IDENT* { strip_info l }
 
 effect: | l = rvar_or_effectvar* {partition_effect l }
 
+read_write :
+  | e1 = effect PLUS e2 = effect { e1, e2}
+  | e = effect { e,e }
+%public sep_readwrite_create :
+  | LCURL e = read_write cl = maycap RCURL { e, cl}
+
 %public sepeffect:
   | LCURL e = effect RCURL { e }
+%public sep_readwrite:
+  | LCURL e = read_write RCURL { e }
 
 
 (* more complex types *)
 %public ty:
   | t = stype { t }
   | t1 = ty ARROW t2 = ty { PureArr (t1, t2) }
-  | t1 = ty ARROW e = sepcreateeffect t2 = ty %prec ARROW
-    { let rl,el,cl = e in Arrow (t1,t2,(rl,el),cl) }
+  | t1 = ty ARROW e = sep_readwrite_create t2 = ty %prec ARROW
+    { let e,cl = e in Arrow (t1,t2,e,cl) }
   | tl = product_ty { Tuple tl }
   | LT e = effect GT { Map e }
   | DLBRACKET t = ty DRBRACKET { ToLogic t }

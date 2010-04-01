@@ -220,10 +220,10 @@ decl:
   | g = alllet
     { let g, e, x, r = g in Program (x,g,e,r) }
   | p = PARAMETER x = defprogvar_no_pos l = gen COLON rt = ty
-    { let par = mk (Param (rt,([],[]))) p in
+    { let par = mk (Param (rt,rw_empty)) p in
       Program (x,l,par,NoRec) }
   | p = PARAMETER x = defprogvar_no_pos l = gen args = arglist
-    COLON rt = ty COMMA e = sepeffect EQUAL
+    COLON rt = ty COMMA e = sep_readwrite EQUAL
       cap = maycapdef pre = precond post = postcond
   {
     let par = mk_param args cap (snd pre) (snd post) rt e p in

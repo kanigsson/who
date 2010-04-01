@@ -33,13 +33,13 @@ type t' =
   | Ite of t * t * t
   | Annot of t * Ty.t
   | Quant of [`FA | `EX ] * MutableType.t * t Name.bind
-  | Param of Ty.t * Effect.t
+  | Param of Ty.t * Rw.t
   | Gen of Ty.Generalize.t * t
   | For of Name.t * pre * Name.t * Name.t * Name.t * t
   | HoareTriple of funcbody
   | LetReg of Name.t list * t
 and t = { v : t' ; t : MutableType.t ;
-          e : MutableType.effect ; loc : Loc.loc }
+          e : MutableType.rw ; loc : Loc.loc }
 and post = t
 and pre = t
 and isrec = Ty.t Const.isrec

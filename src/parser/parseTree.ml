@@ -29,6 +29,7 @@ type effvar = string
 type tvar = string
 
 type effect = ParseTypes.effect
+type rw = ParseTypes.rw
 type ty = ParseTypes.t
 
 type t' =
@@ -42,7 +43,7 @@ type t' =
   | Ite of t * t * t
   | Annot of t * ty
   | Quant of [`FA | `EX] * var * ty option * t
-  | Param of ty * effect
+  | Param of ty * rw
   | For of var * t option * var * var * var * t
   | LetReg of rvar list * t
   | Restrict of t * effect

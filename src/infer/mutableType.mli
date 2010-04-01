@@ -27,7 +27,7 @@ type ty =
   | U
   | Const of Const.ty
   | Tuple of t list
-  | Arrow of t * t * effect * r list
+  | Arrow of t * t * rw * r list
   | PureArr of t * t
   | App of Name.t * t list
   | Ref of r * t
@@ -38,15 +38,17 @@ and rnode =
   | RU
   | RT of Name.t
 and effect = r list * Name.S.t
+and rw = effect * effect
 
 val eff_empty : effect
+val rw_empty : rw
 val const : Const.ty -> t
 val prop : t
 val bool : unit -> t
 val int : t
 val unit : unit -> t
 val parr : t -> t -> t
-val arrow : t -> t -> effect -> r list -> t
+val arrow : t -> t -> rw -> r list -> t
 val map : effect -> t
 
 val new_ty : unit -> t
@@ -57,8 +59,10 @@ val r_equal : r -> r -> bool
 val from_ty : Ty.t -> t
 val from_region : Name.t -> r
 val from_effect : Effect.t -> effect
+val from_rw : Rw.t -> rw
 
 val to_effect : effect -> Effect.t
+val to_rw : rw -> Rw.t
 val to_ty : t -> Ty.t
 val to_region : r -> Name.t
 
@@ -66,7 +70,7 @@ val to_region : r -> Name.t
 
 val to_logic_type : t -> t
 val base_pre_ty : effect -> t
-val base_post_ty : effect -> t -> t
+val base_post_ty : rw -> t -> t
 
 val refresh :
   Ty.Generalize.t -> Effect.t list -> t -> t * (t, r, effect) Inst.t
@@ -76,6 +80,9 @@ val refresh :
 val rremove : effect -> r list -> effect
 val eff_union : effect -> effect -> effect
 val eff_union3 : effect -> effect -> effect -> effect
+val rw_union : rw -> rw -> rw
+val rw_union3 : rw -> rw -> rw -> rw
+val rw_rremove : rw -> r list -> rw
 
 val print : t Myformat.fmt
 val print_region : r Myformat.fmt

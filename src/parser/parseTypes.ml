@@ -22,12 +22,13 @@
 (******************************************************************************)
 
 type effect = string list * string list
+type rw = effect * effect
 
 type t =
   | TVar of string
   | TConst of Const.ty
   | Tuple of t list
-  | Arrow of t * t * effect * string list
+  | Arrow of t * t * rw * string list
   | PureArr of t * t
   | TApp of string * (t,string,effect) Inst.t
   | Ref of string * t
@@ -48,3 +49,6 @@ let print fmt t =
   | TApp (v,_) -> fprintf fmt "app(%s)" v
   | ToLogic t -> fprintf fmt "[[ %a ]]" pt t in
   pt fmt t
+
+let eff_empty = [], []
+let rw_empty = eff_empty, eff_empty
