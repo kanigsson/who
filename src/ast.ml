@@ -501,15 +501,15 @@ and impl h1 goal l =
           if is_equality h1 then raise Exit
           else if is_equality h2 then impl h2 (impl h1 goal l) l
           else raise Exit
-       | _ ->
-           begin match h1.v,goal.v with
-           | Const Const.Ptrue, _ -> goal
-           | _, Const Const.Ptrue -> goal
-           | Const Const.Pfalse, _ -> ptrue_ l
-           | _, _ when equal h1 goal -> ptrue_ l
-           | _ -> raise Exit
-          end
-  with Exit -> simple_appi (spredef I.impl_id l) h1 goal l
+      | _ -> raise Exit
+  with Exit ->
+    match h1.v,goal.v with
+    | Const Const.Ptrue, _ -> goal
+    | _, Const Const.Ptrue -> goal
+    | Const Const.Pfalse, _ -> ptrue_ l
+    | _, _ when equal h1 goal -> ptrue_ l
+    | _ -> simple_appi (spredef I.impl_id l) h1 goal l
+
 and ite ?(logic=true) e1 e2 e3 l =
   let im b c = impl (eq e1 (b l) l) c l in
   if logic then and_ (im btrue_ e2) (im bfalse_ e3) l
