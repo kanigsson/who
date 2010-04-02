@@ -3,14 +3,14 @@ logic /\  : prop -> prop -> prop
 logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
   ! ['a|r|] = (fun (x:ref(r,a)) -> {(fun (cur:<r >) -> True)}
-              parameter(a,{r } + {r })
+              parameter(a,{ } + {r })
               {(fun (old:<r >) ->
                (fun (cur:<r >) ->
                (fun (r1:a) ->
                ((!! [a| r| { }] x cur) =[a||] r1) /\
                ((!! [a| r| { }] x old) =[a||] (!! [a| r| { }] x cur)))))}) 
 let apply ['a
-  'b||'e] = (fun (f:a ->{{ 'e} + { 'e}} b) ->
+  'b||'e] = (fun (f:a ->{{ } + { 'e}} b) ->
             (fun (x:a) -> {(fun (cur:< 'e>) -> True)} f x
             {(fun (old:< 'e>) -> (fun (cur:< 'e>) -> (fun (anon:b) -> True)))})) 
 let

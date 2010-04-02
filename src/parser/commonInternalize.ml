@@ -160,7 +160,7 @@ let effect env (rl,el) =
     (List.map (Env.effvar env) el)
 
 let rw env (e1,e2) =
-  effect env e1, effect env e2
+  Rw.mk ~read:(effect env e1) ~write:(effect env e2)
 
 let ty env t =
   let rec aux = function

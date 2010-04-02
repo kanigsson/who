@@ -1,7 +1,7 @@
 logic fst ['a 'b||] : (a * b) -> a
 logic snd ['a 'b||] : (a * b) -> b
 let
-  f [||'e] = (fun (g:int ->{{ 'e} + { 'e}} int) ->
+  f [||'e] = (fun (g:int ->{{ } + { 'e}} int) ->
              {(fun (cur:< 'e>) ->
               fst [int -> < 'e> -> prop,int -> < 'e> -> < 'e> -> int ->
               prop||] g 5 cur)}

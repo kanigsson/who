@@ -4,7 +4,7 @@ logic /\  : prop -> prop -> prop
 logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
   ! ['a|r|] = (fun (x:ref(r,a)) -> {(fun (cur:<r >) -> True)}
-              parameter(a,{r } + {r })
+              parameter(a,{ } + {r })
               {(fun (old:<r >) ->
                (fun (cur:<r >) ->
                (fun (r1:a) ->
@@ -12,7 +12,7 @@ let
                ((!! [a| r| { }] x old) =[a||] (!! [a| r| { }] x cur)))))}) 
 let
   ref ['a|r|] = (fun (v:a) ->allocates r {(fun (cur:<r >) -> True)}
-                parameter(ref(r,a),{r } + {r })
+                parameter(ref(r,a),{ } + {r })
                 {(fun (old:<r >) ->
                  (fun (cur:<r >) ->
                  (fun (x:ref(r,a)) -> (!! [a| r| { }] x cur) =[a||] v)))}) 

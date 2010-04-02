@@ -165,9 +165,11 @@ let destr_ref = function
 
 let base_pretype e = parr (map e) prop
 let pretype a e = parr a (base_pretype e)
-let base_posttype b (e1, e2) = parr (map e1) (parr (map e2) (parr b prop))
+let base_posttype b e =
+  parr (map (Rw.reads e)) (parr (map (Rw.writes e)) (parr b prop))
 let posttype a b rw = parr a (base_posttype b rw)
-let prepost_type a b ((e1,_) as rw) = tuple [pretype a e1 ; posttype a b rw ]
+let prepost_type a b rw =
+  tuple [pretype a (Rw.reads rw) ; posttype a b rw ]
 
 let node_map ?(rfun=Misc.id) ?(effectfun=Misc.id) f t =
   let rec aux t =
@@ -182,7 +184,7 @@ let node_map ?(rfun=Misc.id) ?(effectfun=Misc.id) f t =
       | Ref (r,t) -> ref_ (rfun r) (aux t)
       | App (v,i) -> app v (List.map aux i) in
     f t
-  and rw (e1,e2) = effectfun e1, effectfun e2 in
+  and rw e = Rw.map effectfun e in
   aux t
 
 let to_logic_type =

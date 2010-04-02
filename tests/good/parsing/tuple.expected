@@ -97,22 +97,20 @@ let
 logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
   ! ['a|r|] = (fun (x:ref(r,a)) -> {(fun (cur:<r >) -> True)}
-              parameter(a,{r } + {r })
+              parameter(a,{r } + { })
               {(fun (old:<r >) ->
-               (fun (cur:<r >) ->
-               (fun (r1:a) ->
-               ((!! [a| r| { }] x cur) =[a||] r1) /\
-               ((!! [a| r| { }] x old) =[a||] (!! [a| r| { }] x cur)))))}) 
+               (fun (cur:< >) ->
+               (fun (r1:a) -> (!! [a| r| { }] x old) =[a||] r1)))}) 
 let
   := ['a|r|] = (fun (x:ref(r,a)) ->
                (fun (v:a) -> {(fun (cur:<r >) -> True)}
-               parameter(unit,{r } + {r })
+               parameter(unit,{ } + {r })
                {(fun (old:<r >) ->
                 (fun (cur:<r >) ->
                 (fun (anon:unit) -> (!! [a| r| { }] x cur) =[a||] v)))})) 
 let
   ref ['a|r|] = (fun (v:a) ->allocates r {(fun (cur:<r >) -> True)}
-                parameter(ref(r,a),{r } + {r })
+                parameter(ref(r,a),{ } + {r })
                 {(fun (old:<r >) ->
                  (fun (cur:<r >) ->
                  (fun (x:ref(r,a)) -> (!! [a| r| { }] x cur) =[a||] v)))}) 
@@ -123,50 +121,57 @@ let fst ['a 'b||] = (fun (x:a * b) -> get_2_1_tuple [a,b||] x)
 let snd ['a 'b||] = (fun (x:a * b) -> get_2_2_tuple [a,b||] x) 
 let pre ['a 'b||] = (fun (x:a * b) -> get_2_1_tuple [a,b||] x) 
 let post ['a 'b||] = (fun (x:a * b) -> get_2_2_tuple [a,b||] x) 
-let
-  forto [||'e] = (fun (inv:int -> < 'e> -> prop) ->
-                 (fun (start:int) ->
-                 (fun (end_:int) ->
-                 (fun (f:int ->{{ 'e} + { 'e}} unit) ->
-                 {(fun (cur:< 'e>) ->
-                  (inv start cur) /\
-                  (forall (i:int).
-                   ((start <= i) /\ (i <= end_)) ->
-                   (forall (m:< 'e>).
-                    (inv i m) ->
-                    ((pre [int -> < 'e> -> prop,int -> < 'e> -> < 'e> ->
-                      unit -> prop||] f i m)
-                     /\
-                     (forall (n:< 'e>).
-                      (post [int -> < 'e> -> prop,int -> < 'e> -> < 'e> ->
-                       unit -> prop||] f i m n tt)
-                      -> (inv (i + 1) n))))))}
-                 parameter(unit,{ 'e} + { 'e})
-                 {(fun (old:< 'e>) ->
-                  (fun (cur:< 'e>) ->
-                  (fun (anon:unit) -> inv (int_max start (end_ + 1)) cur)))})))) 
-let
-  fordownto [||'e] = (fun (inv:int -> < 'e> -> prop) ->
-                     (fun (start:int) ->
-                     (fun (end_:int) ->
-                     (fun (f:int ->{{ 'e} + { 'e}} unit) ->
-                     {(fun (cur:< 'e>) ->
-                      (inv start cur) /\
-                      (forall (i:int).
-                       ((end_ <= i) /\ (i <= start)) ->
-                       (forall (m:< 'e>).
-                        (inv i m) ->
-                        ((pre [int -> < 'e> -> prop,int -> < 'e> -> < 'e> ->
-                          unit -> prop||] f i m)
-                         /\
-                         (forall (n:< 'e>).
-                          (post [int -> < 'e> -> prop,int -> < 'e> ->
-                           < 'e> -> unit -> prop||] f i m n tt)
-                          -> (inv (i - 1) n))))))}
-                     parameter(unit,{ 'e} + { 'e})
-                     {(fun (old:< 'e>) ->
-                      (fun (cur:< 'e>) ->
-                      (fun (anon:unit) -> inv (int_min start (end_ - 1)) cur)))})))) 
+let forto [||'e
+  'e1] = (fun (inv:int -> < 'e1> -> prop) ->
+         (fun (start:int) ->
+         (fun (end_:int) ->
+         (fun (f:int ->{{ 'e} + { 'e1}} unit) ->
+         {(fun (cur:< 'e 'e1>) ->
+          (inv start (restrict [|| { 'e} { 'e1}] cur)) /\
+          (forall (i:int).
+           (start <= i) ->
+           ((i <= end_) ->
+            ([[(fun (cur1:< 'e 'e1>) ->
+               inv i (restrict [|| { 'e} { 'e1}] cur1))]]f i[[(fun (old:< 'e
+                                                              'e1>) ->
+                                                              (fun (cur1:< 'e1>)
+                                                              ->
+                                                              (fun (anon:unit)
+                                                              ->
+                                                              inv (i + 1)
+                                                              (restrict [||
+                                                               { } { 'e1}]
+                                                               cur1))))]]))))}
+         parameter(unit,{ 'e} + { 'e1})
+         {(fun (old:< 'e 'e1>) ->
+          (fun (cur:< 'e1>) ->
+          (fun (anon:unit) ->
+          inv (int_max start (end_ + 1)) (restrict [|| { } { 'e1}] cur))))})))) 
+let fordownto [||'e
+  'e1] = (fun (inv:int -> < 'e1> -> prop) ->
+         (fun (start:int) ->
+         (fun (end_:int) ->
+         (fun (f:int ->{{ 'e} + { 'e1}} unit) ->
+         {(fun (cur:< 'e 'e1>) ->
+          (inv start (restrict [|| { 'e} { 'e1}] cur)) /\
+          (forall (i:int).
+           ((end_ <= i) /\ (i <= start)) ->
+           ([[(fun (cur1:< 'e 'e1>) ->
+              inv i (restrict [|| { 'e} { 'e1}] cur1))]]f i[[(fun (old:< 'e
+                                                             'e1>) ->
+                                                             (fun (cur1:< 'e1>)
+                                                             ->
+                                                             (fun (anon:unit)
+                                                             ->
+                                                             inv (i - 1)
+                                                             (restrict [||
+                                                              { } { 'e1}]
+                                                              cur1))))]])))}
+         parameter(unit,{ 'e} + { 'e1})
+         {(fun (old:< 'e 'e1>) ->
+          (fun (cur:< 'e1>) ->
+          (fun (anon:unit) ->
+          inv (int_min start (end_ - 1)) (restrict [|| { } { 'e1}] cur))))})))) 
 type array['a||]
 logic ar_empty ['a||] : array[a]
 logic get ['a||] : int -> array[a] -> a

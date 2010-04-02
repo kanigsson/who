@@ -189,22 +189,19 @@ section Whoref
 
 end
 
-parameter forto [||'e1 'e2 'e3 ] (inv : int -> <'e2> -> prop)
-  (start end_ : int)
-  (f : int ->{'e1 'e2 + 'e2 'e3} unit) : unit, {'e1 'e2 + 'e2 'e3} =
+parameter forto [||'e1 'e2 ] (inv : int -> <'e2> -> prop) (start end_ : int)
+  (f : int ->{'e1 + 'e2} unit) : unit, {'e1 + 'e2} =
     {
       inv start cur|{'e2} /\\
           forall (i : int). start <= i -> i <= end_ ->
           [[ inv i cur|{'e2} ]] f i [[inv (i+1) cur|{'e2}]]
     }
-    {
-      inv (int_max start (end_ + 1)) cur|{'e2}
-      }
+    { inv (int_max start (end_ + 1)) cur|{'e2} }
 
 
-parameter fordownto [||'e1 'e2 'e3 ] (inv : int -> <'e2> -> prop)
-  (start end_ : int) (f : int ->{'e1 'e2 + 'e2 'e3} unit)
-  : unit, {'e1 'e2 + 'e2 'e3} =
+parameter fordownto [||'e1 'e2 ] (inv : int -> <'e2> -> prop) (start end_ : int)
+   (f : int ->{'e1 + 'e2} unit)
+  : unit, {'e1 + 'e2} =
     { inv start cur|{'e2} /\\
           forall (i : int). end_ <= i /\\ i <= start ->
           [[ inv i cur|{'e2} ]] f i [[inv (i-1) cur|{'e2}]]

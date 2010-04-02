@@ -80,13 +80,12 @@ and scan f =
   rebuild_map ~varfun:(fun _ _ def -> def) ~termfun ~tyfun:ty f
 and bodyfun p e q =
   let l = e.loc in
-  let read, _ = e.e in
-  effFA read (fun r ->
+  effFA (Rw.reads e.e) (fun r ->
     let p = app (scan p) r l and q = app (scan q) r l in
     impl p (wp_node r q e) l) l
 and wp m q e =
   let ft = ty e.t and l = e.loc in
-  let _, write = e.e in
+  let write = Rw.writes e.e in
   if is_value e then
     and_ (applist [q;m;lift_value e] l) (correct e) l
   else
@@ -96,7 +95,7 @@ and wp m q e =
         rgen rl
         (effFA ef (fun cur ->
           wp_node (combine m cur l)
-            (efflamho (Effect.union (snd se.e) ef) (fun s ->
+            (efflamho (Effect.union (Rw.writes se.e) ef) (fun s ->
               app q (restrict write s l) l) l) se) l) l
     | App (v1,v2,_,_) ->
         let lv1 = lift_value v1 and lv2 = lift_value v2 in
@@ -134,21 +133,19 @@ and wp m q e =
 and wp_node m q e =
 (*   Myformat.printf "wp:%a@." print e; *)
   (** FIXME we have to adapt on both sides *)
-  let read, write = e.e in
-  let r =
-  if Effect.equal (domain m) read then wp m q e
+  let read, write = Rw.read_write e.e in
+  let writeq = Ty.domain (Ty.arg q.t) in
+  if Effect.equal writeq write then wp m q e
   else begin
     let l = e.loc in
     wp (restrict read m l)
-      (efflamho write (fun m2 -> app q (combine m m2 l) l) l)
-      e
-  end in
-(*   Myformat.printf "--end@.";  *)
-  r
+      (efflamho write (fun m2 ->
+        app q (combine (restrict writeq m l) m2 l) l) l) e
+  end
 
 let main e =
   let l = e.loc in
-  let read, write = e.e in
+  let read, write = Rw.read_write e.e in
   let q = efflamho write (fun _ -> plamho e.t (fun _ -> ptrue_ l) l) l in
     effFA read (fun m -> (wp_node m q e)) l
 

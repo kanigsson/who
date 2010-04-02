@@ -1,22 +1,45 @@
-type t = Effect.t * Effect.t
+type t =
+  (* We incode the invariant write \subseteq read by saying that [read] contains
+   * only the effects that are not already contained in [write]. *)
+  {
+    read : Effect.t ;
+    write : Effect.t
+  }
 
-let equal (a1,b1) (a2,b2) = Effect.equal a1 a2 && Effect.equal b1 b2
+let mk ~read ~write =
+  { write = write; read = Effect.diff read write }
 
-let empty = Effect.empty, Effect.empty
+let reads a = Effect.union a.read a.write
+let writes a = a.write
+let reads_only a = a.read
 
-let is_empty (e1,e2) = Effect.is_empty e1 && Effect.is_empty e2
+let read_write a = reads a, writes a
 
-let union (l1,l2) (r1,r2) = Effect.union l1 r1, Effect.union l2 r2
+let map f e =
+  { read = f e.read ; write = f e.write }
+
+let empty = { read = Effect.empty; write = Effect.empty }
+
+let equal e1 e2 =
+  Effect.equal e1.read e2.read && Effect.equal e1.write e2.write
+
+let is_empty rw =
+  Effect.is_empty rw.read && Effect.is_empty rw.write
+
+let union e1 e2 =
+  mk ~read:(Effect.union e1.read e2.read)
+    ~write:(Effect.union e1.write e2.write)
+
 let union3 a b c = union a (union b c)
 
-let rremove (e1,e2) rl = Effect.rremove e1 rl, Effect.rremove e2 rl
+let rremove e rl = map (fun e -> Effect.rremove e rl) e
+let overapprox e = reads e
 
-let overapprox (e1,e2) = Effect.union e1 e2
-
-let kernel (e1,e2) = Effect.inter e1 e2
+let kernel e = e.write
 
 module Convert = struct
-  let t env (e1,e2) = Effect.Convert.t env e1, Effect.Convert.t env e2
+  let t env e =
+    Effect.Convert.t env e.read, Effect.Convert.t env e.write
 end
 
 module Print = struct

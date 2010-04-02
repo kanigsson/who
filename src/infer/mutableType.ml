@@ -219,8 +219,8 @@ let rec from_ty (x : Ty.t) =
 and from_effect eff =
   let rl, e = Effect.to_u_effect eff in
   List.map from_region rl, e
-and from_rw (e1,e2) =
-  from_effect e1, from_effect e2
+and from_rw e =
+  from_effect (Rw.reads e), from_effect (Rw.writes e)
 
 let node_map ~f ~eff_fun ~rfun t : t =
   let rec aux t =
@@ -295,7 +295,7 @@ let to_region r =
   | RU -> raise UndeterminedType
   | RT s -> s
 let to_effect (r,e) = Effect.from_u_effect (List.map to_region r) e
-let to_rw (e1,e2) = to_effect e1, to_effect e2
+let to_rw (e1,e2) = Rw.mk ~read:(to_effect e1) ~write:(to_effect e2)
 
 let to_ty =
   let h = Ht.create 17 in

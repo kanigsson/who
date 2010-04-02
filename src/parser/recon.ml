@@ -66,14 +66,14 @@ let rec recon' loc = function
       let bdir = match dir with "forto" -> true|_ -> false in
       let body = recon body in
       let rw = body.e and l = body.loc in
-      let read,write = rw and kern = Rw.kernel rw in
       let inv = recon inv in
       let inv' = plam i Ty.int inv l in
       let intvar s = svar s Ty.int l in
       let cur = Name.from_string "cur" in
       let sv = intvar st and ev = intvar en and iv = intvar i in
+      let read = Rw.reads rw and write = Rw.writes rw in
       let pre =
-        let curvar = restrict kern (svar cur (Ty.map read) l) l in
+        let curvar = svar cur (Ty.map read) l in
         if bdir then
         (* forto: λcur. start <= i /\ i <= end_ /\ inv *)
           efflam cur read (and_ (encl sv iv ev l) (app inv curvar l) l) l
@@ -81,7 +81,7 @@ let rec recon' loc = function
         (* fordownto: λcur. end_ <= i /\ i <= start /\ inv *)
           efflam cur read (and_ (encl ev iv sv l) (app inv curvar l) l) l in
       let post =
-        let curvar = restrict kern (svar cur (Ty.map write) l) l in
+        let curvar = svar cur (Ty.map write) l in
         let next = if bdir then succ iv l else prev iv l in
         (* forto : λold.λcurλ(). inv (i+1) cur *)
         (* fordownto : λold.λcurλ(). inv (i-1) cur *)
@@ -91,8 +91,8 @@ let rec recon' loc = function
               app2 inv' next curvar l) l) l) l in
       let bodyfun = lam i Ty.int pre body post l in
       (* forvar inv start end bodyfun *)
-      let read = Effect.diff read kern and write = Effect.diff write kern in
-      (app2 (app2 (predef dir ([],[],[read;kern;write]) l) inv' sv l)
+      let read = Rw.reads_only rw in
+      (app2 (app2 (predef dir ([],[],[read;write]) l) inv' sv l)
         ev bodyfun l).v
   | I.HoareTriple (p,e,q) -> HoareTriple (recon p, recon e, recon q)
 (*
@@ -138,5 +138,4 @@ let rec recon_decl x =
 and recon_th l = List.map recon_decl l
 
 let theory th =
-  Myformat.printf "here@.";
   recon_th th

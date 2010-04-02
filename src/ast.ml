@@ -76,7 +76,7 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
     | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
     | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
     | Gen (g,e) -> Gen (g,aux e)
-  and rwfun (e1,e2) = effectfun e1, effectfun e2
+  and rwfun e = Rw.map effectfun e
   and body (p,e,q) = aux p, aux e, aux q
   and aux t = {t with v = aux' t.v; t = tyfun t.t; e = rwfun t.e} in
   aux f
@@ -326,10 +326,14 @@ let bfalse_ l = simple_var_id I.bfalse_id l
 let void l = simple_var_id I.void_id l
 
 let var s inst (g,t) =
-  let nt = (Ty.allsubst g inst t) in
-  if Ty.is_unit nt then void
-  else if Ty.equal nt Ty.emptymap then mempty
-  else mk_val (Var (s,inst)) nt
+  try
+    let nt = (Ty.allsubst g inst t) in
+    if Ty.is_unit nt then void
+    else if Ty.equal nt Ty.emptymap then mempty
+    else mk_val (Var (s,inst)) nt
+  with Invalid_argument _ ->
+    failwith (Myformat.sprintf "%a : not the right number of effect
+    instantiations" Name.print s)
 
 let var_i s inst t = mk_val (Var (s,inst)) t
 let svar s t = var s Inst.empty (G.empty, t)
