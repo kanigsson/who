@@ -12,14 +12,12 @@ let append ['a|x y z|] (ar : ref(x,'a array)) (ar2 : ref(y,'a array)) =
     let res = ref {{z}} (create (l1 + l2) baseelt)  in
     let arold = !ar in
     let arold2 = !ar2 in
-    let anon =
-      for i = 0 to l1 -1 do
-        {arold = !!ar /\ id_bet (!!ar) (!!res) 0 0 i /\ len (!!res) = l1 + l2}
-        res := set i (get i (!ar)) (!res)
-      done in
-    let ari = !ar in
+    for i = 0 to l1 -1 do
+      {arold = !!ar /\ id_bet (!!ar) (!!res) 0 0 i /\ len (!!res) = l1 + l2}
+      res := set i (get i (!ar)) (!res)
+    done;
     (for j = 0 to l2 -1 do
-      { id_bet ari (!!res) 0 0 (len ari) /\
+      { id_bet arold (!!res) 0 0 (len arold) /\
         arold2 = !!ar2 /\ id_bet (!!ar2) (!!res) 0 l1 j /\ len (!!res) = l1 + l2}
       res := set (l1 + j) (get j (!ar2)) (!res)
     done);
