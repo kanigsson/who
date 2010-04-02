@@ -80,8 +80,10 @@ and scan f =
   rebuild_map ~varfun:(fun _ _ def -> def) ~termfun ~tyfun:ty f
 and bodyfun p e q =
   let l = e.loc in
-  effFA (Rw.reads e.e) (fun r ->
-    let p = app (scan p) r l and q = app (scan q) r l in
+  effFA (Rw.overapprox e.e) (fun r ->
+    let p = app (scan p) r l
+    and q = efflamho (Rw.writes e.e) (fun r2 ->
+      applist [scan q; r; combine r r2 l] l) l in
     impl p (wp_node r q e) l) l
 and wp m q e =
   let ft = ty e.t and l = e.loc in
@@ -103,8 +105,9 @@ and wp m q e =
         [ correct v1; correct v2;
           applist [pre lv1 l; lv2; m ] l;
           effFA write (fun m2 ->
+            let m2' = combine m m2 l in
             forall ft (fun x ->
-              impl (applist [post lv1 l; lv2; m; m2; x] l)
+              impl (applist [post lv1 l; lv2; m; m2'; x] l)
                 (applist [q;m2; x] l) l) l) l ] l
     | Let (g,e1,b,Const.LogicDef) ->
         let x,e2 = sopen b in
@@ -135,7 +138,7 @@ and wp_node m q e =
   (** FIXME we have to adapt on both sides *)
   let read, write = Rw.read_write e.e in
   let writeq = Ty.domain (Ty.arg q.t) in
-  if Effect.equal writeq write then wp m q e
+  if Effect.equal write writeq then wp m q e
   else begin
     let l = e.loc in
     wp (restrict read m l)
@@ -145,8 +148,8 @@ and wp_node m q e =
 
 let main e =
   let l = e.loc in
-  let read, write = Rw.read_write e.e in
-  let q = efflamho write (fun _ -> plamho e.t (fun _ -> ptrue_ l) l) l in
+  let read = Rw.reads e.e in
+  let q = efflamho read (fun _ -> plamho e.t (fun _ -> ptrue_ l) l) l in
     effFA read (fun m -> (wp_node m q e)) l
 
 

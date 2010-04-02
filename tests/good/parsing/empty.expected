@@ -1,0 +1,219 @@
+type bool
+logic true  : bool
+logic false  : bool
+type unit
+logic tt  : unit
+logic /\  : prop -> prop -> prop
+logic \/  : prop -> prop -> prop
+logic ->  : prop -> prop -> prop
+logic ~  : prop -> prop
+logic = ['a||] : a -> a -> prop
+type region['u||]
+type refty['reg 'ty||]
+logic ref_get ['reg 'u||] : region[reg] -> refty[reg,u] -> u
+logic mk_2tuple ['a 'b||] : a -> b -> a * b
+logic mk_3tuple ['a 'b 'c||] : a -> b -> c -> a * b * c
+logic mk_4tuple ['a 'b 'c 'd||] : a -> b -> c -> d -> a * b * c * d
+logic mk_5tuple ['a 'b 'c 'd 'e||] : a -> b -> c -> d -> e -> a * b * c * d *
+  e
+logic mk_6tuple ['a 'b 'c 'd 'e 'f||] : a -> b -> c -> d -> e -> f -> a * b *
+  c * d * e * f
+logic mk_7tuple ['a 'b 'c 'd 'e 'f 'g||] : a -> b -> c -> d -> e -> f -> g ->
+  a * b * c * d * e * f * g
+logic get_2_1_tuple ['a 'b||] : (a * b) -> a
+logic get_2_2_tuple ['a 'b||] : (a * b) -> b
+logic get_3_1_tuple ['a 'b 'c||] : (a * b * c) -> a
+logic get_3_2_tuple ['a 'b 'c||] : (a * b * c) -> b
+logic get_3_3_tuple ['a 'b 'c||] : (a * b * c) -> c
+logic get_4_1_tuple ['a 'b 'c 'd||] : (a * b * c * d) -> a
+logic get_4_2_tuple ['a 'b 'c 'd||] : (a * b * c * d) -> b
+logic get_4_3_tuple ['a 'b 'c 'd||] : (a * b * c * d) -> c
+logic get_4_4_tuple ['a 'b 'c 'd||] : (a * b * c * d) -> d
+logic get_5_1_tuple ['a 'b 'c 'd 'e||] : (a * b * c * d * e) -> a
+logic get_5_2_tuple ['a 'b 'c 'd 'e||] : (a * b * c * d * e) -> b
+logic get_5_3_tuple ['a 'b 'c 'd 'e||] : (a * b * c * d * e) -> c
+logic get_5_4_tuple ['a 'b 'c 'd 'e||] : (a * b * c * d * e) -> d
+logic get_5_5_tuple ['a 'b 'c 'd 'e||] : (a * b * c * d * e) -> e
+logic get_6_1_tuple ['a 'b 'c 'd 'e 'f||] : (a * b * c * d * e * f) -> a
+logic get_6_2_tuple ['a 'b 'c 'd 'e 'f||] : (a * b * c * d * e * f) -> b
+logic get_6_3_tuple ['a 'b 'c 'd 'e 'f||] : (a * b * c * d * e * f) -> c
+logic get_6_4_tuple ['a 'b 'c 'd 'e 'f||] : (a * b * c * d * e * f) -> d
+logic get_6_5_tuple ['a 'b 'c 'd 'e 'f||] : (a * b * c * d * e * f) -> e
+logic get_6_6_tuple ['a 'b 'c 'd 'e 'f||] : (a * b * c * d * e * f) -> f
+logic get_7_1_tuple ['a 'b 'c 'd 'e 'f 'g||] : (a * b * c * d * e * f * g) ->
+  a
+logic get_7_2_tuple ['a 'b 'c 'd 'e 'f 'g||] : (a * b * c * d * e * f * g) ->
+  b
+logic get_7_3_tuple ['a 'b 'c 'd 'e 'f 'g||] : (a * b * c * d * e * f * g) ->
+  c
+logic get_7_4_tuple ['a 'b 'c 'd 'e 'f 'g||] : (a * b * c * d * e * f * g) ->
+  d
+logic get_7_5_tuple ['a 'b 'c 'd 'e 'f 'g||] : (a * b * c * d * e * f * g) ->
+  e
+logic get_7_6_tuple ['a 'b 'c 'd 'e 'f 'g||] : (a * b * c * d * e * f * g) ->
+  f
+logic get_7_7_tuple ['a 'b 'c 'd 'e 'f 'g||] : (a * b * c * d * e * f * g) ->
+  g
+logic +  : int -> int -> int
+logic -  : int -> int -> int
+logic *  : int -> int -> int
+logic <  : int -> int -> prop
+logic <=  : int -> int -> prop
+logic >  : int -> int -> prop
+logic >=  : int -> int -> prop
+logic <<  : int -> int -> bool
+logic <<=  : int -> int -> bool
+logic >>  : int -> int -> bool
+logic >>=  : int -> int -> bool
+logic <> ['a||] : a -> a -> prop
+logic int_max  : int -> int -> int
+logic int_min  : int -> int -> int
+logic band  : bool -> bool -> bool
+logic bor  : bool -> bool -> bool
+axiom int_max_is_ge:
+  forall (x:int).
+  forall (y:int). ((int_max x y) >= x) /\ ((int_max x y) >= y) 
+axiom int_max_is_some:
+  forall (x:int).
+  forall (y:int). ((int_max x y) =[int||] x) \/ ((int_max x y) =[int||] y) 
+axiom int_min_is_le:
+  forall (x:int).
+  forall (y:int). ((int_min x y) <= x) /\ ((int_min x y) <= y) 
+axiom int_min_is_some:
+  forall (x:int).
+  forall (y:int). ((int_min x y) =[int||] x) \/ ((int_min x y) =[int||] y) 
+logic == ['a||] : a -> a -> bool
+logic != ['a||] : a -> a -> bool
+let
+  assert  = (fun (f:prop) -> {(fun (cur:< >) -> f)} parameter(unit,{ } + { })
+            {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit) -> f)))}) 
+let
+  check  = (fun (f:prop) -> {(fun (cur:< >) -> f)} parameter(unit,{ } + { })
+           {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit) -> True)))}) 
+let
+  assume  = (fun (f:prop) -> {(fun (cur:< >) -> True)}
+            parameter(unit,{ } + { })
+            {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit) -> f)))}) 
+logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
+let
+  ! ['a|r|] = (fun (x:ref(r,a)) -> {(fun (cur:<r >) -> True)}
+              parameter(a,{r } + { })
+              {(fun (old:<r >) ->
+               (fun (cur:< >) ->
+               (fun (r1:a) -> (!! [a| r| { }] x old) =[a||] r1)))}) 
+let
+  := ['a|r|] = (fun (x:ref(r,a)) ->
+               (fun (v:a) -> {(fun (cur:<r >) -> True)}
+               parameter(unit,{ } + {r })
+               {(fun (old:<r >) ->
+                (fun (cur:<r >) ->
+                (fun (anon:unit) -> (!! [a| r| { }] x cur) =[a||] v)))})) 
+let
+  ref ['a|r|] = (fun (v:a) ->allocates r {(fun (cur:<r >) -> True)}
+                parameter(ref(r,a),{ } + {r })
+                {(fun (old:<r >) ->
+                 (fun (cur:<r >) ->
+                 (fun (x:ref(r,a)) -> (!! [a| r| { }] x cur) =[a||] v)))}) 
+logic combine [||'e 'e1 'e2] : < 'e 'e1> -> < 'e1 'e2> -> < 'e 'e1 'e2>
+logic restrict [||'e 'e1] : < 'e 'e1> -> < 'e1>
+logic empty  : < >
+let fst ['a 'b||] = (fun (x:a * b) -> get_2_1_tuple [a,b||] x) 
+let snd ['a 'b||] = (fun (x:a * b) -> get_2_2_tuple [a,b||] x) 
+let pre ['a 'b||] = (fun (x:a * b) -> get_2_1_tuple [a,b||] x) 
+let post ['a 'b||] = (fun (x:a * b) -> get_2_2_tuple [a,b||] x) 
+let forto [||'e
+  'e1] = (fun (inv:int -> < 'e1> -> prop) ->
+         (fun (start:int) ->
+         (fun (end_:int) ->
+         (fun (f:int ->{{ 'e} + { 'e1}} unit) ->
+         {(fun (cur:< 'e 'e1>) ->
+          (inv start (restrict [|| { 'e} { 'e1}] cur)) /\
+          (forall (i:int).
+           (start <= i) ->
+           ((i <= end_) ->
+            ([[(fun (cur1:< 'e 'e1>) ->
+               inv i (restrict [|| { 'e} { 'e1}] cur1))]]f i[[(fun (old:< 'e
+                                                              'e1>) ->
+                                                              (fun (cur1:< 'e1>)
+                                                              ->
+                                                              (fun (anon:unit)
+                                                              ->
+                                                              inv (i + 1)
+                                                              (restrict [||
+                                                               { } { 'e1}]
+                                                               cur1))))]]))))}
+         parameter(unit,{ 'e} + { 'e1})
+         {(fun (old:< 'e 'e1>) ->
+          (fun (cur:< 'e1>) ->
+          (fun (anon:unit) ->
+          inv (int_max start (end_ + 1)) (restrict [|| { } { 'e1}] cur))))})))) 
+let fordownto [||'e
+  'e1] = (fun (inv:int -> < 'e1> -> prop) ->
+         (fun (start:int) ->
+         (fun (end_:int) ->
+         (fun (f:int ->{{ 'e} + { 'e1}} unit) ->
+         {(fun (cur:< 'e 'e1>) ->
+          (inv start (restrict [|| { 'e} { 'e1}] cur)) /\
+          (forall (i:int).
+           ((end_ <= i) /\ (i <= start)) ->
+           ([[(fun (cur1:< 'e 'e1>) ->
+              inv i (restrict [|| { 'e} { 'e1}] cur1))]]f i[[(fun (old:< 'e
+                                                             'e1>) ->
+                                                             (fun (cur1:< 'e1>)
+                                                             ->
+                                                             (fun (anon:unit)
+                                                             ->
+                                                             inv (i - 1)
+                                                             (restrict [||
+                                                              { } { 'e1}]
+                                                              cur1))))]])))}
+         parameter(unit,{ 'e} + { 'e1})
+         {(fun (old:< 'e 'e1>) ->
+          (fun (cur:< 'e1>) ->
+          (fun (anon:unit) ->
+          inv (int_min start (end_ - 1)) (restrict [|| { } { 'e1}] cur))))})))) 
+type array['a||]
+logic ar_empty ['a||] : array[a]
+logic get ['a||] : int -> array[a] -> a
+logic set ['a||] : int -> a -> array[a] -> array[a]
+logic len ['a||] : array[a] -> int
+logic create ['a||] : int -> a -> array[a]
+axiom update_length:
+  forall ['a||]. forall (t:array[a]).
+                 forall (i:int).
+                 forall (z:a).
+                 ((0 <= i) /\ (i < (len [a||] t))) ->
+                 ((len [a||] t) =[int||] (len [a||] (set [a||] i z t))) 
+axiom get_set_eq:
+  forall ['a||]. forall (t:array[a]).
+                 forall (i:int).
+                 forall (z:a).
+                 ((0 <= i) /\ (i < (len [a||] t))) ->
+                 ((get [a||] i (set [a||] i z t)) =[a||] z) 
+axiom length_empty: forall ['a||]. (len [a||] ar_empty [a||]) =[int||] 0 
+axiom get_set_neq:
+  forall ['a||]. forall (t:array[a]).
+                 forall (i:int).
+                 forall (j:int).
+                 forall (z:a).
+                 ((0 <= i) /\ (i < (len [a||] t))) ->
+                 (((0 <= j) /\ (j < (len [a||] t))) ->
+                  ((i <>[int||] j) ->
+                   ((get [a||] i (set [a||] j z t)) =[a||] (get [a||] i t)))) 
+axiom length_nonnegative:
+  forall ['a||]. forall (t:array[a]). 0 <= (len [a||] t) 
+axiom length_create:
+  forall ['a||]. forall (l:int).
+                 forall (v:a).
+                 (0 <= l) -> ((len [a||] (create [a||] l v)) =[int||] l) 
+axiom create_access:
+  forall ['a||]. forall (i:int).
+                 forall (l:int).
+                 forall (v:a).
+                 (0 <= i) ->
+                 ((i < l) -> ((get [a||] i (create [a||] l v)) =[a||] v)) 
+type list['a||]
+logic nil ['a||] : list[a]
+logic cons ['a||] : a -> list[a] -> list[a]
+logic is_nil ['a||] : list[a] -> bool
+logic l_in ['a||] : a -> list[a] -> prop

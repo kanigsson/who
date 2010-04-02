@@ -101,10 +101,10 @@ exception FindFirst of Name.t
 let pref eff cur p =
   I.pure_lam cur (Some (M.map eff)) p p.I.loc
 
-let postf (eff1,eff2) t old cur res p =
+let postf e t old cur res p =
   let l = p.I.loc in
-  let lameff e s body = I.pure_lam s (Some (M.map e)) body l in
-  lameff eff1 old (lameff eff2 cur (I.pure_lam res t p l))
+  let lameff s body = I.pure_lam s (Some (M.map e)) body l in
+  lameff old (lameff cur (I.pure_lam res t p l))
 
 module Uf = Unionfind
 
@@ -196,7 +196,8 @@ and infer env (x : I.t) =
         let e = infer env e in
         Gen (g,e), e.t, e.e
     | I.Param (t,eff) ->
-        Param (t,eff), M.from_ty t, M.from_rw eff
+        let rw = M.from_rw eff in
+        Param (t,eff), M.from_ty t, rw
     | I.For (dir,inv,i,s,e,body) ->
         let env = Env.add_svar env i M.int in
         let body = check_type env (M.unit ()) body in
@@ -240,6 +241,7 @@ and pre env eff (cur,x) l =
 
 and post env eff t (old,cur,x) l =
   let t = M.to_logic_type t in
+  let eff = M.overapprox eff in
   let bp = M.base_post_ty eff t in
   let r, f =
     match x with

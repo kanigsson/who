@@ -107,7 +107,7 @@ let rec formtyping' env loc = function
       let t',eff, capreal = typing env e in
       if not (set_list_contained cap capreal) then
         error loc "wrong declaration of capacities on lambda";
-      pre env (Rw.reads eff) p;
+      pre env eff p;
       post env eff t' q;
       to_logic_type (caparrow t t' eff cap)
   | Gen (_,e)-> formtyping env e
@@ -123,7 +123,7 @@ let rec formtyping' env loc = function
       if not (RS.is_empty capreal) then
         error loc "allocation is forbidden in hoaretriples"
       else
-        pre env (Rw.reads eff) p;
+        pre env eff p;
         post env eff t' q;
         prop
   | Param _ -> error loc "effectful parameter in logic"
@@ -138,8 +138,8 @@ and formtyping env (e : Ast.t) : Ty.t =
     error e.loc "fannotation mismatch on %a: %a and %a@."
       Ast.print e Ty.print e.t Ty.print t
 
-and pre env eff f = fis_oftype env (prety eff) f
-and post env (eff : Rw.t) t f = fis_oftype env (postty eff t) f
+and pre env eff f = fis_oftype env (prety (Rw.overapprox eff)) f
+and post env eff t f = fis_oftype env (postty (Rw.overapprox eff) t) f
 
 and typing' env loc = function
   | Ast.Const c ->
@@ -180,7 +180,7 @@ and typing' env loc = function
       let t',eff,capreal = typing env e in
       if not (set_list_contained cap capreal) then
         error loc "wrong declaration of capacities";
-      pre env (Rw.reads eff) p;
+      pre env eff p;
       post env eff t' q;
       caparrow t t' eff cap, Rw.empty, RS.empty
   | Let (g,e1,b,r) ->
@@ -224,7 +224,7 @@ and typing' env loc = function
       if not (RS.is_empty capreal) then
         error loc "allocation is forbidden in hoaretriples"
       else
-        pre env (Rw.reads eff) p;
+        pre env eff p;
         post env eff t' q;
         prop, Rw.empty, RS.empty
 

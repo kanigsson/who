@@ -5,15 +5,15 @@ logic = ['a||] : a -> a -> prop
 logic !! ['a|r|'e] : ref(r,a) -> < 'e> -> a
 let
   ! ['a|r|] = (fun (x:ref(r,a)) -> {(fun (cur:<r >) -> True)}
-              parameter(a,{r } + {r })
+              parameter(a,{ } + {r })
               {(fun (old:<r >) ->
                (fun (cur:<r >) ->
                (fun (r1:a) ->
                (r1 =[a||] (!! [a| r| {r }] x cur)) /\
                ((!! [a| r| {r }] x old) =[a||] (!! [a| r| {r }] x cur)))))}) 
 let seq ['a 'b 'c||'e
-  'e1] = (fun (f:a ->{{ 'e} + { 'e}} b) ->
-         (fun (g:b ->{{ 'e1} + { 'e1}} c) ->
+  'e1] = (fun (f:a ->{{ } + { 'e}} b) ->
+         (fun (g:b ->{{ } + { 'e1}} c) ->
          (fun (x:a) -> {(fun (cur:< 'e 'e1>) -> True)} let anf = f x in g anf
          {(fun (old:< 'e 'e1>) ->
           (fun (cur:< 'e 'e1>) -> (fun (anon:c) -> True)))}))) 

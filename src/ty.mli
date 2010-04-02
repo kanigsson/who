@@ -113,10 +113,10 @@ val get_reg : t -> Name.t
 val selim_map : (Name.t -> t) -> t -> t
 
 val base_pretype : Effect.t -> t
-val base_posttype : t -> Rw.t -> t
+val base_posttype : t -> Effect.t -> t
 val pretype : t -> Effect.t -> t
-val posttype : t -> t -> Rw.t -> t
-val prepost_type: t -> t -> Rw.t -> t
+val posttype : t -> t -> Effect.t -> t
+val prepost_type: t -> t -> Effect.t -> t
 
 val matching : Name.S.t -> t Name.M.t -> t -> t -> t Name.M.t
 

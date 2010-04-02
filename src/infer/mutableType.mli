@@ -70,7 +70,8 @@ val to_region : r -> Name.t
 
 val to_logic_type : t -> t
 val base_pre_ty : effect -> t
-val base_post_ty : rw -> t -> t
+val base_post_ty : effect -> t -> t
+val overapprox : rw -> effect
 
 val refresh :
   Ty.Generalize.t -> Effect.t list -> t -> t * (t, r, effect) Inst.t
@@ -88,3 +89,4 @@ val print : t Myformat.fmt
 val print_region : r Myformat.fmt
 val region_list : r list Myformat.fmt
 val print_effect : effect Myformat.fmt
+val print_rw : rw Myformat.fmt

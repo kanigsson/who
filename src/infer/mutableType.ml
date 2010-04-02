@@ -319,19 +319,22 @@ let to_ty =
   to_ty
 
 let base_pre_ty eff = parr (map eff) prop
-let base_post_ty (e1,e2) t = parr (map e1) (parr (map e2) (parr t prop))
+let base_post_ty e t = parr (map e) (parr (map e) (parr t prop))
 let pretype a e = parr a (base_pre_ty e)
-let posttype a b rw = parr a (base_post_ty rw b)
-let prepost_type a b ((e1,e2) as rw) =
-  tuple [ pretype a e1 ; posttype a b rw ]
+let posttype a b e = parr a (base_post_ty e b)
+let prepost_type a b e =
+  tuple [ pretype a e ; posttype a b e ]
+
+let overapprox (e1,e2) = eff_union e1 e2
 
 let to_logic_type t =
   node_map ~rfun:Misc.id ~eff_fun:Misc.id ~f:(fun t ->
     match Uf.desc t with
-    | Arrow (t1,t2,e,_) -> prepost_type t1 t2 e
+    | Arrow (t1,t2,e,_) -> prepost_type t1 t2 (overapprox e)
     | _ -> t) t
 
 let print = Print.ty
 let print_region = Print.region
 let region_list = Print.region_list
 let print_effect = Print.effect
+let print_rw = Print.rw
