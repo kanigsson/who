@@ -365,13 +365,18 @@ let hoare_triple p e q l = mk_val (HoareTriple (p,e,q)) Ty.prop l
 let gen g e l = true_or e (mk (Gen (g, e)) e.t e.e l)
 
 let simple_app ?(kind=`Prefix) ?(cap=[]) t1 t2 l =
-  let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
-  if not (Ty.equal (Ty.arg t1.t) t2.t) then begin
-    Myformat.printf "type mismatch on application: function %a has type %a,
-    and argument %a has type %a@." print t1 Ty.print t1.t
-    print t2 Ty.print t2.t ; invalid_arg "app" end
-  else
-    mk (App (t1,t2,kind,cap)) t (Rw.union3 t1.e t2.e e) l
+  try
+    let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
+    if not (Ty.equal (Ty.arg t1.t) t2.t) then begin
+      Myformat.printf "type mismatch on application: function %a has type %a,
+      and argument %a has type %a@." print t1 Ty.print t1.t
+      print t2 Ty.print t2.t ; invalid_arg "app" end
+    else
+      mk (App (t1,t2,kind,cap)) t (Rw.union3 t1.e t2.e e) l
+  with Invalid_argument _ ->
+    Myformat.printf "not a function: %a of type %a.." print t1 Ty.print t1.t;
+    invalid_arg "app"
+
 
 let simple_app2 ?kind t t1 t2 loc =
   simple_app ?kind (simple_app t t1 loc) t2 loc

@@ -133,6 +133,7 @@ and wp m q e =
     | _ -> assert false
 and wp_node m q e =
 (*   Myformat.printf "wp:%a@." print e; *)
+  (** FIXME we have to adapt on both sides *)
   let read, write = e.e in
   let r =
   if Effect.equal (domain m) read then wp m q e
