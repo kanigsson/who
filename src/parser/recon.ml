@@ -81,12 +81,12 @@ let rec recon' loc = function
         (* fordownto: λcur. end_ <= i /\ i <= start /\ inv *)
           efflam cur read (and_ (encl ev iv sv l) (app inv curvar l) l) l in
       let post =
-        let curvar = svar cur (Ty.map write) l in
+        let curvar = svar cur (Ty.map read) l in
         let next = if bdir then succ iv l else prev iv l in
         (* forto : λold.λcurλ(). inv (i+1) cur *)
         (* fordownto : λold.λcurλ(). inv (i-1) cur *)
         efflamho read (fun _ ->
-          efflam cur write
+          efflam cur read
             (plamho (Ty.unit ()) (fun _ ->
               app2 inv' next curvar l) l) l) l in
       let bodyfun = lam i Ty.int pre body post l in

@@ -35,6 +35,7 @@ let to_section th =
   let rec decl_to_outdecl d =
     match d with
     | DLetReg _ | Program _ -> assert false
+    | Formula (_,{ v = Const Const.Ptrue}, _) -> []
     | DGen _ | Decl _ | TypeDef _ | Formula (_,_,`Assumed) | Logic _ -> [ d ]
     | Formula (s,f, `Proved) -> mk_Section ~namehint:s f
     | Section (n,th, k) ->

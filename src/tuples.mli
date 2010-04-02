@@ -21,4 +21,9 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
+type error
+exception Error of error
+
+val explain : error -> string
+
 val theory : Ast.theory -> Ast.theory

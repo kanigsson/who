@@ -189,24 +189,25 @@ section Whoref
 
 end
 
-parameter forto [||'e1 'e2 ] (inv : int -> <'e2> -> prop) (start end_ : int)
+parameter forto [||'e1 'e2 ] (inv : int -> <'e1 'e2> -> prop) (start end_ : int)
   (f : int ->{'e1 + 'e2} unit) : unit, {'e1 + 'e2} =
     {
-      inv start cur|{'e2} /\\
+      inv start cur /\\
           forall (i : int). start <= i -> i <= end_ ->
-          [[ inv i cur|{'e2} ]] f i [[inv (i+1) cur|{'e2}]]
+          [[ inv i cur ]] f i [[inv (i+1) cur]]
     }
-    { inv (int_max start (end_ + 1)) cur|{'e2} }
+    { inv (int_max start (end_ + 1)) cur }
 
 
-parameter fordownto [||'e1 'e2 ] (inv : int -> <'e2> -> prop) (start end_ : int)
+parameter fordownto [||'e1 'e2 ] (inv : int -> <'e1 'e2> -> prop)
+   (start end_ : int)
    (f : int ->{'e1 + 'e2} unit)
   : unit, {'e1 + 'e2} =
-    { inv start cur|{'e2} /\\
+    { inv start cur /\\
           forall (i : int). end_ <= i /\\ i <= start ->
-          [[ inv i cur|{'e2} ]] f i [[inv (i-1) cur|{'e2}]]
+          [[ inv i cur ]] f i [[inv (i-1) cur]]
     }
-    { inv (int_min start (end_ - 1)) cur|{'e2} }
+    { inv (int_min start (end_ - 1)) cur }
 
 section Array
   coq \"WhoArray\"

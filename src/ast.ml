@@ -371,15 +371,17 @@ let gen g e l = true_or e (mk (Gen (g, e)) e.t e.e l)
 let simple_app ?(kind=`Prefix) ?(cap=[]) t1 t2 l =
   try
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
-    if not (Ty.equal (Ty.arg t1.t) t2.t) then begin
+    if not (Ty.equal (Ty.arg t1.t) t2.t) then raise Exit;
+    mk (App (t1,t2,kind,cap)) t (Rw.union3 t1.e t2.e e) l
+  with
+  | Exit ->
       Myformat.printf "type mismatch on application: function %a has type %a,
-      and argument %a has type %a@." print t1 Ty.print t1.t
-      print t2 Ty.print t2.t ; invalid_arg "app" end
-    else
-      mk (App (t1,t2,kind,cap)) t (Rw.union3 t1.e t2.e e) l
-  with Invalid_argument _ ->
-    Myformat.printf "not a function: %a of type %a.." print t1 Ty.print t1.t;
-    invalid_arg "app"
+        and argument %a has type %a@." print t1 Ty.print t1.t
+        print t2 Ty.print t2.t ;
+      invalid_arg "app"
+  | Invalid_argument _ ->
+      Myformat.printf "not a function: %a of type %a.." print t1 Ty.print t1.t;
+      invalid_arg "app"
 
 
 let simple_app2 ?kind t t1 t2 loc =
@@ -608,7 +610,16 @@ and combine t1 t2 l =
       match destruct_app2_var t1 with
       | Some (v,([],[],[e1;_;_]), _, db)
         when PL.equal v I.combine_id && Effect.sub_effect e1 d2' ->
+          (** applies when we have
+           combine (combine a b) c
+           and
+           a is included in the intersection of a,b and c *)
+          (** in this case return combine b c *)
           combine db t2 l
+      | Some (v,([],[],[_;e2;e3]), b, _ )
+        when PL.equal v I.combine_id &&
+          Effect.sub_effect (Effect.union e2 e3) (Effect.union d2' d3') ->
+            combine b t2 l
       | _  ->
           simple_app2 (predef I.combine_id ([],[],[d1';d2';d3']) l) t1 t2 l
 

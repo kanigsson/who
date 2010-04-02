@@ -135,16 +135,13 @@ and wp m q e =
     | _ -> assert false
 and wp_node m q e =
 (*   Myformat.printf "wp:%a@." print e; *)
-  (** FIXME we have to adapt on both sides *)
   let read, write = Rw.read_write e.e in
-  let writeq = Ty.domain (Ty.arg q.t) in
-  if Effect.equal write writeq then wp m q e
-  else begin
-    let l = e.loc in
+  let writeq = Ty.domain (Ty.arg q.t) and l = e.loc in
+  if Effect.equal write writeq then wp (restrict read m l) q e
+  else
     wp (restrict read m l)
       (efflamho write (fun m2 ->
         app q (combine (restrict writeq m l) m2 l) l) l) e
-  end
 
 let main e =
   let l = e.loc in

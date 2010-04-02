@@ -23,19 +23,19 @@ let forto [||'e
             ([[(fun (cur1:< 'e 'e1>) ->
                inv i (restrict [|| { 'e} { 'e1}] cur1))]]f i[[(fun (old:< 'e
                                                               'e1>) ->
-                                                              (fun (cur1:< 'e1>)
-                                                              ->
+                                                              (fun (cur1:< 'e
+                                                              'e1>) ->
                                                               (fun (anon:unit)
                                                               ->
                                                               inv (i + 1)
                                                               (restrict [||
-                                                               { } { 'e1}]
+                                                               { 'e} { 'e1}]
                                                                cur1))))]]))))}
          parameter(unit,{ 'e} + { 'e1})
          {(fun (old:< 'e 'e1>) ->
-          (fun (cur:< 'e1>) ->
+          (fun (cur:< 'e 'e1>) ->
           (fun (anon:unit) ->
-          inv (int_max start (end_ + 1)) (restrict [|| { } { 'e1}] cur))))})))) 
+          inv (int_max start (end_ + 1)) (restrict [|| { 'e} { 'e1}] cur))))})))) 
 let fordownto [||'e
   'e1] = (fun (inv:int -> < 'e1> -> prop) ->
          (fun (start:int) ->
@@ -49,16 +49,16 @@ let fordownto [||'e
             ([[(fun (cur1:< 'e 'e1>) ->
                inv i (restrict [|| { 'e} { 'e1}] cur1))]]f i[[(fun (old:< 'e
                                                               'e1>) ->
-                                                              (fun (cur1:< 'e1>)
-                                                              ->
+                                                              (fun (cur1:< 'e
+                                                              'e1>) ->
                                                               (fun (anon:unit)
                                                               ->
                                                               inv (i - 1)
                                                               (restrict [||
-                                                               { } { 'e1}]
+                                                               { 'e} { 'e1}]
                                                                cur1))))]]))))}
          parameter(unit,{ 'e} + { 'e1})
          {(fun (old:< 'e 'e1>) ->
-          (fun (cur:< 'e1>) ->
+          (fun (cur:< 'e 'e1>) ->
           (fun (anon:unit) ->
-          inv (int_min start (end_ - 1)) (restrict [|| { } { 'e1}] cur))))})))) 
+          inv (int_min start (end_ - 1)) (restrict [|| { 'e} { 'e1}] cur))))})))) 

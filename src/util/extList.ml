@@ -109,29 +109,6 @@ let find_pos eq x l =
   in
   aux 0 l
 
-module Ordered (X : Map.OrderedType) = struct
-
-  let sort = List.sort X.compare
-
-  let mem x =
-    let rec aux l =
-      match l with
-      | [] -> false
-      | y::ys ->
-          let c = X.compare x y in
-          if c = 0 then true else
-            if c < 0 then false
-            else aux ys in
-    aux
-
-  let inter l1 l2 =
-    List.filter (fun x -> mem x l2) l1
-
-  let diff l1 l2 =
-    List.filter (fun x -> not (mem x l2)) l1
-
-  let symmdiff l1 l2 =
-    let i = inter l1 l2 in
-    diff l1 i, diff l2 i
-
-end
+let map2i f l1 l2 =
+  let x = ref (-1) in
+  List.map2 (fun a b -> incr x; f !x a b) l1 l2

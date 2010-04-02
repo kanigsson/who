@@ -21,6 +21,21 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
+open Ast
+
+type error =
+  | NotFoundInTuple of Ty.t * Ty.t * t
+
+exception Error of error
+
+let explain e =
+  match e with
+  | NotFoundInTuple (t1,t2,t) ->
+      Myformat.sprintf "did not find type %a in tuple %a, type of term %a@."
+        Ty.print t1 Ty.print t2 print t
+
+let error kind = raise (Error kind)
+
 module Env : sig
   type t
   val empty : t
@@ -63,8 +78,6 @@ end = struct
     M.find n env.n
 
 end
-
-open Ast
 
 let effect_lists_to_type_list env (rl,el) =
   let rt = List.map (fun x -> Ty.region (Env.rlookup env x)) rl in
@@ -119,8 +132,10 @@ let build_get_tuple il tup l =
 let obtain_get t in_t tup l =
   if Ty.is_unit t then void l
   else
-    let il = find_type t in_t in
-    build_get_tuple il tup l
+    try
+      let il = find_type t in_t in
+      build_get_tuple il tup l
+    with Not_found -> error (NotFoundInTuple (t,in_t,tup))
 
 let one_or_many f t =
   match t with
@@ -136,11 +151,16 @@ let adapt_tuples te t1 t2 l =
 *)
 
 let combine_to_tuple target m1 m2 l =
+(*   Format.printf "combining %a and %a of types %a and %a@." print m1 print m2
+ *   *)
   mk_tuple (one_or_many (fun t ->
     try obtain_get t m2.t m2 l
-    with Not_found -> obtain_get t m1.t m1 l) target) l
+    with Error NotFoundInTuple _ ->
+      obtain_get t m1.t m1 l
+      ) target) l
 
 let restrict_to_tuple target m l =
+(*   Format.printf "restrict@."; *)
   mk_tuple (one_or_many (fun t -> obtain_get t m.t m l) target) l
 
 let adapt obt exp t l =
@@ -160,7 +180,16 @@ let adapt obt exp t l =
             adapt ta2 tb2 (app t x' l)) l
           (* if there is an order problem, it *has* to be a tuple on the left
            * side; otherwise, the types cannot be different *)
-      | t1, t2 -> adapt_tuples t t1 t2 l
+      | t1, t2 ->
+          try adapt_tuples t t1 t2 l
+          with Error NotFoundInTuple _ ->
+            match t1, t2 with
+            | Ty.Tuple tl1, Ty.Tuple tl2
+              when List.length tl1 = List.length tl2 ->
+                mk_tuple
+                  (ExtList.map2i (fun i a b ->
+                    adapt a b (get_tuple (i+1) t l)) tl1 tl2) l
+            | _, _ -> assert false
     end
   in
   adapt obt exp t
@@ -181,8 +210,7 @@ let rec term env t =
           combine_to_tuple t m1 m2 l
       | _ ->
           match destruct_app t with
-          | Some ({v = Var (v,([],[],_))}, m)
-            when PL.equal v I.restrict_id ->
+          | Some ({v = Var (v,([],[],_))}, m) when PL.equal v I.restrict_id ->
               let m = term env m in
               let t = tyfun env t.t in
               restrict_to_tuple t m l

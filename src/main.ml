@@ -120,4 +120,5 @@ let _ =
   | CommonInternalize.Error e ->
       Error.bad (CommonInternalize.explain e)
   | Recon.Error (loc,e) -> Error.with_loc (Recon.explain e) loc
+  | Tuples.Error e -> Error.bad (Tuples.explain e)
 

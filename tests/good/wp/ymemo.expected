@@ -135,7 +135,7 @@ goal ymemo_correct:
            int -> prop)) -> < > -> prop,((int -> <t > -> prop) * (int ->
            <t > -> <t > -> int -> prop)) -> < > -> < > -> ((int -> <t > ->
            prop) * (int -> <t > -> <t > -> int -> prop)) -> prop||] ff f1
-           (restrict [|| {t } { }] s1) empty anon1)
+           (restrict [|| {t } { }] s1) (restrict [|| {t } { }] s1) anon1)
           ->
           ((get_2_1_tuple [int -> <t > -> prop,int -> <t > -> <t > -> int ->
             prop||] anon1 x s1)
