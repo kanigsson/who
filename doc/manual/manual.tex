@@ -35,41 +35,40 @@ In this chapter, we aim to describe almost all syntactic elements of the
 
 A type definition of a polymorphic type looks as follows:
 \begin{alltt}
-  type array ['a||]
+  type array ['a]
 \end{alltt}
-Notice the two bars at the end to indicate empty region and effect parameters.
 Also note that despite the name, {\tt array} is {\em not} a mutable type.
 
 We can declare functions over this type in the following way:
 \begin{alltt}
-  logic create ['a||] :  int -> 'a -> 'a array
-  logic get ['a||] : int -> 'a array -> 'a
-  logic set ['a||]: int -> 'a -> 'a array -> 'a array
-  logic len ['a||] :  'a array -> int
+  logic create ['a] :  int -> 'a -> 'a array
+  logic get ['a] : int -> 'a array -> 'a
+  logic set ['a]: int -> 'a -> 'a array -> 'a array
+  logic len ['a] :  'a array -> int
 \end{alltt}
 Again, notice that these are pure functions which act on {\em functional}
 arrays, for example {\tt set} returns a new, modified array.
 
 Now, we can declare properties of these functions in form of axioms:
 \begin{alltt}
-  axiom update_length ['a||] :
+  axiom update_length ['a] :
     forall (t : 'a array) (i : int) (z : 'a).
     0 <= i \verb|/\| i < len t -> len t = len (set i z t)
-  axiom get_set_neq ['a||] :
+  axiom get_set_neq ['a] :
     forall (t : 'a array ) (i : int) (j : int) (z : 'a).
       (0 <= i \verb|/\| i < len t) ->
       (0 <= j \verb|/\| j < len t) ->
         i <> j -> get i (set j z t) = get i t
-  axiom get_set_eq ['a||] :
+  axiom get_set_eq ['a] :
     forall (t : 'a array) (i : int) (z : 'a).
       0 <= i \verb|/\| i < len t -> get i (set i z t) = z
 \end{alltt}
 
 Now, we can also {\em define} functions over those functional arrays:
 \begin{alltt}
-  let zeroset ['a||] (v : 'a) (a : 'a array) = set 0 v a
+  let zeroset ['a] (v : 'a) (a : 'a array) = set 0 v a
 \end{alltt}
-Here, we have defined a {\em pure} function {\tt zeroset} of type {\tt ['a||].
+Here, we have defined a {\em pure} function {\tt zeroset} of type {\tt ['a].
 int -> 'a array -> 'a array}. No effects take place, and nothing has to be
 proved.
 
@@ -84,7 +83,7 @@ go:
     \{ \}
 \end{alltt}
 Notice the additional curly brackets at the beginning and the end of the
-function body. The function {\tt zerosetc} has the type {\tt ['a||]. int -> 'a
+function body. The function {\tt zerosetc} has the type {\tt ['a]. int -> 'a
 array ->{} 'a array}. We see that the last (and only the last) arrow has an
 effect annotation. In this case, this effect annotation is empty; no effect
 takes place, because {\tt set} returns a new function.
@@ -93,7 +92,7 @@ Now, if we want to state anything about the return value of {\tt zerosetc}, we
 need to write a {\em postcondition}. For example, we would like to state that
 the returned array contains zero at position $i$:
 \begin{alltt}
-  let zerosetc ['a||] (v : 'a) (a : 'a array) =
+  let zerosetc ['a] (v : 'a) (a : 'a array) =
     \{ \}
     set 0 v a
     \{ r : get 0 r = v \}
@@ -104,7 +103,7 @@ case, this proof obligation is actually unprovable, because the array {\tt a}
 might be empty, in which case the axioms do not say anything of {\tt set 0 v a}.
 We have to give a {\em precondition}:
 \begin{alltt}
-  let zerosetc ['a||] (v : 'a) (a : 'a array) =
+  let zerosetc ['a] (v : 'a) (a : 'a array) =
     \{ 0 < len a \}
     set 0 v a
     \{ r : get 0 r = v \}
@@ -244,6 +243,8 @@ smaller domain described by an effect using the syntax:
 \begin{alltt}
 s|\{e\}
 \end{alltt}
+
+%TODO read/write effects
 
 \appendix
 

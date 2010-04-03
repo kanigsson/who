@@ -1,0 +1,14 @@
+# Changes
+
+## version 0.3 - released Apr 3
+
+* on pure abstractions and quantifiers, one can now omit type annotations
+* new functions assert, assume, check in the prelude
+* new encoding for effects
+* logics defined types generalized over type variables are now really supported
+* abstract types now can only be generalized over type variables, and not
+  effect and region variables
+* read/write effects
+
+## version 0.2 - released Feb 23
+
