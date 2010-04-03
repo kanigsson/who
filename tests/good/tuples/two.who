@@ -14,5 +14,5 @@ logic y : int
 logic z : int
 letregion r1 r2
 goal g :
-  forall (x : ref(r1,int)) (k : ref(r2,int)) (u : <r1 r2>). 
-    z = y -> !!x|u = !!k|u
+  forall (x : ref(r1,int)) (k : ref(r2,int)) (u : <r1 r2>).
+    z = y -> !!x@u = !!k@u

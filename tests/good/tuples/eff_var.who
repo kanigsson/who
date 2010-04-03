@@ -15,4 +15,4 @@ logic f [||'e] : <'e> -> int
 letregion r1 r2
 goal g :
   forall (x : ref(r1,int)) (k : ref(r2,int)) (u : <r1 r2>).
-    z = f[{r1 r2}] u -> !!x|u = !!k|u
+    z = f[{r1 r2}] u -> !!x@u = !!k@u

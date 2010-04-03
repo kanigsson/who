@@ -18,4 +18,4 @@ letregion b
 logic f [||'e] :  <b 'e> -> int
 goal g :
   forall (x : ref(b,int)) (u : <b>).
-    z = f[{}] u -> !!x|u = 3
+    z = f[{}] u -> !!x@u = 3

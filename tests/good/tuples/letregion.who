@@ -10,4 +10,4 @@ logic y : int
 logic z : int
 letregion r
 goal g :
-  forall (x : ref(r,int)) (u : <r>). z = y -> !!x|u = 1
+  forall (x : ref(r,int)) (u : <r>). z = y -> !!x@u = 1

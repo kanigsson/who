@@ -18,5 +18,5 @@ logic z : int
 letregion a b
 goal g :
   forall (u : <a >) (v : <b>) (x : ref(a,int)) (k : ref(b,int)).
-    (let f = (fun (c : <a b>) -> !!x|c = !!k|c) in
+    (let f = (fun (c : <a b>) -> !!x@c = !!k@c) in
     f (combine[{a} {} {b}] u v))

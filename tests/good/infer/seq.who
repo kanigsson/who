@@ -5,7 +5,7 @@ logic /\ : prop -> prop -> prop
 logic !! ['a|r|'e] : ref(r,'a) -> < r 'e > -> 'a
 parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
 {}
-{r : !!x = r /\ !!x|old = !!x}
+{r : !!x = r /\ !!x@old = !!x}
 
 let seq ['a 'b 'c||'e1 'e2] (f : 'a ->{'e1} 'b) (g : 'b ->{'e2} 'c) (x : 'a) =
 {}

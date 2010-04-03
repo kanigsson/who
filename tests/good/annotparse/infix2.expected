@@ -2,7 +2,7 @@ type unit
 let
   := ['a|r|] = (fun (x:ref(r,a)) ->
                (fun (v:a) -> {(fun (cur:<r >) -> True)}
-               parameter(unit,{r } + {r })
+               parameter(unit,{ } + {r })
                {(fun (old:<r >) ->
                 (fun (cur:<r >) -> (fun (anon:unit) -> True)))})) 
 let
