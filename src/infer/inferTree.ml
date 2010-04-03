@@ -25,9 +25,15 @@
 
 module G = Ty.Generalize
 module M = MutableType
+
+type var =
+  { var : Name.t;
+    scheme : G.t * M.t
+  }
+
 type t' =
   | Const of Const.t
-  | Var of Name.t * (M.t,M.r, M.effect) Inst.t
+  | Var of var * (M.t,M.r, M.effect) Inst.t
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
   | App of t * t * [`Infix | `Prefix ] * Name.t list

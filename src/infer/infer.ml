@@ -63,6 +63,8 @@ end = struct
 
 end
 
+let mk_var_with_m_scheme v s = { var = v; scheme = s }
+
 type error =
   | Basic of string
   | WrongRegionCap
@@ -218,6 +220,7 @@ and infer env (x : I.t) =
           try M.refresh m el xt
           with Invalid_argument _ ->
             error l (WrongNumberEffects(v, List.length evl, List.length el)) in
+        let v = mk_var_with_m_scheme v (m,xt) in
         Var (v, i), nt, M.rw_empty
     | I.Let (g,e1,(_,x,e2),r) ->
         let env, e1 = letgen env x g e1 r in

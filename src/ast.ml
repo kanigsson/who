@@ -21,15 +21,15 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-(* TODO system for type inference on term application ?? *)
-
 module G = Ty.Generalize
 module PL = Predefined
 module I = Identifiers
 
+type var = { var : Name.t; scheme : Ty.scheme }
+
 type node =
   | Const of Const.t
-  | Var of Name.t * inst
+  | Var of var * inst
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
   | App of t * t * [`Infix | `Prefix ] * Name.t list
@@ -66,7 +66,7 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
   let rec aux' = function
     | (Const _ ) as t -> t
     | Param (t,e) -> Param (tyfun t, rwfun e)
-    | Var (v,i) -> varfun v (Inst.map tyfun rvarfun effectfun i)
+    | Var (v,i) -> Var (var v, Inst.map tyfun rvarfun effectfun i)
     | App (t1,t2,p,cap) -> App (aux t1, aux t2, p, List.map rvarfun cap)
     | Lam (x,t,cap,b) ->
         Lam (x,tyfun t, List.map rvarfun cap, body b )
@@ -79,11 +79,14 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
     | Gen (g,e) -> Gen (g,aux e)
   and rwfun e = Rw.map effectfun e
   and body (p,e,q) = aux p, aux e, aux q
+  and var v = 
+    let (g,t) = v.scheme in
+    { var = varfun v.var ; scheme = g, tyfun t }
   and aux t = {t with v = aux' t.v; t = tyfun t.t; e = rwfun t.e} in
   aux f
 
 let refresh s t =
-  map ~varfun:(fun x i -> Var (Name.refresh s x, i))
+  map ~varfun:(Name.refresh s)
     ~varbindfun:(Name.refresh_bind s)
     ~tyfun:Misc.id
     ~rvarfun:Misc.id
@@ -94,11 +97,14 @@ let close = Name.close_bind
 let sopen = Name.sopen refresh
 let vopen_with x = Name.open_with refresh x
 
+let var_equal v1 v2 =
+  Name.equal v1.var v2.var && Ty.scheme_equal v1.scheme v2.scheme
+
 let rec equal' a b =
   match a, b with
   | Const c1, Const c2 -> Const.compare c1 c2 = 0
   | Var (v1,i1), Var (v2,i2) ->
-      Name.equal v1 v2 &&
+      var_equal v1 v2 &&
       Inst.equal Ty.equal Name.equal Effect.equal i1 i2
   | App (a1,b1,_,_), App (a2,b2,_,_) -> equal a1 a2 && equal b1 b2
   | Gen (g1,t1), Gen (g2,t2) ->
@@ -142,7 +148,7 @@ module Convert = struct
     | Const c -> P.Const c
     | Param (t,e) -> P.Param (ty env t, rw env e)
     | Var (v,i) ->
-        let s = id env v in
+        let s = id env v.var in
         P.Var (s, inst env i)
     | App (t1,t2,p,cap) ->
         P.App (t env t1, t env t2, p, List.map (id env) cap)
@@ -259,7 +265,7 @@ let destruct_app x = destruct_app' x.v
 
 let is_equality t =
   match destruct_app2_var t with
-  | Some (v, _, _,_) when PL.equal v I.equal_id -> true
+  | Some (v, _, _,_) when PL.equal v.var I.equal_id -> true
   | _ -> false
 
 let destruct_varname x =
@@ -281,21 +287,21 @@ let error loc s =
   Myformat.ksprintf (fun s -> raise (Error (s,loc))) s
 
 let tsubst tvl tl e =
-  open_close_map ~varfun:(fun v i -> Var (v,i))
+  open_close_map ~varfun:Misc.id
                  ~tyfun:(Ty.tlsubst tvl tl)
                  ~rvarfun:Misc.id
                  ~effectfun:Misc.id
                  e
 
 let rsubst rvl rl e =
-  open_close_map ~varfun:(fun v i -> Var (v,i))
+  open_close_map ~varfun:Misc.id
                  ~tyfun:(Ty.rlsubst rvl rl)
                  ~rvarfun:(Ty.rsubst rvl rl)
                  ~effectfun:(Effect.rmap (Ty.rsubst rvl rl))
                  e
 
 let esubst evl el e =
-  open_close_map ~varfun:(fun v i -> Var (v,i))
+  open_close_map ~varfun:Misc.id
     ~tyfun:(Ty.elsubst evl el)
     ~rvarfun:Misc.id
     ~effectfun:(Effect.lsubst evl el) e
@@ -323,35 +329,37 @@ let const c =
   mk_val (Const c) (Ty.const (Const.type_of_constant c))
 
 let simple_var v t = mk_val (Var (v, Inst.empty)) t
+let mk_var_with_scheme v s = { var = v; scheme = s }
+let mk_var_with_type v t = { var = v; scheme = Ty.as_scheme t }
 let simple_var_id s =
-  let x, (_,t) = PL.var_and_type s in
-  simple_var x t
+  let x, ((_,t) as s) = PL.var_and_type s in
+  simple_var (mk_var_with_scheme x s) t
 
 let mempty l = simple_var_id I.empty_id l
 let btrue_ l = simple_var_id I.btrue_id l
 let bfalse_ l = simple_var_id I.bfalse_id l
 let void l = simple_var_id I.void_id l
 
-let var s inst (g,t) =
+let var x inst =
   try
+    let g,t = x.scheme in
     let nt = (Ty.allsubst g inst t) in
     if Ty.is_unit nt then void
     else if Ty.equal nt Ty.emptymap then mempty
-    else mk_val (Var (s,inst)) nt
+    else mk_val (Var (x,inst)) nt
   with Invalid_argument _ ->
     failwith (Myformat.sprintf "%a : not the right number of effect
-    instantiations" Name.print s)
+    instantiations" Name.print x.var)
 
-let var_i s inst t = mk_val (Var (s,inst)) t
-let svar s t = var s Inst.empty (G.empty, t)
+let svar s = var s Inst.empty
 
 let predef s i =
   let x, t = PL.var_and_type s in
-  var x i t
+  let v = mk_var_with_scheme x t in
+  var v i
 
 let spredef s =
-  let x, (_,t) = PL.var_and_type s in
-  svar x t
+  predef s Inst.empty
 
 let true_or e v =
   match e.v with
@@ -398,6 +406,7 @@ let simple_appi t t1 t2 loc = simple_app2 ~kind:`Infix t t1 t2 loc
 let simple_eq t1 t2 l =
   simple_appi (predef I.equal_id ([t1.t],[],[]) l) t1 t2 l
 
+let id_equal v id = PL.equal v.var id
 
 let boolcmp_to_propcmp x =
   let eq = Predefined.equal in
@@ -422,20 +431,20 @@ let rec app ?kind ?cap t1 t2 l : t =
     (* double application, check if we are not in a simplification case *)
     | App (op,t1,_,_) ->
         begin match destruct_varname op with
-        | Some (v,_) when PL.equal v I.and_id -> and_ t1 t2 l
-        | Some (v,_) when PL.equal v I.or_id -> or_ t1 t2 l
-        | Some (v,_) when PL.equal v I.impl_id -> impl t1 t2 l
-        | Some (v,_) when PL.equal v I.equal_id -> eq t1 t2 l
-        | Some (v,_) when PL.equal v I.combine_id -> combine t1 t2 l
+        | Some (v,_) when id_equal v I.and_id -> and_ t1 t2 l
+        | Some (v,_) when id_equal v I.or_id -> or_ t1 t2 l
+        | Some (v,_) when id_equal v I.impl_id -> impl t1 t2 l
+        | Some (v,_) when id_equal v I.equal_id -> eq t1 t2 l
+        | Some (v,_) when id_equal v I.combine_id -> combine t1 t2 l
         | _ -> raise Exit
         end
     | _ ->
     (* simple application *)
         match destruct_varname t1 with
-        | Some (v,_) when PL.equal v I.not_id -> neg t2 l
-        | Some (v, _) when PL.equal v I.fst_id -> pre t2 l
-        | Some (v, _) when PL.equal v I.snd_id -> post t2 l
-        | Some (v, ([],[],[_;b])) when PL.equal v I.restrict_id ->
+        | Some (v,_) when id_equal v I.not_id -> neg t2 l
+        | Some (v, _) when id_equal v I.fst_id -> pre t2 l
+        | Some (v, _) when id_equal v I.snd_id -> post t2 l
+        | Some (v, ([],[],[_;b])) when id_equal v I.restrict_id ->
             restrict b t2 l
         | _ -> raise Exit
     with Exit -> simple_app ?kind ?cap t1 t2 l
@@ -455,13 +464,13 @@ and neg f l =
 and reduce_bool t l =
   let rec aux t =
     match t.v with
-    | Var (v,_) when PL.equal v I.btrue_id -> ptrue_ l
+    | Var (v,_) when id_equal v I.btrue_id -> ptrue_ l
     | _ ->
         match destruct_app2_var t with
         | Some (op, i, arg1, arg2) ->
-            let v = boolcmp_to_propcmp op in
+            let v = boolcmp_to_propcmp op.var in
             let arg1, arg2 =
-              if PL.equal op I.andb_id || PL.equal op I.orb_id then
+              if id_equal op I.andb_id || id_equal op I.orb_id then
                 aux arg1, aux arg2
               else arg1, arg2 in
             appi (v i l) arg1 arg2 l
@@ -478,7 +487,7 @@ and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
     let t =
       match t.v with
       | Const _ -> t
-      | Var (v,i) -> varfun v (Inst.map tyfun Misc.id Misc.id i) t
+      | Var (v,i) -> varfun v.var (Inst.map tyfun Misc.id Misc.id i) t
       | App (t1,t2,p,cap) -> allapp (aux t1) (aux t2) p cap l
       | Let (g,e1,b,r) ->
           let x,f = vopen b in
@@ -500,11 +509,11 @@ and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
 and impl h1 goal l =
 (*     Myformat.printf "impl: %a and %a@." print h1 print goal; *)
   try match destruct_app2_var h1 with
-  | Some (v, _, ha, hb) when PL.equal v I.and_id ->
+  | Some (v, _, ha, hb) when id_equal v I.and_id ->
       impl ha (impl hb goal l) l
   | _ ->
       match destruct_app2_var goal with
-      | Some (v, _, h2, goal) when PL.equal v I.impl_id ->
+      | Some (v, _, h2, goal) when id_equal v I.impl_id ->
           if is_equality h1 then raise Exit
           else if is_equality h2 then impl h2 (impl h1 goal l) l
           else raise Exit
@@ -527,14 +536,14 @@ and eq t1 t2 l =
   else
     try match t2.v with
     | Var (v, ([], [], [])) when
-       PL.equal v I.btrue_id || PL.equal v I.bfalse_id ->
+       id_equal v I.btrue_id || id_equal v I.bfalse_id ->
         let f = reduce_bool t1 l in
-        if PL.equal v I.btrue_id then f else neg f l
+        if id_equal v I.btrue_id then f else neg f l
     | _ -> raise Exit
     with Exit ->
       match t1.v, t2.v with
       | Var (v1,([],[],[])), Var (v2, ([],[],[])) ->
-          if Name.compare v2 v1 < 0 then simple_eq t2 t1 l
+          if Name.compare v2.var v1.var < 0 then simple_eq t2 t1 l
           else simple_eq t1 t2 l
       | Var _, _ -> simple_eq t1 t2 l
       | _, Var _ -> simple_eq t2 t1 l
@@ -567,17 +576,19 @@ and squant k x t f loc =
   else
   begin
     try match destruct_app2_var f with
-    | Some (i, _, t1,f) when PL.equal i I.impl_id ->
+    | Some (i, _, t1,f) when id_equal i I.impl_id ->
         begin match destruct_app2_var t1 with
         | Some (e, _,({v= Var(y,_)} as t1), ({v = Var (z,_)} as t2) )
-          when PL.equal e I.equal_id ->
-            if Name.equal x y then subst x (fun _ -> t2) f
-            else if Name.equal x z then subst z (fun _ -> t1) f
+          when id_equal e I.equal_id ->
+            if Name.equal x y.var then subst x (fun _ -> t2) f
+            else if Name.equal x z.var then subst z.var (fun _ -> t1) f
             else raise Exit
-        | Some (e, _,{v= Var(y,_)}, def) when PL.equal e I.equal_id ->
-            if Name.equal x y then subst x (fun _ -> def) f else raise Exit
-        | Some (e, _,def,{v = Var (y,_)}) when PL.equal e I.equal_id ->
-            if Name.equal x y then subst x (fun _ -> def) f else raise Exit
+        | Some (e, _,{v= Var(y,_)}, def) when id_equal e I.equal_id ->
+            if Name.equal x y.var then subst x (fun _ -> def) f
+            else raise Exit
+        | Some (e, _,def,{v = Var (y,_)}) when id_equal e I.equal_id ->
+            if Name.equal x y.var then subst x (fun _ -> def) f
+            else raise Exit
         | _ -> raise Exit
         end
     | _ -> raise Exit
@@ -587,7 +598,7 @@ and squant k x t f loc =
 
 and pre t l =
   match destruct_app2_var t with
-  | Some (v,_,a,_) when PL.equal v (I.mk_tuple_id 2) -> a
+  | Some (v,_,a,_) when id_equal v (I.mk_tuple_id 2) -> a
   | _ ->
       try
         let t1, t2 = Ty.destr_pair t.t in
@@ -599,7 +610,7 @@ and pre t l =
 
 and post t l =
   match destruct_app2_var t with
-  | Some (v,_,_,b) when PL.equal v (I.mk_tuple_id 2) -> b
+  | Some (v,_,_,b) when id_equal v (I.mk_tuple_id 2) -> b
   | _ ->
       try
         let t1, t2 = Ty.destr_pair t.t in
@@ -616,7 +627,7 @@ and combine t1 t2 l =
     else
       match destruct_app2_var t1 with
       | Some (v,([],[],[e1;_;_]), _, db)
-        when PL.equal v I.combine_id && Effect.sub_effect e1 d2' ->
+        when id_equal v I.combine_id && Effect.sub_effect e1 d2' ->
           (** applies when we have
            combine (combine a b) c
            and
@@ -624,7 +635,7 @@ and combine t1 t2 l =
           (** in this case return combine b c *)
           combine db t2 l
       | Some (v,([],[],[_;e2;e3]), b, _ )
-        when PL.equal v I.combine_id &&
+        when id_equal v I.combine_id &&
           Effect.sub_effect (Effect.union e2 e3) (Effect.union d2' d3') ->
             combine b t2 l
       | _  ->
@@ -636,7 +647,7 @@ and restrict eff t l =
   try
     match destruct_app2_var t with
     | Some (v,([],[],[e1;_;e3]), m1, m2)
-      when PL.equal v I.combine_id  ->
+      when id_equal v I.combine_id  ->
         if Effect.sub_effect eff e3 then restrict eff m2 l
         else if Effect.sub_effect eff e1 then restrict eff m1 l
         else raise Exit
@@ -650,8 +661,8 @@ let applist ?(fix=`Prefix) l loc =
   | a::b::rest ->
       List.fold_left (fun acc x -> app acc x loc) (app a b loc) rest
 
-let infer_app ?fix ?(regions=[]) ?(effects=[]) ?rty x
-  (((tvl,rl,el),ty) as scheme) tel l =
+let infer_app ?fix ?(regions=[]) ?(effects=[]) ?rty x tel l =
+  let (tvl,rl,el),ty = x.scheme in
   let ty = Ty.elsubst el effects (Ty.rlsubst rl regions ty) in
 (*
   Myformat.printf "inferring args for %a : ∀%a.  %a with args %a@."
@@ -669,13 +680,13 @@ let infer_app ?fix ?(regions=[]) ?(effects=[]) ?rty x
     | Some rty -> matching Name.M.empty xrty rty in
   let s = List.fold_left2 matching initial tyl (List.map (fun t -> t.t) tel) in
   let tl = List.map (fun x -> Name.M.find x s) tvl in
-  applist ?fix (var x (tl,regions,effects) scheme l :: tel) l
+  applist ?fix (var x (tl,regions,effects) l :: tel) l
 
 let infer_predef ?fix ?regions ?effects ?rty id =
   let x,t = PL.var_and_type id in
-  infer_app ?fix ?regions ?effects ?rty x t
+  let x = mk_var_with_scheme x t in
+  infer_app ?fix ?regions ?effects ?rty x
 
-let svar s t = var s Inst.empty (G.empty,t)
 let le t1 t2 loc =
   simple_appi (spredef I.le_id loc) t1 t2 loc
 
@@ -687,7 +698,7 @@ let destr_tuple i =
   let rec aux k acc t =
     if k = 0 then
       match t.v with
-      | Var (v,_) when PL.equal v (I.mk_tuple_id i) -> Some acc
+      | Var (v,_) when id_equal v (I.mk_tuple_id i) -> Some acc
       | _ -> None
     else
       match t.v with
@@ -768,7 +779,8 @@ let quant ?s k t f loc =
     match s with
     | None -> Name.new_anon ()
     | Some s -> Name.from_string s in
-  let tv = svar v t loc in
+  let var = mk_var_with_type v t in
+  let tv = svar var loc in
   squant k v t (f tv) loc
 
 let forall ?s t f loc = quant ?s `FA t f loc
@@ -778,7 +790,8 @@ let plamho ?s t f loc =
     match s with
     | None -> Name.new_anon ()
     | Some s -> Name.from_string s in
-  let tv = svar v t loc in
+  let var = mk_var_with_type v t in
+  let tv = svar var loc in
   plam v t (f tv) loc
 
 let efflamho ?s e f loc = plamho ?s (Ty.map e) f loc
@@ -793,13 +806,13 @@ let rec is_param e =
 let destruct_restrict' x =
   match destruct_app' x with
   | Some ({v = Var (v,([],[],[e1;e2]))},map)
-    when PL.equal v I.restrict_id ->
+    when id_equal v I.restrict_id ->
       Some (map,e1,e2)
   | _ -> None
 
 let destruct_get' x =
   match destruct_app2_var' x with
-  | Some (v, ([t],[reg],[e]), r,map) when PL.equal v I.get_id ->
+  | Some (v, ([t],[reg],[e]), r,map) when id_equal v I.get_id ->
       Some (t,r,reg,Effect.radd e reg,map)
   | _ -> None
 

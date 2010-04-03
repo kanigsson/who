@@ -51,8 +51,12 @@ let to_rw loc t =
   try M.to_rw t
   with MutableType.UndeterminedType -> error loc UndeterminedType
 
+let var loc v =
+  let g,t = v.I.scheme in
+  { var = v.I.var ; scheme = g, to_ty loc t} 
+
 let rec recon' loc = function
-  | I.Var (x,i) -> Var (x,inst loc i)
+  | I.Var (x,i) -> Var (var loc x,inst loc i)
   | I.Const c -> Const c
   | I.App (e1,e2,k,cap) -> App (recon e1, recon e2,k,cap)
   | I.PureFun (t,(s,x,e)) -> PureFun (to_ty loc t,(s,x, recon e))
@@ -68,12 +72,12 @@ let rec recon' loc = function
       let rw = body.e and l = body.loc in
       let inv = recon inv in
       let inv' = plam i Ty.int inv l in
-      let intvar s = svar s Ty.int l in
+      let intvar s = svar (mk_var_with_type s Ty.int) l in
       let cur = Name.from_string "cur" in
       let sv = intvar st and ev = intvar en and iv = intvar i in
       let read = Rw.reads rw and write = Rw.writes rw in
+      let curvar = svar (mk_var_with_type cur (Ty.map read)) l in
       let pre =
-        let curvar = svar cur (Ty.map read) l in
         if bdir then
         (* forto: λcur. start <= i /\ i <= end_ /\ inv *)
           efflam cur read (and_ (encl sv iv ev l) (app inv curvar l) l) l
@@ -81,7 +85,6 @@ let rec recon' loc = function
         (* fordownto: λcur. end_ <= i /\ i <= start /\ inv *)
           efflam cur read (and_ (encl ev iv sv l) (app inv curvar l) l) l in
       let post =
-        let curvar = svar cur (Ty.map read) l in
         let next = if bdir then succ iv l else prev iv l in
         (* forto : λold.λcurλ(). inv (i+1) cur *)
         (* fordownto : λold.λcurλ(). inv (i-1) cur *)

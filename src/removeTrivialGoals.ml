@@ -44,9 +44,9 @@ let rec term env f =
       gen g (term env f') f.loc
   | f' ->
       begin match destruct_app2_var' f' with
-      | Some (v,_,f1,f2) when PL.equal v Identifiers.impl_id  ->
+      | Some (v,_,f1,f2) when PL.equal v.var Identifiers.impl_id  ->
           impl f1 (term (Env.add_hypo env f1) f2) f.loc
-      | Some (v,_,f1,f2) when PL.equal v Identifiers.and_id  ->
+      | Some (v,_,f1,f2) when PL.equal v.var Identifiers.and_id  ->
           and_ (term env f1) (term env f2) f.loc
       | _ -> if Env.mem env f then ptrue_ f.loc else f
       end

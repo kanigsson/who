@@ -42,7 +42,7 @@ let termfun t =
     let x,f = vopen b in
     let vl, vtl = ExtList.split_map (fun t ->
       let v = find_name x t in
-      (v,t), svar v t l) tl in
+      (v,t), svar (mk_var_with_type v t) l) tl in
     let tuple = mk_tuple vtl l in
     let f = subst x (fun _ -> tuple) f in
     List.fold_right (fun (v,t) acc -> squant k v t acc l) vl f

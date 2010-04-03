@@ -21,9 +21,14 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
+type var =
+  { var : Name.t;
+    scheme : Ty.Generalize.t * MutableType.t
+  }
+
 type t' =
   | Const of Const.t
-  | Var of Name.t * (MutableType.t,MutableType.r, MutableType.effect) Inst.t
+  | Var of var * (MutableType.t,MutableType.r, MutableType.effect) Inst.t
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
   | App of t * t * [`Infix | `Prefix ] * Name.t list

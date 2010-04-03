@@ -273,9 +273,6 @@ module G = Generalize
 
 type scheme = G.t * t
 
-let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target =
-  elsubst evl el (rlsubst rvl rl (tlsubst tvl tl target))
-
 let rec equal t1 t2 =
   match t1, t2 with
   | Const x1, Const x2 -> x1 = x2
@@ -291,6 +288,15 @@ let rec equal t1 t2 =
   | App (v1,i1), App (v2,i2) ->
       v1 = v2 && ExtList.equal equal i1 i2
   | _ -> false
+
+let scheme_equal (g1,t1) (g2,t2) =
+  G.equal g1 g2 && equal t1 t2
+
+let as_scheme t = G.empty, t
+
+let allsubst ((tvl,rvl,evl) : Generalize.t) (tl,rl,el) target =
+  elsubst evl el (rlsubst rvl rl (tlsubst tvl tl target))
+
 
 (*
 let forty () =

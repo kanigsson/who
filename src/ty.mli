@@ -101,6 +101,9 @@ module Generalize : sig
 end
 
 type scheme = Generalize.t * t
+val scheme_equal : scheme -> scheme -> bool
+
+val as_scheme : t -> scheme
 
 val print_scheme : scheme Myformat.fmt
 

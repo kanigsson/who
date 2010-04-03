@@ -204,13 +204,14 @@ let rec term env t =
       get_to_select reg ref dom m l
   | _ ->
       match destruct_app2_var t with
-      | Some (v,_, m1,m2) when PL.equal v I.combine_id ->
+      | Some (v,_, m1,m2) when PL.equal v.var I.combine_id ->
           let m1 = term env m1 and m2 = term env m2 in
           let t = tyfun env t.t in
           combine_to_tuple t m1 m2 l
       | _ ->
           match destruct_app t with
-          | Some ({v = Var (v,([],[],_))}, m) when PL.equal v I.restrict_id ->
+          | Some ({v = Var (v,([],[],_))}, m) 
+            when PL.equal v.var I.restrict_id ->
               let m = term env m in
               let t = tyfun env t.t in
               restrict_to_tuple t m l
@@ -230,15 +231,11 @@ let rec term env t =
          * convert it *)
         let expected_type = tyfun env t.t in
         let ni = (tl, [], []) in
-(* the obtained type is the type of the instantiated f in the new
- * type system, maybe we have to convert *)
-        let v = var v ni (scheme env (Env.lookup env v)) l in
+        (* the obtained type is the type of the instantiated f in the new
+         * type system, maybe we have to convert *)
+        let s = scheme env v.scheme in
+        let v = var (mk_var_with_scheme v.var s) ni l in
         let obtained_type = v.t in
-(*
-Myformat.printf "calling adapt with obt: %a; exp : %a; term %a of type
-%a@." Ty.print obtained_type Ty.print expected_type print v Ty.print
-v.t;
-*)
         adapt obtained_type expected_type v l
     | Quant (k,t,b) ->
         let x,f = vopen b in

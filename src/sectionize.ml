@@ -56,7 +56,7 @@ let to_section th =
           else aux ((DGen g)::acc) f
       | f' ->
           match destruct_app2_var' f' with
-          | Some (v,_,f1,f2) when PL.equal v I.impl_id  ->
+          | Some (v,_,f1,f2) when PL.equal v.var I.impl_id  ->
               aux (Formula (Name.from_string "H", f1,`Assumed)::acc) f2
           | _ -> List.rev acc, f in
     aux [] f
@@ -67,8 +67,8 @@ let to_section th =
           mk_Section f @ acc
       | f' ->
           match destruct_app2_var' f' with
-          | Some (v,_,_,_) when PL.equal v I.impl_id -> mk_Section f @ acc
-          | Some (v,_,f1,f2) when PL.equal v I.and_id -> aux (aux acc f2) f1
+          | Some (v,_,_,_) when PL.equal v.var I.impl_id -> mk_Section f @ acc
+          | Some (v,_,f1,f2) when PL.equal v.var I.and_id -> aux (aux acc f2) f1
           | _ ->
               let n =
                 match namehint with

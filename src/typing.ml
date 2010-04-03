@@ -50,12 +50,16 @@ let disj_union3 loc s1 s2 s3 =
   disjoint_union loc (disjoint_union loc s1 s2) s3
 
 
-let type_of_var env x = Name.M.find x env.types
+let type_of_var env x =
+  let g = Name.M.find x.var env.types in
+  assert (Ty.scheme_equal x.scheme g);
+  g
 
 let ftype_of_var env x =
-  let m,t = type_of_var env x in
-(*   Format.printf "ftype_of_var : %a of type %a@." Vars.var x Ty.print t; *)
-  m, to_logic_type t
+  let m,t = Name.M.find x.var env.types in
+  let g = m, to_logic_type t in
+  assert (Ty.scheme_equal x.scheme g);
+  g
 
 let prety = Ty.base_pretype
 let postty eff t = Ty.base_posttype (Ty.to_logic_type t) eff
@@ -73,7 +77,7 @@ let rec formtyping' env loc = function
 (*         printf "var : %a of type %a@." Vars.var s Ty.print r; r *)
         r
       with Not_found ->
-        error loc "unknown variable: %a" Name.print s
+        error loc "unknown variable: %a" Name.print s.var
       end
   | Ast.App (e1,e2,_,_) ->
       let t1 = formtyping env e1 in
@@ -149,7 +153,7 @@ and typing' env loc = function
         let g, t = type_of_var env s in
         Ty.allsubst g i t, Rw.empty, RS.empty
       with Not_found ->
-        error loc "unknown variable: %a" Name.print s
+        error loc "unknown variable: %a" Name.print s.var
       end
   | Ast.App (e1,e2,_,capapp) ->
       let t1, eff1, cap1 = typing env e1 in

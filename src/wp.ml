@@ -34,11 +34,17 @@ let efflamho = efflamho ~s:"s"
 let plamho = plamho ~s:"r"
 let effFA = effFA ~s:"s"
 
+let lift_scheme (g,t) = g, ty t
+
+let lift_var v =
+  { var = v.var; scheme = lift_scheme v.scheme } 
+
+let lift_inst i = Inst.map ty Misc.id Misc.id i
+
 let rec lift_value v =
   let l = v.loc in
   match v.v with
-  | Var (_,_) ->
-      { v with t = ty v.t }
+  | Var (v,i) -> var (lift_var v) (lift_inst i) l
   | Const _ -> v
   | App (v1,v2,kind,_) ->
       app ~kind (lift_value v1) (lift_value v2) l
