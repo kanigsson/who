@@ -44,8 +44,6 @@ module Env : sig
   val elookup : t -> Name.t -> Ty.t
   val add_region_list : t -> Name.t list -> t * Name.t list
   val add_effect_var_list : t -> Name.t list -> t * Name.t list
-  val add_var : t -> Name.t -> Ty.scheme -> t
-  val lookup : t -> Name.t -> Ty.scheme
 end = struct
 
   module M = Name.M
@@ -69,13 +67,6 @@ end = struct
 
   let add_effect_var_list env l =
     List.fold_left add_effect_var env l, l
-
-  let add_var env n s =
-(*     Myformat.printf "adding: %a : %a@." Name.print n Ty.print_scheme s; *)
-    { env with n = M.add n s env.n }
-
-  let lookup env n =
-    M.find n env.n
 
 end
 
@@ -239,14 +230,12 @@ let rec term env t =
         adapt obtained_type expected_type v l
     | Quant (k,t,b) ->
         let x,f = vopen b in
-        let env = Env.add_var env x (Ty.Generalize.empty,t) in
         squant k x (tyfun env t) (term env f) l
     | Gen (g,t) ->
         let env, g = genfun env g in
         gen g (term env t) l
     | PureFun (t,b) ->
         let x,f = vopen b in
-        let env = Env.add_var env x (Ty.Generalize.empty,t) in
         plam x (tyfun env t) (term env f) l
     | Ite (e1,e2,e3) ->
         ite (term env e1) (term env e2) (term env e3) l
@@ -254,7 +243,6 @@ let rec term env t =
         let x,e2 = vopen b in
         let env', g = genfun env g in
         let e1 = term env' e1 in
-        let env = Env.add_var env x (g,e1.t) in
         let_ g e1 x (term env e2) r l
     | Lam _ | LetReg _ | Param _ | HoareTriple _ ->
         assert false
@@ -262,9 +250,8 @@ let rec term env t =
 let rec decl env d =
   match d with
   | Logic (n,s) ->
-      let env' = Env.add_var env n s in
       let s = scheme env s in
-      env', Logic (n,s)
+      env, Logic (n,s)
   | Formula (s,t,k) ->
       env, Formula (s, term env t, k)
   | Section (s,th, kind) ->
@@ -273,9 +260,8 @@ let rec decl env d =
   | TypeDef (tl,n) ->
       env, TypeDef (tl,n)
   | Program (n,g,t,k) ->
-      let env_passed = Env.add_var env n (g,t.t) in
       let env', g = genfun env g in
-      env_passed, Program (n,g, term env' t, k)
+      env, Program (n,g, term env' t, k)
   | DLetReg rl ->
       let env, g = genfun env ([],rl,[]) in
       env, DGen g
@@ -284,7 +270,6 @@ let rec decl env d =
       let env,el = Env.add_effect_var_list env el in
       env, DGen (tl@rl@el,[],[])
   | Inductive (n,g,t,tel) ->
-      let env = Env.add_var env n (g,t) in
       let env', g = genfun env g in
       let t = tyfun env' t in
       let tel = List.map (term env') tel in
