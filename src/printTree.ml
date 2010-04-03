@@ -221,7 +221,10 @@ module Print = struct
           | `Coq -> string fmt v
           end
       | Quant (k,x,t,e) ->
-          let bind = if k = `FA then binder else binder' false in
+          let bind =
+            match kind with
+            | `Coq -> if k = `FA then binder else binder' false
+            | _ -> binder in
           fprintf fmt "@[%a %a%a@ %a@]" Const.quant k bind (x,t)
             Const.quantsep kind print e
       | Gen ((tl,_,_) as g,t) ->

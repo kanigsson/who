@@ -1,0 +1,44 @@
+type option ['a]
+logic none ['a] : 'a option
+logic some ['a] :  'a -> 'a option
+
+axiom option_split ['a] :
+  forall (x : 'a option). x = none \/ exists z. x = some z
+
+axiom some_injective ['a] :
+  forall (x y : 'a). some x = some y -> x = y
+
+axiom option_diff ['a] :
+  forall (x : 'a). some x <> none
+
+parameter get_some ['a] (x : 'a option) : 'a,{} =
+  {exists z. x = some z}
+  {z : x = some z}
+
+let var [||'e] (g : [[unit ->{'e} int]]) c =
+  (forall s. pre g () s) /\
+  forall s s' r. post g () s s' r -> r = c
+
+let var_ex [||'e] (g : [[unit ->{'e} int]]) = exists c. var[{'e}] g c
+
+logic f0 : int -> int
+
+parameter f [||'e] (c : int) ( g : unit ->{'e} int) : int, {'e} =
+  {var[{'e}] g c}
+  {r : var [{'e}] g c /\ r = f0 c}
+
+letregion r
+logic m : ref(r,int option)
+
+let memo (arg : int) =
+  { !!m <> none -> exists z. !!m = some z /\ z = f0 arg }
+  if !m != none then get_some !m
+  else
+    letregion w in
+    let wit = ref{{w}} false in
+    let r = f [{w}] arg (fun (z : unit) ->{}
+      wit := true; arg {r : !!wit = true /\ r = arg}) in
+    m := some r;
+    r
+  {r : r = f0 arg /\ !!m = some (f0 arg)}
+
