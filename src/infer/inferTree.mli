@@ -52,6 +52,7 @@ type decl =
   | TypeDef of Name.t list * Name.t
   | Program of Name.t * Ty.Generalize.t * t * isrec
   | DLetReg of Name.t list
+  | Inductive of Name.t * Ty.Generalize.t * Ty.t * t list
   | DGen of Ty.Generalize.t
 
 type theory = decl list

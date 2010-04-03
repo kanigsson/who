@@ -48,6 +48,8 @@ val unit : unit -> t
 val prop : t
 val bool : unit -> t
 
+val nparr : t list -> t -> t
+
 val region : t -> t
 val refty : t -> t -> t
 val int : t

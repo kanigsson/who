@@ -63,6 +63,7 @@ type decl =
   | Section of var * Const.takeover list * decl list
   | TypeDef of generalize * ty option * var
   | Program of var * generalize * t * ParseTypes.t Const.isrec
+  | Inductive of var * generalize * ty list * t list
   | DLetReg of rvar list
 
 type theory = decl list

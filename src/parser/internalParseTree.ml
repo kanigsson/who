@@ -60,6 +60,7 @@ type decl =
   | Section of Name.t * Const.takeover list * decl list
   | TypeDef of Name.t list * Name.t
   | Program of Name.t * G.t * t * isrec
+  | Inductive of Name.t * G.t * Ty.t * t list
   | DLetReg of Name.t list
   | DGen of G.t
 

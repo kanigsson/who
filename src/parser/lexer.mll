@@ -71,6 +71,7 @@ let id_or_keyword =
         ("predefined", fun _ -> PREDEFINED );
         ("takeover", fun _ -> TAKEOVER );
         ("pangoline", fun _ -> PANGOLINE );
+        ("inductive", fun _ -> INDUCTIVE );
         ("end", fun i -> END (create_info i) );
         ("fun", fun i -> FUN (create_info i) );
         ("INTROS", fun _ -> INTROS );
@@ -122,7 +123,8 @@ rule token = parse
   | "!=" { BNEQ (create_info lexbuf) }
   | '!' { EXCLAM (create_info lexbuf) }
   | ":=" { ASSIGN (create_info lexbuf)   }
-  | '|' { MID   }
+  | '|'  { MID }
+  | "||" { DMID }
   | ';' { SEMICOLON   }
   | '*' { STAR (create_info lexbuf)  }
   | ':' { COLON }

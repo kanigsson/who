@@ -134,6 +134,10 @@ let rec recon_decl x =
       let t = recon t in
       Predefined.add_binding n (g,t.t);
       Program (n,g,t, r)
+  | I.Inductive (n,g,t,tel) ->
+      Predefined.add_binding n (g,t);
+      let tel = List.map recon tel in
+      Inductive (n,g,t,tel)
   | I.DGen g -> DGen g
 and recon_th l = List.map recon_decl l
 

@@ -112,6 +112,13 @@ let rec decl env d =
       let env, nv = Env.add_var env n in
       Predefined.add_symbol n nv;
       env, [Logic (nv,g, ty env t)]
+  | I.Inductive (n,g,tl,tel) ->
+      let env, g = Env.add_gen env g in
+      let env, nv = Env.add_var env n in
+      Predefined.add_symbol n nv;
+      let tl = List.map (ty env) tl in
+      let tel = List.map (ast env) tel in
+      env, [Inductive (nv,g,Ty.nparr tl Ty.prop, tel)]
   | I.Axiom (s,g,t) ->
       let env', g = Env.add_gen env g in
       let t = ast env' t in

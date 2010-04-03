@@ -36,7 +36,10 @@ let to_section th =
     match d with
     | DLetReg _ | Program _ -> assert false
     | Formula (_,{ v = Const Const.Ptrue}, _) -> []
-    | DGen _ | Decl _ | TypeDef _ | Formula (_,_,`Assumed) | Logic _ -> [ d ]
+
+    | DGen _ | Decl _ | TypeDef _ | Formula (_,_,`Assumed)
+    | Logic _ | Inductive _-> [ d ]
+
     | Formula (s,f, `Proved) -> mk_Section ~namehint:s f
     | Section (n,th, k) ->
         let l = List.flatten (List.map decl_to_outdecl th) in

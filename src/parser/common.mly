@@ -106,7 +106,7 @@ prover:
     { tl, [] ,[] }
 
 (* basic types *)
-stype:
+%public stype:
   | x = tconstant { TConst x }
   | v = TYVAR { TVar v }
   | LPAREN t = ty RPAREN { t }

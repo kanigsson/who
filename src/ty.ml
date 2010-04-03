@@ -85,6 +85,8 @@ let map e = Map e
 let app v i = App (v,i)
 let var v = App (v,[])
 
+let nparr tl t = List.fold_right parr tl t
+
 module PI = Predefty.Identifier
 
 let prop = const (Const.TProp)

@@ -53,6 +53,7 @@ type decl =
   | Section of Name.t *  decl list * section_kind
   | TypeDef of Name.t list * Name.t
   | Program of Name.t * G.t * t * isrec
+  | Inductive of Name.t * G.t * Ty.t * t list
   | DLetReg of Name.t list
   | DGen of G.t
   | Decl of string
@@ -204,6 +205,12 @@ module Convert = struct
         let env, th = theory env dl in
         env, P.Section (id env s,th, kind)
     | Decl s -> env, P.Decl s
+    | Inductive (n,g,ity,tl) ->
+        let env = add_id env n in
+        let env', g = gen env g in
+        let args,_ = Ty.nsplit ity in
+        env, P.Inductive (id env n, g,
+          List.map (ty env') args, List.map (t env') tl)
   and theory env th =
     ExtList.fold_map decl env th
 
@@ -806,15 +813,18 @@ let get ref map l =
       simple_app2 (predef I.get_id ([t],[r],[d]) l) ref map l
   | _ -> assert false
 
-let rec decl_map ?varfun ?termfun ?(declfun=ExtList.singleton) d : decl list =
-  let d =
-    match d with
-    | Logic _ | TypeDef _ | DLetReg _ | DGen _ | Decl _ -> d
-    | Formula (s,t,k) -> Formula (s,rebuild_map ?varfun ?termfun t, k)
-    | Section (s,th,kind) ->
-        Section (s,theory_map ?varfun ?termfun ~declfun th, kind)
-    | Program (n,g,t,r) -> Program (n,g,rebuild_map ?varfun ?termfun t, r) in
-  declfun d
+let rec decl_map ?varfun ?termfun ?(declfun=ExtList.singleton) =
+  let term_map = rebuild_map ?varfun ?termfun in
+  fun d ->
+    let d =
+      match d with
+      | Logic _ | TypeDef _ | DLetReg _ | DGen _ | Decl _ -> d
+      | Formula (s,t,k) -> Formula (s,rebuild_map ?varfun ?termfun t, k)
+      | Section (s,th,kind) ->
+          Section (s,theory_map ?varfun ?termfun ~declfun th, kind)
+      | Inductive (n,g,t,tel) -> Inductive (n,g,t, List.map term_map tel)
+      | Program (n,g,t,r) -> Program (n,g,term_map t, r) in
+    declfun d
 and theory_map ?varfun ?termfun ?declfun th =
   List.flatten (List.map (decl_map ?varfun ?termfun ?declfun) th)
 

@@ -286,6 +286,12 @@ let rec decl env d =
       let env, rl = Env.add_region_list env rl in
       let env,el = Env.add_effect_var_list env el in
       env, DGen (tl@rl@el,[],[])
+  | Inductive (n,g,t,tel) ->
+      let env = Env.add_var env n (g,t) in
+      let env', g = genfun env g in
+      let t = tyfun env' t in
+      let tel = List.map (term env') tel in
+      env, Inductive (n,g,t,tel)
   | Decl _ -> env, d
 and theory env t = ExtList.fold_map decl env t
 

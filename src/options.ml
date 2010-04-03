@@ -71,8 +71,6 @@ let opt_spec =
       " apply weakest precondition calculus";
     "--inlinelet", Arg.Unit (append_trans InlineLet.theory),
       " inline let bindings";
-    "--mapsimpl", Arg.Unit (append_trans Simplify.theory),
-      " simplify map expressions";
     "--trivialgoals", Arg.Unit (append_trans RemoveTrivialGoals.theory),
       " remove trivial goals";
     "--tuples", Arg.Unit (append_trans Tuples.theory),

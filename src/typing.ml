@@ -260,6 +260,10 @@ let rec decl env d =
   | Section (_,th,_) -> theory env th
   | TypeDef _ | DLetReg _ | DGen _ | Decl _ -> env
   | Logic (n,(g,t)) -> add_var env n g t
+  | Inductive (n,g,t,tel) ->
+      let env = add_var env n g t in
+      List.iter (fis_oftype env prop) tel;
+      env
   | Program (x,g,e,r) ->
       let env,  _, _ = letgen env x g e r in
       env

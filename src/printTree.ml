@@ -61,6 +61,7 @@ type decl =
   | Formula of string * t * [ `Proved | `Assumed ]
   | Section of string * decl list * section_kind
   | TypeDef of string list * string
+  | Inductive of string * gen * ty list * t list
   | Program of string * gen * t * isrec
   | DLetReg of string list
   | DGen of gen
@@ -304,6 +305,8 @@ let is_infix_symbol s =
     if l = [] then () else
     fprintf fmt "Variables %a :@ %s.@ " (list space string) l s
 
+  let inductive_sep fmt () = fprintf fmt "|@ "
+
   let decl ?(kind=`Who) =
     let ty = ty ~kind in
     let term = term ~kind in
@@ -340,6 +343,9 @@ let is_infix_symbol s =
               fprintf fmt "@[<hov 2> type (%d) %a @]" (List.length tl) string x
           | `Who -> fprintf fmt "@[type %a%a@]" string x gen (tl,[],[])
           end
+      | Inductive (n,g,tyl, fl) ->
+          fprintf fmt "@[<hov 2>Inductive %a %a : %a = %a@]" string n gen g
+            (list space ty) tyl (list inductive_sep term) fl
       | DLetReg l ->
           fprintf fmt "@[letregion %a@]" (list space string) l
       | Section (_,d, `Block cl) ->

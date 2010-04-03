@@ -242,6 +242,9 @@ decl:
   | LETREGION l = IDENT* { DLetReg (strip_info l) }
   | SECTION x = IDENT fn = takeoverdecl* l = decl+ END
     { Section (x.c, fn, l) }
+  | INDUCTIVE x = IDENT l = gen tl = separated_nonempty_list(ARROW,stype) EQUAL 
+    tel = separated_list(DMID,nterm) END
+    { Inductive (x.c,l,tl,tel) }
 
 (* a program is simply a list of declarations; we call [to_abst_ast] to
   obtain a single AST *)
