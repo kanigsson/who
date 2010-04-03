@@ -60,12 +60,16 @@ type decl =
   | Logic of string * scheme
   | Formula of string * t * [ `Proved | `Assumed ]
   | Section of string * decl list * section_kind
-  | TypeDef of string list * string
+  | TypeDef of string * string list * typedef
   | Inductive of string * gen * ty list * t list
   | Program of string * gen * t * isrec
   | DLetReg of string list
   | DGen of gen
   | Decl of string
+and typedef = 
+  | Abstract
+  | ADT of constbranch list
+and constbranch = string * ty list
 
 and section_kind = [ `Block of Const.takeover list | `Structure ]
 
@@ -309,6 +313,7 @@ let is_infix_symbol s =
     fprintf fmt "Variables %a :@ %s.@ " (list space string) l s
 
   let inductive_sep fmt () = fprintf fmt "|@ "
+  let consttysep fmt () = fprintf fmt "*@ "
 
   let decl ?(kind=`Who) =
     let ty = ty ~kind in
@@ -337,7 +342,7 @@ let is_infix_symbol s =
       | Formula (s,t,`Proved) ->
           fprintf fmt "@[<hov 2>%a %a:@ %a%a%a@]" lemma kind string s term t
           print_stop kind print_proof kind
-      | TypeDef (tl,x) ->
+      | TypeDef (x,tl, Abstract) ->
           begin match kind with
           | `Coq ->
               fprintf fmt "@[<hov 2>Definition %a :@ %a%s. %a @]" string x
@@ -349,6 +354,9 @@ let is_infix_symbol s =
       | Inductive (n,g,tyl, fl) ->
           fprintf fmt "@[<hov 2>Inductive %a %a : %a = %a@]" string n gen g
             (list space ty) tyl (list inductive_sep term) fl
+      | TypeDef (n,tl,ADT bl) ->
+          fprintf fmt "@[<hov 2>type %a %a = | %a @]"
+            string n gen (tl,[],[]) (list inductive_sep constdef) bl
       | DLetReg l ->
           fprintf fmt "@[letregion %a@]" (list space string) l
       | Section (_,d, `Block cl) ->
@@ -374,6 +382,9 @@ let is_infix_symbol s =
           | `Who -> fprintf fmt "@[INTROS %a@]" gen g
           end
       | Decl s -> string fmt s
+    and constdef fmt (c,tl) =
+      if tl = [] then string fmt c
+      else fprintf fmt "%a of %a" string c (list consttysep ty) tl
     and theory insection fmt t = list newline (decl insection) fmt t in
     decl
 

@@ -257,8 +257,12 @@ let rec decl env d =
   | Section (s,th, kind) ->
       let env, th = theory env th in
       env, Section (s,th, kind)
-  | TypeDef (tl,n) ->
-      env, TypeDef (tl,n)
+  | TypeDef (n,tl,def) ->
+      let k =
+        match def with
+        | Abstract -> Abstract
+        | ADT bl -> ADT (List.map (adtbranch env) bl) in
+      env, TypeDef (n,tl,k)
   | Program (n,g,t,k) ->
       let env', g = genfun env g in
       env, Program (n,g, term env' t, k)
@@ -275,6 +279,7 @@ let rec decl env d =
       let tel = List.map (term env') tel in
       env, Inductive (n,g,t,tel)
   | Decl _ -> env, d
+and adtbranch env (n,tl) = n, List.map (tyfun env) tl
 and theory env t = ExtList.fold_map decl env t
 
 let theory t =

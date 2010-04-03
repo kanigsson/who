@@ -37,7 +37,7 @@ let effFA = effFA ~s:"s"
 let lift_scheme (g,t) = g, ty t
 
 let lift_var v =
-  { var = v.var; scheme = lift_scheme v.scheme } 
+  { var = v.var; scheme = lift_scheme v.scheme }
 
 let lift_inst i = Inst.map ty Misc.id Misc.id i
 

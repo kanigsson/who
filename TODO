@@ -23,8 +23,7 @@ COQ
 
 INTERNAL
 
-* "inference" for partial effect instantiations:
-  example: eff_var2.who
+* separate pretty printers
 
 BUGS
 

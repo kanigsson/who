@@ -132,7 +132,7 @@ let rec recon_decl x =
   | I.Formula (s,t,k) -> Formula (s, recon t, k)
   | I.Section (s,cl, dl) -> Section (s,recon_th dl, `Block cl)
   | I.DLetReg rl -> DLetReg rl
-  | I.TypeDef (tl,n) -> TypeDef (tl,n)
+  | I.TypeDef (tl,n) -> TypeDef (n,tl, Abstract)
   | I.Program (n,g,t,r) ->
       let t = recon t in
       Predefined.add_binding n (g,t.t);

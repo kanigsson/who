@@ -51,14 +51,17 @@ type decl =
   | Logic of Name.t * Ty.scheme
   | Formula of Name.t * t * [ `Proved | `Assumed ]
   | Section of Name.t *  decl list * section_kind
-  | TypeDef of Name.t list * Name.t
+  | TypeDef of Name.t * Name.t list * typedef
   | Program of Name.t * G.t * t * isrec
   | Inductive of Name.t * G.t * Ty.t * t list
   | DLetReg of Name.t list
   | DGen of G.t
   | Decl of string
-and section_kind =
-    [ `Block of Const.takeover list | `Structure ]
+and section_kind = [ `Block of Const.takeover list | `Structure ]
+and typedef = 
+  | Abstract
+  | ADT of constbranch list
+and constbranch = Name.t * Ty.t list
 
 type theory = decl list
 
@@ -202,10 +205,17 @@ module Convert = struct
         let r = rrec env r in
         let env = add_id env n in
         env, P.Program (id env n,g,e,r)
-    | TypeDef (tl,n) ->
+    | TypeDef (n, tl, def) ->
         let env = add_id env n in
         let env' = add_ids env tl in
-        env, P.TypeDef (List.map (id env') tl,id env n)
+        let n = id env n and tl = List.map (id env') tl in
+        let env, k = 
+          match def with
+          | Abstract -> env, P.Abstract
+          | ADT bl ->
+              let env, bl = ExtList.fold_map constbranch env bl in
+              env, P.ADT bl in
+        env, P.TypeDef (n,tl, k)
     | Section (s,dl, kind) ->
         let env = add_id env s in
         let env, th = theory env dl in
@@ -217,6 +227,9 @@ module Convert = struct
         let args,_ = Ty.nsplit ity in
         env, P.Inductive (id env n, g,
           List.map (ty env') args, List.map (t env') tl)
+  and constbranch env (n,tl) =
+    let env = add_id env n in
+    env, (id env n, List.map (ty env) tl)
   and theory env th =
     ExtList.fold_map decl env th
 

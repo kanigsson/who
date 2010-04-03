@@ -38,7 +38,7 @@ let to_section th =
     | Formula (_,{ v = Const Const.Ptrue}, _) -> []
 
     | DGen _ | Decl _ | TypeDef _ | Formula (_,_,`Assumed)
-    | Logic _ | Inductive _-> [ d ]
+    | Logic _ | Inductive _ -> [ d ]
 
     | Formula (s,f, `Proved) -> mk_Section ~namehint:s f
     | Section (n,th, k) ->
