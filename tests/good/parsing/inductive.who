@@ -1,0 +1,17 @@
+type nat
+logic zero : nat
+logic succ : nat -> nat
+logic -> : prop -> prop -> prop
+logic /\ : prop -> prop -> prop
+logic \/ : prop -> prop -> prop
+logic = ['a] : 'a -> 'a -> prop
+logic true : prop
+
+inductive even nat =
+  | even zero
+  | forall (x: nat). even x -> even (succ (succ x))
+end
+
+goal a:
+  forall n. even n -> even (succ (succ n))
+

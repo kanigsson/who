@@ -124,7 +124,7 @@ rule token = parse
   | '!' { EXCLAM (create_info lexbuf) }
   | ":=" { ASSIGN (create_info lexbuf)   }
   | '|'  { MID }
-  | "||" { DMID }
+  | '@'  { AT }
   | ';' { SEMICOLON   }
   | '*' { STAR (create_info lexbuf)  }
   | ':' { COLON }

@@ -1,5 +1,10 @@
 # Changes
 
+## version 0.4-dev
+
+* inductives
+* syntax change: "restrict" and "get" using @
+
 ## version 0.3 - released Apr 3
 
 * on pure abstractions and quantifiers, one can now omit type annotations

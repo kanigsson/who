@@ -93,11 +93,11 @@ aterm:
   | p = REF { var "ref" p}
   | p = prefix x = IDENT
     { app (var (snd p) (fst p)) (var x.c x.info) (embrace (fst p) x.info) }
-  | x = IDENT MID e = sepeffect
+  | x = IDENT AT e = sepeffect
     { mk (Restrict (var x.c x.info,e)) x.info }
   | p = DEXCLAM x = IDENT
     { mk (Get (var x.c x.info, var "cur" p)) (embrace p x.info) }
-  | p = DEXCLAM x = IDENT MID t = aterm
+  | p = DEXCLAM x = IDENT AT t = aterm
     { mk (Get (var x.c x.info, t)) (embrace p t.loc) }
   | x = IDENT { var x.c x.info }
   | x = IDENT LBRACKET inst = sepeffect* RBRACKET { var ~inst x.c x.info }
@@ -243,7 +243,7 @@ decl:
   | SECTION x = IDENT fn = takeoverdecl* l = decl+ END
     { Section (x.c, fn, l) }
   | INDUCTIVE x = IDENT l = gen tl = separated_nonempty_list(ARROW,stype) EQUAL 
-    tel = separated_list(DMID,nterm) END
+    option(MID) tel = separated_list(MID,nterm) END
     { Inductive (x.c,l,tl,tel) }
 
 (* a program is simply a list of declarations; we call [to_abst_ast] to

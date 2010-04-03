@@ -3,7 +3,7 @@ logic /\ : prop -> prop -> prop
 logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
 parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
   {}
-  {r : !!x = r /\ !!x|old = !!x}
+  {r : !!x = r /\ !!x@old = !!x}
 let apply ['a 'b ||'e] (f : 'a ->{'e} 'b) (x : 'a) =
   {}
   f x

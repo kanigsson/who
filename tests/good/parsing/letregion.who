@@ -4,7 +4,7 @@ logic /\ : prop -> prop -> prop
 logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
 parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
   {}
-  {r : !!x = r /\ !!x|old = !!x}
+  {r : !!x = r /\ !!x@old = !!x}
 parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r} = allocates r
   {}
   { x : !!x = v }

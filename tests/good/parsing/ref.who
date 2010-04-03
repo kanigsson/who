@@ -6,6 +6,6 @@ logic snd ['a 'b||] : 'a * 'b -> 'b
 logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
 parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r} =
   {}
-  {r : !!x = r /\ !!x|old = !!x}
+  {r : !!x = r /\ !!x@old = !!x}
 
 let f ['a|toto|] (x : ref(toto,'a)) = {} !x {}

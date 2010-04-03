@@ -9,4 +9,4 @@ let iter ['a|t|'e]
     { inv cur i }
     f (get i !ar)
   done
-  {inv cur (len !!ar|old) }
+  {inv cur (len !!ar@old) }
