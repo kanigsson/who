@@ -116,7 +116,11 @@ module Generic = struct
     | App _ | Let _ | Ite _
     | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
 
+  let inductive_sep fmt () = fprintf fmt "|@ "
+  let consttysep fmt () = fprintf fmt "*@ "
+
 end
+
 module Coq = struct
   open Myformat
   open Generic
@@ -158,14 +162,69 @@ module Coq = struct
     | Quant (k,x,t,e) ->
         let bind = if k = `FA then binder else binder' false in
         fprintf fmt "@[%a %a,@ %a@]" Const.quant k bind (x,t) term e
-    | Gen ((tl,_,_) as g,t) ->
-        if is_empty g then term fmt t else
-          fprintf fmt "forall@ %a,@ %a " (lname "Type") tl term t
+    | Gen ((tl,_,_),t) ->
+        if tl = [] then term fmt t else
+          fprintf fmt "%a %a" pr_generalize tl term t
     (* specific to Who, will not be printed in backends *)
     | Param _ | HoareTriple _ | LetReg _ | Lam _ -> assert false
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
   and inst' fmt i = inst ~intype:false fmt i
+
+  and pr_generalize fmt tl =
+    if tl = [] then ()
+    else fprintf fmt "forall@ %a@ ,@ " (lname "Type") tl
+
+  let def fmt insection =
+    if insection then string fmt "Variable" else string fmt "Definition"
+
+  let print_proof fmt = fprintf fmt "@\nProof.@\nAdmitted.@\n"
+
+  let print_def_end fmt insection =
+    if not insection then print_proof fmt
+
+  let intro_name s fmt l =
+    if l = [] then () else
+    fprintf fmt "Variables %a :@ %s.@ " (list space string) l s
+
+  let rec decl insection fmt d =
+    match d with
+    | Logic (x,((tl,_,_),t)) ->
+          fprintf fmt "@[<hov 2>%a %a:@ %a %a.%a @]"
+            def insection string x pr_generalize tl ty t print_def_end insection
+    | Formula (s,t,`Assumed) ->
+        fprintf fmt "@[<hov 2>Hypothesis %a:@ %a. @]" string s term t
+    | Formula (s,t,`Proved) ->
+        fprintf fmt "@[<hov 2>Lemma %a:@ %a. %t@]" string s term t print_proof
+    | TypeDef (x,tl, Abstract) ->
+        fprintf fmt "@[<hov 2>Definition %a :@ %a%s. %t @]" string x
+          pr_generalize tl "Type" print_proof
+    | Inductive (n,g,tyl, fl) ->
+        fprintf fmt "@[<hov 2>Inductive %a %a : %a = %a@]" string n gen g
+          (list space ty) tyl (list inductive_sep term) fl
+    | TypeDef (n,tl,ADT bl) ->
+        fprintf fmt "@[<hov 2>type %a %a = | %a @]"
+          string n gen (tl,[],[]) (list inductive_sep constdef) bl
+    | Section (_,d, `Block cl) ->
+        let choice = List.fold_left (fun acc (p,c) ->
+          if p = `Coq then c else acc) Const.TakeOver cl in
+        begin match choice with
+        | Const.Predefined -> ()
+        | Const.Include f -> fprintf fmt "Require Import %s." f
+        | Const.TakeOver -> theory insection fmt d
+        end
+    | Section (s,d, `Structure) ->
+        fprintf fmt "@[<hov 2>Section %s. @\n %a@] End %s." s (theory true) d s
+    | DLetReg _ -> assert false
+    | Program (x,g,t,_) ->
+        fprintf fmt "@[<hov 2>let@ %a %a = %a @]" string x gen g term t
+    | DGen (tl,_,_) -> intro_name "Type" fmt tl
+    | Decl s -> string fmt s
+  and constdef fmt (c,tl) =
+    if tl = [] then string fmt c
+    else fprintf fmt "%a of %a" string c (list consttysep ty) tl
+  and theory insection fmt t = list newline (decl insection) fmt t
+
 end
 
 module Pangoline = struct
@@ -221,6 +280,60 @@ module Pangoline = struct
     if is_compound_term x then paren term fmt x else term fmt x
   and inst' fmt i = inst fmt i
 
+  let pr_generalize in_term fmt tl =
+    if tl = [] then ()
+    else
+      let in_term fmt = if in_term then string fmt "type" else () in
+      fprintf fmt "forall %t %a." in_term (list space string) tl
+
+  let is_infix_symbol s =
+    match s.[0] with
+    | '=' | '!' | '+' | '-' | '*' | '<' | '>'  -> true
+    | _ -> false
+
+  let rec decl fmt d =
+    match d with
+    | Logic (x,((tl,_,_),t)) ->
+        if is_infix_symbol x then
+          fprintf fmt "infix %a %d@\n" string x 0;
+          let npr fmt n =
+            if is_infix_symbol n
+            then fprintf fmt "( %a )" string n
+            else string fmt n in
+          fprintf fmt "@[<hov 2>logic %a:@ %a %a@]"
+            npr x (pr_generalize false) tl ty t
+    | Formula (s,t,`Assumed) ->
+        fprintf fmt "@[<hov 2>hypothesis %a:@ %a @]" string s term t
+    | Formula (s,t,`Proved) ->
+        fprintf fmt "@[<hov 2>lemma %a:@ %a@]" string s term t
+    | TypeDef (x,tl, Abstract) ->
+        fprintf fmt "@[<hov 2> type (%d) %a @]" (List.length tl) string x
+    | TypeDef (n,tl,ADT bl) ->
+        fprintf fmt "@[<hov 2>type %a %a = | %a @]"
+          string n gen (tl,[],[]) (list inductive_sep constdef) bl
+    | Inductive (n,g,tyl, fl) ->
+        fprintf fmt "@[<hov 2>Inductive %a %a : %a = %a@]" string n gen g
+          (list space ty) tyl (list inductive_sep term) fl
+    | DLetReg _ -> assert false
+    | Section (_,d, `Block cl) ->
+        let choice = List.fold_left (fun acc (p,c) ->
+          if p = `Pangoline then c else acc) Const.TakeOver cl in
+        begin match choice with
+        | Const.Predefined -> ()
+        | Const.Include f -> fprintf fmt "Require Import %s." f
+        | Const.TakeOver -> theory fmt d
+        end
+    | Section (_,d, `Structure) ->
+        fprintf fmt "@[<hov 2>begin @\n %a@] end" theory d
+    | Program (x,_,t,_) ->
+        fprintf fmt "@[<hov 2>definition@ %a = %a @]" string x term t
+    | DGen (tl,_,_) ->
+        list newline (fun fmt s -> fprintf fmt "type (0) %a" string s) fmt tl
+    | Decl s -> string fmt s
+  and constdef fmt (c,tl) =
+    if tl = [] then string fmt c
+    else fprintf fmt "%a of %a" string c (list consttysep ty) tl
+  and theory fmt t = list newline decl fmt t
 end
 
 module Who = struct
@@ -302,6 +415,45 @@ module Who = struct
     | l -> fprintf fmt "{%a}" (list space string) l
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
+
+  let rec decl fmt d =
+    match d with
+    | Logic (x,(g,t)) ->
+        fprintf fmt "@[<hov 2>logic %a %a : %a@]" string x gen g ty t
+    | Formula (s,t,`Assumed) ->
+        fprintf fmt "@[<hov 2>axiom %a:@ %a @]" string s term t
+    | Formula (s,t,`Proved) ->
+        fprintf fmt "@[<hov 2>goal %a:@ %a@]" string s term t
+    | TypeDef (x,tl, Abstract) ->
+        fprintf fmt "@[type %a%a@]" string x gen (tl,[],[])
+    | Inductive (n,g,tyl, fl) ->
+        fprintf fmt "@[<hov 2>inductive %a %a : %a = %a@]" string n gen g
+          (list space ty) tyl (list inductive_sep term) fl
+    | TypeDef (n,tl,ADT bl) ->
+        fprintf fmt "@[<hov 2>type %a %a = | %a @]"
+          string n gen (tl,[],[]) (list inductive_sep constdef) bl
+    | DLetReg l ->
+        fprintf fmt "@[letregion %a@]" (list space string) l
+    | Section (_,d, `Block cl) ->
+        let choice = List.fold_left (fun acc (p,c) ->
+          if p = `Who then c else acc) Const.TakeOver cl in
+        begin match choice with
+        | Const.Predefined -> ()
+        | Const.Include f -> fprintf fmt "Require Import %s." f
+        | Const.TakeOver -> theory fmt d
+        end
+    | Section (s,d, `Structure) ->
+        fprintf fmt "@[<hov 2>section %s @\n %a@] end" s theory d
+    | Program (x,g,t,r) ->
+        fprintf fmt "@[<hov 2>let@ %a%a %a = %a @]" prrec r string x gen g
+          term t
+    | DGen g -> fprintf fmt "@[INTROS %a@]" gen g
+    | Decl s -> string fmt s
+  and constdef fmt (c,tl) =
+    if tl = [] then string fmt c
+    else fprintf fmt "%a of %a" string c (list consttysep ty) tl
+  and theory fmt t = list newline decl fmt t
+
 end
 
 module Print = struct
@@ -328,157 +480,26 @@ module Print = struct
 
   let scheme fmt (g,t) = fprintf fmt "forall %a. %a" gen g (ty ~kind:`Who) t
 
-  let is_compound = function
-    | Const _ | Var _ | Lam _ | PureFun _ -> false
-    | App _ | Let _ | Ite _
-    | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
-
-  let pr_generalize in_term kind fmt tl =
-    if tl = [] then ()
-    else
-      match kind with
-      | `Coq -> fprintf fmt "forall@ %a@ ,@ " (lname "Type") tl
-      | `Pangoline ->
-          let in_term fmt = if in_term then string fmt "type" else () in
-          fprintf fmt "forall %t %a." in_term (list space string) tl
-      | `Who -> fprintf fmt "[%a]" (list space string) tl
-
   let term ?(kind=`Who) =
     match kind with
     | `Who -> Who.term
     | `Coq -> Coq.term
     | `Pangoline -> Pangoline.term
 
-
-
-let is_infix_symbol s =
-  match s.[0] with
-  | '=' | '!' | '+' | '-' | '*' | '<' | '>'  -> true
-  | _ -> false
-
-  let def kind fmt insection =
-    match kind, insection with
-    | `Coq, true -> string fmt "Variable"
-    | `Coq, false -> string fmt "Definition"
-    | `Pangoline, _ -> string fmt "logic"
-    | `Who,_ -> string fmt "logic"
-
-  let print_proof fmt = function
-    | `Pangoline | `Who -> ()
-    | `Coq -> fprintf fmt "@\nProof.@\nAdmitted.@\n"
-
-  let print_def_end kind fmt insection =
-    if not insection then print_proof fmt kind
-
-  let beginsec kind fmt n =
+  let decl ?(kind = `Who) =
     match kind with
-    | `Pangoline -> string fmt "begin"
-    | `Coq -> fprintf fmt "Section %s." n
-    | `Who -> fprintf fmt "section %s" n
-
-  let endsec kind fmt n =
-    match kind with
-    | `Pangoline | `Who -> string fmt "end"
-    | `Coq -> fprintf fmt "End %s." n
-
-  let hypo fmt = function
-    | `Pangoline -> string fmt "hypothesis"
-    | `Coq -> string fmt "Hypothesis"
-    | `Who -> string fmt "axiom"
-
-  let lemma fmt = function
-    | `Pangoline -> string fmt "lemma"
-    | `Coq -> string fmt "Lemma"
-    | `Who -> string fmt "goal"
-
-  let print_stop fmt = function
-    | `Pangoline | `Who -> ()
-    | `Coq -> string fmt "."
-
-  let intro_name s fmt l =
-    if l = [] then () else
-    fprintf fmt "Variables %a :@ %s.@ " (list space string) l s
-
-  let inductive_sep fmt () = fprintf fmt "|@ "
-  let consttysep fmt () = fprintf fmt "*@ "
-
-  let decl ?(kind=`Who) =
-    let ty = ty ~kind in
-    let term = term ~kind in
-    let rec decl insection fmt d =
-      match d with
-      | Logic (x,((tl,_,_) as g,t)) ->
-          if kind = `Who then
-            fprintf fmt "@[<hov 2>logic %a %a : %a@]" string x gen g ty t
-          else begin
-            if kind = `Pangoline && is_infix_symbol x then
-              fprintf fmt "infix %a %d@\n" string x 0;
-            let npr fmt n =
-              match kind with
-              | `Pangoline when is_infix_symbol n ->
-                  fprintf fmt "( %a )" string n
-              | _ -> string fmt n in
-            fprintf fmt "@[<hov 2>%a %a:@ %a %a%a%a @]"
-              (def kind) insection npr x (pr_generalize false kind) tl
-              ty t print_stop kind (print_def_end kind) insection
-          end
-
-      | Formula (s,t,`Assumed) ->
-          fprintf fmt "@[<hov 2>%a %a:@ %a%a @]" hypo kind string s term t
-            print_stop kind
-      | Formula (s,t,`Proved) ->
-          fprintf fmt "@[<hov 2>%a %a:@ %a%a%a@]" lemma kind string s term t
-          print_stop kind print_proof kind
-      | TypeDef (x,tl, Abstract) ->
-          begin match kind with
-          | `Coq ->
-              fprintf fmt "@[<hov 2>Definition %a :@ %a%s. %a @]" string x
-              (pr_generalize true `Coq) tl "Type" print_proof kind
-          | `Pangoline ->
-              fprintf fmt "@[<hov 2> type (%d) %a @]" (List.length tl) string x
-          | `Who -> fprintf fmt "@[type %a%a@]" string x gen (tl,[],[])
-          end
-      | Inductive (n,g,tyl, fl) ->
-          fprintf fmt "@[<hov 2>Inductive %a %a : %a = %a@]" string n gen g
-            (list space ty) tyl (list inductive_sep term) fl
-      | TypeDef (n,tl,ADT bl) ->
-          fprintf fmt "@[<hov 2>type %a %a = | %a @]"
-            string n gen (tl,[],[]) (list inductive_sep constdef) bl
-      | DLetReg l ->
-          fprintf fmt "@[letregion %a@]" (list space string) l
-      | Section (_,d, `Block cl) ->
-          let choice = List.fold_left (fun acc (p,c) ->
-            if p = kind then c else acc) Const.TakeOver cl in
-          begin match choice with
-          | Const.Predefined -> ()
-          | Const.Include f -> fprintf fmt "Require Import %s." f
-          | Const.TakeOver -> theory insection fmt d
-          end
-      | Section (s,d, `Structure) ->
-          fprintf fmt "@[<hov 2>%a@\n %a@] %a"
-          (beginsec kind) s (theory true) d (endsec kind) s;
-      | Program (x,g,t,r) ->
-          fprintf fmt "@[<hov 2>let@ %a%a %a = %a @]" Who.prrec r string x gen g
-            term t
-      | DGen ((tl,_,_) as g) ->
-          begin match kind with
-          | `Coq -> intro_name "Type" fmt tl
-          | `Pangoline ->
-              list newline (fun fmt s ->
-                fprintf fmt "type (0) %a" string s) fmt tl
-          | `Who -> fprintf fmt "@[INTROS %a@]" gen g
-          end
-      | Decl s -> string fmt s
-    and constdef fmt (c,tl) =
-      if tl = [] then string fmt c
-      else fprintf fmt "%a of %a" string c (list consttysep ty) tl
-    and theory insection fmt t = list newline (decl insection) fmt t in
-    decl
+    | `Who -> Who.decl
+    | `Coq -> Coq.decl false
+    | `Pangoline -> Pangoline.decl
 
   let theory ?(kind=`Who) fmt t =
     let t =
       match kind with
       | `Coq -> Decl "Set Implicit Arguments." :: t
       | _ -> t in
-    list newline (decl false ~kind) fmt t
+    match kind with
+    | `Who -> Who.theory fmt t
+    | `Coq -> Coq.theory false fmt t
+    | `Pangoline -> Pangoline.theory fmt t
+
 end

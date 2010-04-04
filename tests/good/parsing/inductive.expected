@@ -6,6 +6,6 @@ logic /\  : prop -> prop -> prop
 logic \/  : prop -> prop -> prop
 logic = ['a||] : a -> a -> prop
 logic true  : prop
-Inductive even  : nat = even zero|
+inductive even  : nat = even zero|
   forall (x:nat). (even x) -> (even (succ (succ x)))
 goal a: forall (n:nat). (even n) -> (even (succ (succ n)))

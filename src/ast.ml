@@ -250,7 +250,7 @@ module Print = struct
 
   let decl ?kind fmt d =
     let _, d = Convert.decl (empty ?kind ()) d in
-    PrintTree.Print.decl false ?kind fmt d
+    PrintTree.Print.decl ?kind fmt d
 
   let theory ?kind fmt th =
     let _, th = Convert.theory (empty ?kind ()) th in
