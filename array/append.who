@@ -1,4 +1,4 @@
-let id_bet ['a||] (a1 a2 : 'a array) (i j : int) (l : int) =
+let id_bet ['a] (a1 a2 : 'a array) (i j : int) (l : int) =
     i + l <= len a1 /\ j + l <= len a2 /\
     forall (k : int).  (0 <= k -> k < l -> get (i + k) a1 = get (j + k) a2)
 
@@ -23,7 +23,7 @@ let append ['a|x y z|] (ar : ref(x,'a array)) (ar2 : ref(y,'a array)) =
     done);
       res
     { r:
-      let l1 = len (!!ar|old) in
-      let l2 = len (!!ar2|old) in
-      id_bet (!!ar|old) (!!r) 0 0 l1 /\ id_bet (!!ar2|old) (!!r) 0 l1 l2 /\
+      let l1 = len (!!ar@old) in
+      let l2 = len (!!ar2@old) in
+      id_bet (!!ar@old) (!!r) 0 0 l1 /\ id_bet (!!ar2@old) (!!r) 0 l1 l2 /\
       len (!!r) = l1 + l2 }

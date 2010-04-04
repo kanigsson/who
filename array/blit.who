@@ -37,6 +37,6 @@ let blit ['a|r1 r2|] (ar1 : ref(r1,'a array)) (ar2 : ref(r2,'a array))
           get (ofs2 + k) !!ar2 = get (ofs1 + k) !!ar1 }
        ar2 := set (ofs2 + i) (get (ofs1 + i) (!ar1)) (!ar2)
      done
-  {!!ar1|old = !!ar1 /\ len !!ar2 = len !!ar2|old /\
+  {!!ar1@old = !!ar1 /\ len !!ar2 = len !!ar2@old /\
     forall (k : int).  0 <= k /\ k < l ->
           get (ofs2 + k) !!ar2 = get (ofs1 + k) !!ar1 }

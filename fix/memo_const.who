@@ -22,7 +22,16 @@ letregion r
 logic m : ref(r,int option)
 
 let memo (arg : int) =
-  { !!m <> none -> exists z. !!m = some z /\ z = f0 arg }
+  {
+(*    match !!m with
+    | none -> True
+    | some z -> z = f0 arg *)
+  !!m <> none -> exists z. !!m = some z /\ z = f0 arg
+  }
+  (*
+  match !m with
+  | some z -> z
+  | none -> *)
   if !m != none then get_some !m
   else
     letregion w in
