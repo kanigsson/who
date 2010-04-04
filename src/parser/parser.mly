@@ -236,9 +236,9 @@ decl:
   | LOGIC x = defprogvar_no_pos l = gen COLON t = ty
     { Logic (x,l,t) }
   | TYPE x = IDENT l = gen
-    { TypeDef (l,None, x.c) }
+    { TypeDef (x.c, l, Abstract ) }
   | TYPE x = IDENT l = gen EQUAL t = ty
-    { TypeDef (l,Some t, x.c) }
+    { TypeDef (x.c, l,Alias t) }
   | LETREGION l = IDENT* { DLetReg (strip_info l) }
   | SECTION x = IDENT fn = takeoverdecl* l = decl+ END
     { Section (x.c, fn, l) }

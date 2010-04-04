@@ -130,17 +130,22 @@ let rec decl env d =
   | I.Section (s,cl, dl) ->
       let env, dl = theory env dl in
       env, [Section (Name.from_string s,cl,dl)]
-  | I.TypeDef ((tl,rl,el) as g,t,n) ->
+  | I.TypeDef (n,g,kind) ->
       let env', ((tl,rl,el) as g) = Env.add_gen env g in
-      begin match t with
-      | None ->
-            (* TODO error message *)
-          if rl <> [] || el <> [] then assert false;
-          let env, nv = Env.add_global_tyvar env n in
-          env, [TypeDef (nv,tl, Ast.Abstract)]
-      | Some t ->
+      begin match kind, rl, el with
+      | I.Alias t, _, _ ->
           let env = Env.add_type_def env n g (ty env' t) in
           env, []
+      | I.Abstract, [],[] ->
+          let env, nv = Env.add_global_tyvar env n in
+          env, [TypeDef (nv,tl, Ast.Abstract)]
+      | I.ADT bl, [],[] ->
+          let env, nv = Env.add_global_tyvar env n in
+          let env,bl = ExtList.fold_map constbranch env bl in
+          env, [TypeDef (nv, tl, Ast.ADT bl)]
+      | _ ->
+            (* TODO error message *)
+          assert false
       end
   | I.DLetReg rl ->
       let env, nrl = Env.add_rvars env rl in
@@ -150,6 +155,11 @@ let rec decl env d =
       Predefined.add_symbol x nv;
       env, [Program (nv, g, e, r)]
 and theory x = ExtList.fold_map_flatten decl x
+and constbranch env (n,tyl) =
+  let tyl = List.map (ty env) tyl in
+  let env,nv = Env.add_var env n in
+  env, (nv,tyl)
+  
 
 let theory th =
   let _, th = theory Env.empty th in

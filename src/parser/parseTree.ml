@@ -61,10 +61,15 @@ type decl =
   | Axiom of string * generalize * t
   | Goal of string * generalize * t
   | Section of var * Const.takeover list * decl list
-  | TypeDef of generalize * ty option * var
+  | TypeDef of var * generalize * typedef
   | Program of var * generalize * t * ParseTypes.t Const.isrec
   | Inductive of var * generalize * ty list * t list
   | DLetReg of rvar list
+and typedef =
+  | Abstract
+  | Alias of ty
+  | ADT of constbranch list
+and constbranch = var * ty list
 
 type theory = decl list
 
