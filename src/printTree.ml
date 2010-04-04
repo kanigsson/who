@@ -116,7 +116,7 @@ module Generic = struct
     | App _ | Let _ | Ite _
     | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
 
-  let inductive_sep fmt () = fprintf fmt "|@ "
+  let inductive_sep fmt () = fprintf fmt "@ |@ "
   let consttysep fmt () = fprintf fmt "*@ "
 
 end
@@ -312,7 +312,7 @@ module Pangoline = struct
         fprintf fmt "@[<hov 2>type %a %a = | %a @]"
           string n gen (tl,[],[]) (list inductive_sep constdef) bl
     | Inductive (n,g,tyl, fl) ->
-        fprintf fmt "@[<hov 2>Inductive %a %a : %a = %a@]" string n gen g
+        fprintf fmt "@[<hov 2>inductive %a %a %a = %a@]" string n gen g
           (list space ty) tyl (list inductive_sep term) fl
     | DLetReg _ -> assert false
     | Section (_,d, `Block cl) ->

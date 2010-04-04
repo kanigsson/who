@@ -55,6 +55,8 @@ let pangoline_predefined =
     not_id, "not" ;
     and_id, "and" ;
     or_id, "or" ;
+    btrue_id, "btrue";
+    bfalse_id, "bfalse";
   ] @
   (List.flatten
     (ExtList.repeat ~from:2 (preinstantiated_tuple + 1) (fun i ->
