@@ -51,6 +51,7 @@ let id_or_keyword =
         ("exists", fun i -> EXISTS (create_info i)  );
         ("for", fun i -> FOR (create_info i)  );
         ("to", fun i -> TO (create_info i)  );
+        ("of", fun _ -> OF );
         ("downto", fun i -> DOWNTO (create_info i)  );
         ("do", fun _ -> DO );
         ("done", fun i -> DONE (create_info i)  );

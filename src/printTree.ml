@@ -310,7 +310,8 @@ module Pangoline = struct
         fprintf fmt "@[<hov 2> type (%d) %a @]" (List.length tl) string x
     | TypeDef (n,tl,ADT bl) ->
         fprintf fmt "@[<hov 2>type %a %a = | %a @]"
-          string n gen (tl,[],[]) (list inductive_sep constdef) bl
+          (paren (list comma string)) tl string n
+          (list inductive_sep constdef) bl
     | Inductive (n,g,tyl, fl) ->
         fprintf fmt "@[<hov 2>inductive %a %a %a = %a@]" string n gen g
           (list space ty) tyl (list inductive_sep term) fl

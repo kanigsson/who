@@ -141,7 +141,7 @@ let rec decl env d =
           env, [TypeDef (nv,tl, Ast.Abstract)]
       | I.ADT bl, [],[] ->
           let env, nv = Env.add_global_tyvar env n in
-          let env,bl = ExtList.fold_map constbranch env bl in
+          let env,bl = ExtList.fold_map (constbranch env') env bl in
           env, [TypeDef (nv, tl, Ast.ADT bl)]
       | _ ->
             (* TODO error message *)
@@ -155,11 +155,11 @@ let rec decl env d =
       Predefined.add_symbol x nv;
       env, [Program (nv, g, e, r)]
 and theory x = ExtList.fold_map_flatten decl x
-and constbranch env (n,tyl) =
-  let tyl = List.map (ty env) tyl in
-  let env,nv = Env.add_var env n in
+and constbranch env_inner env_outer (n,tyl) =
+  let tyl = List.map (ty env_inner) tyl in
+  let env,nv = Env.add_var env_outer n in
   env, (nv,tyl)
-  
+
 
 let theory th =
   let _, th = theory Env.empty th in

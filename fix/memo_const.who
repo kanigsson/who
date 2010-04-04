@@ -1,15 +1,6 @@
-type option ['a]
-logic none ['a] : 'a option
-logic some ['a] :  'a -> 'a option
-
-axiom option_split ['a] :
-  forall (x : 'a option). x = none \/ exists z. x = some z
-
-axiom some_injective ['a] :
-  forall (x y : 'a). some x = some y -> x = y
-
-axiom option_diff ['a] :
-  forall (x : 'a). some x <> none
+type option ['a] =
+| none
+| some of 'a
 
 parameter get_some ['a] (x : 'a option) : 'a,{} =
   {exists z. x = some z}
