@@ -132,7 +132,8 @@ let rec recon_decl x =
   | I.Formula (s,t,k) -> Formula (s, recon t, k)
   | I.Section (s,cl, dl) -> Section (s,recon_th dl, `Block cl)
   | I.DLetReg rl -> DLetReg rl
-  | I.TypeDef (tl,n) -> TypeDef (n,tl, Abstract)
+  | I.TypeDef (n,tl,Abstract) -> TypeDef (n,tl, Abstract)
+  | I.TypeDef (n,tl,ADT bl) -> TypeDef (n,tl, ADT (List.map constbranch bl))
   | I.Program (n,g,t,r) ->
       let t = recon t in
       Predefined.add_binding n (g,t.t);
@@ -143,6 +144,7 @@ let rec recon_decl x =
       Inductive (n,g,t,tel)
   | I.DGen g -> DGen g
 and recon_th l = List.map recon_decl l
+and constbranch (n,tl) = n, tl
 
 let theory th =
   recon_th th

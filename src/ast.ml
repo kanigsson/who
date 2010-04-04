@@ -58,7 +58,7 @@ type decl =
   | DGen of G.t
   | Decl of string
 and section_kind = [ `Block of Const.takeover list | `Structure ]
-and typedef = 
+and typedef =
   | Abstract
   | ADT of constbranch list
 and constbranch = Name.t * Ty.t list
@@ -82,7 +82,7 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
     | Gen (g,e) -> Gen (g,aux e)
   and rwfun e = Rw.map effectfun e
   and body (p,e,q) = aux p, aux e, aux q
-  and var v = 
+  and var v =
     let (g,t) = v.scheme in
     { var = varfun v.var ; scheme = g, tyfun t }
   and aux t = {t with v = aux' t.v; t = tyfun t.t; e = rwfun t.e} in
@@ -209,7 +209,7 @@ module Convert = struct
         let env = add_id env n in
         let env' = add_ids env tl in
         let n = id env n and tl = List.map (id env') tl in
-        let env, k = 
+        let env, k =
           match def with
           | Abstract -> env, P.Abstract
           | ADT bl ->

@@ -273,7 +273,7 @@ let rec infer_th env d =
 (*       Myformat.printf "added: %a : %a@." Name.print n Ty.print t; *)
       env, Logic (n,g,t)
   | I.TypeDef (tl,n) ->
-      env, TypeDef (tl,n)
+      env, TypeDef (n,tl, Ast.Abstract)
   | I.DLetReg rl -> env, DLetReg rl
   | I.DGen g -> env, DGen g
   | I.Program (x,g,e,r) ->

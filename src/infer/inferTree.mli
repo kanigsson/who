@@ -54,7 +54,7 @@ type decl =
   | Logic of Name.t * Ty.Generalize.t * Ty.t
   | Formula of Name.t * t * [ `Proved | `Assumed ]
   | Section of Name.t * Const.takeover list * decl list
-  | TypeDef of Name.t list * Name.t
+  | TypeDef of Name.t * Name.t list * Ast.typedef
   | Program of Name.t * Ty.Generalize.t * t * isrec
   | DLetReg of Name.t list
   | Inductive of Name.t * Ty.Generalize.t * Ty.t * t list
