@@ -66,16 +66,15 @@ type decl =
   | DLetReg of string list
   | DGen of gen
   | Decl of string
-and typedef = 
+and typedef =
   | Abstract
   | ADT of constbranch list
 and constbranch = string * ty list
 
 and section_kind = [ `Block of Const.takeover list | `Structure ]
 
-module Print = struct
+module Generic = struct
   open Myformat
-
   let effect_no_sep fmt (r,e) =
       fprintf fmt "%a %a" (list space string) r
         (list space string) (List.map (fun s -> "'" ^ s) e)
@@ -102,51 +101,224 @@ module Print = struct
     if l = [] then () else
       fprintf fmt "@ %a" (list space pr) l
 
-  let rec inst ?(kind=`Who) ~intype fmt ((tl,rl,el) as g) =
+  let tyvar fmt x = fprintf fmt "'%a" string x
+  let gen fmt ((tl,rl,el) as g) =
+    if is_empty g then ()
+    else fprintf fmt "[%a|%a|%a]" (list space tyvar) tl
+      (list space string) rl (list space tyvar) el
+
+  let lname s fmt l =
+    if l = [] then () else
+    fprintf fmt "(%a :@ %s)" (list space string) l s
+
+  let is_compound_term = function
+    | Const _ | Var _ | Lam _ | PureFun _ -> false
+    | App _ | Let _ | Ite _
+    | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
+
+end
+module Coq = struct
+  open Myformat
+  open Generic
+
+  let rec inst ~intype fmt (tl,_,_) =
+    if intype then fprintf fmt "%a" (prsl ty) tl
+  and ty fmt x =
+    match x with
+    | Arrow _ | Map _ | Ref _ -> assert false
+    | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 ty t2
+    | Tuple tl -> list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
+    | TConst c -> Const.print_ty `Coq fmt c
+    | TApp (v,[]) -> fprintf fmt "%a" string v
+    | TApp (v,i) -> fprintf fmt "%a %a" string v (list space mayp) i
+  and mayp fmt t =
+    if is_compound `Coq t then paren ty fmt t else ty fmt t
+
+  let binder' par =
+    let p fmt (x,t) = fprintf fmt "%a:%a" string x ty t in
+    if par then paren p else p
+  let binder fmt b = binder' true fmt b
+
+  let rec term fmt x =
+    match x with
+    | Const c -> Const.print fmt c
+    | App (App (Var(v,i),t1,_,_),t2,`Infix,_) ->
+        fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst' i
+          with_paren t2
+    | App (t1,t2,_,_) ->
+          fprintf fmt "@[%a@ %a@]" term t1 with_paren t2
+    | Ite (e1,e2,e3) ->
+        fprintf fmt "@[if %a then@ %a else@ %a@]" term e1 term e2 term e3
+    | PureFun (x,t,e) ->
+        fprintf fmt "@[(fun %a@ =>@ %a)@]" binder (x,t) term e
+    | Let (g,e1,x,e2,_) ->
+        fprintf fmt "@[let@ %a %a=@[@ %a@]@ in@ %a@]" string x gen g
+          term e1 term e2
+    | Var (v,_) -> string fmt v
+    | Quant (k,x,t,e) ->
+        let bind = if k = `FA then binder else binder' false in
+        fprintf fmt "@[%a %a,@ %a@]" Const.quant k bind (x,t) term e
+    | Gen ((tl,_,_) as g,t) ->
+        if is_empty g then term fmt t else
+          fprintf fmt "forall@ %a,@ %a " (lname "Type") tl term t
+    (* specific to Who, will not be printed in backends *)
+    | Param _ | HoareTriple _ | LetReg _ | Lam _ -> assert false
+  and with_paren fmt x =
+    if is_compound_term x then paren term fmt x else term fmt x
+  and inst' fmt i = inst ~intype:false fmt i
+end
+
+module Pangoline = struct
+  open Myformat
+  open Generic
+
+  let rec inst fmt (tl,_,_) =
+    if tl = [] then () else fprintf fmt "[%a]" (prl ty) tl
+  and ty fmt x =
+    match x with
+    | Arrow _ | Map _ | Ref _ -> assert false
+    | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 ty t2
+    | Tuple tl -> list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
+    | TConst c -> Const.print_ty `Pangoline fmt c
+    | TApp (v,[]) -> fprintf fmt "%a" string v
+    | TApp (v,i) -> fprintf  fmt "%a[%a]" string v (list comma ty) i
+  and mayp fmt t =
+      if is_compound `Pangoline t then paren ty fmt t else ty fmt t
+
+  let binder' par =
+    let p fmt (x,t) = fprintf fmt "%a:%a" string x ty t in
+    if par then paren p else p
+  let binder fmt b = binder' true fmt b
+
+  let rec term fmt t =
+    match t with
+    | Const c -> Const.print fmt c
+    | App (App (Var(v,i),t1,_,_),t2,`Infix,_) ->
+        fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst' i
+          with_paren t2
+    | App (t1,t2,_,_) ->
+          fprintf fmt "@[%a@ %a@]" term t1 with_paren t2
+    | Ite (e1,e2,e3) ->
+        fprintf fmt "@[if %a then@ %a else@ %a@]" term e1 term e2 term e3
+    | PureFun (x,t,e) ->
+        fprintf fmt "@[(fun %a@ ->@ %a)@]" binder (x,t) term e
+    | Let (g,e1,x,e2,_) ->
+        fprintf fmt "@[let@ %a %a=@[@ %a@]@ in@ %a@]" string x gen g
+          term e1 term e2
+    | Var (v,i) ->
+        let pr fmt () =
+          if is_empty i then string fmt v
+          else fprintf fmt "%a %a" string v inst' i in
+        if Identifiers.is_infix_id v then paren pr fmt () else pr fmt ()
+    | Quant (k,x,t,e) ->
+        fprintf fmt "@[%a %a.@ %a@]" Const.quant k binder (x,t) term e
+    | Gen ((tl,_,_) as g,t) ->
+        if is_empty g then term fmt t else
+          fprintf fmt "forall type %a. %a" (list space string) tl term t
+    (* specific to Who, will not be printed in backends *)
+    | Param _ | HoareTriple _ | LetReg _ | Lam _ -> assert false
+  and with_paren fmt x =
+    if is_compound_term x then paren term fmt x else term fmt x
+  and inst' fmt i = inst fmt i
+
+end
+
+module Who = struct
+  open Myformat
+  open Generic
+
+  let rec inst fmt ((tl,rl,el) as g) =
+    (* separate types with comma, the others by spaces *)
     if is_empty g then () else
-      match kind with
-      | `Who ->
-          (* separate types with comma, the others by spaces *)
-          fprintf fmt "[%a|%a|%a]" (prl (ty ~kind)) tl
-            (prsl string) rl (prsl effect) el
-      | `Coq ->
-          if intype then
-            fprintf fmt "%a%a%a" (prsl (ty ~kind)) tl (prsl string) rl
-              (prsl effect) el
-      | `Pangoline ->
-          if tl = [] then () else fprintf fmt "[%a]" (prl (ty ~kind)) tl
-
-
-  and ty ?(kind=`Who) =
-    let rec print fmt x =
-      match x with
+    fprintf fmt "[%a|%a|%a]" (prl ty) tl (prsl string) rl (prsl effect) el
+  and ty fmt x =
+    match x with
       | Arrow (t1,t2,eff,cap) ->
-          (* there are no impure arrow types in Coq or Pangoline, so simply
-           * print it as you wish *)
-          fprintf fmt "%a ->{%a%a} %a" mayp t1
-          rw eff (maycap string) cap print t2
+          fprintf fmt "%a ->{%a%a} %a" mayp t1 rw eff (maycap string)
+            cap ty t2
       | Map e -> fprintf fmt "<%a>" effect_no_sep e
-      | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 print t2
-      | Tuple tl ->
-          list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
-      | TConst c -> Const.print_ty kind fmt c
-      | Ref (r,t) ->
-          (* in Who, this is a special type constructor, in Coq its a simple
-          application, in Pangoline its a type instantiation *)
-          begin match kind with
-          | `Who -> fprintf fmt "ref(%a,%a)" string r print t
-          | `Coq -> fprintf fmt "ref@ %a@ %a" mayp t string r
-          | `Pangoline -> fprintf fmt "%a ref" mayp t
-          end
+      | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 ty t2
+      | Tuple tl -> list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
+      | TConst c -> Const.print_ty `Who fmt c
+      | Ref (r,t) -> fprintf fmt "ref(%a,%a)" string r ty t
       | TApp (v,[]) -> fprintf fmt "%a" string v
-      | TApp (v,i) ->
-          begin match kind with
-          | `Coq -> fprintf fmt "%a %a" string v (list space mayp) i
-          | _ -> fprintf  fmt "%a[%a]" string v (list comma print) i
-          end
-    and mayp fmt t =
-      if is_compound kind t then paren print fmt t else print fmt t in
-    print
+      | TApp (v,i) -> fprintf  fmt "%a[%a]" string v (list comma ty) i
+  and mayp fmt t =
+      if is_compound `Who t then paren ty fmt t else ty fmt t
+
+  let binder' par =
+    let p fmt (x,t) = fprintf fmt "%a:%a" string x ty t in
+    if par then paren p else p
+  let binder fmt b = binder' true fmt b
+
+  let prrec fmt = function
+    | Const.NoRec -> ()
+    | Const.Rec t -> fprintf fmt "rec(%a) " ty t
+    | Const.LogicDef -> fprintf fmt "logic "
+
+  let maycaplist fmt l =
+    if l = [] then ()
+    else fprintf fmt "allocates %a" (list space string) l
+
+  let rec term fmt t =
+    match t with
+    | Const c -> Const.print fmt c
+    | App (App (Var(v,i),t1,_,_),t2,`Infix,_) ->
+        fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst i
+          with_paren t2
+    | App (t1,t2,_,cap) ->
+          fprintf fmt "@[%a%a@ %a@]" term t1 maycap cap with_paren t2
+    | Ite (e1,e2,e3) ->
+        fprintf fmt "@[if %a then@ %a else@ %a@]" term e1 term e2 term e3
+    | PureFun (x,t,e) ->
+        fprintf fmt "@[(fun %a@ ->@ %a)@]" binder (x,t) term e
+    | Let (g,e1,x,e2,r) ->
+        fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]"
+          prrec r string x gen g term e1 term e2
+    | Var (v,i) ->
+        let pr fmt () =
+          if is_empty i then string fmt v
+          else fprintf fmt "%a %a" string v inst i
+        in
+        if Identifiers.is_infix_id v then paren pr fmt () else pr fmt ()
+    | Quant (k,x,t,e) ->
+        fprintf fmt "@[%a %a.@ %a@]" Const.quant k binder (x,t) term e
+    | Gen (g,t) ->
+        if is_empty g then term fmt t else
+          fprintf fmt "forall %a. %a" gen g term t
+    (* specific to Who, will not be printed in backends *)
+    | Param (t,e) ->
+        fprintf fmt "parameter(%a,%a)" ty t rw e
+    | HoareTriple (p,f,q) ->
+        fprintf fmt "[[%a]]%a[[%a]]" term p term f term q
+    | LetReg (v,t) ->
+        fprintf fmt "@[letregion %a in@ %a@]"
+          (list space string) v term t
+    | Lam (x,t,cap,(p,e,q)) ->
+        fprintf fmt "@[(fun %a@ ->%a@ {%a}@ %a@ {%a})@]"
+          binder (x,t) maycaplist cap term p term e term q
+  and maycap fmt = function
+    | [] -> ()
+    | l -> fprintf fmt "{%a}" (list space string) l
+  and with_paren fmt x =
+    if is_compound_term x then paren term fmt x else term fmt x
+end
+
+module Print = struct
+  open Myformat
+  include Generic
+
+  let inst ?(kind=`Who) ~intype =
+    match kind with
+    | `Who -> Who.inst
+    | `Coq -> Coq.inst ~intype
+    | `Pangoline -> Pangoline.inst
+
+  let ty ?(kind=`Who) =
+    match kind with
+    | `Who -> Who.ty
+    | `Coq -> Coq.ty
+    | `Pangoline -> Pangoline.ty
 
   let varprint kind fmt x =
     match kind with
@@ -154,31 +326,7 @@ module Print = struct
     | `Coq | `Pangoline -> string fmt x
   let varlist = list space (varprint `Who)
 
-  let gen fmt ((tl,rl,el) as g) =
-    if is_empty g then ()
-    else fprintf fmt "[%a|%a|%a]" varlist tl (list space string) rl varlist el
-
   let scheme fmt (g,t) = fprintf fmt "forall %a. %a" gen g (ty ~kind:`Who) t
-
-  let is_compound = function
-    | Const _ | Var _ | Lam _ | PureFun _ -> false
-    | App _ | Let _ | Ite _
-    | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
-
-  type sup = [ `Coq | `Who | `Pangoline ]
-
-  let maycaplist fmt l =
-    if l = [] then ()
-    else fprintf fmt "allocates %a" (list space string) l
-
-  let prrec fmt = function
-    | Const.NoRec -> ()
-    | Const.Rec t -> fprintf fmt "rec(%a) " (ty ~kind:`Who) t
-    | Const.LogicDef -> fprintf fmt "logic "
-
-  let lname s fmt l =
-    if l = [] then () else
-    fprintf fmt "(%a :@ %s)" (list space string) l s
 
   let is_compound = function
     | Const _ | Var _ | Lam _ | PureFun _ -> false
@@ -195,74 +343,13 @@ module Print = struct
           fprintf fmt "forall %t %a." in_term (list space string) tl
       | `Who -> fprintf fmt "[%a]" (list space string) tl
 
+  let term ?(kind=`Who) =
+    match kind with
+    | `Who -> Who.term
+    | `Coq -> Coq.term
+    | `Pangoline -> Pangoline.term
 
-  let term ?(kind : sup =`Who) =
-    let ty = ty ~kind in
-    let rec print fmt x =
-      match x with
-      | Const c -> Const.print fmt c
-      | App (App (Var(v,i),t1,_,_),t2,`Infix,_) ->
-          fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst' i
-            with_paren t2
-      | App (t1,t2,_,cap) ->
-            fprintf fmt "@[%a%a@ %a@]" print t1 maycap cap with_paren t2
-      | Ite (e1,e2,e3) ->
-          fprintf fmt "@[if %a then@ %a else@ %a@]" print e1 print e2 print e3
-      | PureFun (x,t,e) ->
-          fprintf fmt "@[(fun %a@ %a@ %a)@]" binder (x,t)
-            Const.funsep kind print e
-      | Let (g,e1,x,e2,r) ->
-          fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]"
-            prrec r string x gen g print e1 print e2
-      | Var (v,i) ->
-          begin match kind with
-          | `Who | `Pangoline ->
-              let pr fmt () =
-                if is_empty i then string fmt v
-                else fprintf fmt "%a %a" string v inst' i
-              in
-              if Identifiers.is_infix_id v then paren pr fmt () else pr fmt ()
-          | `Coq -> string fmt v
-          end
-      | Quant (k,x,t,e) ->
-          let bind =
-            match kind with
-            | `Coq -> if k = `FA then binder else binder' false
-            | _ -> binder in
-          fprintf fmt "@[%a %a%a@ %a@]" Const.quant k bind (x,t)
-            Const.quantsep kind print e
-      | Gen ((tl,_,_) as g,t) ->
-          if is_empty g then print fmt t else
-            begin match kind with
-            | `Coq ->
-                fprintf fmt "forall@ %a,@ %a " (lname "Type") tl print t
-            | `Pangoline  ->
-                fprintf fmt "forall type %a. %a" (list space string) tl print t
-            | `Who ->
-                fprintf fmt "forall %a%a %a" gen g Const.quantsep kind print t
-            end
-      (* specific to Who, will not be printed in backends *)
-      | Param (t,e) ->
-          fprintf fmt "parameter(%a,%a)" ty t rw e
-      | HoareTriple (p,f,q) ->
-          fprintf fmt "[[%a]]%a[[%a]]" print p print f print q
-      | LetReg (v,t) ->
-          fprintf fmt "@[letregion %a in@ %a@]"
-            (list space string) v print t
-      | Lam (x,t,cap,(p,e,q)) ->
-          fprintf fmt "@[(fun %a@ ->%a@ {%a}@ %a@ {%a})@]"
-            binder (x,t) maycaplist cap print p print e print q
-    and binder' par =
-      let p fmt (x,t) = fprintf fmt "%a:%a" string x ty t in
-      if par then paren p else p
-    and binder fmt b = binder' true fmt b
-    and maycap fmt = function
-      | [] -> ()
-      | l -> fprintf fmt "{%a}" (list space string) l
-    and with_paren fmt x =
-      if is_compound x then paren print fmt x else print fmt x
-    and inst' fmt i = inst ~kind ~intype:false fmt i in
-    print
+
 
 let is_infix_symbol s =
   match s.[0] with
@@ -371,7 +458,7 @@ let is_infix_symbol s =
           fprintf fmt "@[<hov 2>%a@\n %a@] %a"
           (beginsec kind) s (theory true) d (endsec kind) s;
       | Program (x,g,t,r) ->
-          fprintf fmt "@[<hov 2>let@ %a%a %a = %a @]" prrec r string x gen g
+          fprintf fmt "@[<hov 2>let@ %a%a %a = %a @]" Who.prrec r string x gen g
             term t
       | DGen ((tl,_,_) as g) ->
           begin match kind with
