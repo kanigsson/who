@@ -272,8 +272,9 @@ let rec infer_th env d =
       let env = Env.add_var env n g (M.from_ty t) in
 (*       Myformat.printf "added: %a : %a@." Name.print n Ty.print t; *)
       env, Logic (n,g,t)
-  | I.TypeDef (tl,n) ->
-      env, TypeDef (n,tl, Ast.Abstract)
+  | I.TypeDef (n,tl,k) ->
+      let env = typedef env tl n k in
+      env, TypeDef (n,tl, k)
   | I.DLetReg rl -> env, DLetReg rl
   | I.DGen g -> env, DGen g
   | I.Program (x,g,e,r) ->
@@ -284,7 +285,15 @@ let rec infer_th env d =
       let tel = List.map (check_type env M.prop) tel in
       env, Inductive (n,g,t,tel)
 and theory env th = ExtList.fold_map infer_th env th
-
+and typedef env tl n k =
+  match k with
+  | Ast.Abstract -> env
+  | Ast.ADT bl -> 
+      let base = Ty.app n (List.map Ty.var tl) in
+      List.fold_left (cbranch tl base) env bl
+and cbranch tvl base env (n,tl) =
+  let t = Ty.nparr tl base in
+  Env.add_var env n (tvl,[],[]) (M.from_ty t)
 let theory th =
   let _, th = theory Env.empty th in
   th

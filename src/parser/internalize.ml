@@ -137,7 +137,7 @@ let rec decl env d =
             (* TODO error message *)
           if rl <> [] || el <> [] then assert false;
           let env, nv = Env.add_global_tyvar env n in
-          env, [TypeDef (tl,nv)]
+          env, [TypeDef (nv,tl, Ast.Abstract)]
       | Some t ->
           let env = Env.add_type_def env n g (ty env' t) in
           env, []
