@@ -83,9 +83,9 @@
 
 (* basic terms *)
 
-protected_nterm:
-  | l = LPAREN t = nterm e = RPAREN { mk t.v (embrace l e) }
-  | l = LPAREN e = nterm COLON t = ty r = RPAREN
+protected_term:
+  | l = LPAREN t = seq_term e = RPAREN { mk t.v (embrace l e) }
+  | l = LPAREN e = seq_term COLON t = ty r = RPAREN
     { mk (Annot (e,t)) (embrace l r) }
 
 aterm:
@@ -105,7 +105,7 @@ aterm:
     { var (snd x) (embrace l r) }
   | c = constant { let p,c = c in const c p }
   | l = LPAREN x = infix e = RPAREN { var (snd x) (embrace l e) }
-  | t = protected_nterm { t }
+  | t = protected_term { t }
 
 tuple_list:
   | t1 = nterm COMMA t2 = nterm { [t2; t1] }

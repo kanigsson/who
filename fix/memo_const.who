@@ -10,13 +10,12 @@ let var [||'e] (g : [[unit ->{'e} int]]) c =
   (forall s. pre g () s) /\
   forall s s' r. post g () s s' r -> r = c
 
-let var_ex [||'e] (g : [[unit ->{'e} int]]) = exists c. var[{'e}] g c
-
 logic f0 : int -> int
 
 parameter f [||'e] (c : int) ( g : unit ->{'e} int) : int, {'e} =
-  {var[{'e}] g c}
-  {r : var [{'e}] g c /\ r = f0 c}
+  {exists c. var[{'e}] g c}
+  {r : (exists s z. post g () s cur z /\ r = f0 z)
+    \/ forall x. r = f0 x}
 
 letregion r
 logic m : ref(r,int option)
@@ -26,7 +25,7 @@ let memo (arg : int) =
 (*    match !!m with
     | none -> True
     | some z -> z = f0 arg *)
-  !!m <> none -> exists z. !!m = some z /\ z = f0 arg
+  !!m <> none -> exists z. !!m = some z /\ forall x. z = f0 x
   }
   (*
   match !m with
@@ -36,9 +35,15 @@ let memo (arg : int) =
   else
     letregion w in
     let wit = ref{{w}} false in
-    let r = f [{w}] arg (fun (z : unit) ->{}
-      wit := true; arg {r : !!wit = true /\ r = arg}) in
-    m := some r;
+    let dummy (z : unit) =
+      { }
+      wit := true; arg
+      {r : !!wit = true /\ r = arg} in
+    let r = f [{w}] arg dummy in
+    if !wit == false then (
+      m := some r
+    )else ();
     r
-  {r : r = f0 arg /\ !!m = some (f0 arg)}
+  {r : r = f0 arg /\
+  !!m <> none -> exists z. !!m = some z /\ forall x. z = f0 x }
 

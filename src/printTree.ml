@@ -199,12 +199,12 @@ module Coq = struct
     | TypeDef (x,tl, Abstract) ->
         fprintf fmt "@[<hov 2>Definition %a :@ %a%s. %t @]" string x
           pr_generalize tl "Type" print_proof
-    | Inductive (n,g,tyl, fl) ->
-        fprintf fmt "@[<hov 2>Inductive %a %a : %a = %a@]" string n gen g
-          (list space ty) tyl (list inductive_sep term) fl
     | TypeDef (n,tl,ADT bl) ->
-        fprintf fmt "@[<hov 2>type %a %a = | %a @]"
-          string n gen (tl,[],[]) (list inductive_sep constdef) bl
+        fprintf fmt "@[<hov 2>Inductive %a %a : Type := | %a . @]"
+          string n (lname "Type") tl (list inductive_sep (constdef n tl)) bl
+    | Inductive (n,g,tyl, fl) ->
+        fprintf fmt "@[<hov 2>Inductive %a %a : %a = %a.@]" string n gen g
+          (list space ty) tyl (list inductive_sep term) fl
     | Section (_,d, `Block cl) ->
         let choice = List.fold_left (fun acc (p,c) ->
           if p = `Coq then c else acc) Const.TakeOver cl in
@@ -220,10 +220,13 @@ module Coq = struct
         fprintf fmt "@[<hov 2>let@ %a %a = %a @]" string x gen g term t
     | DGen (tl,_,_) -> intro_name "Type" fmt tl
     | Decl s -> string fmt s
-  and constdef fmt (c,tl) =
-    if tl = [] then string fmt c
-    else fprintf fmt "%a of %a" string c (list consttysep ty) tl
+  and constdef n tvl fmt (c,tl) =
+    if tl = [] then fprintf fmt "%a : %a %a " string c string n
+      (list space string) tvl
+    else fprintf fmt "%a : %a -> %a %a" string c (list arrow ty) tl string n
+      (list space string) tvl
   and theory insection fmt t = list newline (decl insection) fmt t
+  and arrow fmt () = fprintf fmt "->@ "
 
 end
 
