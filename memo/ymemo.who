@@ -1,53 +1,54 @@
-type hmap ['a 'b||]
-logic hmem ['a 'b||]: 'a -> ('a,'b) hmap -> bool
-logic hget ['a 'b||]: 'a -> ('a,'b) hmap -> 'b
-logic hset ['a 'b||]: 'a -> 'b -> ('a,'b) hmap -> ('a,'b) hmap
+type hmap ['a 'b]
+logic hmem ['a 'b]: 'a -> ('a,'b) hmap -> bool
+logic hget ['a 'b]: 'a -> ('a,'b) hmap -> 'b
+logic hset ['a 'b]: 'a -> 'b -> ('a,'b) hmap -> ('a,'b) hmap
 
-axiom hgethset ['a 'b ||] : 
-  forall (k : 'a) (v : 'b) (map : ('a,'b) hmap). 
+axiom hgethset ['a 'b ] :
+  forall (k : 'a) (v : 'b) (map : ('a,'b) hmap).
     hget k (hset k v map) = v
 
-axiom hgethset2 ['a 'b ||] : 
-  forall (k1 k2 : 'a) (v : 'b) (map : ('a,'b) hmap). 
+axiom hgethset2 ['a 'b ||] :
+  forall (k1 k2 : 'a) (v : 'b) (map : ('a,'b) hmap).
     k1 <> k2 -> hget k1 (hset k2 v map) = hget k1 map
 
-axiom set_mem ['a 'b||] :
+axiom set_mem ['a 'b] :
   forall (k1 k2 : 'a) (v : 'b) (map : ('a, 'b) hmap).
     hmem k1 (hset k2 v map) = true -> (k1 = k2 \/ hmem k1 map = true)
 
-let stores (f0 : int -> int) (m : (int,int) hmap) =
-  forall (x : int). hmem x m = true -> hget x m = f0 x
+let stores (f : int -> int) (m : (int,int) hmap) =
+  forall (x : int). hmem x m = true -> hget x m = f x
 
 letregion t
 logic table : ref(t, (int,int) hmap)
 
-let realizes (f0 : int -> int) ( f : int ->{t|} int) =
-  forall (x : int). [[ stores f0 !!table]] f x [[ r : r = f0 x /\ stores f0 !!table]]
+let realizes (f0 : int -> int) ( f : int ->{t} int) =
+  forall (x : int).
+    [[ stores f0 !!table]] f x [[ r : r = f0 x /\ stores f0 !!table]]
 
-let ymemo (f0 : int -> int) 
-          (ff : (int ->{t|} int) ->{|} int ->{t|} int) = 
-  { forall (k : int ->{t|} int).
+let ymemo (f0 : int -> int)
+          (ff : (int ->{t} int) ->{} int ->{t} int) =
+  { forall (k : int ->{t} int).
     [[ realizes f0 k]] ff k [[ r : realizes f0 r ]] }
-  let rec (f : int ->{t|} int) (x : int) =
-    { stores f0 (!!table) }
-    if hmem x (!table) then hget x (!table)
+  let rec (f : int ->{t} int) (x : int) =
+    { stores f0 !!table }
+    if hmem x !table then hget x !table
     else
       let z = ff f x in
-      let k = table := hset  x z (!table) in
+      table := hset  x z (!table);
       z
-    {r : r = f0 x /\ stores f0 (!!table)}
+    {r : r = f0 x /\ stores f0 !!table}
   in
   f
   { rf : realizes f0 rf }
-      
-(* 
+
+(*
 logic Fib : int -> int
 axiom fib_zero : forall (n:int). n <= 1 -> Fib n = 1
 axiom fib_succ : forall (n:int). 1 < n -> Fib n = Fib (n-1) + Fib (n-2)
 
 logic arg : int
 
-let main () = 
+let main () =
   { stores Fib cur }
   ymemo Fib
   (fun (f : int ->{table} int) (n : int) ->
@@ -56,7 +57,7 @@ let main () =
     {r : r = Fib n /\ stores Fib cur}
   ) arg
   {r : r = Fib arg}
-  
+
   *)
 
 (* une note : ymemo sans etat *)
@@ -66,7 +67,7 @@ let realizes (f0 : int -> int) (f : int ->{t|} int) =
     { stores f0 (!!table)} f x {r : r = f0 x /\ stores f0 (!!table) }
 
 let ymemo (f0 : int -> int)
-          (ff : (int ->{t|} int) ->{|} int ->{t|} int) = 
+          (ff : (int ->{t|} int) ->{|} int ->{t|} int) =
   { forall (k : int ->{t|} int ).
     {realizes f0 k} ff k { r : realizes f0 r } }
   ...

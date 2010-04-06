@@ -1,30 +1,29 @@
-type hmap ['a 'b||]
-logic hmem ['a 'b||]: 'a -> ('a,'b) hmap -> bool
-logic hget ['a 'b||]: 'a -> ('a,'b) hmap -> 'b
-logic hset ['a 'b||]: 'a -> 'b -> ('a,'b) hmap -> ('a,'b) hmap
+type hmap ['a 'b]
+logic hmem ['a 'b]: 'a -> ('a,'b) hmap -> bool
+logic hget ['a 'b]: 'a -> ('a,'b) hmap -> 'b
+logic hset ['a 'b]: 'a -> 'b -> ('a,'b) hmap -> ('a,'b) hmap
 
-axiom hgethset ['a 'b ||] : 
-  forall (k : 'a) (v : 'b) (map : ('a,'b) hmap). 
+axiom hgethset ['a 'b] :
+  forall (k : 'a) (v : 'b) (map : ('a,'b) hmap).
     hget k (hset k v map) = v
 
-axiom hgethset2 ['a 'b ||] : 
-  forall (k1 k2 : 'a) (v : 'b) (map : ('a,'b) hmap). 
+axiom hgethset2 ['a 'b] :
+  forall k1 k2 v (map : ('a,'b) hmap).
     k1 <> k2 -> hget k1 (hset k2 v map) = hget k1 map
 
-axiom set_mem ['a 'b||] :
-  forall (k1 k2 : 'a) (v : 'b) (map : ('a, 'b) hmap).
+axiom set_mem ['a 'b] :
+  forall k1 k2 v (map : ('a, 'b) hmap).
     hmem k1 (hset k2 v map) = true -> (k1 = k2 \/ hmem k1 map = true)
 
 
-let stores (f0 : int -> int) (m : (int,int) hmap) =
-  forall (x : int). hmem x m = true -> hget x m = f0 x
+let stores (f : int -> int) (m : (int,int) hmap) =
+  forall (x : int). hmem x m = true -> hget x m = f x
 
-let memo [|t|] (table : ref(t,(int,int) hmap)) (f0 : int -> int) 
-      (x : int) = 
-  {stores f0 (!!table)}
+let memo [|t|] (table : ref(t,(int,int) hmap)) (f : int -> int) (x : int) =
+  {stores f !!table}
   if hmem x (!table) then hget x (!table)
   else
-    let z = f0 x in
-    (table := hset x z (!table));
+    let z = f x in
+    table := hset x z !table;
     z
-  {r : r = f0 x /\ stores f0 (!!table)}
+  {r : r = f x /\ stores f !!table}
