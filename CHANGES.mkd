@@ -3,6 +3,7 @@
 ## version 0.4-dev
 
 * inductives
+* ADT definitions - but no pattern matching yet
 * syntax change: "restrict" and "get" using @
 
 ## version 0.3 - released Apr 3
