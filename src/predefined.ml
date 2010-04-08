@@ -71,6 +71,12 @@ let coq_predefined =
     snd_id, "snd";
   ]
 
+let get_tuple_ids =
+  List.flatten
+    (ExtList.repeat ~from:2 (preinstantiated_tuple + 1) (fun i ->
+      ExtList.repeat ~from:1 (i+1) (fun j ->
+        get_tuple_id i j, j)))
+
 let add_symbol s n =
   env.name_map <- Misc.StringMap.add s n env.name_map
 
@@ -105,6 +111,9 @@ let find var id_list = List.find (fun (a,_) -> equal var a) id_list
 let is_infix x = belongs_to x infix_ids
 
 let is_effect_var x = belongs_to x effect_ids
+let is_get_tuple_var x =
+  try Some (snd (find x get_tuple_ids))
+  with Not_found -> None
 
 let build_map list =
   let map = ref None in

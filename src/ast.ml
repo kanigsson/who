@@ -419,7 +419,23 @@ let simple_appi t t1 t2 loc = simple_app2 ~kind:`Infix t t1 t2 loc
 let simple_eq t1 t2 l =
   simple_appi (predef I.equal_id ([t1.t],[],[]) l) t1 t2 l
 
+let get_tuple_var tl i j l =
+  (predef (I.get_tuple_id i j) (tl,[],[])) l
+
 let id_equal v id = PL.equal v.var id
+
+let destr_tuple i =
+  assert (i>1);
+  let rec aux k acc t =
+    if k = 0 then
+      match t.v with
+      | Var (v,_) when id_equal v (I.mk_tuple_id i) -> Some acc
+      | _ -> None
+    else
+      match t.v with
+      | App (t1,t2,_,_) -> aux (k-1) (t2::acc) t1
+      | _ -> None in
+  aux i []
 
 let boolcmp_to_propcmp x =
   let eq = Predefined.equal in
@@ -459,6 +475,11 @@ let rec app ?kind ?cap t1 t2 l : t =
         | Some (v, _) when id_equal v I.snd_id -> post t2 l
         | Some (v, ([],[],[_;b])) when id_equal v I.restrict_id ->
             restrict b t2 l
+        | Some (v, _) ->
+            begin match PL.is_get_tuple_var v.var with
+            | None -> raise Exit
+            | Some i -> get_tuple i t2 l
+            end
         | _ -> raise Exit
     with Exit -> simple_app ?kind ?cap t1 t2 l
 
@@ -666,6 +687,24 @@ and restrict eff t l =
         else raise Exit
     | _ -> raise Exit
   with Exit -> simple_app (predef I.restrict_id ([],[],[d; eff]) l) t l
+and get_tuple i t l =
+  let n, tl =
+    (** compute the length of the tuple along with the list of types, but take
+       care of the singleton case. *)
+    try
+      let tl = Ty.tuple_list t.t in
+      List.length tl, tl
+    with Invalid_argument _ -> 1, [t.t] in
+  if n = 1 then begin assert (i = 1); t end
+  else begin
+    match destr_tuple n t with
+    | None ->
+        simple_app (get_tuple_var tl n i l) t l
+    | Some l ->
+        let r = List.nth l (i-1) in
+        r
+  end
+
 
 let applist ?(fix=`Prefix) l loc =
   match l with
@@ -702,37 +741,6 @@ let infer_predef ?fix ?regions ?effects ?rty id =
 
 let le t1 t2 loc =
   simple_appi (spredef I.le_id loc) t1 t2 loc
-
-let get_tuple_var tl i j l =
-  (predef (I.get_tuple_id i j) (tl,[],[])) l
-
-let destr_tuple i =
-  assert (i>1);
-  let rec aux k acc t =
-    if k = 0 then
-      match t.v with
-      | Var (v,_) when id_equal v (I.mk_tuple_id i) -> Some acc
-      | _ -> None
-    else
-      match t.v with
-      | App (t1,t2,_,_) -> aux (k-1) (t2::acc) t1
-      | _ -> None in
-  aux i []
-
-let get_tuple i t l =
-  let n, tl =
-    (** compute the length of the tuple along with the list of types, but take
-       care of the singleton case. *)
-    try
-      let tl = Ty.tuple_list t.t in
-      List.length tl, tl
-    with Invalid_argument _ -> 1, [t.t] in
-  if n = 1 then begin assert (i = 1); t end
-  else
-    begin match destr_tuple n t with
-    | None -> app (get_tuple_var tl n i l) t l
-    | Some l -> List.nth l (i-1)
-    end
 
 let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
 let efflam x eff e = plam x (Ty.map eff) e
