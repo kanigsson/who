@@ -250,13 +250,22 @@ end
 section List
   coq \"WhoList\"
   pangoline takeover
-  type list ['a]
 
-  logic nil ['a] : 'a list
-  logic cons ['a] : 'a -> 'a list -> 'a list
+  type list ['a] =
+  | nil
+  | cons of 'a * 'a list
 
   logic is_nil ['a] : 'a list -> bool
   logic l_in ['a] : 'a -> 'a list -> prop
+end
+
+section Option
+  coq predefined
+  pangoline takeover
+
+  type option ['a] =
+    | None
+    | Some of 'a
 end
 
 "

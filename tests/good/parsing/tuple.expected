@@ -200,11 +200,10 @@ axiom create_access:
                  forall (v:a).
                  (0 <= i) ->
                  ((i < l) -> ((get [a||] i (create [a||] l v)) =[a||] v)) 
-type list['a||]
-logic nil ['a||] : list[a]
-logic cons ['a||] : a -> list[a] -> list[a]
+type list ['a||] = | nil | cons of a* list[a] 
 logic is_nil ['a||] : list[a] -> bool
 logic l_in ['a||] : a -> list[a] -> prop
+type option ['a||] = | None | Some of a 
 let x  = mk_3tuple [int,int,int||] 1 2 3 
 let y  = mk_3tuple [bool,int,int -> int||] true 5 (fun (x1:int) -> x1 + 1) 
 let g  = get_3_1_tuple [int,int,int||] x 

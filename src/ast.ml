@@ -213,7 +213,7 @@ module Convert = struct
           match def with
           | Abstract -> env, P.Abstract
           | ADT bl ->
-              let env, bl = ExtList.fold_map constbranch env bl in
+              let env, bl = ExtList.fold_map (constbranch env') env bl in
               env, P.ADT bl in
         env, P.TypeDef (n,tl, k)
     | Section (s,dl, kind) ->
@@ -227,9 +227,9 @@ module Convert = struct
         let args,_ = Ty.nsplit ity in
         env, P.Inductive (id env n, g,
           List.map (ty env') args, List.map (t env') tl)
-  and constbranch env (n,tl) =
-    let env = add_id env n in
-    env, (id env n, List.map (ty env) tl)
+  and constbranch inner outer (n,tl) =
+    let env = add_id outer n in
+    env, (id outer n, List.map (ty inner) tl)
   and theory env th =
     ExtList.fold_map decl env th
 

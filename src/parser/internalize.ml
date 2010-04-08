@@ -130,17 +130,19 @@ let rec decl env d =
   | I.Section (s,cl, dl) ->
       let env, dl = theory env dl in
       env, [Section (Name.from_string s,cl,dl)]
-  | I.TypeDef (n,g,kind) ->
-      let env', ((tl,rl,el) as g) = Env.add_gen env g in
+  | I.TypeDef (n,((_,rl,el) as g),kind) ->
       begin match kind, rl, el with
       | I.Alias t, _, _ ->
+          let env', ((tl,rl,el) as g) = Env.add_gen env g in
           let env = Env.add_type_def env n g (ty env' t) in
           env, []
       | I.Abstract, [],[] ->
           let env, nv = Env.add_global_tyvar env n in
+          let env', (tl,_,_) = Env.add_gen env g in
           env, [TypeDef (nv,tl, Ast.Abstract)]
       | I.ADT bl, [],[] ->
           let env, nv = Env.add_global_tyvar env n in
+          let env', (tl,_,_) = Env.add_gen env g in
           let env,bl = ExtList.fold_map (constbranch env') env bl in
           env, [TypeDef (nv, tl, Ast.ADT bl)]
       | _ ->
