@@ -40,7 +40,7 @@ type scheme = gen * ty
 
 type t =
   | Const of Const.t
-  | Var of string * inst
+  | Var of string * inst * ty
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
   | App of t * t * [`Infix | `Prefix ] * string list
@@ -125,8 +125,12 @@ module Coq = struct
   open Myformat
   open Generic
 
-  let rec inst ~intype fmt (tl,_,_) =
-    if intype then fprintf fmt "%a" (prsl ty) tl
+  let is_ty_app t =
+    match t with
+    | TApp _ -> true
+    | _ -> false
+
+  let rec inst fmt (tl,_,_) = fprintf fmt "%a" (prsl ty) tl
   and ty fmt x =
     match x with
     | Arrow _ | Map _ | Ref _ -> assert false
@@ -146,9 +150,8 @@ module Coq = struct
   let rec term fmt x =
     match x with
     | Const c -> Const.print fmt c
-    | App (App (Var(v,i),t1,_,_),t2,`Infix,_) ->
-        fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst' i
-          with_paren t2
+    | App (App (Var(v,_,_),t1,_,_),t2,`Infix,_) ->
+        fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 string v with_paren t2
     | App (t1,t2,_,_) ->
           fprintf fmt "@[%a@ %a@]" term t1 with_paren t2
     | Ite (e1,e2,e3) ->
@@ -158,7 +161,10 @@ module Coq = struct
     | Let (g,e1,x,e2,_) ->
         fprintf fmt "@[let@ %a %a=@[@ %a@]@ in@ %a@]" string x gen g
           term e1 term e2
-    | Var (v,_) -> string fmt v
+    | Var (v,i,t) ->
+        if is_ty_app t && not (is_empty i) then
+          fprintf fmt "(@@%a %a)" string v inst i
+        else string fmt v
     | Quant (k,x,t,e) ->
         let bind = if k = `FA then binder else binder' false in
         fprintf fmt "@[%a %a,@ %a@]" Const.quant k bind (x,t) term e
@@ -169,7 +175,6 @@ module Coq = struct
     | Param _ | HoareTriple _ | LetReg _ | Lam _ -> assert false
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
-  and inst' fmt i = inst ~intype:false fmt i
 
   and pr_generalize fmt tl =
     if tl = [] then ()
@@ -255,8 +260,8 @@ module Pangoline = struct
   let rec term fmt t =
     match t with
     | Const c -> Const.print fmt c
-    | App (App (Var(v,i),t1,_,_),t2,`Infix,_) ->
-        fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst' i
+    | App (App (Var(v,i,_),t1,_,_),t2,`Infix,_) ->
+        fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst i
           with_paren t2
     | App (t1,t2,_,_) ->
           fprintf fmt "@[%a@ %a@]" term t1 with_paren t2
@@ -267,10 +272,10 @@ module Pangoline = struct
     | Let (g,e1,x,e2,_) ->
         fprintf fmt "@[let@ %a %a=@[@ %a@]@ in@ %a@]" string x gen g
           term e1 term e2
-    | Var (v,i) ->
+    | Var (v,i,_) ->
         let pr fmt () =
           if is_empty i then string fmt v
-          else fprintf fmt "%a %a" string v inst' i in
+          else fprintf fmt "%a %a" string v inst i in
         if Identifiers.is_infix_id v then paren pr fmt () else pr fmt ()
     | Quant (k,x,t,e) ->
         fprintf fmt "@[%a %a.@ %a@]" Const.quant k binder (x,t) term e
@@ -281,7 +286,6 @@ module Pangoline = struct
     | Param _ | HoareTriple _ | LetReg _ | Lam _ -> assert false
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
-  and inst' fmt i = inst fmt i
 
   let pr_generalize in_term fmt tl =
     if tl = [] then ()
@@ -380,7 +384,7 @@ module Who = struct
   let rec term fmt t =
     match t with
     | Const c -> Const.print fmt c
-    | App (App (Var(v,i),t1,_,_),t2,`Infix,_) ->
+    | App (App (Var(v,i,_),t1,_,_),t2,`Infix,_) ->
         fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst i
           with_paren t2
     | App (t1,t2,_,cap) ->
@@ -392,7 +396,7 @@ module Who = struct
     | Let (g,e1,x,e2,r) ->
         fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]"
           prrec r string x gen g term e1 term e2
-    | Var (v,i) ->
+    | Var (v,i,_) ->
         let pr fmt () =
           if is_empty i then string fmt v
           else fprintf fmt "%a %a" string v inst i
@@ -464,10 +468,10 @@ module Print = struct
   open Myformat
   include Generic
 
-  let inst ?(kind=`Who) ~intype =
+  let inst ?(kind=`Who) =
     match kind with
     | `Who -> Who.inst
-    | `Coq -> Coq.inst ~intype
+    | `Coq -> Coq.inst
     | `Pangoline -> Pangoline.inst
 
   let ty ?(kind=`Who) =

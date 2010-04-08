@@ -152,7 +152,7 @@ module Convert = struct
     | Param (t,e) -> P.Param (ty env t, rw env e)
     | Var (v,i) ->
         let s = id env v.var in
-        P.Var (s, inst env i)
+        P.Var (s, inst env i, ty env term.t)
     | App (t1,t2,p,cap) ->
         P.App (t env t1, t env t2, p, List.map (id env) cap)
     | LetReg (l,e) ->
