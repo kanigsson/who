@@ -216,6 +216,12 @@ precond: | p = LCURL t = nterm? RCURL { p, t }
   - a region definition
   - a section
   *)
+
+param_annot:
+  | t = ty COMMA e = sep_readwrite { t, e}
+  | e = sep_readwrite t = ty { t, e}
+  | e = sep_readwrite COMMA t = ty { t, e }
+
 decl:
   | g = alllet
     { let g, e, x, r = g in Program (x,g,e,r) }
@@ -223,9 +229,10 @@ decl:
     { let par = mk (Param (rt,rw_empty)) p in
       Program (x,l,par,NoRec) }
   | p = PARAMETER x = defprogvar_no_pos l = gen args = arglist
-    COLON rt = ty COMMA e = sep_readwrite EQUAL
+    COLON ann = param_annot EQUAL
       cap = maycapdef pre = precond post = postcond
   {
+    let rt, e = ann in
     let par = mk_param args cap (snd pre) (snd post) rt e p in
     Program (x,l,par,NoRec)
   }

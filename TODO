@@ -27,7 +27,6 @@ INTERNAL
 
 BUGS
 
-* simple stuff not proved??
 * check types for well-formedness
 
 * binding!!!!
@@ -35,6 +34,7 @@ BUGS
 DONE:
 * False
 * proof obligations disappear
+* simple stuff not proved?? (false alarm)
 
 MANUAL
 
