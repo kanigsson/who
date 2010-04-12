@@ -108,8 +108,7 @@ let _ =
         Recon.theory p in
     maybe_abort !Options.parse_only Ast.print_theory p;
     let p = apply_all_trans p in
-    let s = Sectionize.to_section p in
-    Cmd.print_to_file (!Options.backend :> Const.prover) !Options.outfile s
+    Cmd.print_to_file (!Options.backend :> Const.prover) !Options.outfile p
   with
   | Sys_error e -> Error.bad e
   | Typing.Error (s,loc) -> Error.with_loc s loc

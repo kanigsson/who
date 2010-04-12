@@ -149,7 +149,7 @@ module Coq = struct
 
   let rec term fmt x =
     match x with
-    | Const c -> Const.print fmt c
+    | Const c -> Const.print `Coq fmt c
     | App (App (Var(v,_,_),t1,_,_),t2,`Infix,_) ->
         fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 string v with_paren t2
     | App (t1,t2,_,_) ->
@@ -259,7 +259,7 @@ module Pangoline = struct
 
   let rec term fmt t =
     match t with
-    | Const c -> Const.print fmt c
+    | Const c -> Const.print `Pangoline fmt c
     | App (App (Var(v,i,_),t1,_,_),t2,`Infix,_) ->
         fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst i
           with_paren t2
@@ -383,7 +383,7 @@ module Who = struct
 
   let rec term fmt t =
     match t with
-    | Const c -> Const.print fmt c
+    | Const c -> Const.print `Who fmt c
     | App (App (Var(v,i,_),t1,_,_),t2,`Infix,_) ->
         fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst i
           with_paren t2

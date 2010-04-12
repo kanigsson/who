@@ -45,6 +45,7 @@ let transforms =
     InlineLet.theory ;
     RemoveTuples.theory;
     RemoveTrivialGoals.theory;
+    Sectionize.theory;
 ])
 
 let append_trans x () = transforms := x :: !transforms

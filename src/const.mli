@@ -21,12 +21,12 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-type ty = 
+type ty =
   | TInt
   | TProp
 
 
-type t = 
+type t =
   | Int of Big_int.big_int
   | Ptrue
   | Pfalse
@@ -38,20 +38,20 @@ val compare : t -> t -> int
 
 val type_of_constant : t -> ty
 
-type 'a isrec = 
+type 'a isrec =
   | LogicDef
   | NoRec
   | Rec of 'a
 
 type prover = [`Coq | `Pangoline | `Who ]
 type takeover = prover  * choice
-and choice = 
+and choice =
   | Include of string
-  | TakeOver 
+  | TakeOver
   | Predefined
 
 val print_ty : prover -> ty Myformat.fmt
-val print : t Myformat.fmt
+val print : prover -> t Myformat.fmt
 val funsep : prover Myformat.fmt
 val quant : [`FA | `EX ] Myformat.fmt
 val quantsep : prover Myformat.fmt

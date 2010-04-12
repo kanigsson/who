@@ -49,10 +49,18 @@ and choice =
   | Predefined
 
 open Myformat
-let print fmt = function
+let print kind fmt = function
   | Int b -> string fmt (Big_int.string_of_big_int b)
-  | Ptrue -> string fmt "True"
-  | Pfalse -> string fmt "False"
+  | Ptrue ->
+      begin match kind with
+      | `Pangoline -> string fmt "true"
+      | _ -> string fmt "True"
+      end
+  | Pfalse ->
+      begin match kind with
+      | `Pangoline -> string fmt "false"
+      | _ -> string fmt "False"
+      end
 
 let funsep fmt kind =
   match kind with

@@ -85,3 +85,6 @@ let to_section th =
     | l -> [Section (Name.from_string "sec", il@l,`Structure)]
   in
   List.flatten (List.map decl_to_outdecl th)
+
+let theory = to_section
+
