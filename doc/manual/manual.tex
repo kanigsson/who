@@ -232,7 +232,7 @@ triple
 is a shortcut for
 \begin{alltt}
   forall (m n : <e>) (r : t2).
-    p cur x -> pre f x m /\
+    p cur x -> pre f x m \verb|/\|
     post f x m n r -> q m n x r
 \end{alltt}
 Here we have used the ability to quantify over the portion of a state
