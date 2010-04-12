@@ -218,6 +218,7 @@ precond: | p = LCURL t = nterm? RCURL { p, t }
   *)
 
 param_annot:
+  | t = ty e = sep_readwrite { t, e}
   | t = ty COMMA e = sep_readwrite { t, e}
   | e = sep_readwrite t = ty { t, e}
   | e = sep_readwrite COMMA t = ty { t, e }
