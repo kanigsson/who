@@ -2,19 +2,20 @@
 
 set -x
 TIMEOUT=5
-while getopts 't:' OPTION
+CORES=5
+while getopts 't:c:' OPTION
 do
   case $OPTION in
     t) TIMEOUT=$OPTARG ;;
+    c) CORES=$OPTARG ;;
     ?) exit 2;;
   esac
 done
 
 CAT=`date +%F+%X`
 proofmgr -add-bench -c $CAT $*
-proofmgr -run -i 1 -c $CAT -cores 5 -timeout $TIMEOUT
-proofmgr -run -i 2 -c $CAT -cores 2 -timeout $TIMEOUT
-proofmgr -run -i 3 -c $CAT -cores 3 -timeout $TIMEOUT
-proofmgr -run -i 4 -c $CAT -cores 2 -timeout $TIMEOUT
-proofmgr -run -i 5 -c $CAT -cores 5 -timeout $TIMEOUT
+PROVERS=`proofmgr -show-provers | grep "\[.*\]" | sed -e "s/.*\[.\(.*\)\].*/\1/"`
+for i in $PROVERS ; do
+  proofmgr -run -i $i -c $CAT -cores $CORES -timeout $TIMEOUT
+done
 
