@@ -28,8 +28,9 @@ INTERNAL
 BUGS
 
 * check types for well-formedness
-
 * binding!!!!
+* output several coq files (as pangoline)
+* OR: pangoline Coq output
 
 DONE:
 * False

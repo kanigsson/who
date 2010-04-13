@@ -36,6 +36,7 @@ let suffix = ref ""
 let verbose = ref false
 let transform_only = ref false
 let no_check = ref false
+let desectionize = ref false
 
 let transforms =
   ref (List.rev [
@@ -78,6 +79,8 @@ let opt_spec =
       " introduce tuples instead of maps";
     "--removetuples", Arg.Unit (append_trans RemoveTuples.theory),
       " remove quantification over tuples";
+    "--desectionize", Arg.Set desectionize,
+      " Split contexts to several output files";
     "-o", Arg.Set_string outfile,
             "<arg> use <arg> instead of default filename for output";
     "--pangoline", Arg.Unit (fun () -> backend := `Pangoline),
@@ -100,4 +103,4 @@ let update () =
     | Some s -> Filename.chop_extension s in
   let () =
     suffix := match !backend with | `Pangoline -> ".pge" | `Coq -> ".v" in
-  if !outfile = "" then outfile := Myformat.sprintf "%s_who%s" base !suffix
+  if !outfile = "" then outfile := Myformat.sprintf "%s_who" base

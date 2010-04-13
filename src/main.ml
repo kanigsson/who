@@ -21,7 +21,7 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-open RemoveTuples
+open Desectionize
 
 let parse p buf close fn =
   let abort () = close (); exit 1 in
@@ -90,6 +90,9 @@ let import input =
   let ast = Infer.theory ast in
   Recon.theory ast
 
+let new_name () =
+  Name.to_string (Name.from_string !Options.outfile)
+
 let _ =
   Options.update ();
   try
@@ -108,7 +111,13 @@ let _ =
         Recon.theory p in
     maybe_abort !Options.parse_only Ast.print_theory p;
     let p = apply_all_trans p in
-    Cmd.print_to_file (!Options.backend :> Const.prover) !Options.outfile p
+    let l =
+      if !Options.desectionize then
+        List.map (fun t -> new_name (), t) (Desectionize.theory p)
+      else [ !Options.outfile, p] in
+    List.iter (fun (fn, t) ->
+      let fn = fn ^ !Options.suffix in
+      Cmd.print_to_file (!Options.backend :> Const.prover) fn t) l
   with
   | Sys_error e -> Error.bad e
   | Typing.Error (s,loc) -> Error.with_loc s loc
