@@ -21,4 +21,4 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-val theory : Ast.theory -> Ast.theory list
+val theory : Ast.theory -> Ast.theory
