@@ -17,3 +17,4 @@ proofmgr -run -i 2 -c $CAT -cores 2 -timeout $TIMEOUT
 proofmgr -run -i 3 -c $CAT -cores 3 -timeout $TIMEOUT
 proofmgr -run -i 4 -c $CAT -cores 2 -timeout $TIMEOUT
 proofmgr -run -i 5 -c $CAT -cores 5 -timeout $TIMEOUT
+
