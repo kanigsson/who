@@ -18,7 +18,7 @@ parameter f ['a||'e] (var : unit ->{'e} 'a) : {'e} u  =
     exists (const : 'a). [[]] var () [[ rvar : rvar = const ]] /\
     r = f0 const /\
     ( (forall (x:'a). r = f0 x) \/ 
-      exists (s:<'e>) (c:'a). post var () s cur c -> r = f0 c
+      exists (s:<'e>) (c:'a). post var () s cur c /\ r = f0 c
     )
   }
 
