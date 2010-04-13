@@ -21,36 +21,38 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-type 'a t = 'a option
+open Ast
 
-let get def x = 
-  match x with
-  | None -> def
-  | Some x -> x
+let split_formula : t -> t list =
+  let rec aux acc f =
+    let l = f.loc in
+    match f.v with
+    | Quant (`FA,t,b) ->
+        let x,f = vopen b in
+        List.map (fun f -> squant `FA x t f l) (aux acc f)
+    | Gen (g,f) ->
+        List.map (fun f -> gen g f l) (aux acc f)
+    | _ ->
+        begin match destruct_app2_var f with
+        | Some (v, _, f1, f2) when id_equal v I.and_id ->
+            aux (aux acc f2) f1
+        | Some (v, _, h, g) when id_equal v I.impl_id ->
+            List.map (fun f -> impl h f l) (aux acc g)
+        | _ -> f :: acc
+        end
+  in
+  aux []
 
-let force x = 
-  match x with
-  | None -> invalid_arg "force"
-  | Some x -> x
+let declfun d =
+  match d with
+  | Formula (n,f,`Proved) ->
+      let l = split_formula f in
+      List.fold_right
+        (fun x acc ->
+          match mk_goal (Name.new_name n) x with
+          | None -> acc
+          | Some d -> d ::acc) l []
+ | _ -> [d]
 
-let get_lazy f x =
-  match x with
-  | None -> f ()
-  | Some x ->x
+let theory t = [ theory_map ~declfun t ]
 
-let get_map def f x =
-  match x with
-  | None -> def
-  | Some x -> f x
-
-let map f x = 
-  match x with
-  | None -> None
-  | Some x -> Some (f x)
-
-let print pr fmt x = 
-  match x with
-  | None -> ()
-  | Some x -> pr fmt x
-
-let is_some x = x <> None

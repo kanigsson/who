@@ -36,7 +36,8 @@ let suffix = ref ""
 let verbose = ref false
 let transform_only = ref false
 let no_check = ref false
-let desectionize = ref false
+
+let splitfun = ref (fun x -> [x])
 
 let transforms =
   ref (List.rev [
@@ -46,7 +47,6 @@ let transforms =
     InlineLet.theory ;
     RemoveTuples.theory;
     RemoveTrivialGoals.theory;
-    Sectionize.theory;
 ])
 
 let append_trans x () = transforms := x :: !transforms
@@ -79,8 +79,12 @@ let opt_spec =
       " introduce tuples instead of maps";
     "--removetuples", Arg.Unit (append_trans RemoveTuples.theory),
       " remove quantification over tuples";
-    "--desectionize", Arg.Set desectionize,
-      " Split contexts to several output files";
+    "--sectionize", Arg.Unit (append_trans Sectionize.theory),
+      " build sections to share context between goals";
+    "--desectionize", Arg.Unit (fun () -> splitfun := Desectionize.theory),
+      " each context goes to one file";
+    "--split-goals", Arg.Unit (fun () -> splitfun := Split_goals.theory),
+      " split goals with conjunctions and put each goal in one file";
     "-o", Arg.Set_string outfile,
             "<arg> use <arg> instead of default filename for output";
     "--pangoline", Arg.Unit (fun () -> backend := `Pangoline),

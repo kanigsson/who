@@ -21,7 +21,7 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-open Desectionize
+open Split_goals
 
 let parse p buf close fn =
   let abort () = close (); exit 1 in
@@ -111,10 +111,11 @@ let _ =
         Recon.theory p in
     maybe_abort !Options.parse_only Ast.print_theory p;
     let p = apply_all_trans p in
-    let l =
-      if !Options.desectionize then
-        List.map (fun t -> new_name (), t) (Desectionize.theory p)
-      else [ !Options.outfile, p] in
+    let l = !Options.splitfun p in
+    let l = 
+      match l with
+      | [x] -> [!Options.outfile, x]
+      | _ -> List.map (fun t -> new_name (), t) l in
     List.iter (fun (fn, t) ->
       let fn = fn ^ !Options.suffix in
       Cmd.print_to_file (!Options.backend :> Const.prover) fn t) l

@@ -24,6 +24,7 @@
 type 'a t = 'a option
 
 val get : 'a -> 'a t -> 'a
+val is_some : 'a t -> bool
 
 val force : 'a t -> 'a
 

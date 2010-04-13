@@ -21,36 +21,4 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-type 'a t = 'a option
-
-let get def x = 
-  match x with
-  | None -> def
-  | Some x -> x
-
-let force x = 
-  match x with
-  | None -> invalid_arg "force"
-  | Some x -> x
-
-let get_lazy f x =
-  match x with
-  | None -> f ()
-  | Some x ->x
-
-let get_map def f x =
-  match x with
-  | None -> def
-  | Some x -> f x
-
-let map f x = 
-  match x with
-  | None -> None
-  | Some x -> Some (f x)
-
-let print pr fmt x = 
-  match x with
-  | None -> ()
-  | Some x -> pr fmt x
-
-let is_some x = x <> None
+val theory : Ast.theory -> Ast.theory list
