@@ -26,3 +26,5 @@ let map_local_fold ['a 'b 'c||]
     (list_map [{}] (fun (x : 'a) -> {} x, () {}) l);
   !acc_
   { }
+
+(* vim:syntax=ocaml *)
