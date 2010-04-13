@@ -154,7 +154,10 @@ Section sec.
       Proof.
       apply sym_not_eq in H9.
       specialize ((H H9) arg).
-      
+      rewrite H.
+      apply sym_eq.
+      apply fromSome_ax.
+      Qed.
 
       
 
@@ -165,8 +168,16 @@ Section sec.
       Variable x2:  a. 
       Lemma goal6: (ref_get s res) = (Some (f x2)). 
         Proof.
-        Admitted.
+auto.
+Qed.
+        
+
          End sec8. End sec7. End sec.
+
+
+
+
+
 Section sec9. 
    Variable s5:  region t. 
   Hypothesis H11: (@None  u) = (ref_get s5 res). 
@@ -174,5 +185,16 @@ Section sec9.
   Variable x3:  Z. 
   Lemma main_correct: (ref_get s5 res) = (Some (f x3)). 
     Proof.
-    Admitted.
-     End sec9.
+    rewrite H11 in H12.
+    assert (forall (A : Type) (x : A), x <> x -> False).
+      intros.
+      contradict H.
+      trivial.
+
+      pose proof (@H _ (ref_get s5 res)) as H13.
+      specialize (H13 H12).
+      inversion H13.
+      Qed.
+      
+
+    End sec9.
