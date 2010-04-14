@@ -252,7 +252,7 @@ decl:
   | LETREGION l = IDENT* { DLetReg (strip_info l) }
   | SECTION x = IDENT fn = takeoverdecl* l = decl+ END
     { Section (x.c, fn, l) }
-  | INDUCTIVE x = IDENT l = gen tl = separated_nonempty_list(ARROW,stype) EQUAL 
+  | INDUCTIVE x = IDENT l = gen tl = separated_nonempty_list(COMMA,stype) EQUAL
     option(MID) tel = separated_list(MID,nterm) END
     { Inductive (x.c,l,tl,tel) }
 

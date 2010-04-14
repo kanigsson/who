@@ -76,7 +76,8 @@ let apply_all_trans t =
   let t =
     if !Options.transforms = [] then begin Typing.theory t; [t] end
     else List.fold_right apply_one_trans !Options.transforms [t] in
-(*   maybe_abort !Options.transform_only Ast.print_theory t; *)
+  maybe_abort !Options.transform_only
+    (Myformat.list Myformat.newline Ast.print_theory) t;
   t
 
 let import input =
@@ -109,7 +110,7 @@ let _ =
         Recon.theory p in
     maybe_abort !Options.parse_only Ast.print_theory p;
     let l = apply_all_trans p in
-    let l = 
+    let l =
       match l with
       | [x] -> [!Options.outfile, x]
       | _ -> List.map (fun t -> new_name (), t) l in
