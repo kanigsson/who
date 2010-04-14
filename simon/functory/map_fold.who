@@ -20,8 +20,8 @@ type map_or_fold ['a 'b] =
 
 logic ~ : prop -> prop
 
-logic worker ['a 'b] : ('a -> 'b)
-logic master ['a 'b||'e] : ('a -> 'b ->{'e} 'a  list)
+logic worker ['a 'b] : 'a -> 'b
+logic master ['a 'b||'e] : 'a -> 'b ->{'e} 'a  list
 
 (* TODO : transformer ça en parameter avec spécifications
 let map_fold_wrapper map fold = function
@@ -38,7 +38,7 @@ logic mem ['a] : 'a -> 'a list -> prop
 logic remove ['a] : 'a -> 'a list -> 'a list
 axiom remove_does_remove :
   forall (x : 'a) (l : 'a list).
-    ~ (mem x (remove x l))
+    (mem x (remove x l) -> False)   (* FIXME : moche, mais ~ ne marche pas *)
 logic append ['a] : 'a list -> 'a list -> 'a list
 axiom append_does_append : 
   forall (l1 l2 : 'a list) (x : 'a).
@@ -48,9 +48,9 @@ axiom append_does_append :
 
 logic relat ['a||'e] : 'e -> 'a list -> 'e -> a list -> prop
 axiom relat_init : (* une étape de master conserve l'invariant *)
-  forall (l l1 l2 : 'a list) (x : 'a) (e1 e2 : 'e).
+  forall (l1 l2 : 'a list) (x : 'a) (e1 e2 : 'e).
     (mem x l1 /\ 
-    [[cur = e1]] master x (worker x) [[ r : r = l /\ cur = e2 /\ l2 = remove x (append l l1)]] )
+    [[ cur = e1 ]] master e1 x (worker x) [[ l : cur = e2 /\ l2 = remove x (append l l1) ]] )
     -> relat e1 l1 e2 l2
 
 logic relat_trans ['a||'e] : 'e -> 'a list -> 'e -> 'a list -> prop
