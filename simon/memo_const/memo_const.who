@@ -25,9 +25,13 @@ parameter f ['a||'e] (var : unit ->{'e} 'a) : {'e} u  =
 
 
 
-logic fromSome ['a] : 'a option -> 'a
-axiom fromSome_ax ['a] :
-  forall (v : 'a). fromSome (Some v) = v
+parameter fromSome ['a||] (x : 'a option ) : {} 'a =
+  {
+    x <> None
+  }
+  {
+    r : forall (y:'a). (x = Some y) -> r = y 
+  }
 
 
 (* fonction principale *)
