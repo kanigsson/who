@@ -24,24 +24,24 @@
 open Ast
 
 let split_formula : t -> t list =
-  let rec aux acc f =
+  let rec aux f =
     let l = f.loc in
     match f.v with
     | Quant (`FA,t,b) ->
         let x,f = vopen b in
-        List.map (fun f -> squant `FA x t f l) (aux acc f)
+        List.map (fun f -> squant `FA x t f l) (aux f)
     | Gen (g,f) ->
-        List.map (fun f -> gen g f l) (aux acc f)
+        List.map (fun f -> gen g f l) (aux f)
     | _ ->
         begin match destruct_app2_var f with
         | Some (v, _, f1, f2) when id_equal v I.and_id ->
-            aux (aux acc f2) f1
+            aux f1 @ aux f2
         | Some (v, _, h, g) when id_equal v I.impl_id ->
-            List.map (fun f -> impl h f l) (aux acc g)
-        | _ -> f :: acc
+            List.map (fun f -> impl h f l) (aux g)
+        | _ -> [f]
         end
   in
-  aux []
+  aux
 
 let declfun d =
   match d with
