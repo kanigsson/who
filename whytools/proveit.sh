@@ -12,7 +12,7 @@ do
   esac
 done
 
-shift $OPTIND
+shift $(( $(OPTIND) - 1 ))
 
 CAT=`date +%F+%X`
 proofmgr -add-bench -c $CAT $*
