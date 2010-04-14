@@ -51,7 +51,11 @@ let transforms =
 let append_trans x () = transforms := x :: !transforms
 let append_simple_trans x () = transforms := ExtList.liftfun x :: !transforms
 
-let clear () = transforms := []
+let touched = ref false
+
+let clear () =
+  transforms := [];
+  touched := true
 
 let print_version () =
   Format.printf "%s@." Version.version; exit 0
@@ -79,6 +83,12 @@ let opt_spec =
       " introduce tuples instead of maps";
     "--removetuples", Arg.Unit (append_simple_trans RemoveTuples.theory),
       " remove quantification over tuples";
+    "--sectionize", Arg.Unit (append_simple_trans Sectionize.theory),
+      " create sections and introduce vars and hypotheses";
+    "--split-conj", Arg.Unit (append_simple_trans Split_conj.theory),
+      " split conjunctions in goals";
+    "--split-goals", Arg.Unit (append_trans Split_goals.theory),
+      " put each goal in its own theory";
     "-o", Arg.Set_string outfile,
             "<arg> use <arg> instead of default filename for output";
     "--pangoline", Arg.Unit (fun () -> backend := `Pangoline),
@@ -105,11 +115,15 @@ let update () =
       | `Pangoline -> "_who.pge"
       | `Coq -> "_who.v" in
   if !outfile = "" then outfile := base;
-  match !backend with
-  | `Coq when !sections -> append_simple_trans Sectionize.theory ()
-  | _ ->
-      append_simple_trans Split_conj.theory ();
-      append_trans Split_goals.theory ();
-      append_simple_trans Sectionize.theory ()
+  (* update the transformation list; if the user has played with the list, he
+   * has to do that by himself *)
+  if !touched then ()
+  else
+    match !backend with
+    | `Coq when !sections -> append_simple_trans Sectionize.theory ()
+    | _ ->
+        append_simple_trans Split_conj.theory ();
+        append_trans Split_goals.theory ();
+        append_simple_trans Sectionize.theory ()
 
 
