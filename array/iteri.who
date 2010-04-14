@@ -1,13 +1,13 @@
-let iter ['a|r|'e] 
-  (inv : <r 'e> -> int ->  prop) 
-  (f : int -> 'a ->{r 'e} unit) 
+let iter ['a|r|'e]
+  (inv : <r 'e> -> int ->  prop)
+  (f : int -> 'a ->{r 'e} unit)
   (ar:ref(r,'a array)) =
-  { inv cur 0 /\ 
+  { inv cur 0 /\
     forall (i:int). 0 <= i /\ i < len (!!ar) ->
     [[ inv cur i ]] f i (get i !ar) [[inv cur (i+1)]]
   }
-  for i = 0 to len !ar - 1 do 
+  for i = 0 to len !ar - 1 do
     { inv cur i }
     f i (get i !ar)
   done
-  {inv cur (len !!ar|old) }
+  {inv cur (len !!ar@old) }

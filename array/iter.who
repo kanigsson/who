@@ -9,7 +9,7 @@ let iter ['a|t|'e]
     { inv cur i }
     f (get i !ar)
   done
-  {inv cur (len !!ar) }
+  {inv cur (len !!ar@old) }
 (*
 logic sum_array : int -> int array -> int
 axiom sum_array_none :

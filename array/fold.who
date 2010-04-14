@@ -1,29 +1,3 @@
-type 'a array
-
-logic get : forall 'a. int -> 'a array -> 'a
-logic set : forall 'a. int -> 'a -> 'a array -> 'a array
-logic length : forall 'a. 'a array -> int
-
-axiom update_length : 
-  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
-    length [| 'a|] t = length [|'a|] (set [|'a|] i z t)
-
-axiom get_set_eq : 
-  forall 'a. forall (t : 'a array) (i : int) (z : 'a).
-    i < length [|'a|] t -> get [|'a|] i (set [|'a|] i z t) = z
-
-axiom get_set_neq : 
-  forall 'a. forall (t : 'a array) (i : int) (j : int) (z : 'a).
-    i < length [|'a|] t -> j < length [|'a|] t -> i <> j -> 
-    get [|'a|] i (set [|'a|] j z t) = get [|'a|] i t
-
-axiom length_nonnegative : 
-  forall 'a. forall (t : 'a array).  0 <= length [|'a|] t
-
-use (ar : int array)
-
-use (r : int)
-
 (*
 let fold_left f x a =
   let r = ref x in
@@ -33,31 +7,21 @@ let fold_left f x a =
   !r
   *)
 
-let fold_left [e||] (inv : <ar e> -> int -> int -> prop) 
-                   (f : int ->{} int ->{e} int) (acc : int) =
-  { inv {ar; e}|cur 0 acc /\ 
-    forall (i:int). 0 <= i /\ i < length [|int|] ar ->
-    forall (m : <ar e>). forall (acc : int).
-      inv m i acc /\ ar|m = ar -> 
-        pre f (get [|int|] i ar|m) /\
-          forall (tmp : (int -> <e> -> prop) * (int -> <e> -> <e> -> int -> prop)). 
-          post f (get [|int|] i ar|m) tmp -> 
-            pre tmp acc {e|m} /\
-    forall (n : <ar e>).  forall (acc' : int) .
-      ar|n = ar -> post tmp acc {e|m} {e|n} acc' -> 
-        inv n (i+1) acc'
+let fold_left ['a 'b|r|'e]
+  (inv : <r 'e> -> int -> 'b -> prop)
+  (f : 'b ->{r 'e} 'a -> 'b) (acc : 'b) (ar : ref(r,'a array)) =
+  { inv cur 0 acc /\
+    forall (i:int). 0 <= i /\ i < len (!!ar) ->
+    forall (z : 'b). [[ inv cur i z]] f z (get i !ar) [[ r : inv cur (i+1) r]]
   }
-  let l = length [|int|] !ar in
-  let a = !ar in
-  let () = r := acc in
-  let () = 
-    for index = 0 to l - 1 do
-      { inv {ar; e}|cur index r /\ ar = a }
-      r := f (get [|int|] index !ar) !r
-    done
-  in
-  !r
-  {inv {ar; e}|cur (length [|int|] ar|old) r /\ ar = ar|old }
+  letregion loc in
+  let acc = ref{{loc}} acc in
+  for index = 0 to len !ar - 1 do
+    { inv cur@{r 'e} index !!acc }
+    acc := f !acc (get index !ar)
+  done;
+  !acc
+  { r : inv cur (len !!ar@old) r }
 
 (* As precondition, I would like to write :
   inv {ar; e}|cur 0 acc /\
@@ -69,4 +33,4 @@ let fold_left [e||] (inv : <ar e> -> int -> int -> prop)
           ar|n = ar -> ppost f (get [|int] i ar|m) acc {e|m} {e|n} acc' ->
             inv n (i + 1) acc'
 *)
-      
+
