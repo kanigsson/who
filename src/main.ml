@@ -21,8 +21,6 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-open Split_goals
-
 let parse p buf close fn =
   let abort () = close (); exit 1 in
   Lexer.reset buf;
@@ -66,19 +64,19 @@ let infer_parser abort fn token buf =
           (Myformat.sprintf "Unexpected character: %s" msg);
         abort ()
 
-let apply_one_trans f t =
+let apply_one_trans f tl =
   if !Options.verbose then Myformat.printf "applying transformation...@?";
-  let nt = f t in
+  let nt = List.flatten (List.map f tl) in
   if !Options.verbose then Myformat.printf "checking...@?";
-  if !Options.no_check then () else Typing.theory nt;
+  if !Options.no_check then () else List.iter Typing.theory nt;
   if !Options.verbose then Myformat.printf "done@.";
   nt
 
 let apply_all_trans t =
   let t =
-    if !Options.transforms = [] then begin Typing.theory t; t end
-    else List.fold_right apply_one_trans !Options.transforms t in
-  maybe_abort !Options.transform_only Ast.print_theory t;
+    if !Options.transforms = [] then begin Typing.theory t; [t] end
+    else List.fold_right apply_one_trans !Options.transforms [t] in
+(*   maybe_abort !Options.transform_only Ast.print_theory t; *)
   t
 
 let import input =
@@ -110,8 +108,7 @@ let _ =
         let p = Infer.theory p in
         Recon.theory p in
     maybe_abort !Options.parse_only Ast.print_theory p;
-    let p = apply_all_trans p in
-    let l = !Options.splitfun p in
+    let l = apply_all_trans p in
     let l = 
       match l with
       | [x] -> [!Options.outfile, x]

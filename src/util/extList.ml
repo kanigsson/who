@@ -112,3 +112,5 @@ let find_pos eq x l =
 let map2i f l1 l2 =
   let x = ref (-1) in
   List.map2 (fun a b -> incr x; f !x a b) l1 l2
+
+let liftfun f = fun x -> [f x]

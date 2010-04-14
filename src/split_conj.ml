@@ -21,27 +21,38 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-type 'a t = 'a list
-type 'a eq = 'a -> 'a -> bool
+open Ast
 
-val singleton : 'a -> 'a list
+let split_formula : t -> t list =
+  let rec aux acc f =
+    let l = f.loc in
+    match f.v with
+    | Quant (`FA,t,b) ->
+        let x,f = vopen b in
+        List.map (fun f -> squant `FA x t f l) (aux acc f)
+    | Gen (g,f) ->
+        List.map (fun f -> gen g f l) (aux acc f)
+    | _ ->
+        begin match destruct_app2_var f with
+        | Some (v, _, f1, f2) when id_equal v I.and_id ->
+            aux (aux acc f2) f1
+        | Some (v, _, h, g) when id_equal v I.impl_id ->
+            List.map (fun f -> impl h f l) (aux acc g)
+        | _ -> f :: acc
+        end
+  in
+  aux []
 
-val equal : 'a eq -> 'a t -> 'a t -> bool
-val mem : 'a eq -> 'a -> 'a t -> bool
+let declfun d =
+  match d with
+  | Formula (n,f,`Proved) ->
+      let l = split_formula f in
+      List.fold_right
+        (fun x acc ->
+          match mk_goal (Name.new_name n) x with
+          | None -> acc
+          | Some d -> d ::acc) l []
+ | _ -> [d]
 
-val find_pos : 'a eq -> 'a -> 'a t -> int
+let theory t = theory_map ~declfun t
 
-val union : 'a eq -> 'a t -> 'a t -> 'a t
-val equal_unsorted : 'a eq -> 'a t -> 'a t -> bool
-
-val fold_map : ('a  -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
-val fold_map_flatten : ('a  -> 'b -> 'a * 'c list) ->
-    'a -> 'b list -> 'a * 'c list
-
-val hash : ('a -> int) -> int -> 'a list -> int
-
-val repeat : ?from:int -> int -> (int -> 'a) -> 'a list
-val split_map : ('a -> 'b * 'c) -> 'a list -> 'b list * 'c list
-val map2i : (int -> 'a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-
-val liftfun : ('a -> 'b) -> 'a -> 'b list

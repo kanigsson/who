@@ -32,24 +32,24 @@ let outfile = ref ""
 let check_coq = ref false
 let input_annot = ref false
 let backend : [ `Coq | `Pangoline ] ref = ref `Pangoline
+let sections = ref false
 let suffix = ref ""
 let verbose = ref false
 let transform_only = ref false
 let no_check = ref false
 
-let splitfun = ref (fun x -> [x])
-
 let transforms =
   ref (List.rev [
-    Anf.theory ;
-    Wp.theory ;
-    Tuples.theory;
-    InlineLet.theory ;
-    RemoveTuples.theory;
-    RemoveTrivialGoals.theory;
+    ExtList.liftfun Anf.theory ;
+    ExtList.liftfun Wp.theory ;
+    ExtList.liftfun Tuples.theory;
+    ExtList.liftfun InlineLet.theory ;
+    ExtList.liftfun RemoveTuples.theory;
+    ExtList.liftfun RemoveTrivialGoals.theory;
 ])
 
 let append_trans x () = transforms := x :: !transforms
+let append_simple_trans x () = transforms := ExtList.liftfun x :: !transforms
 
 let clear () = transforms := []
 
@@ -67,24 +67,18 @@ let opt_spec =
     "--no-check", Arg.Set no_check,
       " do not execute type checks after transforms";
     "--clear", Arg.Unit clear, " clear the list of transformations";
-    "--anf", Arg.Unit (append_trans Anf.theory),
+    "--anf", Arg.Unit (append_simple_trans Anf.theory),
       " apply anf normal form transformation";
-    "--wp", Arg.Unit (append_trans Wp.theory),
+    "--wp", Arg.Unit (append_simple_trans Wp.theory),
       " apply weakest precondition calculus";
-    "--inlinelet", Arg.Unit (append_trans InlineLet.theory),
+    "--inlinelet", Arg.Unit (append_simple_trans InlineLet.theory),
       " inline let bindings";
-    "--trivialgoals", Arg.Unit (append_trans RemoveTrivialGoals.theory),
+    "--trivialgoals", Arg.Unit (append_simple_trans RemoveTrivialGoals.theory),
       " remove trivial goals";
-    "--tuples", Arg.Unit (append_trans Tuples.theory),
+    "--tuples", Arg.Unit (append_simple_trans Tuples.theory),
       " introduce tuples instead of maps";
-    "--removetuples", Arg.Unit (append_trans RemoveTuples.theory),
+    "--removetuples", Arg.Unit (append_simple_trans RemoveTuples.theory),
       " remove quantification over tuples";
-    "--sectionize", Arg.Unit (append_trans Sectionize.theory),
-      " build sections to share context between goals";
-    "--desectionize", Arg.Unit (fun () -> splitfun := Desectionize.theory),
-      " each context goes to one file";
-    "--split-goals", Arg.Unit (fun () -> splitfun := Split_goals.theory),
-      " split goals with conjunctions and put each goal in one file";
     "-o", Arg.Set_string outfile,
             "<arg> use <arg> instead of default filename for output";
     "--pangoline", Arg.Unit (fun () -> backend := `Pangoline),
@@ -107,4 +101,12 @@ let update () =
     | Some s -> Filename.chop_extension s in
   let () =
     suffix := match !backend with | `Pangoline -> ".pge" | `Coq -> ".v" in
-  if !outfile = "" then outfile := Myformat.sprintf "%s_who" base
+  if !outfile = "" then outfile := Myformat.sprintf "%s_who" base;
+  match !backend with
+  | `Coq when !sections -> append_simple_trans Sectionize.theory ()
+  | _ ->
+      append_simple_trans Split_conj.theory ();
+      append_trans Split_goals.theory ();
+      append_simple_trans Sectionize.theory ()
+
+

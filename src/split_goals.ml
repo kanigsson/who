@@ -21,38 +21,23 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
+
 open Ast
+(** Here we assume that there are no sections in the file *)
+let rec split acc context l =
+  (** [acc] is a list of currently established theories *)
+  (** [context] is the current context *)
+  match l with
+  | [] -> acc
+  | d :: ds ->
+      let acc, context =
+        match d with
+        | Formula (_,_,`Proved) -> (d :: context) :: acc, context
+        | _ -> acc, d :: context in
+      split acc context ds
 
-let split_formula : t -> t list =
-  let rec aux acc f =
-    let l = f.loc in
-    match f.v with
-    | Quant (`FA,t,b) ->
-        let x,f = vopen b in
-        List.map (fun f -> squant `FA x t f l) (aux acc f)
-    | Gen (g,f) ->
-        List.map (fun f -> gen g f l) (aux acc f)
-    | _ ->
-        begin match destruct_app2_var f with
-        | Some (v, _, f1, f2) when id_equal v I.and_id ->
-            aux (aux acc f2) f1
-        | Some (v, _, h, g) when id_equal v I.impl_id ->
-            List.map (fun f -> impl h f l) (aux acc g)
-        | _ -> f :: acc
-        end
-  in
-  aux []
 
-let declfun d =
-  match d with
-  | Formula (n,f,`Proved) ->
-      let l = split_formula f in
-      List.fold_right
-        (fun x acc ->
-          match mk_goal (Name.new_name n) x with
-          | None -> acc
-          | Some d -> d ::acc) l []
- | _ -> [d]
-
-let theory t = [ theory_map ~declfun t ]
+let theory t =
+  let acc = split [] [] t in
+  List.rev_map List.rev acc
 
