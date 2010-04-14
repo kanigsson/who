@@ -7,7 +7,7 @@ let notags=Ocamlbuild_pack.Tags.of_list []
 
 let ocamldep_command' tags spec =
   let tags' = tags++"ocaml"++"ocamldep" in
-    S [!Options.ocamldep; T tags'; 
+    S [!Options.ocamldep; T tags';
     P.Ocaml_utils.ocaml_ppflags (tags++"pp:dep");
        spec; A "-modules"]
 let menhir_ocamldep_command' tags ~menhir_spec ~ocamldep_spec out =
@@ -44,7 +44,7 @@ let menhir_modular_ocamldep_command mlypack out env build =
   let (tags,files) = import_mlypack build mlypack in
   let tags = tags++"ocaml"++"menhir_ocamldep" in
   let menhir_base = Pathname.remove_extensions mlypack in
-  let menhir_spec = S[A "--base" ; P menhir_base ; 
+  let menhir_spec = S[A "--base" ; P menhir_base ;
     P.Command.atomize_paths files] in
   let ocamldep_spec = N in
   menhir_ocamldep_command' tags ~menhir_spec ~ocamldep_spec out
@@ -60,7 +60,7 @@ let menhir_modular menhir_base mlypack mlypack_depends env build =
   let ocamlc_tags = tags++"ocaml"++"byte"++"compile" in
   let tags = tags++"ocaml"++"parser"++"menhir" in
   Cmd(S[menhir ;
-        A "--ocamlc"; Quote(S[!Options.ocamlc; T ocamlc_tags; 
+        A "--ocamlc"; Quote(S[!Options.ocamlc; T ocamlc_tags;
         P.Ocaml_utils.ocaml_include_flags mlypack]);
         T tags ; A "--infer" ; P.Tools.flags_of_pathname mlypack ;
         A "--base" ; Px menhir_base ; P.Command.atomize_paths files])
@@ -80,7 +80,7 @@ let split s ch =
   try
     go s
   with Not_found -> !x
-                                                                                                                                                                                                                                             
+
 let split_nl s = split s '\n'
 
 let before_space s =
@@ -100,16 +100,14 @@ let ocamlfind x = S[A"ocamlfind"; x]
 
 let _ = dispatch begin function
    | Before_options ->
-       (* by using Before_options one let command line options have an higher priority *)
-       (* on the contrary using After_options will guarantee to have the higher priority *)
-
+      Options.exclude_dirs := "simon"::!Options.exclude_dirs;
        (* override default commands by ocamlfind ones *)
        Options.ocamlc     := ocamlfind & A"ocamlc";
        Options.ocamlopt   := ocamlfind & A"ocamlopt";
        Options.ocamldep   := ocamlfind & A"ocamldep";
        Options.ocamldoc   := ocamlfind & A"ocamldoc";
        Options.ocamlmktop := ocamlfind & A"ocamlmktop";
-       
+
        (* custom modifications *)
        Options.use_menhir := true;
        Options.ocaml_cflags := "-dtypes" :: !Options.ocaml_cflags;
@@ -117,7 +115,7 @@ let _ = dispatch begin function
        flag ["ocaml"; "parser"; "menhir"; "only_tokens" ] (A"--only-tokens");
        flag ["ocaml"; "menhir_ocamldep"; "only_tokens" ] (A"--only-tokens");
        flag ["ocaml"; "parser"; "menhir"; "use_tokens" ] (S [A"--external-tokens"; A "Tokens"]);
-         
+
        rule "ocaml: menhir dependencies0"
          ~prod: "%.mly.depends"
          ~dep: "%.mly"
@@ -171,7 +169,7 @@ let _ = dispatch begin function
        (* Menhir --explain flag *)
        flag ["menhir"] (S[A"--explain"]);
        flag ["menhir"] (S[A"--table"]);
-       
+
    | _ -> ()
 end
 

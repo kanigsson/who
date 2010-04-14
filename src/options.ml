@@ -100,8 +100,11 @@ let update () =
     | None -> "base"
     | Some s -> Filename.chop_extension s in
   let () =
-    suffix := match !backend with | `Pangoline -> ".pge" | `Coq -> ".v" in
-  if !outfile = "" then outfile := Myformat.sprintf "%s_who" base;
+    suffix :=
+      match !backend with
+      | `Pangoline -> "_who.pge"
+      | `Coq -> "_who.v" in
+  if !outfile = "" then outfile := base;
   match !backend with
   | `Coq when !sections -> append_simple_trans Sectionize.theory ()
   | _ ->
