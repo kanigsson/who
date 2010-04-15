@@ -108,10 +108,10 @@ and letgen env x g e r =
 let rec decl env d =
   match d with
   | I.Logic (n,g,t) ->
-      let env, g = Env.add_gen env g in
+      let env', g = Env.add_gen env g in
       let env, nv = Env.add_var env n in
       Predefined.add_symbol n nv;
-      env, [Logic (nv,g, ty env t)]
+      env, [Logic (nv,g, ty env' t)]
   | I.Inductive (n,g,tl,tel) ->
       let env, g = Env.add_gen env g in
       let env, nv = Env.add_var env n in
