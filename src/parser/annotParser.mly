@@ -64,18 +64,20 @@ one_binding:
 
 term:
   | x = IDENT { svar x.c x.info }
-  | x = IDENT i = inst { var x.c i x.info }
-  | x = prefix i = inst { let p, s = x in var s i p }
+  | x = IDENT i = inst { let i, p = i in var x.c i (embrace x.info p) }
+  | x = prefix i = inst
+    { let p1, s = x and i, p2 = i in var s i (embrace p1 p2) }
   | x = prefix { let p, s = x in var s Inst.empty p }
-  | p = REF i = inst { var "ref" i p}
+  | p1 = REF i = inst 
+    { let i,p2  = i in var "ref" i (embrace p1 p2) }
   | p = DEXCLAM i = inst x = IDENT t = term
-    { app (app (var "!!" i p) (svar x.c x.info) (embrace p x.info))
+    { app (app (var "!!" (fst i) p) (svar x.c x.info) (embrace p x.info))
         t (embrace p t.loc) }
   | c = constant { let p,c = c in mk_term (Const c) p }
   | p1 = LPAREN t = nterm p2 = RPAREN
     { mk_term t.v (embrace p1 p2) }
   | p1 = LPAREN i = infix inst = inst p2 = RPAREN
-    { let _,x = i in mk_term (Var (x,inst)) (embrace p1 p2) }
+    { let _,x = i in mk_term (Var (x,fst inst)) (embrace p1 p2) }
   | l = LPAREN e = nterm COLON t = ty r = RPAREN
     { mk_term (Annot (e,t)) (embrace l r) }
 
@@ -91,7 +93,7 @@ infix_term:
   | t1 = infix_term i = infix t2 = infix_term
     { appi (snd i) t1 t2 (embrace t1.loc t2.loc) }
   | t1 = infix_term i = infix inst = inst t2 = infix_term
-    { appi ~inst (snd i) t1 t2 (embrace t1.loc t2.loc) }
+    { appi ~inst:(fst inst) (snd i) t1 t2 (embrace t1.loc t2.loc) }
   | sp = FORALL g = gen DOT e = infix_term %prec forall
     { mk_term (Gen (g,e)) (embrace sp e.loc) }
   | sp = EXISTS l = one_binding DOT e = infix_term %prec forall

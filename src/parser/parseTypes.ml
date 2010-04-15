@@ -24,7 +24,7 @@
 type effect = string list * string list
 type rw = effect * effect
 
-type t =
+type t' =
   | TVar of string
   | TConst of Const.ty
   | Tuple of t list
@@ -34,21 +34,25 @@ type t =
   | Ref of string * t
   | Map of effect
   | ToLogic of t
+and t = { tv : t' ; tloc : Loc.loc }
 
 open Myformat
 
 let print fmt t =
-  let rec pt fmt = function
-  | TVar v -> pp_print_string fmt v
-  | TConst c -> Const.print_ty `Who fmt c
-  | Tuple tl -> paren (list (fun fmt () -> fprintf fmt " *@ ") pt) fmt tl
-  | PureArr (t1,t2) -> fprintf fmt "(%a -> %a)" pt t1 pt t2
-  | Arrow (t1,t2,_,_) -> fprintf fmt "(%a ->{...} %a)" pt t1 pt t2
-  | Ref _ -> pp_print_string fmt "ref(...)"
-  | Map _ -> pp_print_string fmt "<...>"
-  | TApp (v,_) -> fprintf fmt "app(%s)" v
-  | ToLogic t -> fprintf fmt "[[ %a ]]" pt t in
+  let rec pt fmt x = 
+    match x.tv with
+    | TVar v -> pp_print_string fmt v
+    | TConst c -> Const.print_ty `Who fmt c
+    | Tuple tl -> paren (list (fun fmt () -> fprintf fmt " *@ ") pt) fmt tl
+    | PureArr (t1,t2) -> fprintf fmt "(%a -> %a)" pt t1 pt t2
+    | Arrow (t1,t2,_,_) -> fprintf fmt "(%a ->{...} %a)" pt t1 pt t2
+    | Ref _ -> pp_print_string fmt "ref(...)"
+    | Map _ -> pp_print_string fmt "<...>"
+    | TApp (v,_) -> fprintf fmt "app(%s)" v
+    | ToLogic t -> fprintf fmt "[[ %a ]]" pt t in
   pt fmt t
 
 let eff_empty = [], []
 let rw_empty = eff_empty, eff_empty
+
+let mkty t l = { tv = t; tloc = l }

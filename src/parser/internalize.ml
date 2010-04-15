@@ -34,15 +34,15 @@ module IT = ParseTypes
 open CommonInternalize
 open InternalParseTree
 
-let rec ast' env = function
+let rec ast' loc env = function
   | I.Const c -> Const c
   | I.Var (v,i) ->
-      Var (Env.var env v,List.map (effect env) i)
+      Var (Env.var loc env v,List.map (effect loc env) i)
   | I.App (e1,e2,f,c) ->
-      App (ast env e1, ast env e2, f, List.map (Env.rvar env) c)
+      App (ast env e1, ast env e2, f, List.map (Env.rvar loc env) c)
   | I.Lam (x,t,cap,p,e,q) ->
       let env, nv = Env.add_var env x in
-      Lam (nv, ty env t, List.map (Env.rvar env) cap,
+      Lam (nv, ty env t, List.map (Env.rvar loc env) cap,
             (pre env p, ast env e, post env q))
   | I.Let (g,e1,x,e2,r) ->
       let env, nv, g , e1, r = letgen env x g e1 r in
@@ -56,10 +56,10 @@ let rec ast' env = function
       Quant (k, Opt.map (to_mutable env) t, Name.close_bind x (ast env e))
   | I.Ite (e1,e2,e3) -> Ite (ast env e1, ast env e2, ast env e3)
   | I.Annot (e,t) -> Annot (ast env e, ty env t)
-  | I.Param (t,e) -> Param (ty env t, rw env e)
+  | I.Param (t,e) -> Param (ty env t, rw loc env e)
   | I.For (dir,p,i,st,en,e) ->
       let env,i = Env.add_var env i in
-      For (dir, pre env p, i,Env.var env st, Env.var env en, ast env e)
+      For (dir, pre env p, i,Env.var loc env st, Env.var loc env en, ast env e)
   | I.LetReg (rl,e) ->
       let env, nrl = Env.add_rvars env rl in
       LetReg (nrl, ast env e)
@@ -67,7 +67,7 @@ let rec ast' env = function
       Let (G.empty, annot (ast env e1) (Ty.unit ()) e1.I.loc,
            Name.close_bind (Name.new_anon ()) (ast env e2), Const.NoRec)
   | I.Restrict (t,e) ->
-      let t = ast env t and e = effect env e in
+      let t = ast env t and e = effect loc env e in
       Restrict (t,e)
   | I.Get (t1,t2) -> Get (ast env t1, ast env t2)
   | I.HoareTriple (p,e,q) ->
@@ -91,7 +91,7 @@ and pre env x =
   cur, Opt.map (ast env) x
 
 
-and ast env {I.v = v; loc = loc} = { v = ast' env v; loc = loc }
+and ast env {I.v = v; loc = loc} = { v = ast' loc env v; loc = loc }
 
 and letgen env x g e r =
   let env', g = Env.add_gen env g in

@@ -30,7 +30,7 @@ type error =
   | UnknownVar of string * string
   | EffectOrRegionArgumentsToAbstractType
 
-exception Error of error
+exception Error of Loc.loc * error
 
 let explain e =
   match e with
@@ -39,7 +39,7 @@ let explain e =
   | EffectOrRegionArgumentsToAbstractType ->
       "Region or effect arguments are not allowed for abstract types."
 
-let error kind = raise (Error kind)
+let error loc kind = raise (Error (loc, kind))
 
 module Env : sig
   type t
@@ -47,10 +47,10 @@ module Env : sig
      unique name *)
   val empty : t
 
-  val var : t -> string -> Name.t
-  val rvar : t -> string -> Name.t
-  val effvar : t -> string -> Name.t
-  val tyvar : t -> string -> Name.t
+  val var : Loc.loc -> t -> string -> Name.t
+  val rvar : Loc.loc -> t -> string -> Name.t
+  val effvar :Loc.loc ->  t -> string -> Name.t
+  val tyvar :Loc.loc ->  t -> string -> Name.t
 
   val typedef : t -> string -> Ty.Generalize.t * Ty.t
 
@@ -84,13 +84,13 @@ end = struct
       typing = NM.empty ;
     }
 
-  let gen_var s m x =
-    try SM.find x m with Not_found -> error (UnknownVar (s,x))
+  let gen_var l s m x =
+    try SM.find x m with Not_found -> error l (UnknownVar (s,x))
 
-  let var env = gen_var "program" env.v
-  let tyvar env = gen_var "type" env.t
-  let rvar env = gen_var "region" env.r
-  let effvar env = gen_var "effect" env.e
+  let var l env = gen_var l "program" env.v
+  let tyvar l env = gen_var l "type" env.t
+  let rvar l env = gen_var l "region" env.r
+  let effvar l env = gen_var l "effect" env.e
 
   let only_add_type env x g =
     { env with typing = NM.add x g env.typing }
@@ -154,38 +154,40 @@ end = struct
 end
 
 
-let effect env (rl,el) =
+let effect loc env (rl,el) =
   Effect.from_lists
-    (List.map (Env.rvar env) rl)
-    (List.map (Env.effvar env) el)
+    (List.map (Env.rvar loc env) rl)
+    (List.map (Env.effvar loc env) el)
 
-let rw env (e1,e2) =
-  Rw.mk ~read:(effect env e1) ~write:(effect env e2)
+let rw loc env (e1,e2) =
+  Rw.mk ~read:(effect loc env e1) ~write:(effect loc env e2)
 
 let ty env t =
-  let rec aux = function
-    | IT.TVar v -> Ty.var (Env.tyvar env v)
+  let rec aux x = 
+    let loc = x.IT.tloc in
+    match x.IT.tv with
+    | IT.TVar v -> Ty.var (Env.tyvar loc env v)
     | IT.TConst c -> Ty.const c
     | IT.Tuple tl -> Ty.tuple (List.map aux tl)
     | IT.Arrow (t1,t2,e,cap) ->
-        Ty.caparrow (aux t1) (aux t2) (rw env e)
-          (List.map (Env.rvar env) cap)
+        Ty.caparrow (aux t1) (aux t2) (rw loc env e)
+          (List.map (Env.rvar loc env) cap)
     | IT.PureArr (t1,t2) -> Ty.parr (aux t1) (aux t2)
     | IT.TApp (v,i) ->
-        let i = inst i in
+        let i = inst loc i in
         begin try
           let g,t = Env.typedef env v in
           Ty.allsubst g i t
         with Not_found ->
-          let v = Env.tyvar env v in
+          let v = Env.tyvar loc env v in
           let tl,rl,el = i in
           if rl = [] && el = [] then Ty.app v tl
-          else error EffectOrRegionArgumentsToAbstractType
+          else error loc EffectOrRegionArgumentsToAbstractType
         end
-    | IT.Ref (r,t) -> Ty.ref_ (Env.rvar env r) (aux t)
-    | IT.Map e -> Ty.map (effect env e)
+    | IT.Ref (r,t) -> Ty.ref_ (Env.rvar loc env r) (aux t)
+    | IT.Map e -> Ty.map (effect loc env e)
     | IT.ToLogic t -> Ty.to_logic_type (aux t)
-  and inst i = Inst.map aux (Env.rvar env) (effect env) i in
+  and inst loc i = Inst.map aux (Env.rvar loc env) (effect loc env) i in
   aux t
 
 let rec_ env = function

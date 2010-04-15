@@ -124,8 +124,8 @@ let _ =
       Error.with_loc (Infer.explain e) loc
   | Predefined.Error e -> Error.bad (Predefined.explain e)
   | Predefty.Error e -> Error.bad (Predefty.explain e)
-  | CommonInternalize.Error e ->
-      Error.bad (CommonInternalize.explain e)
+  | CommonInternalize.Error (loc, e) ->
+      Error.with_loc (CommonInternalize.explain e) loc
   | Recon.Error (loc,e) -> Error.with_loc (Recon.explain e) loc
   | Tuples.Error e -> Error.bad (Tuples.explain e)
 

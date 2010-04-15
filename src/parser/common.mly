@@ -45,13 +45,13 @@
 
 %public defprogvar_no_pos : x = defprogvar { x.c }
 %public tconstant:
-  | TINT { Const.TInt }
-  | PROP { Const.TProp }
+  | p = TINT { Const.TInt, p }
+  | p = PROP { Const.TProp, p }
 
 %public gen:
   | LBRACKET tl = TYVAR* MID rl=IDENT* MID el = TYVAR* RBRACKET
-    { tl, strip_info rl, el }
-  | LBRACKET tl = TYVAR* RBRACKET { tl, [], [] }
+    { strip_info tl, strip_info rl, strip_info el }
+  | LBRACKET tl = TYVAR* RBRACKET { strip_info tl, [], [] }
   | { [], [], [] }
 
 (* infix operators - can be used in definitions *)
@@ -99,32 +99,36 @@ prover:
   | p = prover t = takeover { p, t }
 
 %public inst:
-  | LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
-    MID el = sepeffect* RBRACKET
-    { tl, strip_info rl, el }
-  | LBRACKET tl = separated_list(COMMA,ty) RBRACKET
-    { tl, [] ,[] }
+  | p1 = LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
+    MID el = sepeffect* p2 = RBRACKET
+    { (tl, strip_info rl, el), embrace p1 p2 }
+  | p1 = LBRACKET tl = separated_list(COMMA,ty) p2 = RBRACKET
+    { (tl, [] ,[]), embrace p1 p2 }
 
 (* basic types *)
 %public stype:
-  | x = tconstant { TConst x }
-  | v = TYVAR { TVar v }
+  | x = tconstant { let x, p = x in mkty (TConst x) p }
+  | v = TYVAR { mkty (TVar v.c) v.info }
   | LPAREN t = ty RPAREN { t }
-  | v = IDENT i = inst { TApp (v.c,i)  }
-  | v = IDENT { TApp (v.c,([],[],[])) }
-  | t = stype v = IDENT {TApp (v.c,([t],[],[])) }
-  | LPAREN t = ty COMMA l = separated_list(COMMA,ty) RPAREN v = IDENT
-    { TApp(v.c,(t::l,[],[])) }
+  | v = IDENT i = inst
+    { let i, p =  i in mkty (TApp (v.c,i)) (embrace v.info p) }
+  | v = IDENT { mkty (TApp (v.c,([],[],[]))) v.info }
+  | t = stype v = IDENT
+    { mkty (TApp (v.c,([t],[],[]))) (embrace t.tloc v.info) }
+  | p1 = LPAREN t = ty COMMA l = separated_list(COMMA,ty) RPAREN v = IDENT
+    { mkty (TApp(v.c,(t::l,[],[]))) (embrace p1 v.info) }
 
 rvar_or_effectvar:
   | x = IDENT { `Rvar x.c }
-  | e = TYVAR { `Effvar e }
+  | e = TYVAR { `Effvar e.c }
 
 maycap:
   | { [] }
   | MID l = IDENT* { strip_info l }
 
-effect: | l = rvar_or_effectvar* {partition_effect l }
+effect: 
+  | l = rvar_or_effectvar*
+  { partition_effect l }
 
 read_write :
   | e1 = effect PLUS e2 = effect { e1, e2}
@@ -141,13 +145,16 @@ read_write :
 (* more complex types *)
 %public ty:
   | t = stype { t }
-  | t1 = ty ARROW t2 = ty { PureArr (t1, t2) }
+  | t1 = ty ARROW t2 = ty { mkty (PureArr (t1, t2)) (embrace t1.tloc t2.tloc) }
   | t1 = ty ARROW e = sep_readwrite_create t2 = ty %prec ARROW
-    { let e,cl = e in Arrow (t1,t2,e,cl) }
-  | tl = product_ty { Tuple tl }
-  | LT e = effect GT { Map e }
-  | DLBRACKET t = ty DRBRACKET { ToLogic t }
-  | REF LPAREN id = IDENT COMMA t = ty  RPAREN { Ref (id.c,t) }
+    { let e,cl = e in mkty (Arrow (t1,t2,e,cl)) (embrace t1.tloc t2.tloc)  }
+  | tl = product_ty
+    { let fst = List.hd tl and last = List.hd (List.rev tl) in
+      mkty (Tuple tl) (embrace fst.tloc last.tloc) }
+  | p1 = LT e = effect p2 = GT { mkty (Map e) (embrace p1 p2) }
+  | p1 = DLBRACKET t = ty p2 = DRBRACKET { mkty (ToLogic t) (embrace p1 p2) }
+  | p1 = REF LPAREN id = IDENT COMMA t = ty  p2 = RPAREN
+    { mkty (Ref (id.c,t)) (embrace p1 p2) }
 
 product_ty:
   | t1 = stype STAR t2 = stype { [t1;t2] }

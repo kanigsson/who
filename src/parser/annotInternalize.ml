@@ -33,8 +33,9 @@ exception Error of string * Loc.loc
 let error loc s =
   Myformat.ksprintf (fun s -> raise (Error (s,loc))) s
 
-let inst env (tl,rl,el) =
-  List.map (ty env) tl, List.map (Env.rvar env) rl, List.map (effect env) el
+let inst loc env (tl,rl,el) =
+  List.map (ty env) tl, List.map (Env.rvar loc env) rl,
+  List.map (effect loc env) el
 
 let add_var env x g =
   let env, x = Env.add_var env x in
@@ -46,9 +47,9 @@ let add_ex_var env x g nv =
 
 let add_svar env x t = add_var env x (G.empty, t)
 
-let typed_var logic env x =
+let typed_var loc logic env x =
   try
-    let x = Env.var env x in
+    let x = Env.var loc env x in
     let g,t = Env.lookup_type env x in
     let t = if logic then Ty.to_logic_type t else t in
     x, (g,t)
@@ -60,15 +61,15 @@ let rec term logic env (t : I.t) =
   match t.I.v with
   | I.Const c -> const c l
   | I.Var (x,i) ->
-      let x, g = typed_var logic env x in
-      var (mk_var_with_scheme x g) (inst env i) l
+      let x, g = typed_var l logic env x in
+      var (mk_var_with_scheme x g) (inst l env i) l
   | I.App (t1,t2,kind,cap) ->
-      app ~kind ~cap:(List.map (Env.rvar env) cap)
+      app ~kind ~cap:(List.map (Env.rvar l env) cap)
         (term logic env t1) (term logic env t2) l
   | I.Lam (x,t,cap, p, e, q) ->
       let t = ty env t in
       let env, nv = add_svar env x t in
-      caplam nv t (List.map (Env.rvar env) cap)
+      caplam nv t (List.map (Env.rvar l env) cap)
         (term true env p) (term false env e)
         (term true env q) l
   | I.HoareTriple (p,e,q) ->
@@ -106,7 +107,7 @@ let rec term logic env (t : I.t) =
       let mktup = R.predef (PI.mk_tuple_id n) (tyl,[],[]) l in
       R.appn mktup tl l
 *)
-  | I.Param (t,e) -> param (ty env t) (rw env e) l
+  | I.Param (t,e) -> param (ty env t) (rw l env e) l
 and letgen env x g e r =
   let env', g = Env.add_gen env g in
   let nv = Name.from_string x in

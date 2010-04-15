@@ -55,8 +55,8 @@ let id_or_keyword =
         ("downto", fun i -> DOWNTO (create_info i)  );
         ("do", fun _ -> DO );
         ("done", fun i -> DONE (create_info i)  );
-        ("int", fun _ -> TINT  );
-        ("prop", fun _ -> PROP  );
+        ("int", fun i -> TINT (create_info i));
+        ("prop", fun i -> PROP (create_info i));
         ("begin", fun i -> LPAREN (create_info i));
         ("end", fun i -> RPAREN (create_info i) );
         ("ref", fun i -> REF (create_info i) );
@@ -104,7 +104,7 @@ rule token = parse
   | identifier as i { id_or_keyword i lexbuf}
   | '"' ( [ ^ '"' ] * as str ) '"'
     { STRING str }
-  | '\'' (identifier as tv) { TYVAR tv}
+  | '\'' (identifier as tv) { TYVAR (Loc.mk (create_info lexbuf) tv)}
   | "->" { ARROW (create_info lexbuf) }
   | "==" { BEQUAL (create_info lexbuf) }
   | '=' { EQUAL (create_info lexbuf) }
@@ -112,8 +112,8 @@ rule token = parse
   | "()" { VOID (create_info lexbuf)  }
   | '(' { LPAREN (create_info lexbuf)  }
   | ')' { RPAREN (create_info lexbuf)  }
-  | '[' { LBRACKET   }
-  | ']' { RBRACKET   }
+  | '[' { LBRACKET (create_info lexbuf) }
+  | ']' { RBRACKET (create_info lexbuf) }
   | '{' { LCURL (create_info lexbuf) }
   | '}' { RCURL (create_info lexbuf) }
   | "{{" { DLCURL }
