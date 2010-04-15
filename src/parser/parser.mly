@@ -91,8 +91,8 @@ protected_term:
 aterm:
   | p = VOID { var I.void_id p }
   | p = REF { var "ref" p}
-  | p = prefix x = IDENT
-    { app (var (snd p) (fst p)) (var x.c x.info) (embrace (fst p) x.info) }
+  | p = prefix t = aterm
+    { app (var (snd p) (fst p)) t (embrace (fst p) t.loc) }
   | x = IDENT AT e = sepeffect
     { mk (Restrict (var x.c x.info,e)) x.info }
   | p = DEXCLAM x = IDENT
