@@ -84,7 +84,7 @@ parameter X.compute ['c||'e]
 (* structures de données *)
 type hashtbl ['a 'b]
 logic Hashtbl.add ['a 'b|r|] : ref(r, ('a, 'b) hashtbl) -> 'a -> 'b ->{r} unit
-logic Hashtbl.create ['a 'b|r|] : int ->{r} ref(r, ('a, 'b) hashtbl)
+logic Hashtbl.create ['a 'b||] : int ->{} ('a, 'b) hashtbl
 logic Hashtbl.mem ['a 'b] : ('a, 'b) hashtbl  -> 'a -> prop
 logic Hashtbl.length ['a 'b] : ('a, 'b) hashtbl -> int
 parameter Hashtbl.find ['a 'b||] (hshtbl : ('a, 'b) hashtbl) (x : 'a) : {} 'b =
@@ -93,7 +93,7 @@ parameter Hashtbl.find ['a 'b||] (hshtbl : ('a, 'b) hashtbl) (x : 'a) : {} 'b =
 
 axiom hashtbl_empty_lengh ['a 'b|r|] : 
   forall (n: int).
-  [[]] Hashtbl.create n [[res : (Hashtbl.length !!res) = 0]] 
+  [[]] Hashtbl.create n [[res : (Hashtbl.length res) = 0 /\ forall (x:'a). ~ (Hashtbl.mem res x)]] 
 (* adding an item to a hashtbl makes this item member of the later *)
 axiom hashtbl_add ['a 'b|r|] :
   forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
@@ -115,17 +115,18 @@ axiom incr_increments [|r|] :
 (* specifications des stratégies de calcul *)
 let map (f : a -> b) (l : a list) = 
   {}
-  letregion r in letregion r2 in
+  letregion r in 
   let tasks = let i = ref {{r}} 0 in List.map [{r}] (fun x -> incr i; x, !i) l in
-  let results = Hashtbl.create 17 in
+  letregion r2 in 
+  let results = ref {{r2}} (Hashtbl.create 17) in
   let inv (s : <r r2>) (l1 : (a * int) list) = (* invariant *)
     (Hashtbl.length (!!results@s)) + List.length l1 = List.length l in
   X.compute [{r r2}]
     inv
     f
-    (fun tuple r -> Hashtbl.add [{r2}] results (snd tuple) r; nil)
+    (fun tuple r -> Hashtbl.add results (snd tuple) r; nil)
     tasks;
-  List.map (fun tuple -> Hashtbl.find [{r2}] results (snd tuple)) tasks
+  List.map [{}] (fun tuple -> Hashtbl.find !results (snd tuple)) tasks
   {
   }
 
