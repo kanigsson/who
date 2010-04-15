@@ -25,9 +25,12 @@ module G = Ty.Generalize
 
 (** TODO declare some type annotations as optional *)
 
+type var =
+  { var : Name.t ; is_constr : bool }
+
 type t' =
   | Const of Const.t
-  | Var of Name.t * Effect.t list
+  | Var of var * Effect.t list
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
   | App of t * t * [`Infix | `Prefix ] * Name.t list
@@ -78,3 +81,5 @@ let print _ _ = assert false (* TODO *)
 
 let ptrue l = mk (Const Const.Ptrue) l
 let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
+
+let mkvar is_constr v = { var = v; is_constr = is_constr }

@@ -28,7 +28,8 @@ module M = MutableType
 
 type var =
   { var : Name.t;
-    scheme : G.t * M.t
+    scheme : G.t * M.t;
+    is_constr : bool;
   }
 
 type t' =

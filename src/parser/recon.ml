@@ -53,7 +53,7 @@ let to_rw loc t =
 
 let var loc v =
   let g,t = v.I.scheme in
-  { var = v.I.var ; scheme = g, to_ty loc t} 
+  { var = v.I.var ; scheme = g, to_ty loc t ; is_constr = v.I.is_constr}
 
 let rec recon' loc = function
   | I.Var (x,i) -> Var (var loc x,inst loc i)
@@ -72,11 +72,11 @@ let rec recon' loc = function
       let rw = body.e and l = body.loc in
       let inv = recon inv in
       let inv' = plam i Ty.int inv l in
-      let intvar s = svar (mk_var_with_type s Ty.int) l in
+      let intvar s = svar (mk_var_with_type false s Ty.int) l in
       let cur = Name.from_string "cur" in
       let sv = intvar st and ev = intvar en and iv = intvar i in
       let read = Rw.reads rw and write = Rw.writes rw in
-      let curvar = svar (mk_var_with_type cur (Ty.map read)) l in
+      let curvar = svar (mk_var_with_type false cur (Ty.map read)) l in
       let pre =
         if bdir then
         (* forto: λcur. start <= i /\ i <= end_ /\ inv *)

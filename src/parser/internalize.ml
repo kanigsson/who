@@ -34,10 +34,13 @@ module IT = ParseTypes
 open CommonInternalize
 open InternalParseTree
 
+let mk_var loc env v =
+  mkvar (Env.is_constr env v) (Env.var loc env v)
+
 let rec ast' loc env = function
   | I.Const c -> Const c
   | I.Var (v,i) ->
-      Var (Env.var loc env v,List.map (effect loc env) i)
+      Var (mk_var loc env v,List.map (effect loc env) i)
   | I.App (e1,e2,f,c) ->
       App (ast env e1, ast env e2, f, List.map (Env.rvar loc env) c)
   | I.Lam (x,t,cap,p,e,q) ->

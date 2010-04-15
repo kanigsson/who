@@ -23,7 +23,8 @@
 
 type var =
   { var : Name.t;
-    scheme : Ty.Generalize.t * MutableType.t
+    scheme : Ty.Generalize.t * MutableType.t;
+    is_constr : bool;
   }
 
 type t' =

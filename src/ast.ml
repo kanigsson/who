@@ -25,7 +25,7 @@ module G = Ty.Generalize
 module PL = Predefined
 module I = Identifiers
 
-type var = { var : Name.t; scheme : Ty.scheme }
+type var = { var : Name.t; scheme : Ty.scheme ; is_constr : bool }
 
 type node =
   | Const of Const.t
@@ -42,10 +42,17 @@ type node =
   | Gen of G.t *  t
   | HoareTriple of funcbody
   | LetReg of Name.t list * t
+(*   | Case of t * branch list *)
 and t = { v : node ; t : Ty.t ; e : Rw.t; loc : Loc.loc }
 and isrec = Ty.t Const.isrec
 and funcbody = t * t * t
 and inst = (Ty.t, Name.t, Effect.t) Inst.t
+(*
+and branch = (pattern * t) Name.listbind
+and pattern =
+  | PVar of var * inst
+  | PApp of var
+*)
 
 type decl =
   | Logic of Name.t * Ty.scheme
@@ -84,7 +91,7 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
   and body (p,e,q) = aux p, aux e, aux q
   and var v =
     let (g,t) = v.scheme in
-    { var = varfun v.var ; scheme = g, tyfun t }
+    { var = varfun v.var ; scheme = g, tyfun t ; is_constr = v.is_constr }
   and aux t = {t with v = aux' t.v; t = tyfun t.t; e = rwfun t.e} in
   aux f
 
@@ -342,11 +349,13 @@ let const c =
   mk_val (Const c) (Ty.const (Const.type_of_constant c))
 
 let simple_var v t = mk_val (Var (v, Inst.empty)) t
-let mk_var_with_scheme v s = { var = v; scheme = s }
-let mk_var_with_type v t = { var = v; scheme = Ty.as_scheme t }
+let mk_var_with_scheme is_constr v s =
+ { var = v; scheme = s ; is_constr = is_constr }
+let mk_var_with_type is_constr v t =
+  { var = v; scheme = Ty.as_scheme t; is_constr = is_constr }
 let simple_var_id s =
   let x, ((_,t) as s) = PL.var_and_type s in
-  simple_var (mk_var_with_scheme x s) t
+  simple_var (mk_var_with_scheme false x s) t
 
 let mempty l = simple_var_id I.empty_id l
 let btrue_ l = simple_var_id I.btrue_id l
@@ -368,7 +377,7 @@ let svar s = var s Inst.empty
 
 let predef s i =
   let x, t = PL.var_and_type s in
-  let v = mk_var_with_scheme x t in
+  let v = mk_var_with_scheme false x t in
   var v i
 
 let spredef s =
@@ -736,7 +745,7 @@ let infer_app ?fix ?(regions=[]) ?(effects=[]) ?rty x tel l =
 
 let infer_predef ?fix ?regions ?effects ?rty id =
   let x,t = PL.var_and_type id in
-  let x = mk_var_with_scheme x t in
+  let x = mk_var_with_scheme false x t in
   infer_app ?fix ?regions ?effects ?rty x
 
 let le t1 t2 loc =
@@ -800,7 +809,7 @@ let quant ?s k t f loc =
     match s with
     | None -> Name.new_anon ()
     | Some s -> Name.from_string s in
-  let var = mk_var_with_type v t in
+  let var = mk_var_with_type false v t in
   let tv = svar var loc in
   squant k v t (f tv) loc
 
@@ -811,7 +820,7 @@ let plamho ?s t f loc =
     match s with
     | None -> Name.new_anon ()
     | Some s -> Name.from_string s in
-  let var = mk_var_with_type v t in
+  let var = mk_var_with_type false v t in
   let tv = svar var loc in
   plam v t (f tv) loc
 

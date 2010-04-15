@@ -61,7 +61,7 @@ and normalize_name e k =
       if is_value e then k e
       else
         let nv = Name.from_string "anf" in
-        let nvv = svar (mk_var_with_type nv e.t) e.loc in
+        let nvv = svar (mk_var_with_type false nv e.t) e.loc in
         let_ Generalize.empty e nv (k nvv) Const.NoRec e.loc)
 
 let term = normalize_term

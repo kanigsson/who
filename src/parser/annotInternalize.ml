@@ -61,8 +61,8 @@ let rec term logic env (t : I.t) =
   match t.I.v with
   | I.Const c -> const c l
   | I.Var (x,i) ->
-      let x, g = typed_var l logic env x in
-      var (mk_var_with_scheme x g) (inst l env i) l
+      let nv, g = typed_var l logic env x in
+      var (mk_var_with_scheme (Env.is_constr env x) nv g) (inst l env i) l
   | I.App (t1,t2,kind,cap) ->
       app ~kind ~cap:(List.map (Env.rvar l env) cap)
         (term logic env t1) (term logic env t2) l

@@ -63,7 +63,8 @@ end = struct
 
 end
 
-let mk_var_with_m_scheme v s = { var = v; scheme = s }
+let mk_var_with_m_scheme is_constr v s =
+  { var = v; scheme = s; is_constr = is_constr }
 
 type error =
   | Basic of string
@@ -128,6 +129,7 @@ and infer env (x : I.t) =
           | M.Map em ->
               let em = M.to_effect em in
               let v = PL.var PI.restrict_id in
+              let v = I.mkvar false v in
               let new_e =
                 I.app (I.var ~inst:[Effect.diff em e; e] v l) m l in
               let e = infer env new_e in
@@ -143,6 +145,7 @@ and infer env (x : I.t) =
             let e = M.rremove e [r] in
             let e = M.to_effect e in
             let v = PL.var PI.get_id in
+            let v = I.mkvar false v in
             let new_e = I.app (I.app (I.var ~inst:[e] v l) ref l) map l in
             let e = infer env new_e in
             e.v, e.t, e.e
@@ -213,14 +216,16 @@ and infer env (x : I.t) =
     | I.Var (v,el) ->
 (*         Myformat.printf "treating var: %a@." Name.print v; *)
         let (_,_,evl) as m ,xt =
-          try Env.lookup env v
-          with Not_found -> errorm l "variable %a not found" Name.print v in
+          try Env.lookup env v.I.var
+          with Not_found ->
+            errorm l "variable %a not found" Name.print v.I.var in
         let xt = if Env.is_logic_env env then M.to_logic_type xt else xt in
         let nt,i =
           try M.refresh m el xt
           with Invalid_argument _ ->
-            error l (WrongNumberEffects(v, List.length evl, List.length el)) in
-        let v = mk_var_with_m_scheme v (m,xt) in
+            error l (WrongNumberEffects(v.I.var,
+              List.length evl, List.length el)) in
+        let v = mk_var_with_m_scheme v.I.is_constr v.I.var (m,xt) in
         Var (v, i), nt, M.rw_empty
     | I.Let (g,e1,(_,x,e2),r) ->
         let env, e1 = letgen env x g e1 r in
