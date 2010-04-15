@@ -81,19 +81,46 @@ parameter compute ['c||'e]
 
 
 
+(* structures de données *)
+type hashtbl ['a 'b]
+logic Hashtbl.add ['a 'b|r|] : ('a, 'b) hashtbl -> 'a -> 'b ->{r} unit 
+logic Hashtbl.create ['a 'b|r|] : int ->{r} ('a, 'b) hashtbl 
+logic Hashtbl.mem ['a 'b|r|] : ('a, 'b) hashtbl  -> 'a ->{r} prop
+parameter Hashtbl.find ['a 'b|r|] (hshtbl : ('a, 'b) hashtbl) (x : 'a) : {r} bool =
+  { Hashtbl.mem hshtbl x }
+  {}
+axiom hashtbl_add ['a 'b|r|] :
+  forall (x : 'a) (y : 'b) (hshtbl : ('a, 'b) hashtbl). 
+  [[]] Hashtbl.find [{r}] (Hashtbl.add hshtbl x y) x [[result : result = y]]
 
+logic List.map ['a 'b||'e] : ('a ->{'e} 'b) -> 'a list ->{'e} 'b list
+logic List.length ['a] : 'a list -> int
 
-(* (* TODO : tout spécifier et prouver *)
+parameter inv_map ['c|r|'e] (s : <'e>) (l : (a * 'c) list) =
+  {
+    exists (s1 : <r>). 
+  }
+  { r:
+    List.length l + 
+  }
 
-let map ~f l =
-  let tasks = let i = ref 0 in List.map (fun x -> incr i; x, !i) l in
-  let results = Hashtbl.create 17 in (* index -> 'b *)
-  X.compute
-    ~worker:f
-    ~master:(fun (_,i) r -> Hashtbl.add results i r; [])
+(* specifications des stratégies de calcul *)
+let map (f : a -> b) (l : a list) = allocates r r2
+  {
+  }
+  let tasks = let i = ref {{r}} 0 in List.map [{r}] (fun x -> incr i; x, !i) l in
+  let results = Hashtbl.create [{r2}] 17 in 
+  compute
+    inv_map
+    f
+    (fun (_,i) r -> Hashtbl.add [{r2}] results i r; [])
     tasks;
-  List.map (fun (_,i) -> Hashtbl.find results i) tasks
+  List.map (fun (_,i) -> Hashtbl.find [{r2}] results i) tasks
+  {
+  }
 
+
+(*
 let map_local_fold ~(map : 'a -> 'b) ~(fold : 'c -> 'b -> 'c) acc l =
   let acc = ref acc in
   X.compute
