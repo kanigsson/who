@@ -1,0 +1,24 @@
+(*
+let fold_right f a x =
+  let r = ref x in
+  for i = length a - 1 downto 0 do
+    r := f (unsafe_get a i) !r
+  done;
+  !r
+*)
+
+let fold_right ['a 'b|r|'e]
+  (inv : <r 'e> -> int -> 'b -> prop)
+  (f : 'a -> 'b ->{r 'e} 'b) (acc : 'b) (ar : ref(r,'a array)) =
+  { inv cur (len !!ar) acc /\
+    forall (i:int). 0 <= i /\ i < len !!ar ->
+    forall (z : 'b). [[ inv cur (i+1) z]] f (get i !ar) z [[ r : inv cur i r]]
+  }
+  letregion loc in
+  let acc = ref{{loc}} acc in
+  for index = len !ar - 1 downto 0 do
+    { inv cur@{r 'e} (index + 1) !!acc }
+    acc := f (get index !ar) !acc
+  done;
+  !acc
+  { r : inv cur 0 r }

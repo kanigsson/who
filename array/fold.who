@@ -22,15 +22,3 @@ let fold_left ['a 'b|r|'e]
   done;
   !acc
   { r : inv cur (len !!ar@old) r }
-
-(* As precondition, I would like to write :
-  inv {ar; e}|cur 0 acc /\
-    forall (i : int). 0 <= i /\ i < length [|int] ar ->
-    forall (m : <ar e>). forall (acc : int).
-      inv m i acc /\ ar|m = ar ->
-        ppre f (get [|int] i ar|m) acc {e|m} /\
-        forall (n : <ar e>). forall (acc' : int).
-          ar|n = ar -> ppost f (get [|int] i ar|m) acc {e|m} {e|n} acc' ->
-            inv n (i + 1) acc'
-*)
-
