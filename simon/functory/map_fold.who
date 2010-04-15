@@ -94,10 +94,10 @@ parameter Hashtbl.find ['a 'b] (hshtbl : ('a, 'b) hashtbl) (x : 'a) : 'b =
 (* adding an item to a hashtbl makes this item member of the later *)
 axiom hashtbl_add ['a 'b|r|] :
   forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
-  [[]] Hashtbl.find [{r}] (Hashtbl.add hshtbl x y) x [[result : result = y]]
+  [[]] Hashtbl.find !!(Hashtbl.add [{r}] hshtbl x y) x [[result : result = y]]
 (* adding an item to a hastable increments its length *)
 axiom hashtbl_add_length ['a 'b|r|] :
-  forall (x : 'a) (y : 'b) (hshtbl :ref(r, ('a, 'b) hashtbl)).
+  forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
   [[~ (Hashtbl.mem !!hshtbl x)]] Hashtbl.add hshtbl x y [[ (Hashtbl.length !!hshtbl) = (Hashtbl.length !!hshtbl@old) +1 ]]
 
 logic List.map ['a 'b||'e] : ('a ->{'e} 'b) -> 'a list ->{'e} 'b list
