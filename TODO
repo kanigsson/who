@@ -1,15 +1,11 @@
 IMPORTANT FEATURES
 
-inductive declarations
 polymorphic arguments
-read/write
 remove stuff about singleton regions
 subtyping
 initial label for beginning of function
 
 MINOR ISSUES
-
-simplification of tuples directly in [get_tuple]
 
 PROOFS
 
@@ -17,25 +13,29 @@ Hashtbl
 
 COQ
 
-* void/ unit type
-* instantiation for polymorphic constants
-* int_max, int_min
-
 INTERNAL
-
-* separate pretty printers
 
 BUGS
 
 * check types for well-formedness
 * binding!!!!
-* output several coq files (as pangoline)
-* OR: pangoline Coq output
 
 DONE:
 * False
 * proof obligations disappear
 * simple stuff not proved?? (false alarm)
+* separate pretty printers
+* output several coq files (as pangoline)
+* OR: pangoline Coq output
+simplification of tuples directly in [get_tuple]
+read/write
+inductive declarations
+* void/ unit type
+* instantiation for polymorphic constants
+* int_max, int_min
+
+
+
 
 MANUAL
 

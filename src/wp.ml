@@ -60,7 +60,7 @@ let rec lift_value v =
       let x,f = sopen b in
       let_ g (lift_value e1) x (lift_value f) Const.LogicDef l
   | HoareTriple (p,e,q) -> bodyfun p e q
-  | Let _ | LetReg _ | Gen _ | Param _ | Ite _ ->
+  | Let _ | LetReg _ | Gen _ | Param _ | Ite _ | Case _ ->
       error (Myformat.sprintf "not a value: %a" print v) l
 
 and correct v =
@@ -74,7 +74,7 @@ and correct v =
       let x,e2 = sopen b in
       and_ (gen g (correct e1) l)
         (let_ g (lift_value e1) x (correct e2) Const.LogicDef l) l
-  | Let _ | LetReg _ | Gen _ | Param _
+  | Let _ | LetReg _ | Gen _ | Param _ | Case _
   | Ite _ | HoareTriple _ ->
       Myformat.printf "correct: not a value: %a@." print v;
       assert false
@@ -137,6 +137,8 @@ and wp m q e =
             plam x t (wp_node (combine m m2 l) q e2) l) l in
           wp_node m f e1
     | Ite (c,th,el) -> ite (lift_value c) (wp_node m q th) (wp_node m q el) l
+    | Case (v,bl) ->
+        case (lift_value v) (List.map (branch m q) bl) l
     | Param _ -> ptrue_ l
     | _ -> assert false
 and wp_node m q e =
@@ -148,6 +150,10 @@ and wp_node m q e =
     wp (restrict read m l)
       (efflamho write (fun m2 ->
         app q (combine (restrict writeq m l) m2 l) l) l) e
+and branch m q b =
+  let nvl, p, e = popen b in
+  pclose nvl p (wp_node m q e)
+
 
 let main e =
   let l = e.loc in

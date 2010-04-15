@@ -41,6 +41,8 @@ and normalize e k =
   | LetReg (l,e) -> k (letreg l (normalize_term e) loc)
   | Gen (g,e) -> k (gen g (normalize_term e) loc)
   | Quant (kind,t,(_,x,e)) -> k (squant kind x t (normalize_term e) loc)
+  | Case (e1,bl) ->
+      normalize_name e1 (fun v -> k (case v (List.map branch bl) loc))
   | Ite (e1,e2,e3) ->
       normalize_name e1
         (fun v ->
@@ -54,6 +56,9 @@ and normalize e k =
 (*       Format.printf "found hoare_triple@."; *)
       k (hoare_triple (normalize_term p)
         (normalize_term e) (normalize_term q) loc)
+and branch b =
+  let nvl,p,e = popen b in
+  pclose nvl p (normalize_term e)
 
 and normalize_name e k =
   normalize e

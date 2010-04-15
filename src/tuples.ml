@@ -244,8 +244,13 @@ let rec term env t =
         let env', g = genfun env g in
         let e1 = term env' e1 in
         let_ g e1 x (term env e2) r l
+    | Case (t,bl) ->
+        case (term env t) (List.map (branch env) bl) l
     | Lam _ | LetReg _ | Param _ | HoareTriple _ ->
         assert false
+and branch env b =
+  let nvl, p, t = popen b in
+  pclose nvl p (term env t)
 
 let rec decl env d =
   match d with

@@ -39,6 +39,7 @@ type error =
   | TyAppmismatch of Ty.t * Ty.t
   | TyMismatch of Ty.t * Ty.t
   | CapMismatch of Name.t list * Name.t list
+  | PatternArgs of Name.t
   | Other of string
 
 exception Error of Loc.loc * error
@@ -70,6 +71,10 @@ let explain e =
       Myformat.sprintf
         "mismatch on creation permissions: expected %a, given %a"
         Name.print_list c1 Name.print_list c2
+  | PatternArgs n ->
+      Myformat.sprintf
+        "constructor %a has not been given the right number of arguments"
+        Name.print n
   | Other s -> s
 
 let error loc e = raise (Error (loc, e))
@@ -77,6 +82,7 @@ let error loc e = raise (Error (loc, e))
 let errorm loc s =
   Myformat.ksprintf (fun s -> raise (Error (loc, Other s))) s
 
+(* TODO build environment module *)
 type env =
   { types : (G.t * Ty.t) Name.M.t; }
 
@@ -84,6 +90,9 @@ let add_var env x g t =
   { types = Name.M.add x (g,t) env.types }
 let add_svar env x t =
   { types = Name.M.add x (G.empty,t) env.types }
+
+let has_binding env x =
+  Name.M.mem x env.types
 
 let disjoint_union loc s1 s2 =
   if RS.is_empty (RS.inter s1 s2) then RS.union s1 s2
@@ -116,7 +125,7 @@ let set_list_contained l s =
 (* TODO hybrid environment *)
 let rec formtyping' env loc = function
   | Ast.Const c -> Ty.const (Const.type_of_constant c)
-  |Ast.Var (s,i) ->
+  | Ast.Var (s,i) ->
       begin try
         let g, t = ftype_of_var loc env s in
         let r = Ty.allsubst g i t in
@@ -173,6 +182,15 @@ let rec formtyping' env loc = function
         pre env eff p;
         post env eff t' q;
         prop
+  | Case (t,bl) ->
+      let t = formtyping env t in
+      let tl = List.map (formbranch env t) bl in
+      begin match tl with
+      | [] -> assert false
+      | t::tl ->
+          assert (List.for_all (Ty.equal t) tl);
+          t
+      end
   | Param _ -> errorm loc "effectful parameter in logic"
   | LetReg _ -> assert false
 and formtyping env (e : Ast.t) : Ty.t =
@@ -185,6 +203,42 @@ and formtyping env (e : Ast.t) : Ty.t =
 
 and pre env eff f = fis_oftype env (prety (Rw.overapprox eff)) f
 and post env eff t f = fis_oftype env (postty (Rw.overapprox eff) t) f
+
+and formbranch env exp_pat b =
+  let _, p, t = popen b in
+  let env = pattern env exp_pat p in
+  formtyping env t
+
+and branch env exp_pat b =
+  let _, p, t = popen b in
+  let env = pattern env exp_pat p in
+  let t,eff,_ = typing env t in
+  t, eff
+
+and pattern env exp p =
+  let loc = p.ploc in
+  match p.pv with
+  | PVar v ->
+      assert (not v.is_constr);
+      assert (not (has_binding env v.var));
+      add_svar env v.var exp
+  | PApp (v,i,pl) ->
+    begin try
+      assert (v.is_constr);
+      let g,t = ftype_of_var loc env v in
+      let t = Ty.allsubst g i t in
+      let tl,rt = Ty.nsplit t in
+      assert (Ty.equal rt exp);
+      let env = List.fold_left2 pattern env tl pl in
+      env
+    with
+    | Not_found -> error loc (Unboundvar v.var)
+    | Invalid_argument "List.fold_left2" ->
+        error loc (PatternArgs v.var)
+    end
+
+
+
 
 and typing' env loc = function
   | Ast.Const c ->
@@ -258,6 +312,15 @@ and typing' env loc = function
   | LetReg (vl,e) ->
       let t, eff, cap = typing env e in
       t, Rw.rremove eff vl, Name.remove_list_from_set vl cap
+  | Case (e,bl) ->
+      let t,eff,_ = typing env e in
+      let tl, effl = List.split (List.map (branch env t) bl) in
+      begin match tl with
+      | [] -> assert false
+      | t::tl ->
+          assert (List.for_all (Ty.equal t) tl);
+          t, List.fold_left Rw.union eff effl, RS.empty
+      end
   | Gen _ -> assert false
   | HoareTriple (p,e,q) ->
       let t', eff, capreal = typing env e in
