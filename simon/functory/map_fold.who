@@ -18,10 +18,11 @@ type map_or_fold ['a 'b] =
   | Map of 'a
   | Fold of 'b
 
-logic ~ : prop -> prop
+type a
+type b
 
-logic worker ['a 'b] : 'a -> 'b
-logic master ['a 'b||'e] : 'a -> 'b ->{'e} 'a  list
+logic worker : a -> b
+logic master ['c||'e] : (a * 'c) -> b ->{'e} (a *'c) list
 
 (* TODO : transformer ça en parameter avec spécifications
 let map_fold_wrapper map fold = function
@@ -36,45 +37,45 @@ let map_fold_wrapper2 map fold = function
 (* opérations sur les listes *)
 logic mem ['a] : 'a -> 'a list -> prop
 logic remove ['a] : 'a -> 'a list -> 'a list
-axiom remove_does_remove :
+axiom remove_does_remove ['a] :
   forall (x : 'a) (l : 'a list).
-    (mem x (remove x l) -> False)   (* FIXME : moche, mais ~ ne marche pas *)
+    ~ (mem x (remove x l))
 logic append ['a] : 'a list -> 'a list -> 'a list
-axiom append_does_append : 
+axiom append_does_append ['a] : 
   forall (l1 l2 : 'a list) (x : 'a).
     (mem x l1 -> mem x (append l1 l2)) /\
     (mem x l2 -> mem x (append l1 l2))
 
 
-logic relat ['a||'e] : 'e -> 'a list -> 'e -> a list -> prop
-axiom relat_init : (* une étape de master conserve l'invariant *)
-  forall (l1 l2 : 'a list) (x : 'a) (e1 e2 : 'e).
-    (mem x l1 /\ 
-    [[ cur = e1 ]] master e1 x (worker x) [[ l : cur = e2 /\ l2 = remove x (append l l1) ]] )
-    -> relat e1 l1 e2 l2
+logic relat ['c||'e] : <'e> -> (a * 'c) list -> <'e> -> (a * 'c) list -> prop
+axiom relat_init ['c||'e] : (* une étape de master conserve l'invariant *)
+  forall (l1 l2 : (a * 'c) list) (x : a) (y : 'c) (e1 e2 : <'e>).
+    (mem (x, y) l1 /\ 
+    [[ cur = e1 ]] master [{'e}] (x, y) (worker x) [[ l : cur = e2 /\ l2 = remove (x, y) (append l l1) ]] )
+    -> relat [{'e}] e1 l1 e2 l2
 
-logic relat_trans ['a||'e] : 'e -> 'a list -> 'e -> 'a list -> prop
-axiom relat_trans_reflex :
-  forall (e1 : 'e) (l1 : 'a list).
-    relat_trans e1 l1 e1 l1
-axiom relat_trans_trans : 
-  forall (e1 e2 e3 : 'e) (l1 l2 l3 : 'a list).
-    (relat_trans e1 l1 e2 l2  /\ relat e2 l2 e3 l3)
-    -> relat_trans e1 l1 e3 l3
+logic relat_trans ['c||'e] : <'e> -> (a * 'c) list -> <'e> -> (a * 'c) list -> prop
+axiom relat_trans_reflex ['c||'e] :
+  forall (e1 : <'e>) (l1 : (a * 'c) list).
+    relat_trans [{'e}] e1 l1 e1 l1
+axiom relat_trans_trans ['c||'e] : 
+  forall (e1 e2 e3 : <'e>) (l1 l2 l3 : (a * 'c) list).
+    (relat_trans [{'e}] e1 l1 e2 l2  /\ relat [{'e}] e2 l2 e3 l3)
+    -> relat_trans [{'e}] e1 l1 e3 l3
 
 
-parameter compute ['a 'b 'c||'e]  
-  (inv : 'e -> 'a list -> prop )
-  (worker : ('a -> 'b))
-  (master : ('a * 'c -> 'b ->{'e} ('a * 'c) list))
-  (l : ('a * 'c) list)
+parameter compute ['c||'e]  
+  (inv : <'e> -> (a * 'c) list -> prop )
+  (worker : (a -> 'b))
+  (master : (a * 'c -> 'b ->{'e} (a * 'c) list))
+  (l : (a * 'c) list)
   : {'e} unit =
   {
     inv cur l /\
-    forall (e1 e2 : 'e) (l1 l2 : 'a list). inv e1 l1 -> relat e1 l1 e2 l2 -> inv e2 l2
+    forall (e1 e2 : <'e>) (l1 l2 : (a * 'c) list). inv e1 l1 -> relat [{'e}] e1 l1 e2 l2 -> inv e2 l2
   }
   { r:
-    relat_trans old l cur nil /\
+    relat_trans [{'e}] old l cur nil /\
     inv cur nil
   }
 
