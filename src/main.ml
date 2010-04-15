@@ -119,7 +119,7 @@ let _ =
       Cmd.print_to_file (!Options.backend :> Const.prover) fn t) l
   with
   | Sys_error e -> Error.bad e
-  | Typing.Error (s,loc) -> Error.with_loc s loc
+  | Typing.Error (loc,e) -> Error.with_loc (Typing.explain e) loc
   | Infer.Error (loc,e) ->
       Error.with_loc (Infer.explain e) loc
   | Predefined.Error e -> Error.bad (Predefined.explain e)

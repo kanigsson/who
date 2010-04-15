@@ -21,7 +21,10 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-exception Error of string * Loc.loc
+type error
+exception Error of Loc.loc * error
+
+val explain : error -> string
 
 val typing : Ast.t -> unit
 val formtyping : Ast.t -> unit
