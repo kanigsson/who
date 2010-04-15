@@ -96,7 +96,7 @@ let alpha = ['a' - 'z' 'A'-'Z' '_' ]
 let digit = ['0'-'9']
 let module_name = alpha_upper (alpha | digit | '\'')*
 let name = alpha (alpha | digit | '\'')*
-let identifier = (module_name '.')? name
+let identifier = (module_name '.')* name
 
 rule token = parse
   | [' ' '\t' ]
