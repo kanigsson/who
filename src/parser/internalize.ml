@@ -162,7 +162,7 @@ let rec decl env d =
 and theory x = ExtList.fold_map_flatten decl x
 and constbranch env_inner env_outer (n,tyl) =
   let tyl = List.map (ty env_inner) tyl in
-  let env,nv = Env.add_var env_outer (Some n) in
+  let env,nv = Env.add_constr env_outer n in
   env, (nv,tyl)
 
 
