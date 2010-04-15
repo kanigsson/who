@@ -21,8 +21,6 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-(* TODO adapt types of pre and post *)
-
 module G = Ty.Generalize
 module M = MutableType
 
@@ -34,7 +32,7 @@ type var =
 
 type t' =
   | Const of Const.t
-  | Var of var * (M.t,M.r, M.effect) Inst.t
+  | Var of var * inst
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
   | App of t * t * [`Infix | `Prefix ] * Name.t list
@@ -49,12 +47,19 @@ type t' =
   | For of string * pre * Name.t * Name.t * Name.t * t
   | HoareTriple of funcbody
   | LetReg of Name.t list * t
+  | Case of t * branch list
 and t = { v : t' ; t : M.t ;
           e : M.rw ; loc : Loc.loc }
 and post = t
 and pre = t
 and isrec = Ty.t Const.isrec
 and funcbody = pre * t * post
+and branch = Name.t list * pattern * t
+and inst = (M.t,M.r, M.effect) Inst.t
+and pattern_node =
+  | PVar of var
+  | PApp of var * inst * pattern list
+and pattern = { pv : pattern_node ; pt : M.t ; ploc : Loc.loc}
 
 type decl =
   | Logic of Name.t * G.t * Ty.t

@@ -114,10 +114,19 @@ let rec recon' loc = function
   | I.LetReg (vl,e) -> LetReg (vl,recon e)
   | I.Annot (e,t) -> (recon e).v
   | I.Gen (g,e) -> Gen (g,recon e)
+  | I.Case (t,bl) -> Case (recon t, List.map branch bl)
 and get_pre (_,x) =
   match x with
   | None -> assert false
   | Some x -> recon x
+and branch (nvl,p,t) = pclose nvl (pattern p) (recon t)
+and pattern_node loc p =
+  match p with
+  | I.PVar v -> PVar (var loc v)
+  | I.PApp (v,i,pl) -> PApp (var loc v, inst loc i, List.map pattern pl)
+and pattern p =
+  let loc = p.I.ploc in
+  { pv = pattern_node loc p.I.pv; pt = to_ty loc p.I.pt; ploc = loc}
 and recon (t : InferTree.t) : Ast.t =
   let loc = t.I.loc in
   { v = recon' loc t.I.v; t = to_ty loc t.I.t;
