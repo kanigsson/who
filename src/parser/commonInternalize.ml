@@ -54,7 +54,7 @@ module Env : sig
 
   val typedef : t -> string -> Ty.Generalize.t * Ty.t
 
-  val add_var : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string -> t * Name.t
+  val add_var : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string option -> t * Name.t
   val add_ex_var : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string -> Name.t -> t
   val add_rvars : t -> string list -> t * Name.t list
   val add_tvars : t -> string list -> t * Name.t list
@@ -102,8 +102,12 @@ end = struct
     { env with v = SM.add x y env.v }
 
   let add_var env ?ty x =
-    let y = Name.from_string x in
-    add_ex_var env ?ty x y, y
+    match x with
+      | None ->
+          env, Name.new_anon ()
+      | Some x ->
+          let y = Name.from_string x in
+          add_ex_var env ?ty x y, y
 
   let add_tvar env x =
     let y = Name.from_string x in
@@ -163,7 +167,7 @@ let rw loc env (e1,e2) =
   Rw.mk ~read:(effect loc env e1) ~write:(effect loc env e2)
 
 let ty env t =
-  let rec aux x = 
+  let rec aux x =
     let loc = x.IT.tloc in
     match x.IT.tv with
     | IT.TVar v -> Ty.var (Env.tyvar loc env v)

@@ -29,12 +29,14 @@
   open ParseTree
   module I = Identifiers
 
+  let unit = mkty (TVar "unit") Loc.dummy
+
   (* build a new location out of two old ones by forming the large region
   containing both *)
   (* take a nonempty list of variable bindings l and a function [f] and
   build [λv1:t1 ... λv(n-1):t(n-1).u], where [u] is the result of [f vn tn];
   all lambdas are pure. *)
-  let mk_lam f (l : (string * ty option) list) loc =
+  let mk_lam f (l : (string option * ty option) list) loc =
     let l = List.rev l in
     match l with
     | [] -> assert false
@@ -162,10 +164,16 @@ todownto:
   | TO { "forto" }
   | DOWNTO { "fordownto" }
 
+funargvar:
+  | x = defprogvar_no_pos { Some x }
+  | UNDERSCORE { None }
+
 onetyarg:
-  | LPAREN xl = defprogvar_no_pos+ COLON t = ty RPAREN
+  | LPAREN xl = funargvar+ COLON t = ty RPAREN
     { List.map (fun x -> x,Some t) xl }
-  | x = IDENT { [x.c, None] }
+  | x = IDENT { [Some x.c, None] }
+  | UNDERSCORE { [None, None ] }
+  | VOID { [None, Some unit] }
 
 
 arglist: l = onetyarg+ { List.flatten l }

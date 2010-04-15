@@ -68,7 +68,7 @@ let rec term logic env (t : I.t) =
         (term logic env t1) (term logic env t2) l
   | I.Lam (x,t,cap, p, e, q) ->
       let t = ty env t in
-      let env, nv = add_svar env x t in
+      let env, nv = add_svar env (Some x) t in
       caplam nv t (List.map (Env.rvar l env) cap)
         (term true env p) (term false env e)
         (term true env q) l
@@ -80,11 +80,11 @@ let rec term logic env (t : I.t) =
       let_ g e1 nv e2 r l
   | I.PureFun (t,x,e) ->
       let t = ty env t in
-      let env, x = add_svar env x t in
+      let env, x = add_svar env (Some x) t in
       plam x t (term logic env e) l
   | I.Quant (k,t,x,e) ->
       let t = ty env t in
-      let env, x = add_svar env x t in
+      let env, x = add_svar env (Some x) t in
       squant k x t (term logic env e) l
   | I.LetReg (rl,e) ->
       let env, nrl = Env.add_rvars env rl in
@@ -127,7 +127,7 @@ let rec decl env d =
       let env, g = Env.add_gen env g in
       let t = ty env t in
       let s = g,t in
-      let env, nv = add_var env n s in
+      let env, nv = add_var env (Some n) s in
       Predefined.add_symbol_and_binding n nv s;
       env, [Logic (nv,s)]
   | I.Axiom (s,t) ->

@@ -92,10 +92,11 @@ let incr_linenum lexbuf =
 
 let alpha_lower = ['a'-'z' ]
 let alpha_upper = ['A'-'Z']
-let alpha = ['a' - 'z' 'A'-'Z' '_' ]
+let alpha = ['a' - 'z' 'A'-'Z' ]
+let alpha_underscore =  (alpha | '_')
 let digit = ['0'-'9']
-let module_name = alpha_upper (alpha | digit | '\'')*
-let name = alpha (alpha | digit | '\'')*
+let module_name = alpha_upper (alpha_underscore | digit | '\'')*
+let name = alpha (alpha_underscore | digit | '\'')*
 let identifier = (module_name '.')* name
 
 rule token = parse
@@ -106,6 +107,7 @@ rule token = parse
   | identifier as i { id_or_keyword i lexbuf}
   | '"' ( [ ^ '"' ] * as str ) '"'
     { STRING str }
+  | '_' { UNDERSCORE (create_info lexbuf) }
   | '\'' (identifier as tv) { TYVAR (Loc.mk (create_info lexbuf) tv)}
   | "->" { ARROW (create_info lexbuf) }
   | "==" { BEQUAL (create_info lexbuf) }

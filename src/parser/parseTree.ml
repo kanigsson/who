@@ -37,12 +37,12 @@ type t' =
   | Var of var * effect list
   | App of t * t * [`Infix | `Prefix ] * rvar list
   | Seq of t * t
-  | Lam of var * ty * rvar list * t option * t * post
+  | Lam of var option * ty * rvar list * t option * t * post
   | Let of generalize * t * var * t * ParseTypes.t Const.isrec
-  | PureFun of var * ty option * t
+  | PureFun of var option * ty option * t
   | Ite of t * t * t
   | Annot of t * ty
-  | Quant of [`FA | `EX] * var * ty option * t
+  | Quant of [`FA | `EX] * var option * ty option * t
   | Param of ty * rw
   | For of var * t option * var * var * var * t
   | LetReg of rvar list * t
