@@ -158,10 +158,14 @@ let main e =
 
 let correct_name n = Name.append n "_correct"
 
+let scheme (g,t) = g, ty t
+
 let rec decl d =
   match d with
-  | Logic _ | Formula _ | TypeDef _ | Inductive _
+  | TypeDef _ | Inductive _
   | Program (_,_,_,Const.LogicDef) | DGen _ | Decl _ -> [d]
+  | Logic (n,s) -> [ Logic (n,scheme s) ]
+  | Formula (n,f,k) -> [Formula (n,scan f, k) ]
   | DLetReg rl ->
       (* FIXME is this correct? *)
       [DGen ([],rl,[])]

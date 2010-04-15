@@ -50,15 +50,21 @@ let disj_union3 loc s1 s2 s3 =
   disjoint_union loc (disjoint_union loc s1 s2) s3
 
 
-let type_of_var env x =
+let type_of_var loc env x =
   let g = Name.M.find x.var env.types in
-  assert (Ty.scheme_equal x.scheme g);
+  if not (Ty.scheme_equal x.scheme g) then
+    error loc "internal error:
+      annotation mismatch on var %a: annotation: %a but in environment: %a@."
+      Name.print x.var Ty.print_scheme x.scheme Ty.print_scheme g ;
   g
 
-let ftype_of_var env x =
+let ftype_of_var loc env x =
   let m,t = Name.M.find x.var env.types in
   let g = m, to_logic_type t in
-  assert (Ty.scheme_equal x.scheme g);
+  if not (Ty.scheme_equal x.scheme g) then
+    error loc "internal error:
+      annotation mismatch on var %a: annotation: %a but in environment: %a@."
+      Name.print x.var Ty.print_scheme x.scheme Ty.print_scheme g ;
   g
 
 let prety = Ty.base_pretype
@@ -72,7 +78,7 @@ let rec formtyping' env loc = function
   | Ast.Const c -> Ty.const (Const.type_of_constant c)
   |Ast.Var (s,i) ->
       begin try
-        let g, t = ftype_of_var env s in
+        let g, t = ftype_of_var loc env s in
         let r = Ty.allsubst g i t in
 (*         printf "var : %a of type %a@." Vars.var s Ty.print r; r *)
         r
@@ -150,7 +156,7 @@ and typing' env loc = function
       Ty.const (Const.type_of_constant c), Rw.empty, RS.empty
   |Ast.Var (s,i) ->
       begin try
-        let g, t = type_of_var env s in
+        let g, t = type_of_var loc env s in
         Ty.allsubst g i t, Rw.empty, RS.empty
       with Not_found ->
         error loc "unknown variable: %a" Name.print s.var

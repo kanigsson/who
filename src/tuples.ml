@@ -201,7 +201,7 @@ let rec term env t =
           combine_to_tuple t m1 m2 l
       | _ ->
           match destruct_app t with
-          | Some ({v = Var (v,([],[],_))}, m) 
+          | Some ({v = Var (v,([],[],_))}, m)
             when PL.equal v.var I.restrict_id ->
               let m = term env m in
               let t = tyfun env t.t in
@@ -250,8 +250,8 @@ let rec term env t =
 let rec decl env d =
   match d with
   | Logic (n,s) ->
-      let s = scheme env s in
-      env, Logic (n,s)
+      let ns = scheme env s in
+      env, Logic (n,ns)
   | Formula (s,t,k) ->
       env, Formula (s, term env t, k)
   | Section (s,th, kind) ->
