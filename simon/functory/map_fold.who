@@ -106,7 +106,18 @@ axiom hashtbl_add_length ['a 'b|r|] :
   [[~ (Hashtbl.mem !!hshtbl x)]] Hashtbl.add hshtbl x y [[(Hashtbl.length !!hshtbl) = (Hashtbl.length !!hshtbl@old) +1]]
 
 logic List.map ['a 'b||'e] : ('a ->{'e} 'b) -> 'a list ->{'e} 'b list
+logic List.mem ['a] : 'a -> 'a list -> prop
 logic List.length ['a] : 'a list -> int
+
+axiom list_mem_map ['a 'b||'e]:
+  forall (x:'a) (l:'a list) (f:'a ->{'e} 'b).
+  List.mem x l -> List.mem (f x) (List.map [{'e}] f l)
+
+axiom list_length_map ['a 'b||'e]:
+  forall (l:'a list) (f:'a ->{'e} 'b).
+  List.length l = List.length (List.map [{'e}] f l)
+
+
 
 logic incr [|r|] : ref(r, int) ->{r} unit
 axiom incr_increments [|r|] :
@@ -129,7 +140,9 @@ let map (f : a -> b) (l : a list) =
     (fun tuple r -> Hashtbl.add results (snd tuple) r; nil)
     tasks;
   List.map [{r2}] (fun (tuple : a*int) -> {} Hashtbl.find !results (snd tuple) {}) tasks
-  {
+  { res:
+    forall (x:a). List.mem x l -> List.mem (f x) res  /\
+    List.length res = List.length l 
   }
 
 
