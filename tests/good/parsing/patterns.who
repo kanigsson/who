@@ -1,0 +1,12 @@
+type bool
+logic true : bool
+
+type t = 
+| A of int
+| B 
+
+let f x =
+  match x with
+  | A i -> i
+  | B -> 1
+  end

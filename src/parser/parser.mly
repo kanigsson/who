@@ -78,6 +78,11 @@
       NoRec start.loc
 
 
+  let mk_pvar x = { pv = PVar (Some x.c) ; ploc = x.info }
+  let mk_pconstr c l p = { pv = PApp (c.c, l) ; ploc = p }
+  let mk_underscore p = { pv = PVar None; ploc = p }
+
+
 %}
 
 %start <ParseTree.theory> main
@@ -166,12 +171,18 @@ nterm:
 
 branch: p = pattern ARROW e = seq_term { p, e }
 
+basic_pattern:
+  | x = IDENT { mk_pvar x  }
+  | p = UNDERSCORE { mk_underscore p }
+  | x = CONSTRUCTOR { mk_pconstr x [] x.info  }
+(*   | LPAREN p = pattern RPAREN { p } *)
 pattern:
-  | x = defprogvar { { pv = PVar (Some x.c) ; ploc = x.info } }
-  | p = UNDERSCORE { { pv = PVar None; ploc = p } }
-  | x = CONSTRUCTOR { { pv = PApp (x.c, []) ; ploc = x.info } }
+  | p = basic_pattern { p } 
+  | x = CONSTRUCTOR p = basic_pattern 
+    { mk_pconstr x [p] (embrace x.info p.ploc) }
   | x = CONSTRUCTOR LPAREN pl = separated_list(COMMA, pattern) p2 = RPAREN
-  { { pv = PApp (x.c,pl); ploc = embrace x.info p2  } }
+    { mk_pconstr x pl (embrace x.info p2) }
+
 todownto:
   | TO { "forto" }
   | DOWNTO { "fordownto" }

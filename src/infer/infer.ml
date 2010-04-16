@@ -75,7 +75,8 @@ type error =
   | WrongRegionCap
   | WrongRegionCapNumber
   | NotAFunction of M.t
-  | WrongNumberEffects of Name.t * int * int
+  | WrongNrEffects of Name.t * int * int
+  | WrongNrConstrArgs of Name.t * int * int
 
 exception Error of Loc.loc * error
 
@@ -88,12 +89,15 @@ let explain e =
   | WrongRegionCap -> "region capacity is not the one expected here"
   | WrongRegionCapNumber ->
       "the number of region capacities is not the one expected here"
-  | WrongNumberEffects(v,l1,l2) ->
+  | WrongNrEffects(v,l1,l2) ->
       Myformat.sprintf "not the right number of effect vars: %a@.\
       I expected %d variables, but you gave %d effects.@." Name.print v l1 l2
   | NotAFunction t ->
       Myformat.sprintf "term is expected to be a function but is of type %a"
         M.print t
+  | WrongNrConstrArgs (v,l1,l2) ->
+      Myformat.sprintf "constructor %a expects %d arguments, but is given %d"
+        Name.print v l1 l2
 
 let error l e = raise (Error (l,e))
 
@@ -127,8 +131,7 @@ let varfun env v el l =
   let nt,i =
     try M.refresh m el xt
     with Invalid_argument _ ->
-      error l (WrongNumberEffects(v.I.var,
-      List.length evl, List.length el)) in
+      error l (WrongNrEffects(v.I.var, List.length evl, List.length el)) in
   let v = mk_var_with_m_scheme v.I.is_constr v.I.var (m,xt) in
   v, i, nt
 
@@ -296,9 +299,13 @@ and pattern_node env exp p l =
       let tl, rt = M.nsplit nt in
       U.unify exp rt;
       let env, pl =
-        List.fold_left2 (fun (env, pl) t p ->
-          let env, p = pattern env t p in
-          env, p::pl) (env,[]) tl pl in
+        try
+          List.fold_left2 (fun (env, pl) t p ->
+            let env, p = pattern env t p in
+            env, p::pl) (env,[]) tl pl
+        with Invalid_argument "List.fold_left2" ->
+          error l (WrongNrConstrArgs (v.var, List.length tl, List.length pl))
+          in
       env, PApp (v, i, List.rev pl), rt
 and pattern env exp p =
   let l = p.I.ploc in
