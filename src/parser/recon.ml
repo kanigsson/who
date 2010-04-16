@@ -27,11 +27,15 @@ module M = MutableType
 
 type error =
   | UndeterminedType
+  | PureFunctionWithEffect
 exception Error of Loc.loc * error
 
 let explain e =
   match e with
   | UndeterminedType -> "cannot determine the type of this object."
+  | PureFunctionWithEffect ->
+      "pure functions should not have effects. Either remove the effects in \
+        the function body or add pre/post annotations."
 
 let error loc k = raise (Error (loc,k))
 
@@ -53,13 +57,16 @@ let to_rw loc t =
 
 let var loc v =
   let g,t = v.I.scheme in
-  { var = v.I.var ; scheme = g, to_ty loc t ; is_constr = v.I.is_constr}
+  { var = v.I.var ; scheme = g, to_ty loc t}
 
 let rec recon' loc = function
   | I.Var (x,i) -> Var (var loc x,inst loc i)
   | I.Const c -> Const c
   | I.App (e1,e2,k) -> App (recon e1, recon e2,k)
-  | I.PureFun (t,(s,x,e)) -> PureFun (to_ty loc t,(s,x, recon e))
+  | I.PureFun (t,(s,x,e)) ->
+      let e = recon e in
+      if not (Rw.is_empty e.e) then error loc PureFunctionWithEffect;
+      PureFun (to_ty loc t,(s,x, e))
   | I.Quant (k,t,(s,x,e)) -> Quant (k,to_ty loc t,(s,x, recon e))
   | I.Lam (x,ot,(p,e,q)) -> Lam (x,ot, (recon p, recon e, recon q))
   | I.Param (t,e) -> Param (t,e)
