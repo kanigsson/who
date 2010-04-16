@@ -27,9 +27,9 @@ logic Hashtbl.length ['a 'b] : ('a, 'b) hashtbl -> int
 parameter Hashtbl.find ['a 'b||] (hshtbl : ('a, 'b) hashtbl) (x : 'a) : {} 'b =
   { Hashtbl.mem hshtbl x }
   {}
-axiom hashtbl_empty_lengh ['a 'b|r|] : 
+axiom hashtbl_empty_lengh ['a 'b|r|] :
   forall (n: int).
-  [[]] (Hashtbl.create n : ('a, 'b) hashtbl) [[res : (Hashtbl.length res) = 0 /\ forall (x:'a). ~ (Hashtbl.mem res x)]] 
+  [[]] (Hashtbl.create n : ('a, 'b) hashtbl) [[res : (Hashtbl.length res) = 0 /\ forall (x:'a). ~ (Hashtbl.mem res x)]]
 (* adding an item to a hashtbl makes this item member of the later *)
 axiom hashtbl_add ['a 'b|r|] :
   forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
@@ -77,28 +77,47 @@ type map_or_fold ['a 'b] =
 
 logic is_map ['a 'b] : ('a, 'b) map_or_fold -> prop
 logic is_fold ['a 'b] : ('a, 'b) map_or_fold -> prop
-axiom is_map_map ['a 'b] : 
-  forall (x:'a) (y: ('a, 'b) map_or_fold).
+axiom is_map_map ['a 'b] :
+  forall (x : 'a) (y : ('a, 'b) map_or_fold).
   y = Map x -> (is_map y /\ ~(is_fold y))
-axiom is_not_map_fold ['a 'b] : 
-  forall (x:'b) (y: ('a, 'b) map_or_fold).
+axiom is_not_map_fold ['a 'b] :
+  forall (x : 'b) (y : ('a, 'b) map_or_fold).
   y = Fold x -> ((~ (is_map y)) /\ is_fold y)
 
-parameter fromMap ['a 'b] (x : ('a, 'b) map_or_fold) : {} 'a= 
+parameter fromMap ['a 'b] (x : ('a, 'b) map_or_fold) : {} 'a =
   { is_map x }
   { res:
-    forall (y:'a). x = Map y -> (res = y)
+    forall (y : 'a). x = Map y -> (res = y)
   }
-parameter fromFold ['a 'b] (x : ('a, 'b) map_or_fold) : {} 'b = 
+parameter fromFold ['a 'b] (x : ('a, 'b) map_or_fold) : {} 'b =
   { is_fold x }
   { res:
-    forall (y:'b). x = Fold y -> (res = y)
+    forall (y : 'b). x = Fold y -> (res = y)
   }
 
 
 
+parameter map_fold_wrapper ['a 'b 'c 'd 'e]
+  (map : 'a -> 'e)
+  (fold : 'b -> 'c -> 'd)
+  (truc : ('a, ('b * 'c)) map_or_fold) : {} ('e, 'd) map_or_fold =
+  {}
+  { res:
+    (is_map truc -> res = Map (map (fromMap truc))) /\
+    (is_fold truc -> res = Fold (fold (fst (fromFold truc)) (snd (fromFold truc))))
+  }
 
-(* TODO : make corresponding parameters
+parameter map_fold_wrapper2 ['a 'b 'c 'd 'e]
+  (map : 'a -> 'e)
+  (fold : 'b -> 'c -> 'd)
+  (truc : ('a, ('b * 'c)) map_or_fold) : {} ('e, 'd) map_or_fold =
+  {}
+  { res:
+    (is_map truc -> res = map (fromMap truc)) /\
+    (is_fold truc -> res = fold (fst (fromFold truc)) (snd (fromFold truc)))
+  }
+
+(*
 let map_fold_wrapper map fold = function
   | Map x -> Map (map x)
   | Fold (x, y) -> Fold (fold x y)
@@ -109,7 +128,7 @@ let map_fold_wrapper2 map fold = function
 *)
 
 (* =============================
-master and worker specs 
+master and worker specs
 ================================ *)
 
 type a
@@ -155,18 +174,18 @@ parameter X.compute ['c||'e]
 
 
 
-(* ===================================== 
+(* =====================================
 computing strategies specifications
 ======================================== *)
 
 
 
 (* =============== map ============ *)
-let map (f : a -> b) (l : a list) = 
+let map (f : a -> b) (l : a list) =
   {}
-  letregion r in 
+  letregion r in
   let tasks = let i = ref {{r}} 0 in List.map [{r}] (fun (x:'a) -> {} incr i; x, !i {}) l in
-  letregion r2 in 
+  letregion r2 in
   let results = ref {{r2}} (Hashtbl.create 17) in
   let inv (s : <r r2>) (l1 : (a * int) list) = (* invariant *)
     (Hashtbl.length (!!results@s)) + List.length l1 = List.length l in
@@ -177,7 +196,7 @@ let map (f : a -> b) (l : a list) =
     tasks;
   List.map [{r2}] (fun (tuple : a*int) -> {} Hashtbl.find !results (snd tuple) {}) tasks
   { res:
-    (forall (x:a). (List.mem x l -> List.mem (f x) res  
+    (forall (x:a). (List.mem x l -> List.mem (f x) res
         /\ List.length res = List.length l)) /\
     (forall (x:a). (~ (List.mem x l) -> ~ (List.mem (f x) res))) (* redundant ? *)
   }
@@ -188,8 +207,8 @@ let map_local_fold ['a 'b 'c] (map : 'a -> 'b) (fold : 'c -> 'b -> 'c) (acc : 'c
   {}
   letregion r in
   let acc = ref{{r}} acc in
-  let inv (s:<r>) (acc1 : 'c) (l1 : 'a list) = 
-    True in (* TODO *) 
+  let inv (s:<r>) (acc1 : 'c) (l1 : 'a list) =
+    True in (* TODO *)
   X.compute [{r}]
     inv
     map
@@ -197,7 +216,7 @@ let map_local_fold ['a 'b 'c] (map : 'a -> 'b) (fold : 'c -> 'b -> 'c) (acc : 'c
     (List.map (fun x -> x, ()) l);
   !acc
   {
-     
+
   }
 
 
