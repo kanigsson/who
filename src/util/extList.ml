@@ -114,3 +114,10 @@ let map2i f l1 l2 =
   List.map2 (fun a b -> incr x; f !x a b) l1 l2
 
 let liftfun f = fun x -> [f x]
+
+let two_iter f =
+  let rec aux l =
+    match l with
+    | [] | [_] -> ()
+    | x::y::xs -> f x y; aux (y::xs) in
+  aux

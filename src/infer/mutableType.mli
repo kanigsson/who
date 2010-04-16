@@ -69,6 +69,7 @@ val to_region : r -> Name.t
 (* util functions *)
 
 val to_logic_type : t -> t
+val nsplit : t -> t list * t
 val base_pre_ty : effect -> t
 val base_post_ty : effect -> t -> t
 val overapprox : rw -> effect

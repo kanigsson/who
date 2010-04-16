@@ -47,15 +47,21 @@ type t' =
   | LetReg of Name.t list * t
   | Restrict of t * Effect.t
   | Get of t * t
+  | Case of t * branch list
 and t = { v : t' ; loc : Loc.loc }
 and post' =
   | PNone
   | PPlain of t
   | PResult of Name.t * t
+and branch = Name.t list * pattern * t
 and pre = Name.t * t option
 and post = Name.t * Name.t * post'
 and isrec = Ty.t Const.isrec
 and funcbody = pre * t * post
+and pattern_node =
+  | PVar of Name.t
+  | PApp of var * pattern list
+and pattern = { pv : pattern_node ; ploc : Loc.loc }
 
 type decl =
   | Logic of Name.t * G.t * Ty.t

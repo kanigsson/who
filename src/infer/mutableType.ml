@@ -257,6 +257,21 @@ let bh f l =
   let h = Name.H.create 3 in
   List.map (fun x -> let n = f () in Name.H.add h x n; n) l,h
 
+let split t =
+  match Uf.desc t with
+  | PureArr (t1,t2) -> t1, t2
+  | _ -> invalid_arg "split"
+
+let nsplit =
+  let rec aux acc t =
+    try
+      let t1,t2 = split t in
+      aux (t1::acc) t2
+    with Invalid_argument "split" -> List.rev acc, t
+  in
+  aux []
+
+
 let refresh (tvl, rvl, evl) el t =
   let tn, th = bh new_ty tvl and rn, rh = bh new_r rvl in
   let el = List.map from_effect el in

@@ -45,3 +45,5 @@ val split_map : ('a -> 'b * 'c) -> 'a list -> 'b list * 'c list
 val map2i : (int -> 'a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 
 val liftfun : ('a -> 'b) -> 'a -> 'b list
+
+val two_iter : ('a -> 'a -> unit) -> 'a list -> unit

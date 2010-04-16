@@ -122,7 +122,7 @@ and get_pre (_,x) =
 and branch (nvl,p,t) = pclose nvl (pattern p) (recon t)
 and pattern_node loc p =
   match p with
-  | I.PVar v -> PVar (var loc v)
+  | I.PVar v -> PVar v
   | I.PApp (v,i,pl) -> PApp (var loc v, inst loc i, List.map pattern pl)
 and pattern p =
   let loc = p.I.ploc in

@@ -219,9 +219,8 @@ and pattern env exp p =
   let loc = p.ploc in
   match p.pv with
   | PVar v ->
-      assert (not v.is_constr);
-      assert (not (has_binding env v.var));
-      add_svar env v.var exp
+      assert (not (has_binding env v));
+      add_svar env v exp
   | PApp (v,i,pl) ->
     begin try
       assert (v.is_constr);

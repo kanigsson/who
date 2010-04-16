@@ -57,7 +57,7 @@ and funcbody = pre * t * post
 and branch = Name.t list * pattern * t
 and inst = (M.t,M.r, M.effect) Inst.t
 and pattern_node =
-  | PVar of var
+  | PVar of Name.t
   | PApp of var * inst * pattern list
 and pattern = { pv : pattern_node ; pt : M.t ; ploc : Loc.loc}
 

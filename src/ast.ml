@@ -50,7 +50,7 @@ and funcbody = t * t * t
 and inst = (Ty.t, Name.t, Effect.t) Inst.t
 and branch = (pattern * t) Name.listbind
 and pattern_node =
-  | PVar of var
+  | PVar of Name.t
   | PApp of var * inst * pattern list
 and pattern = { pv : pattern_node ; ploc : Loc.loc ; pt : Ty.t }
 
@@ -111,7 +111,7 @@ let pattern_map ~varfun ~tyfun ~rvarfun ~effectfun p =
   let varf = varmap ~varfun ~tyfun in
   let rec aux' p =
     match p with
-    | PVar v -> PVar (varf v)
+    | PVar v -> PVar (varfun v)
     | PApp (v,i,pl) ->
         PApp (varf v,Inst.map tyfun rvarfun effectfun i, List.map aux pl)
   and aux p = { p with pv = aux' p.pv ; pt = tyfun p.pt } in
@@ -225,7 +225,7 @@ module Convert = struct
     pattern env p, t env e
   and pattern env p =
     match p.pv with
-    | PVar v -> P.PVar (id env v.var)
+    | PVar v -> P.PVar (id env v)
     | PApp (v,i,pl) ->
         P.PApp (id env v.var, inst env i, List.map (pattern env) pl)
 
@@ -513,17 +513,10 @@ let case e bl l =
 
 let mk_pattern p t l = { pv = p; pt = t; ploc = l }
 
-let mk_pvar v l =
+let mk_pvar v t l =
   (** constructors are always applications in patterns, possibly to the empty
      pattern list *)
-  assert (not v.is_constr);
-  try
-    let g,t = v.scheme in
-    let nt = (Ty.allsubst g Inst.empty t) in
-    mk_pattern (PVar v) nt l
-  with Invalid_argument _ ->
-    failwith (Myformat.sprintf "%a : not the right number of
-    instantiations" Name.print v.var)
+  mk_pattern (PVar v) t l
 
 let mk_papp v i tl l =
   assert (v.is_constr);
@@ -659,7 +652,7 @@ and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
   and pattern p =
     let l = p.ploc in
     match p.pv with
-    | PVar (v) -> mk_pvar v l
+    | PVar v -> mk_pvar v (tyfun p.pt) l
     | PApp (v,i,pl) -> mk_papp v i (List.map pattern pl) l in
   aux t
 and impl h1 goal l =
