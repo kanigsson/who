@@ -60,6 +60,8 @@ let id_or_keyword =
         ("begin", fun i -> LPAREN (create_info i));
         ("end", fun i -> RPAREN (create_info i) );
         ("ref", fun i -> REF (create_info i) );
+        ("match", fun i -> MATCH (create_info i) );
+        ("with", fun i -> WITH (create_info i) );
         ("in", fun _ -> IN );
         ("if", fun i -> IF (create_info i) );
         ("letregion", fun i -> LETREGION (create_info i) );
@@ -95,18 +97,20 @@ let alpha_upper = ['A'-'Z']
 let alpha = ['a' - 'z' 'A'-'Z' ]
 let alpha_underscore =  (alpha | '_')
 let digit = ['0'-'9']
-let module_name = alpha_upper (alpha_underscore | digit | '\'')*
+let module_or_constructor_name = alpha_upper (alpha_underscore | digit | '\'')*
 let name = alpha (alpha_underscore | digit | '\'')*
-let identifier = (module_name '.')* name
+let identifier = (module_or_constructor_name '.')* name
 
 rule token = parse
   | [' ' '\t' ]
       { token lexbuf }
   | digit+ as i
-  { INT (Loc.mk (create_info lexbuf) (Big_int.big_int_of_string i)) }
+      { INT (Loc.mk (create_info lexbuf) (Big_int.big_int_of_string i)) }
   | identifier as i { id_or_keyword i lexbuf}
+  | module_or_constructor_name as m
+      { CONSTRUCTOR (Loc.mk (create_info lexbuf) m)}
   | '"' ( [ ^ '"' ] * as str ) '"'
-    { STRING str }
+      { STRING str }
   | '_' { UNDERSCORE (create_info lexbuf) }
   | '\'' (identifier as tv) { TYVAR (Loc.mk (create_info lexbuf) tv)}
   | "->" { ARROW (create_info lexbuf) }

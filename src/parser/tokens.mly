@@ -22,14 +22,15 @@
 (******************************************************************************)
 
 %token <Big_int.big_int Loc.t> INT
-%token <Loc.loc> LPAREN RPAREN LCURL SECTION END
+%token <Loc.loc> LPAREN RPAREN LCURL SECTION BEGIN END
 %token DLCURL DRCURL PREDEFINED
-%token <string Loc.t> IDENT TYVAR
+%token <string Loc.t> IDENT TYVAR CONSTRUCTOR
 %token <string> STRING
 %token IN SEMICOLON COQ ALLOCATES TAKEOVER PANGOLINE
 %token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND OR
 %token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION TILDE UNDERSCORE
 %token <Loc.loc> BLE BLT BGT BGE DLBRACKET DRBRACKET LBRACKET RBRACKET
+%token <Loc.loc> MATCH WITH
 %token EOF
 %token REC
 %token <Loc.loc> EXCLAM DEXCLAM IF FUN PTRUE PFALSE VOID LET AXIOM RCURL TINT

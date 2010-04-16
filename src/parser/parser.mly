@@ -87,6 +87,7 @@
 
 protected_term:
   | l = LPAREN t = seq_term e = RPAREN { mk t.v (embrace l e) }
+  | l = BEGIN t = seq_term e = END { mk t.v (embrace l e) }
   | l = LPAREN e = seq_term COLON t = ty r = RPAREN
     { mk (Annot (e,t)) (embrace l r) }
 
@@ -159,7 +160,18 @@ nterm:
      e = nterm
     DLBRACKET q = postcond_int r = DRBRACKET
     { mk (HoareTriple (p,e,q)) (embrace l r) }
+  | p1 = MATCH t = seq_term WITH option(MID)
+    bl = separated_nonempty_list(MID,branch) p2 = END
+    { mk (Case (t, bl)) (embrace p1 p2) }
 
+branch: p = pattern ARROW e = seq_term { p, e }
+
+pattern:
+  | x = defprogvar { { pv = PVar (Some x.c) ; ploc = x.info } }
+  | p = UNDERSCORE { { pv = PVar None; ploc = p } }
+  | x = CONSTRUCTOR { { pv = PApp (x.c, []) ; ploc = x.info } }
+  | x = CONSTRUCTOR LPAREN pl = separated_list(COMMA, pattern) p2 = RPAREN
+  { { pv = PApp (x.c,pl); ploc = embrace x.info p2  } }
 todownto:
   | TO { "forto" }
   | DOWNTO { "fordownto" }
@@ -255,7 +267,8 @@ decl:
     { TypeDef (x.c, l, Abstract ) }
   | TYPE x = IDENT l = gen EQUAL t = ty
     { TypeDef (x.c, l,Alias t) }
-  | TYPE x = IDENT l = gen EQUAL MID bl = separated_nonempty_list(MID,branch)
+  | TYPE x = IDENT l = gen EQUAL MID bl =
+    separated_nonempty_list(MID,constructorbranch)
     { TypeDef (x.c,l,ADT bl) }
   | LETREGION l = IDENT* { DLetReg (strip_info l) }
   | SECTION x = IDENT fn = takeoverdecl* l = decl+ END
@@ -264,7 +277,7 @@ decl:
     option(MID) tel = separated_list(MID,nterm) END
     { Inductive (x.c,l,tl,tel) }
 
-branch:
+constructorbranch:
     | x = IDENT  { x.c, []}
     | x = IDENT OF tl = separated_nonempty_list(STAR,stype) { x.c, tl }
 
