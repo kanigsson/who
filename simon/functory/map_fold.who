@@ -46,6 +46,7 @@ logic List.remove ['a] : 'a -> 'a list -> 'a list
 logic List.map ['a 'b||'e] : ('a ->{'e} 'b) -> 'a list ->{'e} 'b list
 logic List.length ['a] : 'a list -> int
 logic List.append ['a] : 'a list -> 'a list -> 'a list
+logic List.cons ['a] : 'a -> 'a list -> 'a list
 
 axiom remove_does_remove ['a] :
   forall (x : 'a) (l : 'a list).
@@ -57,11 +58,14 @@ axiom append_does_append ['a] :
 axiom list_mem_map ['a 'b||'e]:
   forall (x:'a) (l:'a list) (f:'a ->{'e} 'b).
   List.mem x l -> List.mem (f x) (List.map [{'e}] f l)
-
 axiom list_length_map ['a 'b||'e]:
   forall (l:'a list) (f:'a ->{'e} 'b).
   List.length l = List.length (List.map [{'e}] f l)
-
+axiom list_cons ['a]:
+  forall (x:'a) (l:'a list).
+  List.mem x (List.cons x l) /\
+  (forall (y:'a). List.mem y l -> List.mem y (List.cons x l)) /\
+  (List.length (List.cons x l) = List.length l + 1)
 
 (* =========== refs ========== *)
 
@@ -203,6 +207,17 @@ let map (f : a -> b) (l : a list) =
 
 
 (* ============= map_local_fold ========= *)
+logic logic_fold ['a 'b] : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
+
+axiom logic_fold_empty ['a 'b]:
+  forall (f : 'a -> 'b -> 'b) (l : 'a list) (acc : 'b).
+  l = nil -> logic_fold f l acc = acc
+axiom logic_fold_basic ['a 'b]: (* recursion *)
+  forall (x : 'a) (f : 'a -> 'b -> 'b) (l l2: 'a list) (acc : 'b).
+  l = List.cons x l2 -> logic_fold f l acc = f x (logic_fold f l2 acc)
+
+
+
 let map_local_fold ['a 'b 'c] (map : 'a -> 'b) (fold : 'c -> 'b -> 'c) (acc : 'c) (l : 'a list) =
   {}
   letregion r in
@@ -215,8 +230,8 @@ let map_local_fold ['a 'b 'c] (map : 'a -> 'b) (fold : 'c -> 'b -> 'c) (acc : 'c
     (fun _blah r -> acc := fold !acc r; nil)
     (List.map (fun x -> x, ()) l);
   !acc
-  {
-
+  { res:
+  [[]] List.map map l [[l_map : res = logic_fold fold l_map acc]]
   }
 
 
