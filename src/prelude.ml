@@ -161,7 +161,7 @@ parameter assert (f : prop) : unit,{} = { f } { f }
 parameter check (f : prop) : unit, {} = { f } { }
 parameter assume (f : prop) : unit,{} = {  }  { f }
 
-section Whoref
+section whoref
   coq \"WhoMap\"
   pangoline predefined
 
@@ -209,7 +209,7 @@ parameter fordownto [||'e1 'e2 ] (inv : int -> <'e1 'e2> -> prop)
     }
     { inv (int_min start (end_ - 1)) cur }
 
-section Array
+section whoarrays
   coq \"WhoArray\"
   pangoline takeover
   type array ['a]
@@ -247,19 +247,19 @@ section Array
       0 <= i -> i < l -> get i (create l v) = v
 end
 
-section List
+section wholists
   coq \"WhoList\"
   pangoline takeover
 
   type list ['a] =
-  | nil
-  | cons of 'a * 'a list
+  | Nil
+  | Cons of 'a * 'a list
 
   logic is_nil ['a] : 'a list -> bool
   logic l_in ['a] : 'a -> 'a list -> prop
 end
 
-section Option
+section whooptions
   coq predefined
   pangoline takeover
 

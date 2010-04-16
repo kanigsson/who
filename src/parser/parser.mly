@@ -278,8 +278,8 @@ decl:
     { Inductive (x.c,l,tl,tel) }
 
 constructorbranch:
-    | x = IDENT  { x.c, []}
-    | x = IDENT OF tl = separated_nonempty_list(STAR,stype) { x.c, tl }
+    | x = CONSTRUCTOR  { x.c, []}
+    | x = CONSTRUCTOR OF tl = separated_nonempty_list(STAR,stype) { x.c, tl }
 
 (* a program is simply a list of declarations; we call [to_abst_ast] to
   obtain a single AST *)

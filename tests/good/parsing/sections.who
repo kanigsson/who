@@ -1,4 +1,4 @@
-section A
+section a
   coq "toto.v"
   type t
   logic create : int -> t

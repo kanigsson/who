@@ -82,6 +82,16 @@ let id_or_keyword =
     fun s -> try Hashtbl.find h s with Not_found ->
       fun i -> IDENT (Loc.mk (create_info i) s)
 
+let constructor_or_keyword =
+  let h = Hashtbl.create 17 in
+    List.iter (fun (s,k) -> Hashtbl.add h s k)
+      [
+        ("True", fun i -> PTRUE (create_info i) );
+        ("False", fun i -> PFALSE (create_info i) );
+      ];
+    fun s -> try Hashtbl.find h s with Not_found ->
+      fun i -> CONSTRUCTOR (Loc.mk (create_info i) s)
+
 let incr_linenum lexbuf =
     let pos = lexbuf.lex_curr_p in
     lexbuf.lex_curr_p <-
@@ -97,7 +107,7 @@ let alpha_upper = ['A'-'Z']
 let alpha = ['a' - 'z' 'A'-'Z' '_' ]
 let digit = ['0'-'9']
 let module_or_constructor_name = alpha_upper (alpha | digit | '\'')*
-let name = alpha (alpha | digit | '\'')*
+let name = alpha_lower (alpha | digit | '\'')*
 let identifier = (module_or_constructor_name '.')* name
 
 rule token = parse
@@ -107,8 +117,7 @@ rule token = parse
   | digit+ as i
       { INT (Loc.mk (create_info lexbuf) (Big_int.big_int_of_string i)) }
   | identifier as i { id_or_keyword i lexbuf}
-  | module_or_constructor_name as m
-      { CONSTRUCTOR (Loc.mk (create_info lexbuf) m)}
+  | module_or_constructor_name as m { constructor_or_keyword m lexbuf }
   | '"' ( [ ^ '"' ] * as str ) '"'
       { STRING str }
   | '\'' (identifier as tv) { TYVAR (Loc.mk (create_info lexbuf) tv)}
