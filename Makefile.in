@@ -12,7 +12,7 @@ COQV := $(COQVO:.vo=.v)
 COQTARGETS := $(addprefix coq_files/, $(COQVO))
 COQFILES := $(addprefix coq_files/, $(COQV))
 
-ALLML := $(wildcard src/*.ml src/*.mly src/*mll src/*.mli src/util/*ml src/util/*mli src/parser/*mly src/parser/*ml src/parser/*mli src/infer/*ml src/infer/*mli)
+ALLML := $(wildcard src/*.ml src/*mll src/*.mli src/util/*ml src/util/*mli src/parser/*mly src/parser/*ml src/parser/*mli src/parser/*mll src/infer/*ml src/infer/*mli)
 
 all: main.native
 

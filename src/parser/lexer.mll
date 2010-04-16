@@ -57,8 +57,8 @@ let id_or_keyword =
         ("done", fun i -> DONE (create_info i)  );
         ("int", fun i -> TINT (create_info i));
         ("prop", fun i -> PROP (create_info i));
-        ("begin", fun i -> LPAREN (create_info i));
-        ("end", fun i -> RPAREN (create_info i) );
+        ("begin", fun i -> BEGIN (create_info i));
+        ("end", fun i -> END (create_info i) );
         ("ref", fun i -> REF (create_info i) );
         ("match", fun i -> MATCH (create_info i) );
         ("with", fun i -> WITH (create_info i) );
@@ -94,16 +94,16 @@ let incr_linenum lexbuf =
 
 let alpha_lower = ['a'-'z' ]
 let alpha_upper = ['A'-'Z']
-let alpha = ['a' - 'z' 'A'-'Z' ]
-let alpha_underscore =  (alpha | '_')
+let alpha = ['a' - 'z' 'A'-'Z' '_' ]
 let digit = ['0'-'9']
-let module_or_constructor_name = alpha_upper (alpha_underscore | digit | '\'')*
-let name = alpha (alpha_underscore | digit | '\'')*
+let module_or_constructor_name = alpha_upper (alpha | digit | '\'')*
+let name = alpha (alpha | digit | '\'')*
 let identifier = (module_or_constructor_name '.')* name
 
 rule token = parse
   | [' ' '\t' ]
       { token lexbuf }
+  | '_' { UNDERSCORE (create_info lexbuf) }
   | digit+ as i
       { INT (Loc.mk (create_info lexbuf) (Big_int.big_int_of_string i)) }
   | identifier as i { id_or_keyword i lexbuf}
@@ -111,7 +111,6 @@ rule token = parse
       { CONSTRUCTOR (Loc.mk (create_info lexbuf) m)}
   | '"' ( [ ^ '"' ] * as str ) '"'
       { STRING str }
-  | '_' { UNDERSCORE (create_info lexbuf) }
   | '\'' (identifier as tv) { TYVAR (Loc.mk (create_info lexbuf) tv)}
   | "->" { ARROW (create_info lexbuf) }
   | "==" { BEQUAL (create_info lexbuf) }
