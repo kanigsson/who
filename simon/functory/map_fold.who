@@ -93,11 +93,13 @@ parameter Hashtbl.find ['a 'b||] (hshtbl : ('a, 'b) hashtbl) (x : 'a) : {} 'b =
 
 axiom hashtbl_empty_lengh ['a 'b|r|] : 
   forall (n: int).
-  [[]] Hashtbl.create n [[res : (Hashtbl.length res) = 0 /\ forall (x:'a). ~ (Hashtbl.mem res x)]] 
+  [[]] (Hashtbl.create n : ('a, 'b) hashtbl) [[res : (Hashtbl.length res) = 0 /\ forall (x:'a). ~ (Hashtbl.mem res x)]] 
+
 (* adding an item to a hashtbl makes this item member of the later *)
 axiom hashtbl_add ['a 'b|r|] :
   forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
   [[]] Hashtbl.add hshtbl x y [[Hashtbl.mem !!hshtbl x]]
+
 (* adding an item to a hastable increments its length *)
 axiom hashtbl_add_length ['a 'b|r|] :
   forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
