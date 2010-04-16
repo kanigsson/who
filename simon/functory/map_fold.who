@@ -118,7 +118,7 @@ axiom incr_increments [|r|] :
 let map (f : a -> b) (l : a list) = 
   {}
   letregion r in 
-  let tasks = let i = ref {{r}} 0 in List.map [{r}] (fun x -> incr i; x, !i) l in
+  let tasks = let i = ref {{r}} 0 in List.map [{r}] (fun (x:'a) -> {} incr i; x, !i {}) l in
   letregion r2 in 
   let results = ref {{r2}} (Hashtbl.create 17) in
   let inv (s : <r r2>) (l1 : (a * int) list) = (* invariant *)
