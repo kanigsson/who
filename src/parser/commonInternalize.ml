@@ -30,6 +30,8 @@ module IT = ParseTypes
 type error =
   | UnknownVar of string * string
   | EffectOrRegionArgumentsToAbstractType
+  | NotAConstructor of string
+  | NonlinearPattern of string option
 
 exception Error of Loc.loc * error
 
@@ -39,6 +41,12 @@ let explain e =
       Myformat.sprintf "unknown %s var: %s" s x
   | EffectOrRegionArgumentsToAbstractType ->
       "Region or effect arguments are not allowed for abstract types."
+  | NotAConstructor s -> Myformat.sprintf "not a constructor: %s" s
+  | NonlinearPattern s ->
+      let msg = "nonlinear usage of variable in pattern" in
+      match s with
+      | None -> msg
+      | Some s -> Myformat.sprintf "%s: %s" msg s
 
 let error loc kind = raise (Error (loc, kind))
 

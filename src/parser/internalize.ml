@@ -76,6 +76,9 @@ let rec ast' loc env = function
   | I.HoareTriple (p,e,q) ->
       let p = pre env p and q = post env q and e = ast env e in
       HoareTriple (p,e,q)
+  | I.Case (t,bl) ->
+      let t = ast env t in
+      Case (t, List.map (branch env) bl)
 and to_mutable env t = MutableType.from_ty (ty env t)
 
 and post env x =
@@ -93,6 +96,26 @@ and pre env x =
   let env, cur = Env.add_var env (Some "cur") in
   cur, Opt.map (ast env) x
 
+and branch env (p,t) =
+  let env, ns, p = pattern env Name.S.empty p in
+  Name.S.elements ns, p, ast env t
+
+and pattern_node env acc p l =
+  match p with
+  | I.PVar v ->
+      let env, nv = Env.add_var env v in
+      if Name.S.mem nv acc then error l (NonlinearPattern v);
+      env, Name.S.add nv acc, PVar nv
+  | I.PApp (v,pl) ->
+      let v = mk_var l env v in
+      let env, acc, pl = List.fold_left (fun (env,acc,pl) p ->
+        let env, acc, p = pattern env acc p in
+        env, acc, p::pl) (env,Name.S.empty,[]) pl in
+      env, acc, PApp (v, List.rev pl)
+and pattern env acc p =
+  let loc = p.I.ploc in
+  let env, acc, p = pattern_node env acc p.I.pv loc in
+  env, acc, { pv = p ; ploc = loc }
 
 and ast env {I.v = v; loc = loc} = { v = ast' loc env v; loc = loc }
 

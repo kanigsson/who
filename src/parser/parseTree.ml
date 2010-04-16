@@ -49,12 +49,18 @@ type t' =
   | Restrict of t * effect
   | Get of t * t
   | HoareTriple of t option * t * post
+  | Case of t * branch list
 and t = { v : t' ; loc : Loc.loc }
 and post =
   | PNone
   | PPlain of t
   | PResult of var * t
 and generalize = tvar list * rvar list * effvar list
+and branch = pattern * t
+and pattern_node =
+  | PVar of string option
+  | PApp of string * pattern list
+and pattern = { pv : pattern_node ; ploc : Loc.loc }
 
 type decl =
   | Logic of var * generalize * ty
