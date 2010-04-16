@@ -128,7 +128,7 @@ let map (f : a -> b) (l : a list) =
     f
     (fun tuple r -> Hashtbl.add results (snd tuple) r; nil)
     tasks;
-  List.map [{}] (fun tuple -> Hashtbl.find !results (snd tuple)) tasks
+  List.map [{r2}] (fun (tuple : a*int) -> {} Hashtbl.find !results (snd tuple) {}) tasks
   {
   }
 
