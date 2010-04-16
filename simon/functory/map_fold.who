@@ -14,17 +14,91 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* ====================================
+data struct
+======================================= *)
+
+(* ============ hash tables =========== *)
+type hashtbl ['a 'b]
+logic Hashtbl.add ['a 'b|r|] : ref(r, ('a, 'b) hashtbl) -> 'a -> 'b ->{r} unit
+logic Hashtbl.create ['a 'b||] : int ->{} ('a, 'b) hashtbl
+logic Hashtbl.mem ['a 'b] : ('a, 'b) hashtbl  -> 'a -> prop
+logic Hashtbl.length ['a 'b] : ('a, 'b) hashtbl -> int
+parameter Hashtbl.find ['a 'b||] (hshtbl : ('a, 'b) hashtbl) (x : 'a) : {} 'b =
+  { Hashtbl.mem hshtbl x }
+  {}
+axiom hashtbl_empty_lengh ['a 'b|r|] : 
+  forall (n: int).
+  [[]] (Hashtbl.create n : ('a, 'b) hashtbl) [[res : (Hashtbl.length res) = 0 /\ forall (x:'a). ~ (Hashtbl.mem res x)]] 
+(* adding an item to a hashtbl makes this item member of the later *)
+axiom hashtbl_add ['a 'b|r|] :
+  forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
+  [[]] Hashtbl.add hshtbl x y [[Hashtbl.mem !!hshtbl x]]
+(* adding an item to a hastable increments its length *)
+axiom hashtbl_add_length ['a 'b|r|] :
+  forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
+  [[~ (Hashtbl.mem !!hshtbl x)]] Hashtbl.add hshtbl x y [[(Hashtbl.length !!hshtbl) = (Hashtbl.length !!hshtbl@old) +1]]
+
+
+(* ============ lists ============= *)
+logic List.mem ['a] : 'a -> 'a list -> prop
+logic List.remove ['a] : 'a -> 'a list -> 'a list
+logic List.map ['a 'b||'e] : ('a ->{'e} 'b) -> 'a list ->{'e} 'b list
+logic List.length ['a] : 'a list -> int
+logic List.append ['a] : 'a list -> 'a list -> 'a list
+
+axiom remove_does_remove ['a] :
+  forall (x : 'a) (l : 'a list).
+    ~ (List.mem x (List.remove x l))
+axiom append_does_append ['a] :
+  forall (l1 l2 : 'a list) (x : 'a).
+    (List.mem x l1 -> List.mem x (List.append l1 l2)) /\
+    (List.mem x l2 -> List.mem x (List.append l1 l2))
+axiom list_mem_map ['a 'b||'e]:
+  forall (x:'a) (l:'a list) (f:'a ->{'e} 'b).
+  List.mem x l -> List.mem (f x) (List.map [{'e}] f l)
+
+axiom list_length_map ['a 'b||'e]:
+  forall (l:'a list) (f:'a ->{'e} 'b).
+  List.length l = List.length (List.map [{'e}] f l)
+
+
+(* =========== refs ========== *)
+
+logic incr [|r|] : ref(r, int) ->{r} unit
+axiom incr_increments [|r|] :
+  forall (s : ref(r, int)).
+  [[]] incr s [[!!s = ((!!s@old) + 1)]]
+
+(* ================== special data =================== *)
 type map_or_fold ['a 'b] =
   | Map of 'a
   | Fold of 'b
 
-type a
-type b
+logic is_map ['a 'b] : ('a, 'b) map_or_fold -> prop
+logic is_fold ['a 'b] : ('a, 'b) map_or_fold -> prop
+axiom is_map_map ['a 'b] : 
+  forall (x:'a) (y: ('a, 'b) map_or_fold).
+  y = Map x -> (is_map y /\ ~(is_fold y))
+axiom is_not_map_fold ['a 'b] : 
+  forall (x:'b) (y: ('a, 'b) map_or_fold).
+  y = Fold x -> ((~ (is_map y)) /\ is_fold y)
 
-logic worker : a -> b
-logic master ['c||'e] : (a * 'c) -> b ->{'e} (a *'c) list
+parameter fromMap ['a 'b] (x : ('a, 'b) map_or_fold) : {} 'a= 
+  { is_map x }
+  { res:
+    forall (y:'a). x = Map y -> (res = y)
+  }
+parameter fromFold ['a 'b] (x : ('a, 'b) map_or_fold) : {} 'b = 
+  { is_fold x }
+  { res:
+    forall (y:'b). x = Fold y -> (res = y)
+  }
 
-(* TODO : transformer ça en parameter avec spécifications
+
+
+
+(* TODO : make corresponding parameters
 let map_fold_wrapper map fold = function
   | Map x -> Map (map x)
   | Fold (x, y) -> Fold (fold x y)
@@ -34,26 +108,24 @@ let map_fold_wrapper2 map fold = function
   | Fold (x, y) -> fold x y
 *)
 
-(* opérations sur les listes *)
-logic mem ['a] : 'a -> 'a list -> prop
-logic remove ['a] : 'a -> 'a list -> 'a list
-axiom remove_does_remove ['a] :
-  forall (x : 'a) (l : 'a list).
-    ~ (mem x (remove x l))
-logic append ['a] : 'a list -> 'a list -> 'a list
-axiom append_does_append ['a] :
-  forall (l1 l2 : 'a list) (x : 'a).
-    (mem x l1 -> mem x (append l1 l2)) /\
-    (mem x l2 -> mem x (append l1 l2))
+(* =============================
+master and worker specs 
+================================ *)
 
+type a
+type b
+logic worker : a -> b
+logic master ['c||'e] : (a * 'c) -> b ->{'e} (a *'c) list
 
+(* relation *)
 logic relat ['c||'e] : <'e> -> (a * 'c) list -> <'e> -> (a * 'c) list -> prop
-axiom relat_init ['c||'e] : (* une étape de master conserve l'invariant *)
+axiom relat_init ['c||'e] : (* one step of worker does keep the invariant *)
   forall (l1 l2 : (a * 'c) list) (x : a) (y : 'c) (e1 e2 : <'e>).
-    (mem (x, y) l1 /\
-    [[ cur = e1 ]] master [{'e}] (x, y) (worker x) [[ l : cur = e2 /\ l2 = remove (x, y) (append l l1) ]] )
+    (List.mem (x, y) l1 /\
+    [[ cur = e1 ]] master [{'e}] (x, y) (worker x) [[ l : cur = e2 /\ l2 = List.remove (x, y) (List.append l l1) ]] )
     -> relat [{'e}] e1 l1 e2 l2
 
+(* transitive reflective closure *)
 logic relat_trans ['c||'e] : <'e> -> (a * 'c) list -> <'e> -> (a * 'c) list -> prop
 axiom relat_trans_reflex ['c||'e] :
   forall (e1 : <'e>) (l1 : (a * 'c) list).
@@ -81,51 +153,15 @@ parameter X.compute ['c||'e]
 
 
 
-(* structures de données *)
-type hashtbl ['a 'b]
-logic Hashtbl.add ['a 'b|r|] : ref(r, ('a, 'b) hashtbl) -> 'a -> 'b ->{r} unit
-logic Hashtbl.create ['a 'b||] : int ->{} ('a, 'b) hashtbl
-logic Hashtbl.mem ['a 'b] : ('a, 'b) hashtbl  -> 'a -> prop
-logic Hashtbl.length ['a 'b] : ('a, 'b) hashtbl -> int
-parameter Hashtbl.find ['a 'b||] (hshtbl : ('a, 'b) hashtbl) (x : 'a) : {} 'b =
-  { Hashtbl.mem hshtbl x }
-  {}
 
-axiom hashtbl_empty_lengh ['a 'b|r|] : 
-  forall (n: int).
-  [[]] (Hashtbl.create n : ('a, 'b) hashtbl) [[res : (Hashtbl.length res) = 0 /\ forall (x:'a). ~ (Hashtbl.mem res x)]] 
 
-(* adding an item to a hashtbl makes this item member of the later *)
-axiom hashtbl_add ['a 'b|r|] :
-  forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
-  [[]] Hashtbl.add hshtbl x y [[Hashtbl.mem !!hshtbl x]]
-
-(* adding an item to a hastable increments its length *)
-axiom hashtbl_add_length ['a 'b|r|] :
-  forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
-  [[~ (Hashtbl.mem !!hshtbl x)]] Hashtbl.add hshtbl x y [[(Hashtbl.length !!hshtbl) = (Hashtbl.length !!hshtbl@old) +1]]
-
-logic List.map ['a 'b||'e] : ('a ->{'e} 'b) -> 'a list ->{'e} 'b list
-logic List.mem ['a] : 'a -> 'a list -> prop
-logic List.length ['a] : 'a list -> int
-
-axiom list_mem_map ['a 'b||'e]:
-  forall (x:'a) (l:'a list) (f:'a ->{'e} 'b).
-  List.mem x l -> List.mem (f x) (List.map [{'e}] f l)
-
-axiom list_length_map ['a 'b||'e]:
-  forall (l:'a list) (f:'a ->{'e} 'b).
-  List.length l = List.length (List.map [{'e}] f l)
+(* ===================================== 
+computing strategies specifications
+======================================== *)
 
 
 
-logic incr [|r|] : ref(r, int) ->{r} unit
-axiom incr_increments [|r|] :
-  forall (s : ref(r, int)).
-  [[]] incr s [[!!s = ((!!s@old) + 1)]]
-
-
-(* specifications des stratégies de calcul *)
+(* =============== map ============ *)
 let map (f : a -> b) (l : a list) = 
   {}
   letregion r in 
@@ -141,19 +177,31 @@ let map (f : a -> b) (l : a list) =
     tasks;
   List.map [{r2}] (fun (tuple : a*int) -> {} Hashtbl.find !results (snd tuple) {}) tasks
   { res:
-    forall (x:a). List.mem x l -> List.mem (f x) res  /\
-    List.length res = List.length l 
+    (forall (x:a). (List.mem x l -> List.mem (f x) res  
+        /\ List.length res = List.length l)) /\
+    (forall (x:a). (~ (List.mem x l) -> ~ (List.mem (f x) res))) (* redundant ? *)
+  }
+
+
+(* ============= map_local_fold ========= *)
+let map_local_fold ['a 'b 'c] (map : 'a -> 'b) (fold : 'c -> 'b -> 'c) (acc : 'c) (l : 'a list) =
+  {}
+  letregion r in
+  let acc = ref{{r}} acc in
+  let inv (s:<r>) (acc1 : 'c) (l1 : 'a list) = 
+    True in (* TODO *) 
+  X.compute [{r}]
+    inv
+    map
+    (fun _blah r -> acc := fold !acc r; nil)
+    (List.map (fun x -> x, ()) l);
+  !acc
+  {
+     
   }
 
 
 (*
-let map_local_fold ~(map : 'a -> 'b) ~(fold : 'c -> 'b -> 'c) acc l =
-  let acc = ref acc in
-  X.compute
-    ~worker:map
-    ~master:(fun _ r -> acc := fold !acc r; [])
-    (List.map (fun x -> x, ()) l);
-  !acc
 
 let map_remote_fold  ~(map : 'a -> 'b) ~(fold : 'c -> 'b -> 'c) acc l =
   let acc = ref (Some acc) in
