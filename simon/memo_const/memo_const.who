@@ -59,7 +59,7 @@ let memo_const ['a ||] (arg : 'a) =
     else
       fromSome !res
   { 
-    r: (r = f0 arg)                                                             /\
+    r: (r = f0 arg) /\
     (!!res <> None -> forall (x:'a). !!res = Some (f0 x)) 
   }
 
