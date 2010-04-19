@@ -303,7 +303,9 @@ module Pangoline = struct
   and pattern fmt p =
     match p with
     | PVar v -> string fmt v
-    | PApp (v,_,pl) -> fprintf fmt "%a(%a)" string v (list comma pattern) pl
+    | PApp (v,_,pl) ->
+        if pl = [] then fprintf fmt "%a" string v
+        else fprintf fmt "%a(%a)" string v (list comma pattern) pl
 
   let pr_generalize in_term fmt tl =
     if tl = [] then ()
@@ -334,9 +336,13 @@ module Pangoline = struct
     | TypeDef (x,tl, Abstract) ->
         fprintf fmt "@[<hov 2> type (%d) %a @]" (List.length tl) string x
     | TypeDef (n,tl,ADT bl) ->
-        fprintf fmt "@[<hov 2>type %a %a = | %a @]"
-          (paren (list comma string)) tl string n
-          (list inductive_sep constdef) bl
+        if tl = [] then
+          fprintf fmt "@[<hov 2>type %a = | %a @]" string n
+            (list inductive_sep constdef) bl
+        else
+          fprintf fmt "@[<hov 2>type %a %a = | %a @]"
+            (paren (list comma string)) tl string n
+            (list inductive_sep constdef) bl
     | Inductive (n,g,tyl, fl) ->
         fprintf fmt "@[<hov 2>inductive %a %a %a = %a@]" string n gen g
           (list space ty) tyl (list inductive_sep term) fl

@@ -18,6 +18,7 @@ INTERNAL
 * type annotations at let
 * use positions in parser better
 * use printTree for MutableType
+* simplify pattern-matching expressions (match A 5 with A i -> i end)
 
 
 BUGS

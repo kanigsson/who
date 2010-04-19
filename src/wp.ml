@@ -59,9 +59,14 @@ let rec lift_value v =
   | Let (g,e1,b,Const.LogicDef) ->
       let x,f = sopen b in
       let_ g (lift_value e1) x (lift_value f) Const.LogicDef l
+  | Case (t,bl) ->
+      case (lift_value t) (List.map lift_branch bl) l
   | HoareTriple (p,e,q) -> bodyfun p e q
-  | Let _ | LetReg _ | Gen _ | Param _ | Ite _ | Case _ ->
+  | Let _ | LetReg _ | Gen _ | Param _ | Ite _  ->
       error (Myformat.sprintf "not a value: %a" print v) l
+and lift_branch b =
+  let nvl, p, t = popen b in
+  pclose nvl p (lift_value t)
 
 and correct v =
   let l = v.loc in
@@ -74,10 +79,15 @@ and correct v =
       let x,e2 = sopen b in
       and_ (gen g (correct e1) l)
         (let_ g (lift_value e1) x (correct e2) Const.LogicDef l) l
-  | Let _ | LetReg _ | Gen _ | Param _ | Case _
+  | Case (t,bl) ->
+      and_ (correct t) (case (lift_value t) (List.map branch_correct bl) l) l
+  | Let _ | LetReg _ | Gen _ | Param _
   | Ite _ | HoareTriple _ ->
       Myformat.printf "correct: not a value: %a@." print v;
       assert false
+and branch_correct b =
+  let nvl, p, t = popen b in
+  pclose nvl p (correct t)
 and scan f =
   let termfun f =
     match f.v with
