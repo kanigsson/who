@@ -516,7 +516,11 @@ let case e bl l =
     | b::_ ->
         let _,exp_type = Branch.ty b in
         List.iter (Branch.check e.t exp_type) bl; exp_type in
-  mk (Case (e,bl)) t rw l
+  let pt = ptrue_ l in
+  let terms = List.map Branch.term bl in
+  if List.for_all (equal pt) terms then pt
+  else mk (Case (e,bl)) t rw l 
+  
 
 let mk_pattern p t l = { pv = p; pt = t; ploc = l }
 
