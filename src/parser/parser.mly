@@ -96,9 +96,18 @@ protected_term:
   | l = LPAREN e = seq_term COLON t = ty r = RPAREN
     { mk (Annot (e,t)) (embrace l r) }
 
+term_inst:
+(*   | { [],[],[] } *)
+  | LBRACKET e = sepeffect* RBRACKET { e }
+(*
+  | LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
+    MID el = sepeffect* RBRACKET
+    { (tl, strip_info rl, el) }
+*)
+
 aterm:
   | p = VOID { var I.void_id p }
-  | p = REF { var "ref" p}
+(*   | p = REF { var "ref" p} *)
   | p = prefix t = aterm
     { app (var (snd p) (fst p)) t (embrace (fst p) t.loc) }
   | x = IDENT AT e = sepeffect
@@ -108,12 +117,14 @@ aterm:
   | p = DEXCLAM x = IDENT AT t = aterm
     { mk (Get (var x.c x.info, t)) (embrace p t.loc) }
   | x = IDENT { var x.c x.info }
-  | x = IDENT LBRACKET inst = sepeffect* RBRACKET { var ~inst x.c x.info }
+  | x = IDENT inst = term_inst { var ~inst x.c x.info }
   | l = LPAREN x = prefix r = RPAREN
     { var (snd x) (embrace l r) }
   | c = constant { let p,c = c in const c p }
   | l = LPAREN x = infix e = RPAREN { var (snd x) (embrace l e) }
   | t = protected_term { t }
+  | p1 = REF LPAREN r = IDENT p2 = RPAREN
+    { mk (ParseTree.Ref r.c) (embrace p1 p2) }
 
 tuple_list:
   | t1 = nterm COMMA t2 = nterm { [t2; t1] }
@@ -179,8 +190,8 @@ basic_pattern:
   | x = CONSTRUCTOR { mk_pconstr x [] x.info  }
 (*   | LPAREN p = pattern RPAREN { p } *)
 pattern:
-  | p = basic_pattern { p } 
-  | x = CONSTRUCTOR p = basic_pattern 
+  | p = basic_pattern { p }
+  | x = CONSTRUCTOR p = basic_pattern
     { mk_pconstr x [p] (embrace x.info p.ploc) }
   | x = CONSTRUCTOR LPAREN pl = separated_list(COMMA, pattern) p2 = RPAREN
     { mk_pconstr x pl (embrace x.info p2) }

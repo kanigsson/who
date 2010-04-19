@@ -48,6 +48,7 @@ type t' =
   | LetReg of rvar list * t
   | Restrict of t * effect
   | Get of t * t
+  | Ref of rvar
   | HoareTriple of t option * t * post
   | Case of t * branch list
 and t = { v : t' ; loc : Loc.loc }

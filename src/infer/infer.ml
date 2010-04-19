@@ -75,7 +75,7 @@ type error =
   | WrongRegionCap
   | WrongRegionCapNumber
   | NotAFunction of M.t
-  | WrongNrEffects of Name.t * int * int
+  | Instantiation of Name.t
   | WrongNrConstrArgs of Name.t * int * int
 
 exception Error of Loc.loc * error
@@ -89,9 +89,9 @@ let explain e =
   | WrongRegionCap -> "region capacity is not the one expected here"
   | WrongRegionCapNumber ->
       "the number of region capacities is not the one expected here"
-  | WrongNrEffects(v,l1,l2) ->
-      Myformat.sprintf "not the right number of effect vars: %a@.\
-      I expected %d variables, but you gave %d effects.@." Name.print v l1 l2
+  | Instantiation v ->
+      Myformat.sprintf "instantiation of %a: not the right number of arguments"
+        Name.print v
   | NotAFunction t ->
       Myformat.sprintf "term is expected to be a function but is of type %a"
         M.print t
@@ -122,16 +122,15 @@ let rw_of_branch (_,_,e) = e.e
 
 module Uf = Unionfind
 
-let varfun env v el l =
-  let (_,_,evl) as m ,xt =
+let varfun env v inst l =
+  let m ,xt =
     try Env.lookup env v.I.var
     with Not_found ->
       errorm l "variable %a not found" Name.print v.I.var in
   let xt = if Env.is_logic_env env then M.to_logic_type xt else xt in
   let nt,i =
-    try M.refresh m el xt
-    with Invalid_argument _ ->
-      error l (WrongNrEffects(v.I.var, List.length evl, List.length el)) in
+    try M.refresh m inst xt
+    with Invalid_argument _ -> error l (Instantiation v.I.var) in
   let v = mk_var_with_m_scheme v.I.is_constr v.I.var (m,xt) in
   v, i, nt
 
@@ -155,7 +154,7 @@ and infer env (x : I.t) =
               let v = PL.var PI.restrict_id in
               let v = I.mkvar false v in
               let new_e =
-                I.app (I.var ~inst:[Effect.diff em e; e] v l) m l in
+                I.app (I.var ~inst:([],[],[Effect.diff em e; e]) v l) m l in
               let e = infer env new_e in
               e.v, e.t, e.e
           | _ -> assert false
@@ -170,7 +169,8 @@ and infer env (x : I.t) =
             let e = M.to_effect e in
             let v = PL.var PI.get_id in
             let v = I.mkvar false v in
-            let new_e = I.app (I.app (I.var ~inst:[e] v l) ref l) map l in
+            let new_e =
+              I.app (I.app (I.var ~inst:([],[],[e]) v l) ref l) map l in
             let e = infer env new_e in
             e.v, e.t, e.e
         | _, M.Ref _  ->
@@ -230,9 +230,9 @@ and infer env (x : I.t) =
         let p = pre env (fst e.e) p l in
         let q = post env e.e e.t q l in
         HoareTriple (p,e,q), M.prop, M.rw_empty
-    | I.Var (v,el) ->
+    | I.Var (v,inst) ->
 (*         Myformat.printf "treating var: %a@." Name.print v; *)
-        let v, i, nt = varfun env v el l in
+        let v, i, nt = varfun env v inst l in
         Var (v, i), nt, M.rw_empty
     | I.Case (e,bl) ->
         let e = infer env e in
@@ -286,7 +286,7 @@ and pattern_node env exp p l =
       assert (not (Env.has_binding env v));
       Env.add_svar env v exp, PVar v, exp
   | I.PApp (v,pl) ->
-      let v, i, nt = varfun env v [] l in
+      let v, i, nt = varfun env v ([],[],[]) l in
       assert (v.is_constr);
       let tl, rt = M.nsplit nt in
       U.unify exp rt;
@@ -338,7 +338,7 @@ and theory env th = ExtList.fold_map infer_th env th
 and typedef env tl n k =
   match k with
   | Ast.Abstract -> env
-  | Ast.ADT bl -> 
+  | Ast.ADT bl ->
       let base = Ty.app n (List.map Ty.var tl) in
       List.fold_left (cbranch tl base) env bl
 and cbranch tvl base env (n,tl) =

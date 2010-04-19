@@ -148,7 +148,7 @@ read_write :
   | p1 = LT e = effect p2 = GT { mkty (Map e) (embrace p1 p2) }
   | p1 = DLBRACKET t = ty p2 = DRBRACKET { mkty (ToLogic t) (embrace p1 p2) }
   | p1 = REF LPAREN id = IDENT COMMA t = ty  p2 = RPAREN
-    { mkty (Ref (id.c,t)) (embrace p1 p2) }
+    { mkty (ParseTypes.Ref (id.c,t)) (embrace p1 p2) }
 
 product_ty:
   | t1 = stype STAR t2 = stype { [t1;t2] }

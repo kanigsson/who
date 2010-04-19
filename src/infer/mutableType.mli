@@ -75,7 +75,8 @@ val base_post_ty : effect -> t -> t
 val overapprox : rw -> effect
 
 val refresh :
-  Ty.Generalize.t -> Effect.t list -> t -> t * (t, r, effect) Inst.t
+  Ty.Generalize.t ->
+    Ty.t list * Name.t list * Effect.t list -> t -> t * (t, r, effect) Inst.t
 
 
 

@@ -37,10 +37,12 @@ open InternalParseTree
 let mk_var loc env v =
   mkvar (Env.is_constr env v) (Env.var loc env v)
 
+let inst loc env i =
+  Inst.map (ty env) (Env.rvar loc env) (effect loc env) i
 let rec ast' loc env = function
   | I.Const c -> Const c
   | I.Var (v,i) ->
-      Var (mk_var loc env v,List.map (effect loc env) i)
+      Var (mk_var loc env v,inst loc env ([],[],i))
   | I.App (e1,e2,f) ->
       App (ast env e1, ast env e2, f)
   | I.Lam (x,t,p,e,q) ->
@@ -78,6 +80,8 @@ let rec ast' loc env = function
   | I.Case (t,bl) ->
       let t = ast env t in
       Case (t, List.map (branch env) bl)
+  | I.Ref _ ->
+      assert false
 and to_mutable env t = MutableType.from_ty (ty env t)
 
 and post env x =

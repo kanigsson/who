@@ -30,7 +30,7 @@ type var =
 
 type t' =
   | Const of Const.t
-  | Var of var * Effect.t list
+  | Var of var * inst
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
   | App of t * t * [`Infix | `Prefix ]
@@ -62,6 +62,7 @@ and pattern_node =
   | PVar of Name.t
   | PApp of var * pattern list
 and pattern = { pv : pattern_node ; ploc : Loc.loc }
+and inst = Ty.t list * Name.t list * Effect.t list
 
 type decl =
   | Logic of Name.t * G.t * Ty.t
@@ -81,7 +82,7 @@ let gen g t l =
   if Ty.Generalize.is_empty g then t else mk (Gen (g,t)) l
 
 let app t1 t2 = mk (App (t1,t2,`Prefix))
-let var ?(inst=[]) v = mk (Var (v,inst))
+let var ?(inst=Inst.empty) v = mk (Var (v,inst))
 
 let print _ _ = assert false (* TODO *)
 

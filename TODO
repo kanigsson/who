@@ -16,6 +16,7 @@ INTERNAL
 * infix at variable place instead of application
 * remove annotparser
 * type annotations at let
+* positions in parser much better
 
 
 BUGS

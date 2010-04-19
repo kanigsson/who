@@ -241,12 +241,43 @@ let effect_subst h acc =
     else acc
   ) h acc
 
+let region_subst h r =
+  match Uf.desc r with
+  | RU -> r
+  | RT reg ->
+      try Name.H.find h reg
+      with Not_found -> r
+
+let r_effectsubst h (r,e) = List.map (region_subst h) r, e
+
 let esubst evl el t =
   let table = Name.H.create 17 in
   begin try List.iter2 (fun v e -> Name.H.add table v e) evl el
   with Invalid_argument _ ->
     invalid_arg "esubst" end;
   node_map ~f:Misc.id ~eff_fun:(effect_subst table) ~rfun:Misc.id t
+
+let rsubst rvl rl t =
+  let table = Name.H.create 17 in
+  begin try List.iter2 (fun v e -> Name.H.add table v e) rvl rl
+  with Invalid_argument _ ->
+    invalid_arg "rsubst" end;
+  node_map ~f:Misc.id ~eff_fun:(r_effectsubst table)
+           ~rfun:(region_subst table) t
+
+let ty_subst h t =
+  match Uf.desc t with
+  | App (v,[]) ->
+      begin try Name.H.find h v
+      with Not_found -> t end
+  | _ -> t
+
+let tsubst tvl tl t =
+  let table = Name.H.create 17 in
+  begin try List.iter2 (fun v e -> Name.H.add table v e) tvl tl
+  with Invalid_argument _ ->
+    invalid_arg "rsubst" end;
+  node_map ~f:(ty_subst table) ~eff_fun:Misc.id ~rfun:Misc.id t
 
 let bh f l =
   let h = Name.H.create 3 in
@@ -266,11 +297,14 @@ let nsplit =
   in
   aux []
 
-
-let refresh (tvl, rvl, evl) el t =
+let refresh ((tvl, rvl, evl) : Ty.Generalize.t)
+            ((tl,rl,el) : Ty.t list * Name.t list * Effect.t list) (t : t)
+            : t * (t,r,effect) Inst.t  =
   let tn, th = bh new_ty tvl and rn, rh = bh new_r rvl in
   let el = List.map from_effect el in
   let t = esubst evl el t in
+  let t = if tl = [] then t else tsubst tvl (List.map from_ty tl) t in
+  let t = if rl = [] then t else rsubst rvl (List.map from_region rl) t in
   let f x =
     match Uf.desc x with
     | App (v,[]) ->
