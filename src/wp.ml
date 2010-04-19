@@ -37,7 +37,7 @@ let effFA = effFA ~s:"s"
 let lift_scheme (g,t) = g, ty t
 
 let lift_var v =
-  { var = v.var; scheme = lift_scheme v.scheme }
+  { v with scheme = lift_scheme v.scheme; }
 
 let lift_inst i = Inst.map ty Misc.id Misc.id i
 
@@ -46,38 +46,48 @@ let rec lift_value v =
   match v.v with
   | Var (v,i) -> var (lift_var v) (lift_inst i) l
   | Const _ -> v
-  | App (v1,v2,kind,_) ->
+  | App (v1,v2,kind) ->
       app ~kind (lift_value v1) (lift_value v2) l
   | PureFun (t,(_,x,e)) ->
       plam x (ty t) (lift_value e) l
   | Quant (k,t,(_,x,e)) ->
       squant k x (ty t) (lift_value e) l
-  | Lam (x,t,_,(p,_,q)) ->
+  | Lam (x,t,(p,_,q)) ->
       let t = ty t in
       let p = plam x t (scan p) l and q = plam x t (scan q) l in
       mk_pair p q l
   | Let (g,e1,b,Const.LogicDef) ->
       let x,f = sopen b in
       let_ g (lift_value e1) x (lift_value f) Const.LogicDef l
+  | Case (t,bl) ->
+      case (lift_value t) (List.map lift_branch bl) l
   | HoareTriple (p,e,q) -> bodyfun p e q
-  | Let _ | LetReg _ | Gen _ | Param _ | Ite _ ->
+  | Let _ | LetReg _ | Gen _ | Param _ | Ite _  ->
       error (Myformat.sprintf "not a value: %a" print v) l
+and lift_branch b =
+  let nvl, p, t = popen b in
+  pclose nvl p (lift_value t)
 
 and correct v =
   let l = v.loc in
   match v.v with
   | Var _ | Const _ | Quant _ -> ptrue_ l
-  | App (v1,v2,_,_) -> and_ (correct v1) (correct v2) l
-  | Lam (x,t,_,(p,e,q)) -> sforall x (ty t) (bodyfun p e q) l
+  | App (v1,v2,_) -> and_ (correct v1) (correct v2) l
+  | Lam (x,t,(p,e,q)) -> sforall x (ty t) (bodyfun p e q) l
   | PureFun (t,(_,x,e)) -> sforall x (ty t) (correct e) l
   | Let (g,e1,b,Const.LogicDef) ->
       let x,e2 = sopen b in
       and_ (gen g (correct e1) l)
         (let_ g (lift_value e1) x (correct e2) Const.LogicDef l) l
+  | Case (t,bl) ->
+      and_ (correct t) (case (lift_value t) (List.map branch_correct bl) l) l
   | Let _ | LetReg _ | Gen _ | Param _
   | Ite _ | HoareTriple _ ->
       Myformat.printf "correct: not a value: %a@." print v;
       assert false
+and branch_correct b =
+  let nvl, p, t = popen b in
+  pclose nvl p (correct t)
 and scan f =
   let termfun f =
     match f.v with
@@ -105,7 +115,7 @@ and wp m q e =
           wp_node (combine m cur l)
             (efflamho (Effect.union (Rw.writes se.e) ef) (fun s ->
               app q (restrict write s l) l) l) se) l) l
-    | App (v1,v2,_,_) ->
+    | App (v1,v2,_) ->
         let lv1 = lift_value v1 and lv2 = lift_value v2 in
         andlist
         [ correct v1; correct v2;
@@ -137,6 +147,8 @@ and wp m q e =
             plam x t (wp_node (combine m m2 l) q e2) l) l in
           wp_node m f e1
     | Ite (c,th,el) -> ite (lift_value c) (wp_node m q th) (wp_node m q el) l
+    | Case (v,bl) ->
+        case (lift_value v) (List.map (branch m q) bl) l
     | Param _ -> ptrue_ l
     | _ -> assert false
 and wp_node m q e =
@@ -148,6 +160,10 @@ and wp_node m q e =
     wp (restrict read m l)
       (efflamho write (fun m2 ->
         app q (combine (restrict writeq m l) m2 l) l) l) e
+and branch m q b =
+  let nvl, p, e = popen b in
+  pclose nvl p (wp_node m q e)
+
 
 let main e =
   let l = e.loc in

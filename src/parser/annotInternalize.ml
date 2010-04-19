@@ -61,17 +61,13 @@ let rec term logic env (t : I.t) =
   match t.I.v with
   | I.Const c -> const c l
   | I.Var (x,i) ->
-      let x, g = typed_var l logic env x in
-      var (mk_var_with_scheme x g) (inst l env i) l
-  | I.App (t1,t2,kind,cap) ->
-      app ~kind ~cap:(List.map (Env.rvar l env) cap)
-        (term logic env t1) (term logic env t2) l
-  | I.Lam (x,t,cap, p, e, q) ->
+      let nv, g = typed_var l logic env x in
+      var (mk_var_with_scheme (Env.is_constr env x) nv g) (inst l env i) l
+  | I.App (t1,t2,kind) -> app ~kind (term logic env t1) (term logic env t2) l
+  | I.Lam (x,t, p, e, q) ->
       let t = ty env t in
       let env, nv = add_svar env (Some x) t in
-      caplam nv t (List.map (Env.rvar l env) cap)
-        (term true env p) (term false env e)
-        (term true env q) l
+      lam nv t (term true env p) (term false env e) (term true env q) l
   | I.HoareTriple (p,e,q) ->
       hoare_triple (term true env p) (term false env e) (term true env q) l
   | I.Let (g,e1,x,e2,r) ->

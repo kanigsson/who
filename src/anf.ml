@@ -31,9 +31,9 @@ and normalize e k =
   let loc = e.loc in
   match e.v with
   | (Const _ | Ast.Var _ | Param _ ) -> k e
-  | Lam (x,t,cap,(p,e,q)) ->
+  | Lam (x,t,(p,e,q)) ->
 (*       Format.printf "found effectful function %a@." Name.print x; *)
-      k (caplam x t cap (normalize_term p)
+      k (lam x t (normalize_term p)
         (normalize_term e) (normalize_term q) loc)
   | PureFun (t,(_,x,e))-> k (plam x t (normalize_term e) loc)
   | Let (g,e1,(_,x,e2),r) ->
@@ -41,19 +41,24 @@ and normalize e k =
   | LetReg (l,e) -> k (letreg l (normalize_term e) loc)
   | Gen (g,e) -> k (gen g (normalize_term e) loc)
   | Quant (kind,t,(_,x,e)) -> k (squant kind x t (normalize_term e) loc)
+  | Case (e1,bl) ->
+      normalize_name e1 (fun v -> k (case v (List.map branch bl) loc))
   | Ite (e1,e2,e3) ->
       normalize_name e1
         (fun v ->
           k (ite ~logic:false v (normalize_term e2) (normalize_term e3) loc))
-  | App (e1,e2,f,c) ->
+  | App (e1,e2,f) ->
 (*       Format.printf "applying: %a@." print e1; *)
       normalize_name e1
         (fun v1 -> normalize_name e2
-          (fun v2 -> k (allapp v1 v2 f c loc)))
+          (fun v2 -> k (allapp v1 v2 f loc)))
   | HoareTriple (p,e,q) ->
 (*       Format.printf "found hoare_triple@."; *)
       k (hoare_triple (normalize_term p)
         (normalize_term e) (normalize_term q) loc)
+and branch b =
+  let nvl,p,e = popen b in
+  pclose nvl p (normalize_term e)
 
 and normalize_name e k =
   normalize e
@@ -61,7 +66,7 @@ and normalize_name e k =
       if is_value e then k e
       else
         let nv = Name.from_string "anf" in
-        let nvv = svar (mk_var_with_type nv e.t) e.loc in
+        let nvv = svar (mk_var_with_type false nv e.t) e.loc in
         let_ Generalize.empty e nv (k nvv) Const.NoRec e.loc)
 
 let term = normalize_term

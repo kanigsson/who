@@ -50,17 +50,17 @@
 
   (* construct a sequence of pure lambdas on top of [e], using [l];
     the innermost lambda is effectful, using [p] and [q] as pre and post *)
-  let mk_efflam l cap p e q = mk_lam (fun x t ->
+  let mk_efflam l p e q = mk_lam (fun x t ->
     let t =
       try Opt.force t
       with Invalid_argument "force" ->
         failwith "type annotation obligatory for lambda" in
-    lamcap x t cap p e q) l
+    lam x t p e q) l
 
   (* construct a sequence of pure lambdas on top of a parameter with type [rt]
      and effect [eff]; the innermost lambda is effectful as in [mk_efflam] *)
-  let mk_param l cap p q rt eff loc =
-    mk_efflam l cap p (mk (Param (rt,eff)) loc) q loc
+  let mk_param l p q rt eff loc =
+    mk_efflam l p (mk (Param (rt,eff)) loc) q loc
 
   (* construct a sequence of quantifiers on top of [e] *)
   let mk_quant k l e loc =
@@ -78,6 +78,11 @@
       NoRec start.loc
 
 
+  let mk_pvar x = { pv = PVar (Some x.c) ; ploc = x.info }
+  let mk_pconstr c l p = { pv = PApp (c.c, l) ; ploc = p }
+  let mk_underscore p = { pv = PVar None; ploc = p }
+
+
 %}
 
 %start <ParseTree.theory> main
@@ -87,12 +92,19 @@
 
 protected_term:
   | l = LPAREN t = seq_term e = RPAREN { mk t.v (embrace l e) }
+  | l = BEGIN t = seq_term e = END { mk t.v (embrace l e) }
   | l = LPAREN e = seq_term COLON t = ty r = RPAREN
     { mk (Annot (e,t)) (embrace l r) }
 
+term_inst:
+  | LBRACKET e = sepeffect* RBRACKET { ([],[],e) }
+  | LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
+    MID el = sepeffect* RBRACKET
+    { (tl, strip_info rl, el) }
+
 aterm:
   | p = VOID { var I.void_id p }
-  | p = REF { var "ref" p}
+(*   | p = REF { var "ref" p} *)
   | p = prefix t = aterm
     { app (var (snd p) (fst p)) t (embrace (fst p) t.loc) }
   | x = IDENT AT e = sepeffect
@@ -102,12 +114,14 @@ aterm:
   | p = DEXCLAM x = IDENT AT t = aterm
     { mk (Get (var x.c x.info, t)) (embrace p t.loc) }
   | x = IDENT { var x.c x.info }
-  | x = IDENT LBRACKET inst = sepeffect* RBRACKET { var ~inst x.c x.info }
+  | x = IDENT inst = term_inst { var ~inst x.c x.info }
   | l = LPAREN x = prefix r = RPAREN
     { var (snd x) (embrace l r) }
   | c = constant { let p,c = c in const c p }
   | l = LPAREN x = infix e = RPAREN { var (snd x) (embrace l e) }
   | t = protected_term { t }
+  | p1 = REF LPAREN r = IDENT p2 = RPAREN
+    { mk (ParseTree.Ref r.c) (embrace p1 p2) }
 
 tuple_list:
   | t1 = nterm COMMA t2 = nterm { [t2; t1] }
@@ -124,8 +138,10 @@ nterm:
   | t = aterm { t }
   | t = aterm l = aterm+
     { appn t l }
+(*
   | t1 = aterm DLCURL l = IDENT* DRCURL tl = aterm+
     { cap_appn t1 tl (strip_info l) }
+*)
   | tl = tuple_list %prec below_COMMA
     {
       let n = List.length tl in
@@ -135,8 +151,8 @@ nterm:
   | t1 = nterm i = infix t2 = nterm
     { appi (snd i) t1 t2 (embrace t1.loc t2.loc) }
   | sp = FUN l = arglist ARROW body = funcbody
-    { let cap, p,e,q = body in
-      mk_efflam l cap (snd p) e (snd q) (embrace sp (fst q)) }
+    { let p,e,q = body in
+      mk_efflam l (snd p) e (snd q) (embrace sp (fst q)) }
   | sp = FUN l = arglist ARROW e = seq_term
     { mk_pure_lam l e (embrace sp e.loc) }
   | st = IF it = seq_term THEN tb = nterm ELSE eb = nterm
@@ -159,6 +175,23 @@ nterm:
      e = nterm
     DLBRACKET q = postcond_int r = DRBRACKET
     { mk (HoareTriple (p,e,q)) (embrace l r) }
+  | p1 = MATCH t = seq_term WITH option(MID)
+    bl = separated_nonempty_list(MID,branch) p2 = END
+    { mk (Case (t, bl)) (embrace p1 p2) }
+
+branch: p = pattern ARROW e = seq_term { p, e }
+
+basic_pattern:
+  | x = IDENT { mk_pvar x  }
+  | p = UNDERSCORE { mk_underscore p }
+  | x = CONSTRUCTOR { mk_pconstr x [] x.info  }
+(*   | LPAREN p = pattern RPAREN { p } *)
+pattern:
+  | p = basic_pattern { p }
+  | x = CONSTRUCTOR p = basic_pattern
+    { mk_pconstr x [p] (embrace x.info p.ploc) }
+  | x = CONSTRUCTOR LPAREN pl = separated_list(COMMA, pattern) p2 = RPAREN
+    { mk_pconstr x pl (embrace x.info p2) }
 
 todownto:
   | TO { "forto" }
@@ -192,19 +225,19 @@ alllet:
 (* the function definition case *)
   | b = letcommon body = funcbody
     { let p,x,l,args = b in
-      let cap, pre,e,q = body in
+      let pre,e,q = body in
       if args = [] then $syntaxerror;
-      l, mk_efflam args cap (snd pre) e (snd q) p, x, NoRec
+      l, mk_efflam args (snd pre) e (snd q) p, x, NoRec
     }
 (* the recursive function definition case *)
   | p = LET REC l = gen LPAREN x = defprogvar_no_pos
     COLON t = ty RPAREN args = arglist EQUAL b = funcbody
-    { let cap, pre,e,q = b in
-      l, mk_efflam args cap (snd pre) e (snd q) p, x, Rec t
+    { let pre,e,q = b in
+      l, mk_efflam args (snd pre) e (snd q) p, x, Rec t
     }
 
 funcbody:
-  cap = maycapdef p = precond e = seq_term q = postcond { cap, p,e,q }
+  p = precond e = seq_term q = postcond { p,e,q }
 
 postcond_int:
   | {PNone }
@@ -238,11 +271,10 @@ decl:
     { let par = mk (Param (rt,rw_empty)) p in
       Program (x,l,par,NoRec) }
   | p = PARAMETER x = defprogvar_no_pos l = gen args = arglist
-    COLON ann = param_annot EQUAL
-      cap = maycapdef pre = precond post = postcond
+    COLON ann = param_annot EQUAL pre = precond post = postcond
   {
     let rt, e = ann in
-    let par = mk_param args cap (snd pre) (snd post) rt e p in
+    let par = mk_param args (snd pre) (snd post) rt e p in
     Program (x,l,par,NoRec)
   }
   | AXIOM x = defprogvar_no_pos l = gen COLON t = nterm
@@ -255,7 +287,8 @@ decl:
     { TypeDef (x.c, l, Abstract ) }
   | TYPE x = IDENT l = gen EQUAL t = ty
     { TypeDef (x.c, l,Alias t) }
-  | TYPE x = IDENT l = gen EQUAL MID bl = separated_nonempty_list(MID,branch)
+  | TYPE x = IDENT l = gen EQUAL MID bl =
+    separated_nonempty_list(MID,constructorbranch)
     { TypeDef (x.c,l,ADT bl) }
   | LETREGION l = IDENT* { DLetReg (strip_info l) }
   | SECTION x = IDENT fn = takeoverdecl* l = decl+ END
@@ -264,9 +297,9 @@ decl:
     option(MID) tel = separated_list(MID,nterm) END
     { Inductive (x.c,l,tl,tel) }
 
-branch:
-    | x = IDENT  { x.c, []}
-    | x = IDENT OF tl = separated_nonempty_list(STAR,stype) { x.c, tl }
+constructorbranch:
+    | x = CONSTRUCTOR  { x.c, []}
+    | x = CONSTRUCTOR OF tl = separated_nonempty_list(STAR,stype) { x.c, tl }
 
 (* a program is simply a list of declarations; we call [to_abst_ast] to
   obtain a single AST *)

@@ -122,10 +122,6 @@ rvar_or_effectvar:
   | x = IDENT { `Rvar x.c }
   | e = TYVAR { `Effvar e.c }
 
-maycap:
-  | { [] }
-  | MID l = IDENT* { strip_info l }
-
 effect: 
   | l = rvar_or_effectvar*
   { partition_effect l }
@@ -133,8 +129,6 @@ effect:
 read_write :
   | e1 = effect PLUS e2 = effect { e1, e2}
   | e = effect { e,e }
-%public sep_readwrite_create :
-  | LCURL e = read_write cl = maycap RCURL { e, cl}
 
 %public sepeffect:
   | LCURL e = effect RCURL { e }
@@ -146,21 +140,16 @@ read_write :
 %public ty:
   | t = stype { t }
   | t1 = ty ARROW t2 = ty { mkty (PureArr (t1, t2)) (embrace t1.tloc t2.tloc) }
-  | t1 = ty ARROW e = sep_readwrite_create t2 = ty %prec ARROW
-    { let e,cl = e in mkty (Arrow (t1,t2,e,cl)) (embrace t1.tloc t2.tloc)  }
+  | t1 = ty ARROW e = sep_readwrite t2 = ty %prec ARROW
+    { mkty (Arrow (t1,t2,e)) (embrace t1.tloc t2.tloc)  }
   | tl = product_ty
     { let fst = List.hd tl and last = List.hd (List.rev tl) in
       mkty (Tuple tl) (embrace fst.tloc last.tloc) }
   | p1 = LT e = effect p2 = GT { mkty (Map e) (embrace p1 p2) }
   | p1 = DLBRACKET t = ty p2 = DRBRACKET { mkty (ToLogic t) (embrace p1 p2) }
   | p1 = REF LPAREN id = IDENT COMMA t = ty  p2 = RPAREN
-    { mkty (Ref (id.c,t)) (embrace p1 p2) }
+    { mkty (ParseTypes.Ref (id.c,t)) (embrace p1 p2) }
 
 product_ty:
   | t1 = stype STAR t2 = stype { [t1;t2] }
   | t1 = stype STAR tl = product_ty { t1 :: tl }
-
-%public maycapdef:
-  | {[] }
-  | ALLOCATES l = IDENT+ { (strip_info l) }
-

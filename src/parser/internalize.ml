@@ -34,16 +34,20 @@ module IT = ParseTypes
 open CommonInternalize
 open InternalParseTree
 
+let mk_var loc env v =
+  mkvar (Env.is_constr env v) (Env.var loc env v)
+
+let inst loc env i =
+  Inst.map (ty env) (Env.rvar loc env) (effect loc env) i
 let rec ast' loc env = function
   | I.Const c -> Const c
   | I.Var (v,i) ->
-      Var (Env.var loc env v,List.map (effect loc env) i)
-  | I.App (e1,e2,f,c) ->
-      App (ast env e1, ast env e2, f, List.map (Env.rvar loc env) c)
-  | I.Lam (x,t,cap,p,e,q) ->
+      Var (mk_var loc env v,inst loc env i)
+  | I.App (e1,e2,f) ->
+      App (ast env e1, ast env e2, f)
+  | I.Lam (x,t,p,e,q) ->
       let env, nv = Env.add_var env x in
-      Lam (nv, ty env t, List.map (Env.rvar loc env) cap,
-            (pre env p, ast env e, post env q))
+      Lam (nv, ty env t, (pre env p, ast env e, post env q))
   | I.Let (g,e1,x,e2,r) ->
       let env, nv, g , e1, r = letgen env x g e1 r in
       let e2 = ast env e2 in
@@ -73,6 +77,11 @@ let rec ast' loc env = function
   | I.HoareTriple (p,e,q) ->
       let p = pre env p and q = post env q and e = ast env e in
       HoareTriple (p,e,q)
+  | I.Case (t,bl) ->
+      let t = ast env t in
+      Case (t, List.map (branch env) bl)
+  | I.Ref r ->
+      Var (mk_var loc env "ref", ([],[Env.rvar loc env r], []))
 and to_mutable env t = MutableType.from_ty (ty env t)
 
 and post env x =
@@ -90,6 +99,26 @@ and pre env x =
   let env, cur = Env.add_var env (Some "cur") in
   cur, Opt.map (ast env) x
 
+and branch env (p,t) =
+  let env, ns, p = pattern env Name.S.empty p in
+  Name.S.elements ns, p, ast env t
+
+and pattern_node env acc p l =
+  match p with
+  | I.PVar v ->
+      let env, nv = Env.add_var env v in
+      if Name.S.mem nv acc then error l (NonlinearPattern v);
+      env, Name.S.add nv acc, PVar nv
+  | I.PApp (v,pl) ->
+      let v = mk_var l env v in
+      let env, acc, pl = List.fold_left (fun (env,acc,pl) p ->
+        let env, acc, p = pattern env acc p in
+        env, acc, p::pl) (env,Name.S.empty,[]) pl in
+      env, acc, PApp (v, List.rev pl)
+and pattern env acc p =
+  let loc = p.I.ploc in
+  let env, acc, p = pattern_node env acc p.I.pv loc in
+  env, acc, { pv = p ; ploc = loc }
 
 and ast env {I.v = v; loc = loc} = { v = ast' loc env v; loc = loc }
 
@@ -159,7 +188,7 @@ let rec decl env d =
 and theory x = ExtList.fold_map_flatten decl x
 and constbranch env_inner env_outer (n,tyl) =
   let tyl = List.map (ty env_inner) tyl in
-  let env,nv = Env.add_var env_outer (Some n) in
+  let env,nv = Env.add_constr env_outer n in
   env, (nv,tyl)
 
 

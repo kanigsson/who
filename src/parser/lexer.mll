@@ -57,9 +57,11 @@ let id_or_keyword =
         ("done", fun i -> DONE (create_info i)  );
         ("int", fun i -> TINT (create_info i));
         ("prop", fun i -> PROP (create_info i));
-        ("begin", fun i -> LPAREN (create_info i));
-        ("end", fun i -> RPAREN (create_info i) );
+        ("begin", fun i -> BEGIN (create_info i));
+        ("end", fun i -> END (create_info i) );
         ("ref", fun i -> REF (create_info i) );
+        ("match", fun i -> MATCH (create_info i) );
+        ("with", fun i -> WITH (create_info i) );
         ("in", fun _ -> IN );
         ("if", fun i -> IF (create_info i) );
         ("letregion", fun i -> LETREGION (create_info i) );
@@ -68,7 +70,7 @@ let id_or_keyword =
         ("rec", fun _ -> REC );
         ("section", fun i -> SECTION (create_info i) );
         ("coq", fun _ -> COQ );
-        ("allocates", fun _ -> ALLOCATES );
+(*         ("allocates", fun _ -> ALLOCATES ); *)
         ("predefined", fun _ -> PREDEFINED );
         ("takeover", fun _ -> TAKEOVER );
         ("pangoline", fun _ -> PANGOLINE );
@@ -79,6 +81,16 @@ let id_or_keyword =
       ];
     fun s -> try Hashtbl.find h s with Not_found ->
       fun i -> IDENT (Loc.mk (create_info i) s)
+
+let constructor_or_keyword =
+  let h = Hashtbl.create 17 in
+    List.iter (fun (s,k) -> Hashtbl.add h s k)
+      [
+        ("True", fun i -> PTRUE (create_info i) );
+        ("False", fun i -> PFALSE (create_info i) );
+      ];
+    fun s -> try Hashtbl.find h s with Not_found ->
+      fun i -> CONSTRUCTOR (Loc.mk (create_info i) s)
 
 let incr_linenum lexbuf =
     let pos = lexbuf.lex_curr_p in
@@ -92,22 +104,22 @@ let incr_linenum lexbuf =
 
 let alpha_lower = ['a'-'z' ]
 let alpha_upper = ['A'-'Z']
-let alpha = ['a' - 'z' 'A'-'Z' ]
-let alpha_underscore =  (alpha | '_')
+let alpha = ['a' - 'z' 'A'-'Z' '_' ]
 let digit = ['0'-'9']
-let module_name = alpha_upper (alpha_underscore | digit | '\'')*
-let name = alpha (alpha_underscore | digit | '\'')*
-let identifier = (module_name '.')* name
+let module_or_constructor_name = alpha_upper (alpha | digit | '\'')*
+let name = alpha_lower (alpha | digit | '\'')*
+let identifier = (module_or_constructor_name '.')* name
 
 rule token = parse
   | [' ' '\t' ]
       { token lexbuf }
-  | digit+ as i
-  { INT (Loc.mk (create_info lexbuf) (Big_int.big_int_of_string i)) }
-  | identifier as i { id_or_keyword i lexbuf}
-  | '"' ( [ ^ '"' ] * as str ) '"'
-    { STRING str }
   | '_' { UNDERSCORE (create_info lexbuf) }
+  | digit+ as i
+      { INT (Loc.mk (create_info lexbuf) (Big_int.big_int_of_string i)) }
+  | identifier as i { id_or_keyword i lexbuf}
+  | module_or_constructor_name as m { constructor_or_keyword m lexbuf }
+  | '"' ( [ ^ '"' ] * as str ) '"'
+      { STRING str }
   | '\'' (identifier as tv) { TYVAR (Loc.mk (create_info lexbuf) tv)}
   | "->" { ARROW (create_info lexbuf) }
   | "==" { BEQUAL (create_info lexbuf) }
@@ -120,8 +132,10 @@ rule token = parse
   | ']' { RBRACKET (create_info lexbuf) }
   | '{' { LCURL (create_info lexbuf) }
   | '}' { RCURL (create_info lexbuf) }
+(*
   | "{{" { DLCURL }
   | "}}" { DRCURL }
+*)
   | "[[" { DLBRACKET (create_info lexbuf) }
   | "]]" { DRBRACKET (create_info lexbuf) }
   | "!!" { DEXCLAM (create_info lexbuf) }

@@ -29,7 +29,7 @@ type ty =
   | U
   | Const of Const.ty
   | Tuple of t list
-  | Arrow of t * t * rw * r list
+  | Arrow of t * t * rw
   | PureArr of t * t
   | App of Name.t * t list
   | Ref of r * t
@@ -61,9 +61,8 @@ let hash_ty t =
   | Map e -> hash_effect e
   | App (n,i) ->
       Hash.combine 3 (ExtList.hash Uf.hash (Name.hash n) i)
-  | Arrow (t1,t2,e,rl) ->
-      Hash.combine3 4 (Uf.hash t1) (Uf.hash t2)
-        (ExtList.hash Uf.hash (hash_rw e) rl)
+  | Arrow (t1,t2,e) ->
+      Hash.combine3 4 (Uf.hash t1) (Uf.hash t2) (hash_rw e)
   | PureArr (t1,t2) ->
       Hash.combine2 5 (Uf.hash t1) (Uf.hash t2)
 
@@ -89,9 +88,8 @@ let equal_ty t1 t2 =
   | Map e1, Map e2 -> equal_effect e1 e2
   | App (n1,i1), App (n2,i2) ->
       Name.equal n1 n2 && ExtList.equal Uf.equal i1 i2
-  | Arrow (t1a, t1b, e1, rl1), Arrow (t2a, t2b, e2, rl2) ->
-      Uf.equal t1a t2a && Uf.equal t1b t2b && ExtList.equal Uf.equal rl1 rl2 &&
-        equal_rw e1 e2
+  | Arrow (t1a, t1b, e1), Arrow (t2a, t2b, e2) ->
+      Uf.equal t1a t2a && Uf.equal t1b t2b && equal_rw e1 e2
   | PureArr (t1a, t1b), PureArr (t2a, t2b) ->
       Uf.equal t1a t2a && Uf.equal t1b t2b
   | _, _ -> false
@@ -114,38 +112,43 @@ module He = Hashtbl.Make(HBe)
 let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh t
 
+module Convert = struct
+  module P = PrintTree
+
+  let id = Name.Env.id
+  let region env x =
+    match Uf.desc x with
+    | RU -> Myformat.sprintf "%d" (Uf.tag x)
+    | RT n -> id env n
+
+  let effect env (r,e) =
+    List.map (region env) r, List.map (id env) (Name.S.elements e)
+
+  let rw env (r1,r2) = effect env r1, effect env r2
+
+  let ty env =
+    let rec aux x =
+      match Uf.desc x with
+      | U -> P.TApp (Myformat.sprintf "%d" (Uf.tag x), [])
+      | Const c -> P.TConst c
+      | Tuple tl -> P.Tuple (List.map aux tl)
+      | PureArr (t1,t2) -> P.PureArr (aux t1, aux t2)
+      | Ref (r,t) -> P.Ref (region env r, aux t)
+      | Arrow (t1,t2,e) -> P.Arrow (aux t2, aux t2, rw env e)
+      | Map e -> P.Map (effect env e)
+      | App (n,i) -> P.TApp (id env n, List.map aux i) in
+    aux
+end
+
 module Print = struct
+
   open Myformat
-
-  let rec inst fmt i =
-    Inst.print ~kind:`Who ~intype:true ty region effect fmt i
-
-  and ty fmt (x : t) =
-    let mayp fmt t = if is_compound t then paren ty fmt t else ty fmt t in
-    match Uf.desc x with
-    | U -> fprintf fmt "%d" (Uf.tag x)
-    | Tuple tl ->
-        list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
-    | Ref (r,t) -> fprintf fmt "ref(%a,%a)" region r ty t
-    | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 ty t2
-    | Map e -> fprintf fmt "<%a>" effect_no_sep e
-    | Const c -> Const.print_ty `Who fmt c
-    | App (v,i) -> fprintf fmt "%a%a" Name.print v (list comma ty) i
-    | Arrow (t1,t2,eff,cap) ->
-        fprintf fmt "%a ->{%a%a} %a" mayp t1 rw eff maycap cap ty t2
-  and maycap fmt = function
-    | [] -> ()
-    | l -> fprintf fmt "|%a" region_list l
-  and region fmt x =
-    match Uf.desc x with
-    | RU -> fprintf fmt "%d" (Uf.tag x)
-    | RT n -> Name.print fmt n
-  and region_list fmt l = list space region fmt l
-  and effect_no_sep fmt (rl,el) =
-    fprintf fmt "%a|" region_list rl;
-    Name.print_set fmt el;
-  and effect fmt e = fprintf fmt "{%a}" effect_no_sep e
-  and rw fmt (e1,e2) = fprintf fmt "%a + %a" effect e1 effect e2
+  let empty = Name.Env.empty Name.M.empty
+  let ty fmt t = PrintTree.Print.ty fmt (Convert.ty empty t)
+  let effect fmt t = PrintTree.Print.effect fmt (Convert.effect empty t)
+  let rw fmt t = PrintTree.Print.rw fmt (Convert.rw empty t)
+  let region fmt t = string fmt (Convert.region empty t)
+  let region_list fmt t = list space region fmt t
 end
 
 let memo =
@@ -157,7 +160,7 @@ let memo =
       Hty.add h t n; n
 
 let parr t1 t2 = memo (PureArr (t1,t2))
-let arrow t1 t2 e c = memo (Arrow (t1,t2,e,c))
+let arrow t1 t2 e = memo (Arrow (t1,t2,e))
 let tuple tl = memo (Tuple tl)
 let ref_ r t = memo (Ref (r,t))
 let var s = memo (App (s,[]))
@@ -209,8 +212,8 @@ let int = const Const.TInt
 let rec from_ty (x : Ty.t) =
   match x with
   | Ty.Const c -> const c
-  | Ty.Arrow (t1,t2,e, c) ->
-      arrow (from_ty t1) (from_ty t2) (from_rw e) (List.map from_region c)
+  | Ty.Arrow (t1,t2,e) ->
+      arrow (from_ty t1) (from_ty t2) (from_rw e)
   | Ty.Tuple tl -> tuple (List.map from_ty tl)
   | Ty.Ref (r,t) -> ref_ (from_region r) (from_ty t)
   | Ty.Map e -> map (from_effect e)
@@ -230,8 +233,8 @@ let node_map ~f ~eff_fun ~rfun t : t =
     | PureArr (t1,t2) -> parr (aux t1) (aux t2)
     | Ref (r,t) -> ref_ (rfun r) (aux t)
     | Map e -> map (eff_fun e)
-    | Arrow (t1,t2,e,rl) ->
-        arrow (aux t1) (aux t2) (rw_fun e) (List.map rfun rl)
+    | Arrow (t1,t2,e) ->
+        arrow (aux t1) (aux t2) (rw_fun e)
     | App (n,i) -> app n (List.map aux i) in
     f t
   and rw_fun (e1,e2) = eff_fun e1, eff_fun e2 in
@@ -246,6 +249,15 @@ let effect_subst h acc =
     else acc
   ) h acc
 
+let region_subst h r =
+  match Uf.desc r with
+  | RU -> r
+  | RT reg ->
+      try Name.H.find h reg
+      with Not_found -> r
+
+let r_effectsubst h (r,e) = List.map (region_subst h) r, e
+
 let esubst evl el t =
   let table = Name.H.create 17 in
   begin try List.iter2 (fun v e -> Name.H.add table v e) evl el
@@ -253,14 +265,58 @@ let esubst evl el t =
     invalid_arg "esubst" end;
   node_map ~f:Misc.id ~eff_fun:(effect_subst table) ~rfun:Misc.id t
 
+let rsubst rvl rl t =
+  let table = Name.H.create 17 in
+  begin try List.iter2 (fun v e -> Name.H.add table v e) rvl rl
+  with Invalid_argument _ ->
+    invalid_arg "rsubst" end;
+  node_map ~f:Misc.id ~eff_fun:(r_effectsubst table)
+           ~rfun:(region_subst table) t
+
+let ty_subst h t =
+  match Uf.desc t with
+  | App (v,[]) ->
+      begin try Name.H.find h v
+      with Not_found -> t end
+  | _ -> t
+
+let tsubst tvl tl t =
+  let table = Name.H.create 17 in
+  begin try List.iter2 (fun v e -> Name.H.add table v e) tvl tl
+  with Invalid_argument _ ->
+    invalid_arg "rsubst" end;
+  node_map ~f:(ty_subst table) ~eff_fun:Misc.id ~rfun:Misc.id t
+
+let split t =
+  match Uf.desc t with
+  | PureArr (t1,t2) -> t1, t2
+  | _ -> invalid_arg "split"
+
+let nsplit =
+  let rec aux acc t =
+    try
+      let t1,t2 = split t in
+      aux (t1::acc) t2
+    with Invalid_argument "split" -> List.rev acc, t
+  in
+  aux []
+
 let bh f l =
   let h = Name.H.create 3 in
   List.map (fun x -> let n = f () in Name.H.add h x n; n) l,h
 
-let refresh (tvl, rvl, evl) el t =
-  let tn, th = bh new_ty tvl and rn, rh = bh new_r rvl in
+let bh2 f tvl tl =
+  let h = Name.H.create 3 in
+  List.map2 (fun v t -> let n = f t in Name.H.add h v n; n) tvl tl,h
+
+open Myformat
+let refresh ((tvl, rvl, evl) : Ty.Generalize.t)
+            ((tl,rl,el) : Ty.t list * Name.t list * Effect.t list) (t : t)
+            : t * (t,r,effect) Inst.t  =
   let el = List.map from_effect el in
   let t = esubst evl el t in
+  let tn, th = if tl = [] then bh new_ty tvl else bh2 from_ty tvl tl in
+  let rn, rh = if rl = [] then bh new_r rvl else bh2 from_region rvl rl in
   let f x =
     match Uf.desc x with
     | App (v,[]) ->
@@ -305,9 +361,7 @@ let to_ty =
       let r =
         match Uf.desc t with
         | U -> raise UndeterminedType
-        | Arrow (t1,t2,e,cap) ->
-            Ty.caparrow (to_ty t1) (to_ty t2)
-              (to_rw e) (List.map to_region cap)
+        | Arrow (t1,t2,e) -> Ty.arrow (to_ty t1) (to_ty t2) (to_rw e)
         | Tuple tl -> Ty.tuple (List.map to_ty tl)
         | Const c -> Ty.const c
         | Ref (r,t) -> Ty.ref_ (to_region r) (to_ty t)
@@ -330,7 +384,7 @@ let overapprox (e1,e2) = eff_union e1 e2
 let to_logic_type t =
   node_map ~rfun:Misc.id ~eff_fun:Misc.id ~f:(fun t ->
     match Uf.desc t with
-    | Arrow (t1,t2,e,_) -> prepost_type t1 t2 (overapprox e)
+    | Arrow (t1,t2,e) -> prepost_type t1 t2 (overapprox e)
     | _ -> t) t
 
 let print = Print.ty

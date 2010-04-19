@@ -210,8 +210,8 @@ let rec term env t =
   with Exit ->
     match t.v with
     | Const _ -> t
-    | App (f1,f2,k,c) ->
-        app ~kind:k ~cap:c (term env f1) (term env f2) l
+    | App (f1,f2,k) ->
+        app ~kind:k (term env f1) (term env f2) l
     | Var (v,(tl,rl,el)) ->
         let rl = List.map (Env.rlookup env) rl in
         let el = List.map (effect_to_tuple_type env) el in
@@ -225,7 +225,7 @@ let rec term env t =
         (* the obtained type is the type of the instantiated f in the new
          * type system, maybe we have to convert *)
         let s = scheme env v.scheme in
-        let v = var (mk_var_with_scheme v.var s) ni l in
+        let v = var (mk_var_with_scheme v.is_constr v.var s) ni l in
         let obtained_type = v.t in
         adapt obtained_type expected_type v l
     | Quant (k,t,b) ->
@@ -244,8 +244,13 @@ let rec term env t =
         let env', g = genfun env g in
         let e1 = term env' e1 in
         let_ g e1 x (term env e2) r l
+    | Case (t,bl) ->
+        case (term env t) (List.map (branch env) bl) l
     | Lam _ | LetReg _ | Param _ | HoareTriple _ ->
         assert false
+and branch env b =
+  let nvl, p, t = popen b in
+  pclose nvl p (term env t)
 
 let rec decl env d =
   match d with

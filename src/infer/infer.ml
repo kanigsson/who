@@ -46,6 +46,8 @@ module Env : sig
   val to_program_env : t -> t
   val is_logic_env : t -> bool
 
+  val has_binding : t -> Name.t -> bool
+
 end = struct
   type t = { vars : (G.t * M.t) Name.M.t ; pm : bool; }
 
@@ -61,16 +63,20 @@ end = struct
 
   let lookup env v = Name.M.find v env.vars
 
+  let has_binding env v = Name.M.mem v env.vars
+
 end
 
-let mk_var_with_m_scheme v s = { var = v; scheme = s }
+let mk_var_with_m_scheme is_constr v s =
+  { var = v; scheme = s; is_constr = is_constr }
 
 type error =
   | Basic of string
   | WrongRegionCap
   | WrongRegionCapNumber
   | NotAFunction of M.t
-  | WrongNumberEffects of Name.t * int * int
+  | Instantiation of Name.t
+  | WrongNrConstrArgs of Name.t * int * int
 
 exception Error of Loc.loc * error
 
@@ -83,12 +89,15 @@ let explain e =
   | WrongRegionCap -> "region capacity is not the one expected here"
   | WrongRegionCapNumber ->
       "the number of region capacities is not the one expected here"
-  | WrongNumberEffects(v,l1,l2) ->
-      Myformat.sprintf "not the right number of effect vars: %a@.\
-      I expected %d variables, but you gave %d effects.@." Name.print v l1 l2
+  | Instantiation v ->
+      Myformat.sprintf "instantiation of %a: not the right number of arguments"
+        Name.print v
   | NotAFunction t ->
       Myformat.sprintf "term is expected to be a function but is of type %a"
         M.print t
+  | WrongNrConstrArgs (v,l1,l2) ->
+      Myformat.sprintf "constructor %a expects %d arguments, but is given %d"
+        Name.print v l1 l2
 
 let error l e = raise (Error (l,e))
 
@@ -108,7 +117,23 @@ let postf e t old cur res p =
   let lameff s body = I.pure_lam s (Some (M.map e)) body l in
   lameff old (lameff cur (I.pure_lam res t p l))
 
+let type_of_branch (_,_,e) = e.t
+let rw_of_branch (_,_,e) = e.e
+
 module Uf = Unionfind
+
+let varfun env v inst l =
+(*   Myformat.printf "treating var: %a@." Name.print v.I.var; *)
+  let m ,xt =
+    try Env.lookup env v.I.var
+    with Not_found ->
+      errorm l "variable %a not found" Name.print v.I.var in
+  let xt = if Env.is_logic_env env then M.to_logic_type xt else xt in
+  let nt,i =
+    try M.refresh m inst xt
+    with Invalid_argument _ -> error l (Instantiation v.I.var) in
+  let v = mk_var_with_m_scheme v.I.is_constr v.I.var (m,xt) in
+  v, i, nt
 
 let rec check_type env t (x : I.t) =
   let e = infer env x in
@@ -128,8 +153,9 @@ and infer env (x : I.t) =
           | M.Map em ->
               let em = M.to_effect em in
               let v = PL.var PI.restrict_id in
+              let v = I.mkvar false v in
               let new_e =
-                I.app (I.var ~inst:[Effect.diff em e; e] v l) m l in
+                I.app (I.var ~inst:([],[],[Effect.diff em e; e]) v l) m l in
               let e = infer env new_e in
               e.v, e.t, e.e
           | _ -> assert false
@@ -143,7 +169,9 @@ and infer env (x : I.t) =
             let e = M.rremove e [r] in
             let e = M.to_effect e in
             let v = PL.var PI.get_id in
-            let new_e = I.app (I.app (I.var ~inst:[e] v l) ref l) map l in
+            let v = I.mkvar false v in
+            let new_e =
+              I.app (I.app (I.var ~inst:([],[],[e]) v l) ref l) map l in
             let e = infer env new_e in
             e.v, e.t, e.e
         | _, M.Ref _  ->
@@ -153,23 +181,16 @@ and infer env (x : I.t) =
             errorm l "using !! on term which is not a reference but of type
             %a@." M.print ref'.t
         end
-    | I.App (e1,e2, k, cap) ->
+    | I.App (e1,e2, k) ->
         let e1 = infer env e1 in
         let t1,t2, eff =
           match Uf.desc e1.t with
-          | M.Arrow (t1,t2, eff, cap') ->
-              begin try
-                List.iter2 (fun a b -> U.runify a (M.from_region b)) cap' cap;
-                t1,t2, eff
-              with
-              | Unify.CannotUnify -> error l WrongRegionCap
-              | Invalid_argument _ -> error l WrongRegionCapNumber
-        end
+          | M.Arrow (t1,t2, eff) -> t1,t2, eff
           | M.PureArr (t1,t2) -> t1, t2, M.rw_empty
           | _ -> error l (NotAFunction e1.t)
         in
         let e2 = check_type env t1 e2 in
-        App (e1,e2,k, cap), t2, M.rw_union3 e1.e e2.e eff
+        App (e1,e2,k), t2, M.rw_union3 e1.e e2.e eff
     | I.Annot (e,t) ->
         let t' = M.from_ty t in
         let e = check_type env t' e in
@@ -210,30 +231,31 @@ and infer env (x : I.t) =
         let p = pre env (fst e.e) p l in
         let q = post env e.e e.t q l in
         HoareTriple (p,e,q), M.prop, M.rw_empty
-    | I.Var (v,el) ->
-(*         Myformat.printf "treating var: %a@." Name.print v; *)
-        let (_,_,evl) as m ,xt =
-          try Env.lookup env v
-          with Not_found -> errorm l "variable %a not found" Name.print v in
-        let xt = if Env.is_logic_env env then M.to_logic_type xt else xt in
-        let nt,i =
-          try M.refresh m el xt
-          with Invalid_argument _ ->
-            error l (WrongNumberEffects(v, List.length evl, List.length el)) in
-        let v = mk_var_with_m_scheme v (m,xt) in
+    | I.Var (v,inst) ->
+        let v, i, nt = varfun env v inst l in
         Var (v, i), nt, M.rw_empty
+    | I.Case (e,bl) ->
+        let e = infer env e in
+        let bl = List.map (branch env e.t) bl in
+        ExtList.two_iter (fun a b ->
+          unify (type_of_branch a) (type_of_branch b) l) bl;
+        let rt =
+          let _,_,e = List.hd bl in
+          e.t in
+        let rw = List.fold_left (fun acc b ->
+          M.rw_union acc (rw_of_branch b)) e.e bl in
+        Case (e,bl), rt, rw
     | I.Let (g,e1,(_,x,e2),r) ->
         let env, e1 = letgen env x g e1 r in
         let e2 = infer env e2 in
         Let (g, e1,Name.close_bind x e2,r), e2.t, M.rw_union e1.e e2.e
-    | I.Lam (x,xt,cap,(p,e,q)) ->
+    | I.Lam (x,xt,(p,e,q)) ->
         let nt = M.from_ty xt in
         let env = Env.add_svar env x nt in
         let e = infer (Env.to_program_env env) e in
         let p = pre env (fst e.e) p l in
         let q = post env e.e e.t q l in
-        Lam (x,xt,cap,(p,e,q)), M.arrow nt e.t e.e (List.map M.from_region cap),
-        M.rw_empty
+        Lam (x,xt,(p,e,q)), M.arrow nt e.t e.e, M.rw_empty
   in
   { v = e ; t = t ; e  = eff ; loc = l }
 and pre env eff (cur,x) l =
@@ -253,6 +275,34 @@ and post env eff t (old,cur,x) l =
     | I.PResult (r,f) -> r, f in
   let p = postf eff (Some t) old cur r f in
   check_type (Env.to_logic_env env) bp p
+
+and branch env exp (nvl, p, e) =
+  let env, p = pattern env exp p in
+  nvl, p, infer env e
+
+and pattern_node env exp p l =
+  match p with
+  | I.PVar v ->
+      assert (not (Env.has_binding env v));
+      Env.add_svar env v exp, PVar v, exp
+  | I.PApp (v,pl) ->
+      let v, i, nt = varfun env v ([],[],[]) l in
+      assert (v.is_constr);
+      let tl, rt = M.nsplit nt in
+      U.unify exp rt;
+      let env, pl =
+        try
+          List.fold_left2 (fun (env, pl) t p ->
+            let env, p = pattern env t p in
+            env, p::pl) (env,[]) tl pl
+        with Invalid_argument "List.fold_left2" ->
+          error l (WrongNrConstrArgs (v.var, List.length tl, List.length pl))
+          in
+      env, PApp (v, i, List.rev pl), rt
+and pattern env exp p =
+  let l = p.I.ploc in
+  let env, p', t = pattern_node env exp p.I.pv l in
+  env, { pv = p' ; pt = t; ploc = l  }
 
 and letgen env x g e r =
   let env' =
@@ -288,7 +338,7 @@ and theory env th = ExtList.fold_map infer_th env th
 and typedef env tl n k =
   match k with
   | Ast.Abstract -> env
-  | Ast.ADT bl -> 
+  | Ast.ADT bl ->
       let base = Ty.app n (List.map Ty.var tl) in
       List.fold_left (cbranch tl base) env bl
 and cbranch tvl base env (n,tl) =

@@ -22,6 +22,7 @@
 (******************************************************************************)
 
 module SM = Misc.StringMap
+module SS = Misc.StringSet
 module G = Ty.Generalize
 module NM = Name.M
 module IT = ParseTypes
@@ -29,6 +30,8 @@ module IT = ParseTypes
 type error =
   | UnknownVar of string * string
   | EffectOrRegionArgumentsToAbstractType
+  | NotAConstructor of string
+  | NonlinearPattern of string option
 
 exception Error of Loc.loc * error
 
@@ -38,6 +41,12 @@ let explain e =
       Myformat.sprintf "unknown %s var: %s" s x
   | EffectOrRegionArgumentsToAbstractType ->
       "Region or effect arguments are not allowed for abstract types."
+  | NotAConstructor s -> Myformat.sprintf "not a constructor: %s" s
+  | NonlinearPattern s ->
+      let msg = "nonlinear usage of variable in pattern" in
+      match s with
+      | None -> msg
+      | Some s -> Myformat.sprintf "%s: %s" msg s
 
 let error loc kind = raise (Error (loc, kind))
 
@@ -51,10 +60,12 @@ module Env : sig
   val rvar : Loc.loc -> t -> string -> Name.t
   val effvar :Loc.loc ->  t -> string -> Name.t
   val tyvar :Loc.loc ->  t -> string -> Name.t
+  val is_constr : t -> string -> bool
 
   val typedef : t -> string -> Ty.Generalize.t * Ty.t
 
   val add_var : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string option -> t * Name.t
+  val add_constr : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string -> t * Name.t
   val add_ex_var : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string -> Name.t -> t
   val add_rvars : t -> string list -> t * Name.t list
   val add_tvars : t -> string list -> t * Name.t list
@@ -73,13 +84,14 @@ end = struct
       t : Name.t SM.t ;
       r : Name.t SM.t ;
       e : Name.t SM.t ;
+      constr: SS.t ;
       tyrepl : (Ty.Generalize.t * Ty.t) Misc.StringMap.t ;
       typing : (Ty.Generalize.t * Ty.t) NM.t
     }
 
   let empty =
     { v = SM.empty; t = SM.empty;
-      r = SM.empty; e = SM.empty;
+      r = SM.empty; e = SM.empty; constr = SS.empty;
       tyrepl = Misc.StringMap.empty;
       typing = NM.empty ;
     }
@@ -91,6 +103,8 @@ end = struct
   let tyvar l env = gen_var l "type" env.t
   let rvar l env = gen_var l "region" env.r
   let effvar l env = gen_var l "effect" env.e
+
+  let is_constr env x = SS.mem x env.constr
 
   let only_add_type env x g =
     { env with typing = NM.add x g env.typing }
@@ -108,6 +122,11 @@ end = struct
       | Some x ->
           let y = Name.from_string x in
           add_ex_var env ?ty x y, y
+
+  let add_constr_bool env x = { env with constr = SS.add x env.constr }
+  let add_constr env ?ty x =
+    let env, n = add_var env ?ty (Some x) in
+    add_constr_bool env x, n
 
   let add_tvar env x =
     let y = Name.from_string x in
@@ -173,9 +192,8 @@ let ty env t =
     | IT.TVar v -> Ty.var (Env.tyvar loc env v)
     | IT.TConst c -> Ty.const c
     | IT.Tuple tl -> Ty.tuple (List.map aux tl)
-    | IT.Arrow (t1,t2,e,cap) ->
-        Ty.caparrow (aux t1) (aux t2) (rw loc env e)
-          (List.map (Env.rvar loc env) cap)
+    | IT.Arrow (t1,t2,e) ->
+        Ty.arrow (aux t1) (aux t2) (rw loc env e)
     | IT.PureArr (t1,t2) -> Ty.parr (aux t1) (aux t2)
     | IT.TApp (v,i) ->
         let i = inst loc i in

@@ -26,7 +26,7 @@
 type t =
   | Const of Const.ty
   | Tuple of t list
-  | Arrow of t * t * Rw.t * Name.t list
+  | Arrow of t * t * Rw.t
   | PureArr of t * t
   | App of Name.t * inst
   | Ref of Name.t * t
@@ -45,8 +45,8 @@ module Convert = struct
       | Tuple tl -> P.Tuple (List.map aux tl)
       | PureArr (t1,t2) -> P.PureArr (aux t1, aux t2)
       | Ref (n,t) -> P.Ref (id n, aux t)
-      | Arrow (t1,t2,e,cap) ->
-          P.Arrow (aux t1, aux t2, rw e, List.map id cap)
+      | Arrow (t1,t2,e) ->
+          P.Arrow (aux t1, aux t2, rw e)
       | Map e -> P.Map (effect e)
       | App (n,i) ->
           P.TApp (id n, List.map aux i)
@@ -76,8 +76,7 @@ let print_list sep fmt t = list sep print fmt t
 let print_scheme fmt s =
   PrintTree.Print.scheme fmt (Convert.scheme emp s)
 
-let arrow t1 t2 eff = Arrow (t1,t2,eff,[])
-let caparrow t1 t2 eff cap = Arrow (t1,t2,eff,cap)
+let arrow t1 t2 eff = Arrow (t1,t2,eff)
 let parr t1 t2 = PureArr (t1,t2)
 let const c = Const c
 let ref_ r t = Ref (r,t)
@@ -122,13 +121,13 @@ let destr_pair t =
   | _ ->  invalid_arg "Ty.destr_pair"
 
 let latent_effect = function
-  | Arrow (_,_,e,_) -> e
+  | Arrow (_,_,e) -> e
   | PureArr _ -> Rw.empty
   | _ -> assert false
 
 let split t =
   match t with
-  | Arrow (t1,t2,_,_) -> t1, t2
+  | Arrow (t1,t2,_) -> t1, t2
   | PureArr (t1,t2) -> t1, t2
   | _ -> invalid_arg "split"
 
@@ -181,8 +180,8 @@ let node_map ?(rfun=Misc.id) ?(effectfun=Misc.id) f t =
       | Map e -> Map (effectfun e)
       | Tuple tl -> tuple (List.map aux tl)
       | PureArr (t1,t2) -> parr (aux t1) (aux t2)
-      | Arrow (t1,t2,e,rl) ->
-          caparrow (aux t1) (aux t2) (rw e) (List.map rfun rl)
+      | Arrow (t1,t2,e) ->
+          arrow (aux t1) (aux t2) (rw e)
       | Ref (r,t) -> ref_ (rfun r) (aux t)
       | App (v,i) -> app v (List.map aux i) in
     f t
@@ -192,7 +191,7 @@ let node_map ?(rfun=Misc.id) ?(effectfun=Misc.id) f t =
 let to_logic_type =
   let f t =
     match t with
-    | Arrow (t1,t2,e,_) -> prepost_type t1 t2 (Rw.overapprox e)
+    | Arrow (t1,t2,e) -> prepost_type t1 t2 (Rw.overapprox e)
     | _ -> t
   in
   node_map f
@@ -280,9 +279,8 @@ let rec equal t1 t2 =
       equal ta1 tb1 && equal ta2 tb2
   | Tuple tl1, Tuple tl2 when List.length tl1 = List.length tl2 ->
       List.for_all2 equal tl1 tl2
-  | Arrow (ta1,ta2,e1, cap1), Arrow (tb1,tb2,e2, cap2) ->
-      equal ta1 tb1 && equal ta2 tb2 && Rw.equal e1 e2 &&
-      ExtList.equal Name.equal cap1 cap2
+  | Arrow (ta1,ta2,e1), Arrow (tb1,tb2,e2) ->
+      equal ta1 tb1 && equal ta2 tb2 && Rw.equal e1 e2
   | Ref (r1,t1), Ref (r2,t2) -> Name.equal r1 r2 && equal t1 t2
   | Map e1, Map e2 -> Effect.equal e1 e2
   | App (v1,i1), App (v2,i2) ->
@@ -320,7 +318,7 @@ let find_type_of_r name x =
   let rec aux = function
     | Const _ | Map _ -> None
     | Ref (n,t) -> if Name.equal n name then Some t else aux t
-    | Arrow (t1,t2,_,_) | PureArr (t1,t2) ->
+    | Arrow (t1,t2,_) | PureArr (t1,t2) ->
         begin match aux t1 with
         | (Some _) as r -> r
         | None -> aux t2

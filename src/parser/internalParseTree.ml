@@ -25,13 +25,16 @@ module G = Ty.Generalize
 
 (** TODO declare some type annotations as optional *)
 
+type var =
+  { var : Name.t ; is_constr : bool }
+
 type t' =
   | Const of Const.t
-  | Var of Name.t * Effect.t list
+  | Var of var * inst
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t * [`Infix | `Prefix ] * Name.t list
-  | Lam of Name.t * Ty.t * Name.t list * funcbody
+  | App of t * t * [`Infix | `Prefix ]
+  | Lam of Name.t * Ty.t * funcbody
   | Let of G.t * t * t Name.bind * isrec
   | PureFun of MutableType.t option * t Name.bind
   | Ite of t * t * t
@@ -44,15 +47,22 @@ type t' =
   | LetReg of Name.t list * t
   | Restrict of t * Effect.t
   | Get of t * t
+  | Case of t * branch list
 and t = { v : t' ; loc : Loc.loc }
 and post' =
   | PNone
   | PPlain of t
   | PResult of Name.t * t
+and branch = Name.t list * pattern * t
 and pre = Name.t * t option
 and post = Name.t * Name.t * post'
 and isrec = Ty.t Const.isrec
 and funcbody = pre * t * post
+and pattern_node =
+  | PVar of Name.t
+  | PApp of var * pattern list
+and pattern = { pv : pattern_node ; ploc : Loc.loc }
+and inst = Ty.t list * Name.t list * Effect.t list
 
 type decl =
   | Logic of Name.t * G.t * Ty.t
@@ -71,10 +81,12 @@ let annot e t = mk (Annot (e,t))
 let gen g t l =
   if Ty.Generalize.is_empty g then t else mk (Gen (g,t)) l
 
-let app t1 t2 = mk (App (t1,t2,`Prefix,[]))
-let var ?(inst=[]) v = mk (Var (v,inst))
+let app t1 t2 = mk (App (t1,t2,`Prefix))
+let var ?(inst=Inst.empty) v = mk (Var (v,inst))
 
 let print _ _ = assert false (* TODO *)
 
 let ptrue l = mk (Const Const.Ptrue) l
 let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
+
+let mkvar is_constr v = { var = v; is_constr = is_constr }

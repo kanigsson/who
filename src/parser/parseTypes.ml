@@ -28,7 +28,7 @@ type t' =
   | TVar of string
   | TConst of Const.ty
   | Tuple of t list
-  | Arrow of t * t * rw * string list
+  | Arrow of t * t * rw
   | PureArr of t * t
   | TApp of string * (t,string,effect) Inst.t
   | Ref of string * t
@@ -45,7 +45,7 @@ let print fmt t =
     | TConst c -> Const.print_ty `Who fmt c
     | Tuple tl -> paren (list (fun fmt () -> fprintf fmt " *@ ") pt) fmt tl
     | PureArr (t1,t2) -> fprintf fmt "(%a -> %a)" pt t1 pt t2
-    | Arrow (t1,t2,_,_) -> fprintf fmt "(%a ->{...} %a)" pt t1 pt t2
+    | Arrow (t1,t2,_) -> fprintf fmt "(%a ->{...} %a)" pt t1 pt t2
     | Ref _ -> pp_print_string fmt "ref(...)"
     | Map _ -> pp_print_string fmt "<...>"
     | TApp (v,_) -> fprintf fmt "app(%s)" v

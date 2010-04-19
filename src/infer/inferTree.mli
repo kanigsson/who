@@ -23,16 +23,17 @@
 
 type var =
   { var : Name.t;
-    scheme : Ty.Generalize.t * MutableType.t
+    scheme : Ty.Generalize.t * MutableType.t;
+    is_constr : bool;
   }
 
 type t' =
   | Const of Const.t
-  | Var of var * (MutableType.t,MutableType.r, MutableType.effect) Inst.t
+  | Var of var * inst
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t * [`Infix | `Prefix ] * Name.t list
-  | Lam of Name.t * Ty.t * Name.t list * funcbody
+  | App of t * t * [`Infix | `Prefix ]
+  | Lam of Name.t * Ty.t * funcbody
   | Let of Ty.Generalize.t * t * t Name.bind * isrec
   | PureFun of MutableType.t * t Name.bind
   | Ite of t * t * t
@@ -43,12 +44,20 @@ type t' =
   | For of string * pre * Name.t * Name.t * Name.t * t
   | HoareTriple of funcbody
   | LetReg of Name.t list * t
+  | Case of t * branch list
 and t = { v : t' ; t : MutableType.t ;
           e : MutableType.rw ; loc : Loc.loc }
 and post = t
 and pre = t
 and isrec = Ty.t Const.isrec
 and funcbody = pre * t * post
+and branch = Name.t list * pattern * t
+and inst = (MutableType.t,MutableType.r, MutableType.effect) Inst.t
+and pattern_node =
+  | PVar of Name.t
+  | PApp of var * inst * pattern list
+and pattern = { pv : pattern_node ; pt : MutableType.t ; ploc : Loc.loc}
+
 
 type decl =
   | Logic of Name.t * Ty.Generalize.t * Ty.t

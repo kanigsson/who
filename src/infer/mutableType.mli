@@ -27,7 +27,7 @@ type ty =
   | U
   | Const of Const.ty
   | Tuple of t list
-  | Arrow of t * t * rw * r list
+  | Arrow of t * t * rw
   | PureArr of t * t
   | App of Name.t * t list
   | Ref of r * t
@@ -48,7 +48,7 @@ val bool : unit -> t
 val int : t
 val unit : unit -> t
 val parr : t -> t -> t
-val arrow : t -> t -> rw -> r list -> t
+val arrow : t -> t -> rw -> t
 val map : effect -> t
 
 val new_ty : unit -> t
@@ -69,12 +69,14 @@ val to_region : r -> Name.t
 (* util functions *)
 
 val to_logic_type : t -> t
+val nsplit : t -> t list * t
 val base_pre_ty : effect -> t
 val base_post_ty : effect -> t -> t
 val overapprox : rw -> effect
 
 val refresh :
-  Ty.Generalize.t -> Effect.t list -> t -> t * (t, r, effect) Inst.t
+  Ty.Generalize.t ->
+    Ty.t list * Name.t list * Effect.t list -> t -> t * (t, r, effect) Inst.t
 
 
 

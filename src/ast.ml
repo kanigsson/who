@@ -21,19 +21,20 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
+(** TODO error handling *)
 module G = Ty.Generalize
 module PL = Predefined
 module I = Identifiers
 
-type var = { var : Name.t; scheme : Ty.scheme }
+type var = { var : Name.t; scheme : Ty.scheme ; is_constr : bool }
 
 type node =
   | Const of Const.t
   | Var of var * inst
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t * [`Infix | `Prefix ] * Name.t list
-  | Lam of Name.t * Ty.t * Name.t list * funcbody
+  | App of t * t * [`Infix | `Prefix ]
+  | Lam of Name.t * Ty.t * funcbody
   | Let of G.t * t * t Name.bind * isrec
   | PureFun of Ty.t * t Name.bind
   | Ite of t * t * t
@@ -42,10 +43,16 @@ type node =
   | Gen of G.t *  t
   | HoareTriple of funcbody
   | LetReg of Name.t list * t
+  | Case of t * branch list
 and t = { v : node ; t : Ty.t ; e : Rw.t; loc : Loc.loc }
 and isrec = Ty.t Const.isrec
 and funcbody = t * t * t
 and inst = (Ty.t, Name.t, Effect.t) Inst.t
+and branch = (pattern * t) Name.listbind
+and pattern_node =
+  | PVar of Name.t
+  | PApp of var * inst * pattern list
+and pattern = { pv : pattern_node ; ploc : Loc.loc ; pt : Ty.t }
 
 type decl =
   | Logic of Name.t * Ty.scheme
@@ -65,14 +72,18 @@ and constbranch = Name.t * Ty.t list
 
 type theory = decl list
 
-let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
+let varmap ~varfun ~tyfun v =
+  let (g,t) = v.scheme in
+  { var = varfun v.var ; scheme = g, tyfun t ; is_constr = v.is_constr }
+
+let map ~varfun ~varbindfun ~patternbindfun ~tyfun ~rvarfun ~effectfun f =
   let rec aux' = function
     | (Const _ ) as t -> t
     | Param (t,e) -> Param (tyfun t, rwfun e)
-    | Var (v,i) -> Var (var v, Inst.map tyfun rvarfun effectfun i)
-    | App (t1,t2,p,cap) -> App (aux t1, aux t2, p, List.map rvarfun cap)
-    | Lam (x,t,cap,b) ->
-        Lam (x,tyfun t, List.map rvarfun cap, body b )
+    | Var (v,i) ->
+        Var (varmap ~tyfun ~varfun v, Inst.map tyfun rvarfun effectfun i)
+    | App (t1,t2,p) -> App (aux t1, aux t2, p)
+    | Lam (x,t,b) -> Lam (x,tyfun t, body b )
     | LetReg (l,e) -> LetReg (l,aux e)
     | HoareTriple b -> HoareTriple (body b)
     | Let (g,e1,b,r) -> Let (g,aux e1,varbindfun b, r)
@@ -80,25 +91,46 @@ let map ~varfun ~varbindfun ~tyfun ~rvarfun ~effectfun f =
     | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
     | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
     | Gen (g,e) -> Gen (g,aux e)
+    | Case (t,bl) -> Case (aux t, List.map branch bl)
   and rwfun e = Rw.map effectfun e
   and body (p,e,q) = aux p, aux e, aux q
-  and var v =
-    let (g,t) = v.scheme in
-    { var = varfun v.var ; scheme = g, tyfun t }
+  and branch b = patternbindfun b
   and aux t = {t with v = aux' t.v; t = tyfun t.t; e = rwfun t.e} in
   aux f
 
 let refresh s t =
   map ~varfun:(Name.refresh s)
     ~varbindfun:(Name.refresh_bind s)
+    ~patternbindfun:(Name.refresh_listbind s)
     ~tyfun:Misc.id
     ~rvarfun:Misc.id
     ~effectfun:Misc.id t
+
+let pattern_map ~varfun ~tyfun ~rvarfun ~effectfun p =
+  let varf = varmap ~varfun ~tyfun in
+  let rec aux' p =
+    match p with
+    | PVar v -> PVar (varfun v)
+    | PApp (v,i,pl) ->
+        PApp (varf v,Inst.map tyfun rvarfun effectfun i, List.map aux pl)
+  and aux p = { p with pv = aux' p.pv ; pt = tyfun p.pt } in
+  aux p
 
 let vopen = Name.open_bind refresh
 let close = Name.close_bind
 let sopen = Name.sopen refresh
 let vopen_with x = Name.open_with refresh x
+
+let pattern_refresh s =
+  pattern_map ~varfun:(Name.refresh s)
+    ~tyfun:(Misc.id) ~rvarfun:Misc.id ~effectfun:Misc.id
+
+let popen pb =
+  let nvl, (p,t) =
+    Name.open_listbind (fun s (p,t) -> pattern_refresh s p, refresh s t) pb in
+  nvl, p, t
+
+let pclose nvl p t = Name.close_listbind nvl (p,t)
 
 let var_equal v1 v2 =
   Name.equal v1.var v2.var && Ty.scheme_equal v1.scheme v2.scheme
@@ -109,7 +141,7 @@ let rec equal' a b =
   | Var (v1,i1), Var (v2,i2) ->
       var_equal v1 v2 &&
       Inst.equal Ty.equal Name.equal Effect.equal i1 i2
-  | App (a1,b1,_,_), App (a2,b2,_,_) -> equal a1 a2 && equal b1 b2
+  | App (a1,b1,_), App (a2,b2,_) -> equal a1 a2 && equal b1 b2
   | Gen (g1,t1), Gen (g2,t2) ->
       G.equal g1 g2 && equal t1 t2
   | Ite (a1,b1,c1), Ite (a2,b2,c2) -> equal a1 a2 && equal b1 b2 && equal c1 c2
@@ -145,6 +177,8 @@ module Convert = struct
     | Const.LogicDef -> Const.LogicDef
     | Const.NoRec -> Const.NoRec
     | Const.Rec t -> Const.Rec (ty env t)
+  let add_id = Name.Env.add_id
+  let add_ids = Name.Env.add_id_list
 
   let rec t env term =
     match term.v with
@@ -153,37 +187,46 @@ module Convert = struct
     | Var (v,i) ->
         let s = id env v.var in
         P.Var (s, inst env i, ty env term.t)
-    | App (t1,t2,p,cap) ->
-        P.App (t env t1, t env t2, p, List.map (id env) cap)
+    | App (t1,t2,p) ->
+        P.App (t env t1, t env t2, p)
     | LetReg (l,e) ->
-        let env = Name.Env.add_id_list env l in
+        let env = add_ids env l in
         P.LetReg (List.map (id env) l,t env e)
-    | Lam (x,at,cap,b) ->
-        let env = Name.Env.add_id env x in
-        P.Lam (id env x,ty env at, List.map (id env) cap, body env b )
+    | Lam (x,at,b) ->
+        let env = add_id env x in
+        P.Lam (id env x,ty env at, body env b )
     | HoareTriple b -> P.HoareTriple (body env b)
     | PureFun (at,b) ->
         let x,e = vopen b in
-        let env = Name.Env.add_id env x in
+        let env = add_id env x in
         P.PureFun (id env x, ty env at, t env e )
     | Quant (k,at,b) ->
         let x,e = vopen b in
-        let env = Name.Env.add_id env x in
+        let env = add_id env x in
         P.Quant (k,id env x, ty env at,t env e)
     | Let (g,e1,b,r) ->
         let x, e2 = vopen b in
         let env', g = gen env g in
         let e1 = t env' e1 in
-        let env = Name.Env.add_id env x in
+        let env = add_id env x in
         P.Let (g,e1,id env x, t env e2, rrec env r)
     | Ite (e1,e2,e3) -> P.Ite (t env e1, t env e2, t env e3)
     | Gen (g,e) ->
         let env, g = gen env g in
         P.Gen (g,t env e)
+    | Case (e,bl) ->
+        let e = t env e in
+        P.Case (e, List.map (branch env) bl)
   and body env (t1,t2,t3) = t env t1, t env t2, t env t3
-
-  let add_id = Name.Env.add_id
-  let add_ids = Name.Env.add_id_list
+  and branch env pb =
+    let nvl, p,e = popen pb in
+    let env = add_ids env nvl in
+    pattern env p, t env e
+  and pattern env p =
+    match p.pv with
+    | PVar v -> P.PVar (id env v)
+    | PApp (v,i,pl) ->
+        P.PApp (id env v.var, inst env i, List.map (pattern env) pl)
 
   let rec decl env d =
     match d with
@@ -258,14 +301,48 @@ module Print = struct
 
 end
 
+module Branch = struct
+  let open_ = popen
+  let close = pclose
+
+  let term b = 
+    let _,_,t = open_ b in t
+
+  let rw b =
+    (* dirty code to access the effect of t without reopening *)
+    let _,_,(_,t) = b in
+    t.e
+
+  let ty b =
+    (* dirty code to access the type of t without reopening *)
+    let _,_,(p,t) = b in
+    p.pt, t.t
+
+  let check exp_pty exp b =
+    let pt, t = ty b in
+    if Ty.equal exp t then ()
+    else begin
+      Myformat.printf "type mismatch in branch:expected type %a but is of type
+      %a@." Ty.print exp Ty.print t;
+      invalid_arg "check_branch"
+    end;
+    if Ty.equal exp_pty pt then ()
+    else begin
+      Myformat.printf "type mismatch: term is of type %a but pattern is of type
+      %a@." Ty.print exp_pty Ty.print pt;
+      invalid_arg "check_branch"
+    end
+
+end
+
 module N = Name
 
 let destruct_app' = function
-  | App (f1,f2,_,_) -> Some (f1,f2)
+  | App (f1,f2,_) -> Some (f1,f2)
   | _ -> None
 
 let destruct_app2 = function
-  | App ({v = App (f1,f2,_,_)},f3,_,_) -> Some (f1,f2,f3)
+  | App ({v = App (f1,f2,_)},f3,_) -> Some (f1,f2,f3)
   | _ -> None
 
 let destruct_app2_var' x =
@@ -290,6 +367,8 @@ let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
   let rec aux t =
     map ~varfun
       ~varbindfun:(fun b -> let x,f = vopen b in close x (aux f))
+      ~patternbindfun:(fun pb ->
+        let nvl, p,t = popen pb in pclose nvl p (aux t))
       ~tyfun ~rvarfun ~effectfun t
   in
   aux t
@@ -342,11 +421,13 @@ let const c =
   mk_val (Const c) (Ty.const (Const.type_of_constant c))
 
 let simple_var v t = mk_val (Var (v, Inst.empty)) t
-let mk_var_with_scheme v s = { var = v; scheme = s }
-let mk_var_with_type v t = { var = v; scheme = Ty.as_scheme t }
+let mk_var_with_scheme is_constr v s =
+ { var = v; scheme = s ; is_constr = is_constr }
+let mk_var_with_type is_constr v t =
+  { var = v; scheme = Ty.as_scheme t; is_constr = is_constr }
 let simple_var_id s =
   let x, ((_,t) as s) = PL.var_and_type s in
-  simple_var (mk_var_with_scheme x s) t
+  simple_var (mk_var_with_scheme false x s) t
 
 let mempty l = simple_var_id I.empty_id l
 let btrue_ l = simple_var_id I.btrue_id l
@@ -368,7 +449,7 @@ let svar s = var s Inst.empty
 
 let predef s i =
   let x, t = PL.var_and_type s in
-  let v = mk_var_with_scheme x t in
+  let v = mk_var_with_scheme false x t in
   var v i
 
 let spredef s =
@@ -396,11 +477,11 @@ let hoare_triple p e q l = mk_val (HoareTriple (p,e,q)) Ty.prop l
 
 let gen g e l = true_or e (mk (Gen (g, e)) e.t e.e l)
 
-let simple_app ?(kind=`Prefix) ?(cap=[]) t1 t2 l =
+let simple_app ?(kind=`Prefix) t1 t2 l =
   try
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
     if not (Ty.equal (Ty.arg t1.t) t2.t) then raise Exit;
-    mk (App (t1,t2,kind,cap)) t (Rw.union3 t1.e t2.e e) l
+    mk (App (t1,t2,kind)) t (Rw.union3 t1.e t2.e e) l
   with
   | Exit ->
       Myformat.printf "type mismatch on application: function %a has type %a,
@@ -424,6 +505,42 @@ let get_tuple_var tl i j l =
 
 let id_equal v id = PL.equal v.var id
 
+let case e bl l =
+  let rw =
+    List.fold_left (fun acc b ->
+      Rw.union acc (Branch.rw b)) Rw.empty bl in
+  let rw = Rw.union rw e.e in
+  let t =
+    match bl with
+    | [] -> assert false
+    | b::_ ->
+        let _,exp_type = Branch.ty b in
+        List.iter (Branch.check e.t exp_type) bl; exp_type in
+  let pt = ptrue_ l in
+  let terms = List.map Branch.term bl in
+  if List.for_all (equal pt) terms then pt
+  else mk (Case (e,bl)) t rw l 
+  
+
+let mk_pattern p t l = { pv = p; pt = t; ploc = l }
+
+let mk_pvar v t l =
+  (** constructors are always applications in patterns, possibly to the empty
+     pattern list *)
+  mk_pattern (PVar v) t l
+
+let mk_papp v i tl l =
+  assert (v.is_constr);
+  try
+    let g,t = v.scheme in
+    let nt = (Ty.allsubst g i t) in
+    let tyl, rt = Ty.nsplit nt in
+    List.iter2 (fun t e -> assert (Ty.equal t e.pt)) tyl tl;
+    mk_pattern (PApp (v,i,tl)) rt l
+  with Invalid_argument _ ->
+    failwith (Myformat.sprintf "%a : not the right number of
+    instantiations" Name.print v.var)
+
 let destr_tuple i =
   assert (i>1);
   let rec aux k acc t =
@@ -433,7 +550,7 @@ let destr_tuple i =
       | _ -> None
     else
       match t.v with
-      | App (t1,t2,_,_) -> aux (k-1) (t2::acc) t1
+      | App (t1,t2,_) -> aux (k-1) (t2::acc) t1
       | _ -> None in
   aux i []
 
@@ -450,7 +567,7 @@ let boolcmp_to_propcmp x =
   | x when eq x I.orb_id -> fun _ -> spredef I.or_id
   | _ -> raise Exit
 
-let rec app ?kind ?cap t1 t2 l : t =
+let rec app ?kind t1 t2 l : t =
 (*     Myformat.printf "app: %a and %a@." print t1 print t2; *)
     try match t1.v with
     (* we are trying to build (λx.t) e, reduce to t[x|->e] *)
@@ -458,7 +575,7 @@ let rec app ?kind ?cap t1 t2 l : t =
         let x, body = vopen l in
         subst x (fun _ -> t2) body
     (* double application, check if we are not in a simplification case *)
-    | App (op,t1,_,_) ->
+    | App (op,t1,_) ->
         begin match destruct_varname op with
         | Some (v,_) when id_equal v I.and_id -> and_ t1 t2 l
         | Some (v,_) when id_equal v I.or_id -> or_ t1 t2 l
@@ -481,11 +598,11 @@ let rec app ?kind ?cap t1 t2 l : t =
             | Some i -> get_tuple i t2 l
             end
         | _ -> raise Exit
-    with Exit -> simple_app ?kind ?cap t1 t2 l
+    with Exit -> simple_app ?kind t1 t2 l
 
 and app2 ?kind t t1 t2 loc = app ?kind (app t t1 loc) t2 loc
 and appi t t1 t2 loc = app2 ~kind:`Infix t t1 t2 loc
-and allapp t1 t2 kind cap loc = app ~kind ~cap t1 t2 loc
+and allapp t1 t2 kind loc = app ~kind t1 t2 loc
 and appn t tl loc =
   List.fold_left (fun acc t -> app acc t loc) t tl
 
@@ -521,8 +638,8 @@ and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
     let t =
       match t.v with
       | Const _ -> t
-      | Var (v,i) -> varfun v.var (Inst.map tyfun Misc.id Misc.id i) t
-      | App (t1,t2,p,cap) -> allapp (aux t1) (aux t2) p cap l
+      | Var (v,i) -> varfun v.var (inst i) t
+      | App (t1,t2,p) -> allapp (aux t1) (aux t2) p l
       | Let (g,e1,b,r) ->
           let x,f = vopen b in
           let_ g (aux e1) x (aux f) r l
@@ -536,9 +653,18 @@ and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
       | Gen (g,e) -> gen g (aux e) l
       | HoareTriple (p,e,q) ->
           hoare_triple (aux p) (aux e) (aux q) l
+      | Case (e,bl) -> case (aux e) (List.map branch bl) l
       | LetReg _ | Param _ | Lam _ -> assert false in
     termfun t
-  in
+  and branch b =
+    let nvl, p,t = popen b in
+    pclose nvl (pattern p) (aux t)
+  and inst i = Inst.map tyfun Misc.id Misc.id i
+  and pattern p =
+    let l = p.ploc in
+    match p.pv with
+    | PVar v -> mk_pvar v (tyfun p.pt) l
+    | PApp (v,i,pl) -> mk_papp v i (List.map pattern pl) l in
   aux t
 and impl h1 goal l =
 (*     Myformat.printf "impl: %a and %a@." print h1 print goal; *)
@@ -736,7 +862,7 @@ let infer_app ?fix ?(regions=[]) ?(effects=[]) ?rty x tel l =
 
 let infer_predef ?fix ?regions ?effects ?rty id =
   let x,t = PL.var_and_type id in
-  let x = mk_var_with_scheme x t in
+  let x = mk_var_with_scheme false x t in
   infer_app ?fix ?regions ?effects ?rty x
 
 let le t1 t2 loc =
@@ -745,9 +871,7 @@ let le t1 t2 loc =
 let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
 let efflam x eff e = plam x (Ty.map eff) e
 let lam x t p e q =
-  mk_val (Lam (x,t,[],(p,e,q))) (Ty.arrow t e.t e.e)
-let caplam x t cap p e q =
-  mk_val (Lam (x,t,cap,(p,e,q))) (Ty.caparrow t e.t e.e cap)
+  mk_val (Lam (x,t,(p,e,q))) (Ty.arrow t e.t e.e)
 let plus t1 t2 loc =
   infer_predef ~fix:`Infix I.plus_id [t1;t2] loc
 
@@ -779,9 +903,9 @@ let andlist l loc =
 let rec is_value x =
   match x.v with
   | Const _ | Var _ | Lam _ | PureFun _ | Quant _ | HoareTriple _ -> true
-  | Let _ | Ite _ | LetReg _ | Param _ -> false
+  | Let _ | Ite _ | LetReg _ | Param _ | Case _ -> false
   | Gen (_,e) -> is_value e
-  | App (t1,_,_,_) ->
+  | App (t1,_,_) ->
       match t1.t with
       | Ty.PureArr _ -> true
       | _ -> false
@@ -800,7 +924,7 @@ let quant ?s k t f loc =
     match s with
     | None -> Name.new_anon ()
     | Some s -> Name.from_string s in
-  let var = mk_var_with_type v t in
+  let var = mk_var_with_type false v t in
   let tv = svar var loc in
   squant k v t (f tv) loc
 
@@ -811,7 +935,7 @@ let plamho ?s t f loc =
     match s with
     | None -> Name.new_anon ()
     | Some s -> Name.from_string s in
-  let var = mk_var_with_type v t in
+  let var = mk_var_with_type false v t in
   let tv = svar var loc in
   plam v t (f tv) loc
 
@@ -820,7 +944,7 @@ let efflamho ?s e f loc = plamho ?s (Ty.map e) f loc
 let rec is_param e =
   match e.v with
   | Param _ -> true
-  | Lam (_,_,_,(_,e,_)) -> is_param e
+  | Lam (_,_,(_,e,_)) -> is_param e
   | PureFun (_,(_,_,e)) -> is_param e
   | _ -> false
 

@@ -85,8 +85,6 @@ appterm:
   | t = term { t }
   | t1 = appterm t2 = term
     { app t1 t2 (embrace t1.loc t2.loc) }
-  | t1 = appterm DLCURL l = IDENT* DRCURL t2 = term
-    {app ~cap:(strip_info l) t1 t2 (embrace t1.loc t2.loc) }
 
 infix_term:
   | t = appterm { t }
@@ -110,9 +108,9 @@ nterm:
   | sp = FUN l = one_binding ARROW e = nterm
     { let x,t = l in mk_term (PureFun (t,x,e)) (embrace sp e.loc) }
   | sp = FUN l = one_binding ARROW body = funcbody
-    { let cap, p,e,q = body in
+    { let p,e,q = body in
       let x,t = l in
-      mk_term (Lam (x,t,cap,p,e,q)) (embrace sp q.loc)
+      mk_term (Lam (x,t,p,e,q)) (embrace sp q.loc)
     }
   | st = IF it = nterm THEN tb = nterm ELSE eb = nterm
     { mk_term (Ite(it,tb,eb)) (embrace st eb.loc) }
@@ -130,7 +128,7 @@ nterm:
     { mk_term (Param (t,e)) (embrace p r) }
 
 funcbody:
-  cap = maycapdef p = spec e = nterm q = spec { cap, p,e,q }
+  p = spec e = nterm q = spec { p,e,q }
 
 spec:
   LCURL t = nterm RCURL { t }

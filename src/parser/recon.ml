@@ -57,18 +57,18 @@ let to_rw loc t =
 
 let var loc v =
   let g,t = v.I.scheme in
-  { var = v.I.var ; scheme = g, to_ty loc t}
+  { var = v.I.var ; scheme = g, to_ty loc t; is_constr = v.I.is_constr}
 
 let rec recon' loc = function
   | I.Var (x,i) -> Var (var loc x,inst loc i)
   | I.Const c -> Const c
-  | I.App (e1,e2,k,cap) -> App (recon e1, recon e2,k,cap)
   | I.PureFun (t,(s,x,e)) ->
       let e = recon e in
       if not (Rw.is_empty e.e) then error loc PureFunctionWithEffect;
       PureFun (to_ty loc t,(s,x, e))
+  | I.App (e1,e2,k) -> App (recon e1, recon e2,k)
   | I.Quant (k,t,(s,x,e)) -> Quant (k,to_ty loc t,(s,x, recon e))
-  | I.Lam (x,ot,cap,(p,e,q)) -> Lam (x,ot, cap, (recon p, recon e, recon q))
+  | I.Lam (x,ot,(p,e,q)) -> Lam (x,ot, (recon p, recon e, recon q))
   | I.Param (t,e) -> Param (t,e)
   | I.Let (g,e1,(_,x,e2),r) ->
       Let (g, recon e1, Name.close_bind x (recon e2),r)
@@ -79,11 +79,11 @@ let rec recon' loc = function
       let rw = body.e and l = body.loc in
       let inv = recon inv in
       let inv' = plam i Ty.int inv l in
-      let intvar s = svar (mk_var_with_type s Ty.int) l in
+      let intvar s = svar (mk_var_with_type false s Ty.int) l in
       let cur = Name.from_string "cur" in
       let sv = intvar st and ev = intvar en and iv = intvar i in
       let read = Rw.reads rw and write = Rw.writes rw in
-      let curvar = svar (mk_var_with_type cur (Ty.map read)) l in
+      let curvar = svar (mk_var_with_type false cur (Ty.map read)) l in
       let pre =
         if bdir then
         (* forto: λcur. start <= i /\ i <= end_ /\ inv *)
@@ -121,10 +121,19 @@ let rec recon' loc = function
   | I.LetReg (vl,e) -> LetReg (vl,recon e)
   | I.Annot (e,t) -> (recon e).v
   | I.Gen (g,e) -> Gen (g,recon e)
+  | I.Case (t,bl) -> Case (recon t, List.map branch bl)
 and get_pre (_,x) =
   match x with
   | None -> assert false
   | Some x -> recon x
+and branch (nvl,p,t) = pclose nvl (pattern p) (recon t)
+and pattern_node loc p =
+  match p with
+  | I.PVar v -> PVar v
+  | I.PApp (v,i,pl) -> PApp (var loc v, inst loc i, List.map pattern pl)
+and pattern p =
+  let loc = p.I.ploc in
+  { pv = pattern_node loc p.I.pv; pt = to_ty loc p.I.pt; ploc = loc}
 and recon (t : InferTree.t) : Ast.t =
   let loc = t.I.loc in
   { v = recon' loc t.I.v; t = to_ty loc t.I.t;

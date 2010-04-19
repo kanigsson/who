@@ -46,15 +46,14 @@ let rec unify a b =
   | _, U -> union a b
   | Const c1, Const c2 when c1 = c2 -> ()
   | PureArr (ta1,ta2), PureArr (tb1,tb2)
-  | Arrow (ta1,ta2,_,_), PureArr (tb1,tb2)
-  | PureArr (ta1,ta2), Arrow (tb1,tb2,_,_) ->
+  | Arrow (ta1,ta2,_), PureArr (tb1,tb2)
+  | PureArr (ta1,ta2), Arrow (tb1,tb2,_) ->
       unify ta1 tb1;
       unify ta2 tb2
-  | Arrow (ta1,ta2,e1,c1), Arrow (tb1,tb2,e2,c2) ->
+  | Arrow (ta1,ta2,e1), Arrow (tb1,tb2,e2) ->
       unify ta1 tb1;
       unify ta2 tb2;
-      rwunify e1 e2;
-      List.iter2 runify c1 c2;
+      rwunify e1 e2
   | Tuple tl1, Tuple tl2 when List.length tl1 = List.length tl2 ->
       List.iter2 unify tl1 tl2
   | Ref (r1,t1), Ref (r2,t2) -> runify r1 r2; unify t1 t2
