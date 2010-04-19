@@ -248,7 +248,7 @@ module Pangoline = struct
     | Tuple tl -> list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
     | TConst c -> Const.print_ty `Pangoline fmt c
     | TApp (v,[]) -> fprintf fmt "%a" string v
-    | TApp (v,i) -> fprintf  fmt "%a[%a]" string v (list comma ty) i
+    | TApp (v,i) -> fprintf  fmt "%a[%a]" string v (list comma mayp) i
   and mayp fmt t =
       if is_compound `Pangoline t then paren ty fmt t else ty fmt t
 

@@ -1,4 +1,5 @@
-<main.*> : pkg_unix, pkg_num, pkg_menhirLib
+<main.*> : pkg_unix, pkg_num, pkg_menhirLib, pkg_str
 <parser> : include
 <util> : include
 <infer> : include
+<name.ml{,i}> : pkg_str

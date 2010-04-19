@@ -5,7 +5,7 @@ COQPRESENT:=@COQPRESENT@
 COQLIB:=@COQLIB@
 exec_prefix=@exec_prefix@
 BINDIR=@bindir@
-OCAMLBUILD := ocamlbuild -classic-display -X papers -tag debug -lib str
+OCAMLBUILD := ocamlbuild -classic-display -X papers -tag debug
 COQVO := WhoMap.vo WhoArith.vo WhoArray.vo WhoList.vo WhoTuples.vo
 HEADACHE:= headache
 COQV := $(COQVO:.vo=.v)
