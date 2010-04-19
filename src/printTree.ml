@@ -52,6 +52,7 @@ type t =
   | Quant of [`FA | `EX ] * string * ty * t
   | Param of ty * rw
   | Gen of gen *  t
+  | PRef of string
   | HoareTriple of funcbody
   | LetReg of string list * t
   | Case of t * branch list
@@ -143,7 +144,7 @@ module Generic = struct
     fprintf fmt "(%a :@ %s)" (list space string) l s
 
   let is_compound_term = function
-    | Const _ | Var _ | Lam _ | PureFun _ | Get _ -> false
+    | Const _ | Var _ | Lam _ | PureFun _ | Get _ | PRef _ -> false
     | App _ | Let _ | Ite _ | Case _
     | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
 
@@ -206,7 +207,8 @@ module Coq = struct
         if tl = [] then term fmt t else
           fprintf fmt "%a %a" pr_generalize tl term t
     (* specific to Who, will not be printed in backends *)
-    | Param _ | HoareTriple _ | LetReg _ | Lam _ | Get _ -> assert false
+    | Param _ | HoareTriple _ | LetReg _ | Lam _ | Get _ | PRef _ ->
+        assert false
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
   and branch fmt (p,t) =
@@ -325,7 +327,8 @@ module Pangoline = struct
         fprintf fmt "@[case %a of @[%a@] end @]" term t
           (list inductive_sep branch) bl
     (* specific to Who, will not be printed in backends *)
-    | Param _ | HoareTriple _ | LetReg _ | Lam _ | Get _ -> assert false
+    | Param _ | HoareTriple _ | LetReg _ | Lam _ | Get _ | PRef _ ->
+        assert false
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
   and branch fmt (p,t) =
@@ -467,9 +470,10 @@ module Who = struct
         fprintf fmt "@[(fun %a@ ->@ {%a}@ %a@ {%a})@]"
           binder (x,t) term p term e term q
     | Case (t,bl) ->
-        fprintf fmt "@[case %a of @[%a@] end @]" term t
+        fprintf fmt "@[match %a with @[%a@] end @]" term t
           (list inductive_sep branch) bl
     | Get (r,t) -> fprintf fmt "!!%a@@%a" term r term t
+    | PRef r -> fprintf fmt "ref(%a)" string r
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
   and branch fmt (p,t) =
@@ -477,7 +481,9 @@ module Who = struct
   and pattern fmt p =
     match p with
     | PVar v -> string fmt v
-    | PApp (v,_,pl) -> fprintf fmt "%a(%a)" string v (list comma pattern) pl
+    | PApp (v,_,pl) ->
+        if pl = [] then string fmt v
+        else fprintf fmt "%a(%a)" string v (list comma pattern) pl
 
 
   let rec decl fmt d =
@@ -491,8 +497,8 @@ module Who = struct
     | TypeDef (x,tl, Abstract) ->
         fprintf fmt "@[type %a%a@]" string x gen (tl,[],[])
     | Inductive (n,g,tyl, fl) ->
-        fprintf fmt "@[<hov 2>inductive %a %a : %a = %a@]" string n gen g
-          (list space ty) tyl (list inductive_sep term) fl
+        fprintf fmt "@[<hov 2>inductive %a %a %a = %a end@]" string n gen g
+          (list comma ty) tyl (list inductive_sep term) fl
     | TypeDef (n,tl,ADT bl) ->
         fprintf fmt "@[<hov 2>type %a %a = | %a @]"
           string n gen (tl,[],[]) (list inductive_sep constdef) bl

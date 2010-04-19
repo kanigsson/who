@@ -202,17 +202,17 @@ type option ['a||] = | None | Some of a
 let
   f [|r|] = (fun (b:unit) ->
             (fun (x:ref(r,int)) -> {(fun (cur:<r >) -> True)}
-            let __start = 1 in
-            let __end = 5 in
+            let anon = 1 in
+            let anon1 = 5 in
             forto [|| { } {r }]
-            (fun (i:int) -> (fun (cur:<r >) -> !!x@cur < (i * 10))) __start
-            __end
+            (fun (i:int) -> (fun (cur:<r >) -> !!x@cur < (i * 10))) anon
+            anon1
             (fun (i:int) ->
             {(fun (cur:<r >) ->
-             ((__start <= i) /\ (i <= __end)) /\ (!!x@cur < (i * 10)))}
+             ((anon <= i) /\ (i <= anon1)) /\ (!!x@cur < (i * 10)))}
             x := ((! [int| r|] x) + i)
-            {(fun (anon:<r >) ->
+            {(fun (anon2:<r >) ->
              (fun (cur:<r >) ->
-             (fun (anon1:unit) -> !!x@cur < ((i + 1) * 10))))})
+             (fun (anon3:unit) -> !!x@cur < ((i + 1) * 10))))})
             {(fun (old:<r >) ->
              (fun (cur:<r >) -> (fun (anon:unit) -> True)))})) 

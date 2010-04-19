@@ -218,18 +218,18 @@ let
                                                                    ->
                                                                    inv cur1
                                                                    (i + 1))))]])))}
-                   let __start = 0 in
-                   let __end = (len [a||] (! [array[a]| t|] ar)) - 1 in
+                   let anon = 0 in
+                   let anon1 = (len [a||] (! [array[a]| t|] ar)) - 1 in
                    forto [|| { } {t 'e}]
-                   (fun (i:int) -> (fun (cur:<t 'e>) -> inv cur i)) __start
-                   __end
+                   (fun (i:int) -> (fun (cur:<t 'e>) -> inv cur i)) anon
+                   anon1
                    (fun (i:int) ->
                    {(fun (cur:<t 'e>) ->
-                    ((__start <= i) /\ (i <= __end)) /\ (inv cur i))}
+                    ((anon <= i) /\ (i <= anon1)) /\ (inv cur i))}
                    f (get [a||] i (! [array[a]| t|] ar))
-                   {(fun (anon:<t 'e>) ->
+                   {(fun (anon2:<t 'e>) ->
                     (fun (cur:<t 'e>) ->
-                    (fun (anon1:unit) -> inv cur (i + 1))))})
+                    (fun (anon3:unit) -> inv cur (i + 1))))})
                    {(fun (old:<t 'e>) ->
                     (fun (cur:<t 'e>) ->
                     (fun (anon:unit) -> inv cur (len [a||] !!ar@old))))}))) 

@@ -33,6 +33,7 @@ module I = ParseTree
 module IT = ParseTypes
 open CommonInternalize
 open InternalParseTree
+module G = Ty.Generalize
 
 let mk_var loc env v =
   mkvar (Env.is_constr env v) (Env.var loc env v)
@@ -62,8 +63,14 @@ let rec ast' loc env = function
   | I.Annot (e,t) -> Annot (ast env e, ty env t)
   | I.Param (t,e) -> Param (ty env t, rw loc env e)
   | I.For (dir,p,i,st,en,e) ->
+      let st = ast env st in
+      let en = ast env en in
       let env,i = Env.add_var env (Some i) in
-      For (dir, pre env p, i,Env.var loc env st, Env.var loc env en, ast env e)
+      let start = Name.new_anon () and end_ = Name.new_anon () in
+      let forloop = mk (For (dir, pre env p, i,start, end_, ast env e)) loc in
+      let t = let_ G.empty en end_ forloop Const.NoRec loc in
+      let t = let_ G.empty st start t Const.NoRec loc in
+      t.v
   | I.LetReg (rl,e) ->
       let env, nrl = Env.add_rvars env rl in
       LetReg (nrl, ast env e)

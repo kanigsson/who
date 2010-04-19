@@ -15,5 +15,5 @@ let
                  (fun (cur:<r >) -> (fun (x:ref(r,a)) -> !!x@cur = v)))}) 
 let
   main  = (fun (anon:unit) -> {(fun (cur:< >) -> True)}
-          letregion rho in let x = ref [int| rho|] 5 in ! [int| rho|] x
+          letregion rho in let x = ref(rho) 5 in ! [int| rho|] x
           {(fun (old:< >) -> (fun (cur:< >) -> (fun (r:int) -> r = 5)))}) 

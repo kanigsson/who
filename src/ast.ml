@@ -233,6 +233,8 @@ module Convert = struct
         match term.v with
         | Const c -> P.Const c
         | Param (t,e) -> P.Param (ty env t, rw env e)
+        | Var (v,(_,rl,_)) when id_equal v I.ref_id ->
+            P.PRef (id env (List.hd rl))
         | Var (v,i) ->
             let s = id env v.var in
             P.Var (s, inst env i, ty env term.t)

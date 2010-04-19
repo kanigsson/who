@@ -261,7 +261,7 @@ alllet:
       l, mk_efflam args (snd pre) e (snd q) p, x, NoRec
     }
 (* the recursive function definition case *)
-  | p = LET REC l = gen x = defprogvar_no_pos args = arglist
+  | p = LET REC x = defprogvar_no_pos l = gen args = arglist
     COLON pt = param_annot EQUAL b = funcbody
     {
       let t = rec_annot args pt p in

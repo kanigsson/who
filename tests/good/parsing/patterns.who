@@ -1,6 +1,6 @@
-type t = 
+type t =
 | A of int
-| B 
+| B
 
 let f x =
   match x with

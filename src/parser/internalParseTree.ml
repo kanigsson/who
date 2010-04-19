@@ -90,3 +90,5 @@ let ptrue l = mk (Const Const.Ptrue) l
 let pure_lam x t e = mk (PureFun (x, t, e))
 
 let mkvar is_constr v = { var = v; is_constr = is_constr }
+
+let let_ g e1 x e2 r = mk (Let (g,e1,x,e2,r))

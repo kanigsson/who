@@ -6,6 +6,6 @@ let
                 {(fun (old:<r >) ->
                  (fun (cur:<r >) -> (fun (x:ref(r,a)) -> !!x@cur = v)))}) 
 let
-  myref ['a|r|] = (fun (x:a) -> {(fun (cur:<r >) -> True)} ref [a| r|] x
+  myref ['a|r|] = (fun (x:a) -> {(fun (cur:<r >) -> True)} ref(r) x
                   {(fun (old:<r >) ->
                    (fun (cur:<r >) -> (fun (anon:ref(r,a)) -> True)))}) 

@@ -57,6 +57,8 @@ val mk_tuple_id : int -> string
 val get_tuple_id  : int -> int -> string
 val refget_id : string
 
+val ref_id : string
+
 val unsafe_equal : Name.t -> string -> bool
 
 val is_infix_id : string -> bool

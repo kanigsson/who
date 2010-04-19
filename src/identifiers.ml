@@ -49,6 +49,7 @@ let restrict_id = "restrict"
 let get_id = "!!"
 let store_id = ":="
 
+let ref_id = "ref"
 
 let refget_id = "ref_get"
 let btrue_id = "true"

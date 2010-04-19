@@ -1,2 +1,2 @@
 type t  = | A of int | B 
-let f  = (fun (x:t) -> case x of A(i) ->  i  | B() ->  1  end ) 
+let f  = (fun (x:t) -> match x with A(i) ->  i  | B ->  1  end ) 
