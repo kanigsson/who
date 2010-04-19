@@ -301,6 +301,41 @@ module Print = struct
 
 end
 
+module Branch = struct
+  let open_ = popen
+  let close = pclose
+
+  let term b = 
+    let _,_,t = open_ b in t
+
+  let rw b =
+    (* dirty code to access the effect of t without reopening *)
+    let _,_,(_,t) = b in
+    t.e
+
+  let ty b =
+    (* dirty code to access the type of t without reopening *)
+    let _,_,(p,t) = b in
+    p.pt, t.t
+
+  let check exp_pty exp b =
+    let pt, t = ty b in
+    if Ty.equal exp t then ()
+    else begin
+      Myformat.printf "type mismatch in branch:expected type %a but is of type
+      %a@." Ty.print exp Ty.print t;
+      invalid_arg "check_branch"
+    end;
+    if Ty.equal exp_pty pt then ()
+    else begin
+      Myformat.printf "type mismatch: term is of type %a but pattern is of type
+      %a@." Ty.print exp_pty Ty.print pt;
+      invalid_arg "check_branch"
+    end
+
+
+end
+
 module N = Name
 
 let destruct_app' = function
@@ -471,42 +506,17 @@ let get_tuple_var tl i j l =
 
 let id_equal v id = PL.equal v.var id
 
-let rw_effect_of_branch b =
-  (* dirty code to access the effect of t without reopening *)
-  let _,_,(_,t) = b in
-  t.e
-
-let ty_of_branch b =
-  (* dirty code to access the type of t without reopening *)
-  let _,_,(p,t) = b in
-  p.pt, t.t
-
-let check_branch exp_pty exp b =
-  let pt, t = ty_of_branch b in
-  if Ty.equal exp t then ()
-  else begin
-    Myformat.printf "type mismatch in branch:expected type %a but is of type
-    %a@." Ty.print exp Ty.print t;
-    invalid_arg "check_branch"
-  end;
-  if Ty.equal exp_pty pt then ()
-  else begin
-    Myformat.printf "type mismatch: term is of type %a but pattern is of type
-    %a@." Ty.print exp_pty Ty.print pt;
-    invalid_arg "check_branch"
-  end
-
 let case e bl l =
   let rw =
     List.fold_left (fun acc b ->
-      Rw.union acc (rw_effect_of_branch b)) Rw.empty bl in
+      Rw.union acc (Branch.rw b)) Rw.empty bl in
   let rw = Rw.union rw e.e in
   let t =
     match bl with
     | [] -> assert false
     | b::_ ->
-        let _,exp_type = ty_of_branch b in
-        List.iter (check_branch e.t exp_type) bl; exp_type
+        let _,exp_type = Branch.ty b in
+        List.iter (Branch.check e.t exp_type) bl; exp_type
   in
   mk (Case (e,bl)) t rw l
 
