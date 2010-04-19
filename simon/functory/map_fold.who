@@ -55,12 +55,12 @@ axiom append_does_append ['a] :
   forall (l1 l2 : 'a list) (x : 'a).
     (List.mem x l1 -> List.mem x (List.append l1 l2)) /\
     (List.mem x l2 -> List.mem x (List.append l1 l2))
-axiom list_mem_map ['a 'b||'e]:
+(* axiom list_mem_map ['a 'b||'e]:
   forall (x:'a) (l:'a list) (f:'a ->{'e} 'b).
-  List.mem x l -> List.mem (f x) (List.map [{'e}] f l)
+  [[List.mem x l]] List.map [{'e}] f l, f x [[res: List.mem (snd res) (fst res)]] FIXME*)
 axiom list_length_map ['a 'b||'e]:
   forall (l:'a list) (f:'a ->{'e} 'b).
-  List.length l = List.length (List.map [{'e}] f l)
+  [[]] List.map [{'e}] f l [[res : List.length l = List.length res]]
 axiom list_cons ['a]:
   forall (x:'a) (l:'a list).
   List.mem x (List.cons x l) /\
@@ -135,16 +135,16 @@ master and worker specs
 
 type a
 type b
-logic worker : a -> b
+logic worker : a ->{} b
 logic master ['c||'e] : (a * 'c) -> b ->{'e} (a *'c) list
 
 (* relation *)
 logic relat ['c||'e] : <'e> -> (a * 'c) list -> <'e> -> (a * 'c) list -> prop
 axiom relat_init ['c||'e] : (* one step of worker does keep the invariant *)
   forall (l1 l2 : (a * 'c) list) (x : a) (y : 'c) (e1 e2 : <'e>).
-    (List.mem (x, y) l1 /\
-    [[ cur = e1 ]] master [{'e}] (x, y) (worker x) [[ l : cur = e2 /\ l2 = List.remove (x, y) (List.append l l1) ]] )
-    -> relat [{'e}] e1 l1 e2 l2
+  (List.mem (x, y) l1 /\
+  [[ cur = e1 ]] master [{'e}] (x, y) (worker x) [[ l : cur = e2 /\ l2 = List.remove (x, y) (List.append l l1) ]] )
+  -> relat [{'e}] e1 l1 e2 l2
 
 (* transitive reflective closure *)
 logic relat_trans ['c||'e] : <'e> -> (a * 'c) list -> <'e> -> (a * 'c) list -> prop
@@ -189,32 +189,32 @@ let map (f : a -> b) (l : a list) =
   let tasks = let i = ref {{r}} 0 in List.map [{r}] (fun (x:'a) -> {} incr i; x, !i {}) l in
   letregion r2 in
   let results = ref {{r2}} (Hashtbl.create 17) in
-  let inv (s : <r r2>) (l1 : (a * int) list) = (* invariant *)
+  let inv (s : <r2>) (l1 : (a * int) list) = (* invariant *)
     (Hashtbl.length (!!results@s)) + List.length l1 = List.length l in
-  X.compute [{r r2}]
+  X.compute [{r2}]
     inv
     f
-    (fun tuple r -> Hashtbl.add results (snd tuple) r; nil)
+    (fun (tuple : (a*int)) (r : b) ->{} Hashtbl.add results (snd tuple) r; nil {})
     tasks;
   List.map [{r2}]
     (fun (tuple : a*int) -> {} results := !results (* FIXME : dirty hack *); Hashtbl.find !results (snd tuple) {})
     tasks
   { res:
-    (forall (x:a). (List.mem x l -> List.mem (f x) res
-        /\ List.length res = List.length l)) /\
-    (forall (x:a). (~ (List.mem x l) -> ~ (List.mem (f x) res))) (* redundant ? *)
+    (forall (x:a). [[List.mem x l]] f x [[r : List.mem r res]]
+        /\ List.length res = List.length l) /\
+    (forall (x:a). [[~ (List.mem x l)]] f x [[r : ~ (List.mem r res)]]) (* redundant ? *)
   }
 
 
 (* ============= map_local_fold ========= *)
-logic logic_fold ['a 'b] : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
+logic logic_fold ['a 'b] : ('b -> 'a -> 'b) -> 'b -> 'a list -> 'b
 
 axiom logic_fold_empty ['a 'b]:
-  forall (f : 'a -> 'b -> 'b) (l : 'a list) (acc : 'b).
-  l = nil -> logic_fold f l acc = acc
+  forall (f : 'b -> 'a -> 'b) (l : 'a list) (acc : 'b).
+  l = nil -> logic_fold f acc l = acc
 axiom logic_fold_basic ['a 'b]: (* recursion *)
-  forall (x : 'a) (f : 'a -> 'b -> 'b) (l l2: 'a list) (acc : 'b).
-  l = List.cons x l2 -> logic_fold f l acc = f x (logic_fold f l2 acc)
+  forall (x : 'a) (f : 'b -> 'a -> 'b) (l l2: 'a list) (acc : 'b).
+  l = List.cons x l2 -> logic_fold f acc l = f (logic_fold f acc l2) x
 
 
 
@@ -227,11 +227,11 @@ let map_local_fold ['c] (map : a -> b) (fold : 'c -> b -> 'c) (acc : 'c) (l : a 
   X.compute [{r}]
     inv
     map
-    (fun _blah (r : b) -> {} acc := fold !acc r; (nil : (a*unit)list) {})
-    (List.map [{}] (fun (x : a) -> x, ()) l);
+    (fun (_ : (a*unit)) (r : b) -> {} acc := (fold !acc r); nil {})
+    (List.map [{}] (fun (x : a) -> {} x, () {}) l);
   !acc
   { res:
-  [[]] List.map map l [[l_map : res = logic_fold fold l_map acc]]
+  [[]] List.map [{}] map l [[l_map : res = logic_fold fold acc l_map]]
   }
 
 
