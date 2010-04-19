@@ -47,3 +47,4 @@ val map2i : (int -> 'a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 val liftfun : ('a -> 'b) -> 'a -> 'b list
 
 val two_iter : ('a -> 'a -> unit) -> 'a list -> unit
+val all_equal : 'a eq -> 'a list -> bool

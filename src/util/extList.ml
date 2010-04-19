@@ -121,3 +121,9 @@ let two_iter f =
     | [] | [_] -> ()
     | x::y::xs -> f x y; aux (y::xs) in
   aux
+
+let all_equal equal l =
+  match l with
+  | [] -> true
+  | [x] -> true
+  | x::xs -> List.for_all (equal x) xs

@@ -333,7 +333,6 @@ module Branch = struct
       invalid_arg "check_branch"
     end
 
-
 end
 
 module N = Name
@@ -516,8 +515,7 @@ let case e bl l =
     | [] -> assert false
     | b::_ ->
         let _,exp_type = Branch.ty b in
-        List.iter (Branch.check e.t exp_type) bl; exp_type
-  in
+        List.iter (Branch.check e.t exp_type) bl; exp_type in
   mk (Case (e,bl)) t rw l
 
 let mk_pattern p t l = { pv = p; pt = t; ploc = l }
