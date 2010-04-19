@@ -74,46 +74,41 @@ axiom int_max_is_ge:
   forall (x:int).
   forall (y:int). ((int_max x y) >= x) /\ ((int_max x y) >= y) 
 axiom int_max_is_some:
-  forall (x:int).
-  forall (y:int). ((int_max x y) =[int||] x) \/ ((int_max x y) =[int||] y) 
+  forall (x:int). forall (y:int). ((int_max x y) = x) \/ ((int_max x y) = y) 
 axiom int_min_is_le:
   forall (x:int).
   forall (y:int). ((int_min x y) <= x) /\ ((int_min x y) <= y) 
 axiom int_min_is_some:
-  forall (x:int).
-  forall (y:int). ((int_min x y) =[int||] x) \/ ((int_min x y) =[int||] y) 
+  forall (x:int). forall (y:int). ((int_min x y) = x) \/ ((int_min x y) = y) 
 logic == ['a||] : a -> a -> bool
 logic != ['a||] : a -> a -> bool
 let
-  assert  = (fun (f:prop) -> {(fun (cur:< >) -> f)} parameter(unit,{ } + { })
+  assert  = (fun (f:prop) -> {(fun (cur:< >) -> f)} parameter(unit,{  +  })
             {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit) -> f)))}) 
 let
-  check  = (fun (f:prop) -> {(fun (cur:< >) -> f)} parameter(unit,{ } + { })
+  check  = (fun (f:prop) -> {(fun (cur:< >) -> f)} parameter(unit,{  +  })
            {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit) -> True)))}) 
 let
   assume  = (fun (f:prop) -> {(fun (cur:< >) -> True)}
-            parameter(unit,{ } + { })
+            parameter(unit,{  +  })
             {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:unit) -> f)))}) 
 logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
   ! ['a|r|] = (fun (x:ref(r,a)) -> {(fun (cur:<r >) -> True)}
-              parameter(a,{r } + { })
+              parameter(a,{r  +  })
               {(fun (old:<r >) ->
-               (fun (cur:<r >) ->
-               (fun (r1:a) -> (!! [a| r| { }] x cur) =[a||] r1)))}) 
+               (fun (cur:<r >) -> (fun (r1:a) -> !!x@cur = r1)))}) 
 let
   := ['a|r|] = (fun (x:ref(r,a)) ->
                (fun (v:a) -> {(fun (cur:<r >) -> True)}
-               parameter(unit,{ } + {r })
+               parameter(unit,{  + r })
                {(fun (old:<r >) ->
-                (fun (cur:<r >) ->
-                (fun (anon:unit) -> (!! [a| r| { }] x cur) =[a||] v)))})) 
+                (fun (cur:<r >) -> (fun (anon:unit) -> !!x@cur = v)))})) 
 let
   ref ['a|r|] = (fun (v:a) -> {(fun (cur:<r >) -> True)}
-                parameter(ref(r,a),{ } + {r })
+                parameter(ref(r,a),{  + r })
                 {(fun (old:<r >) ->
-                 (fun (cur:<r >) ->
-                 (fun (x:ref(r,a)) -> (!! [a| r| { }] x cur) =[a||] v)))}) 
+                 (fun (cur:<r >) -> (fun (x:ref(r,a)) -> !!x@cur = v)))}) 
 logic combine [||'e 'e1 'e2] : < 'e 'e1> -> < 'e1 'e2> -> < 'e 'e1 'e2>
 logic restrict [||'e 'e1] : < 'e 'e1> -> < 'e1>
 logic empty  : < >
@@ -125,7 +120,7 @@ let forto [||'e
   'e1] = (fun (inv:int -> < 'e 'e1> -> prop) ->
          (fun (start:int) ->
          (fun (end_:int) ->
-         (fun (f:int ->{{ 'e} + { 'e1}} unit) ->
+         (fun (f:int ->{ 'e +  'e1} unit) ->
          {(fun (cur:< 'e 'e1>) ->
           (inv start cur) /\
           (forall (i:int).
@@ -137,7 +132,7 @@ let forto [||'e
                                                           'e1>) ->
                                                           (fun (anon:unit) ->
                                                           inv (i + 1) cur1)))]]))))}
-         parameter(unit,{ 'e} + { 'e1})
+         parameter(unit,{ 'e +  'e1})
          {(fun (old:< 'e 'e1>) ->
           (fun (cur:< 'e 'e1>) ->
           (fun (anon:unit) -> inv (int_max start (end_ + 1)) cur)))})))) 
@@ -145,7 +140,7 @@ let fordownto [||'e
   'e1] = (fun (inv:int -> < 'e 'e1> -> prop) ->
          (fun (start:int) ->
          (fun (end_:int) ->
-         (fun (f:int ->{{ 'e} + { 'e1}} unit) ->
+         (fun (f:int ->{ 'e +  'e1} unit) ->
          {(fun (cur:< 'e 'e1>) ->
           (inv start cur) /\
           (forall (i:int).
@@ -156,7 +151,7 @@ let fordownto [||'e
                                                          'e1>) ->
                                                          (fun (anon:unit) ->
                                                          inv (i - 1) cur1)))]])))}
-         parameter(unit,{ 'e} + { 'e1})
+         parameter(unit,{ 'e +  'e1})
          {(fun (old:< 'e 'e1>) ->
           (fun (cur:< 'e 'e1>) ->
           (fun (anon:unit) -> inv (int_min start (end_ - 1)) cur)))})))) 
@@ -171,14 +166,14 @@ axiom update_length:
                  forall (i:int).
                  forall (z:a).
                  ((0 <= i) /\ (i < (len [a||] t))) ->
-                 ((len [a||] t) =[int||] (len [a||] (set [a||] i z t))) 
+                 ((len [a||] t) = (len [a||] (set [a||] i z t))) 
 axiom get_set_eq:
   forall ['a||]. forall (t:array[a]).
                  forall (i:int).
                  forall (z:a).
                  ((0 <= i) /\ (i < (len [a||] t))) ->
-                 ((get [a||] i (set [a||] i z t)) =[a||] z) 
-axiom length_empty: forall ['a||]. (len [a||] ar_empty [a||]) =[int||] 0 
+                 ((get [a||] i (set [a||] i z t)) = z) 
+axiom length_empty: forall ['a||]. (len [a||] ar_empty [a||]) = 0 
 axiom get_set_neq:
   forall ['a||]. forall (t:array[a]).
                  forall (i:int).
@@ -186,20 +181,20 @@ axiom get_set_neq:
                  forall (z:a).
                  ((0 <= i) /\ (i < (len [a||] t))) ->
                  (((0 <= j) /\ (j < (len [a||] t))) ->
-                  ((i <>[int||] j) ->
-                   ((get [a||] i (set [a||] j z t)) =[a||] (get [a||] i t)))) 
+                  ((i <> j) ->
+                   ((get [a||] i (set [a||] j z t)) = (get [a||] i t)))) 
 axiom length_nonnegative:
   forall ['a||]. forall (t:array[a]). 0 <= (len [a||] t) 
 axiom length_create:
   forall ['a||]. forall (l:int).
                  forall (v:a).
-                 (0 <= l) -> ((len [a||] (create [a||] l v)) =[int||] l) 
+                 (0 <= l) -> ((len [a||] (create [a||] l v)) = l) 
 axiom create_access:
   forall ['a||]. forall (i:int).
                  forall (l:int).
                  forall (v:a).
                  (0 <= i) ->
-                 ((i < l) -> ((get [a||] i (create [a||] l v)) =[a||] v)) 
+                 ((i < l) -> ((get [a||] i (create [a||] l v)) = v)) 
 type list ['a||] = | Nil | Cons of a* list[a] 
 logic is_nil ['a||] : list[a] -> bool
 logic l_in ['a||] : a -> list[a] -> prop

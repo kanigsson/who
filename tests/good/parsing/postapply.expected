@@ -7,12 +7,11 @@ logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
   := ['a|r|] = (fun (x:ref(r,a)) ->
                (fun (v:a) -> {(fun (cur:<r >) -> True)}
-               parameter(unit,{ } + {r })
+               parameter(unit,{  + r })
                {(fun (old:<r >) ->
-                (fun (cur:<r >) ->
-                (fun (anon:unit) -> (!! [a| r| { }] x cur) =[a||] v)))})) 
+                (fun (cur:<r >) -> (fun (anon:unit) -> !!x@cur = v)))})) 
 let apply ['a
-  'b||'e] = (fun (f:a ->{{ } + { 'e}} b) ->
+  'b||'e] = (fun (f:a ->{  +  'e} b) ->
             (fun (x:a) ->
             {(fun (cur:< 'e>) ->
              fst [a -> < 'e> -> prop,a -> < 'e> -> < 'e> -> b -> prop||] f x
@@ -26,11 +25,9 @@ let apply ['a
 let
   main [|r|] = (fun (x:ref(r,int)) -> {(fun (cur:<r >) -> True)}
                apply [unit,unit|| {r }]
-               (fun (z:unit) -> {(fun (cur:<r >) -> True)} x :=[int| r|] 0
+               (fun (z:unit) -> {(fun (cur:<r >) -> True)} x := 0
                {(fun (old:<r >) ->
-                (fun (cur:<r >) ->
-                (fun (anon:unit) -> (!! [int| r| { }] x cur) =[int||] 0)))})
+                (fun (cur:<r >) -> (fun (anon:unit) -> !!x@cur = 0)))})
                tt
                {(fun (old:<r >) ->
-                (fun (cur:<r >) ->
-                (fun (anon:unit) -> (!! [int| r| { }] x cur) =[int||] 0)))}) 
+                (fun (cur:<r >) -> (fun (anon:unit) -> !!x@cur = 0)))}) 

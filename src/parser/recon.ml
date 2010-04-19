@@ -62,15 +62,15 @@ let var loc v =
 let rec recon' loc = function
   | I.Var (x,i) -> Var (var loc x,inst loc i)
   | I.Const c -> Const c
-  | I.PureFun (t,(s,x,e)) ->
+  | I.PureFun (x,t,e) ->
       let e = recon e in
       if not (Rw.is_empty e.e) then error loc PureFunctionWithEffect;
-      PureFun (to_ty loc t,(s,x, e))
+      PureFun (to_ty loc t,Name.close_bind x e)
   | I.App (e1,e2,k) -> App (recon e1, recon e2,k)
-  | I.Quant (k,t,(s,x,e)) -> Quant (k,to_ty loc t,(s,x, recon e))
+  | I.Quant (k,x,t,e) -> Quant (k,to_ty loc t, Name.close_bind x (recon e))
   | I.Lam (x,ot,(p,e,q)) -> Lam (x,ot, (recon p, recon e, recon q))
   | I.Param (t,e) -> Param (t,e)
-  | I.Let (g,e1,(_,x,e2),r) ->
+  | I.Let (g,e1,x,e2,r) ->
       Let (g, recon e1, Name.close_bind x (recon e2),r)
   | I.Ite (e1,e2,e3) -> Ite (recon e1, recon e2, recon e3)
   | I.For (dir,inv,i,st,en,body) ->

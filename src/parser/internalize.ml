@@ -51,13 +51,13 @@ let rec ast' loc env = function
   | I.Let (g,e1,x,e2,r) ->
       let env, nv, g , e1, r = letgen env x g e1 r in
       let e2 = ast env e2 in
-      Let (g, e1,Name.close_bind nv e2, r)
+      Let (g, e1,nv, e2, r)
   | I.PureFun (x,t,e) ->
       let env, x = Env.add_var env x in
-      PureFun (Opt.map (to_mutable env) t, Name.close_bind x (ast env e))
+      PureFun (x, Opt.map (to_mutable env) t, ast env e)
   | I.Quant (k,x,t,e) ->
       let env, x = Env.add_var env x in
-      Quant (k, Opt.map (to_mutable env) t, Name.close_bind x (ast env e))
+      Quant (k, x, Opt.map (to_mutable env) t, ast env e)
   | I.Ite (e1,e2,e3) -> Ite (ast env e1, ast env e2, ast env e3)
   | I.Annot (e,t) -> Annot (ast env e, ty env t)
   | I.Param (t,e) -> Param (ty env t, rw loc env e)
@@ -69,7 +69,7 @@ let rec ast' loc env = function
       LetReg (nrl, ast env e)
   | I.Seq (e1,e2) ->
       Let (G.empty, annot (ast env e1) (Ty.unit ()) e1.I.loc,
-           Name.close_bind (Name.new_anon ()) (ast env e2), Const.NoRec)
+           Name.new_anon (), ast env e2, Const.NoRec)
   | I.Restrict (t,e) ->
       let t = ast env t and e = effect loc env e in
       Restrict (t,e)
@@ -82,6 +82,9 @@ let rec ast' loc env = function
       Case (t, List.map (branch env) bl)
   | I.Ref r ->
       Var (mk_var loc env "ref", ([],[Env.rvar loc env r], []))
+  | I.Gen (g,t) ->
+      let env, g = Env.add_gen env g in
+      Gen (g, ast env t)
 and to_mutable env t = MutableType.from_ty (ty env t)
 
 and post env x =

@@ -39,7 +39,7 @@ and t = { tv : t' ; tloc : Loc.loc }
 open Myformat
 
 let print fmt t =
-  let rec pt fmt x = 
+  let rec pt fmt x =
     match x.tv with
     | TVar v -> pp_print_string fmt v
     | TConst c -> Const.print_ty `Who fmt c
@@ -56,3 +56,6 @@ let eff_empty = [], []
 let rw_empty = eff_empty, eff_empty
 
 let mkty t l = { tv = t; tloc = l }
+
+let purearrow t1 t2 = mkty (PureArr (t1,t2))
+let effarrow t1 t2 eff = mkty (Arrow (t1,t2,eff))

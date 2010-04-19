@@ -122,7 +122,7 @@ rvar_or_effectvar:
   | x = IDENT { `Rvar x.c }
   | e = TYVAR { `Effvar e.c }
 
-effect: 
+effect:
   | l = rvar_or_effectvar*
   { partition_effect l }
 

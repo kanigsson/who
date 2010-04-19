@@ -4,7 +4,7 @@ logic false  : bool
 logic == ['a||] : a -> a -> bool
 let
   f ['a||] = (fun (x:a) ->
-             (fun (y:a) -> {(fun (cur:< >) -> True)} x ==[a||] y
+             (fun (y:a) -> {(fun (cur:< >) -> True)} x == y
              {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon:bool) -> True)))})) 
 let
   f1 ['a||] = (fun (x:a) -> {(fun (cur:< >) -> True)} true

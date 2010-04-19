@@ -34,11 +34,11 @@ type t' =
   obligatory *)
   | App of t * t * [`Infix | `Prefix ]
   | Lam of Name.t * Ty.t * funcbody
-  | Let of Ty.Generalize.t * t * t Name.bind * isrec
-  | PureFun of MutableType.t * t Name.bind
+  | Let of Ty.Generalize.t * t * Name.t * t * isrec
+  | PureFun of Name.t * MutableType.t * t
   | Ite of t * t * t
   | Annot of t * Ty.t
-  | Quant of [`FA | `EX ] * MutableType.t * t Name.bind
+  | Quant of [`FA | `EX ] * Name.t * MutableType.t * t
   | Param of Ty.t * Rw.t
   | Gen of Ty.Generalize.t * t
   | For of string * pre * Name.t * Name.t * Name.t * t

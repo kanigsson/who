@@ -30,7 +30,6 @@ let constr_only = ref false
 let no_prelude = ref false
 let outfile = ref ""
 let check_coq = ref false
-let input_annot = ref false
 let backend : [ `Coq | `Pangoline ] ref = ref `Pangoline
 let sections = ref false
 let suffix = ref ""
@@ -63,8 +62,6 @@ let print_version () =
 let opt_spec =
   Arg.align
   [
-    "--input-annot", Arg.Set input_annot,
-      " take fully type annotated input file";
     "--parse-only", Arg.Set parse_only, " parse file and exit";
     "--transform-only", Arg.Set transform_only,
       " stop after applying transforms";

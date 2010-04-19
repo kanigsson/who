@@ -150,6 +150,8 @@ let rec equal' a b =
   | PureFun (t1,b1), PureFun (t2,b2) -> Ty.equal t1 t2 && bind_equal b1 b2
   | Quant (k1,t1,b1), Quant (k2,t2,b2) ->
       k1 = k2 && Ty.equal t1 t2 && bind_equal b1 b2
+  | Lam (x1,t1,b1), Lam (x2,t2,b2) ->
+      Name.equal x1 x2 && Ty.equal t1 t2 && funcbody_equal b1 b2
   | LetReg _, _ | Param _, _
   | Lam _, _ -> assert false
   | _, _ -> false
@@ -157,8 +159,52 @@ and bind_equal b1 b2 =
   (let x,eb1 = vopen b1 in
    let eb2 = vopen_with x b2 in
    equal eb1 eb2)
-
+and funcbody_equal (p1,e1,q1) (p2,e2,q2) =
+  equal p1 p2 && equal e1 e2 && equal q1 q2
 and equal a b = equal' a.v b.v
+
+let id_equal v id = PL.equal v.var id
+
+let destruct_app' = function
+  | App (f1,f2,_) -> Some (f1,f2)
+  | _ -> None
+
+let destruct_app2 = function
+  | App ({v = App (f1,f2,_)},f3,_) -> Some (f1,f2,f3)
+  | _ -> None
+
+let destruct_app2_var' x =
+  match destruct_app2 x with
+  | Some ({v = Var (v,g)},f1,f2) -> Some (v,g,f1,f2)
+  | _ -> None
+
+let destruct_app2_var x = destruct_app2_var' x.v
+let destruct_app x = destruct_app' x.v
+
+let is_equality t =
+  match destruct_app2_var t with
+  | Some (v, _, _,_) when PL.equal v.var I.equal_id -> true
+  | _ -> false
+
+let destruct_varname x =
+  match x.v with
+  | Var (v, tl) -> Some (v,tl)
+  | _ -> None
+
+let destruct_restrict' x =
+  match destruct_app' x with
+  | Some ({v = Var (v,([],[],[e1;e2]))},map)
+    when id_equal v I.restrict_id ->
+      Some (map,e1,e2)
+  | _ -> None
+
+let destruct_get' x =
+  match destruct_app2_var' x with
+  | Some (v, ([t],[reg],[e]), r,map) when id_equal v I.get_id ->
+      Some (t,r,reg,Effect.radd e reg,map)
+  | _ -> None
+
+let destruct_get x = destruct_get' x.v
 
 module Convert = struct
 
@@ -181,42 +227,45 @@ module Convert = struct
   let add_ids = Name.Env.add_id_list
 
   let rec t env term =
-    match term.v with
-    | Const c -> P.Const c
-    | Param (t,e) -> P.Param (ty env t, rw env e)
-    | Var (v,i) ->
-        let s = id env v.var in
-        P.Var (s, inst env i, ty env term.t)
-    | App (t1,t2,p) ->
-        P.App (t env t1, t env t2, p)
-    | LetReg (l,e) ->
-        let env = add_ids env l in
-        P.LetReg (List.map (id env) l,t env e)
-    | Lam (x,at,b) ->
-        let env = add_id env x in
-        P.Lam (id env x,ty env at, body env b )
-    | HoareTriple b -> P.HoareTriple (body env b)
-    | PureFun (at,b) ->
-        let x,e = vopen b in
-        let env = add_id env x in
-        P.PureFun (id env x, ty env at, t env e )
-    | Quant (k,at,b) ->
-        let x,e = vopen b in
-        let env = add_id env x in
-        P.Quant (k,id env x, ty env at,t env e)
-    | Let (g,e1,b,r) ->
-        let x, e2 = vopen b in
-        let env', g = gen env g in
-        let e1 = t env' e1 in
-        let env = add_id env x in
-        P.Let (g,e1,id env x, t env e2, rrec env r)
-    | Ite (e1,e2,e3) -> P.Ite (t env e1, t env e2, t env e3)
-    | Gen (g,e) ->
-        let env, g = gen env g in
-        P.Gen (g,t env e)
-    | Case (e,bl) ->
-        let e = t env e in
-        P.Case (e, List.map (branch env) bl)
+    match destruct_get term with
+    | Some (_,r,_,_,map) -> P.Get ( t env r,t env map)
+    | None ->
+        match term.v with
+        | Const c -> P.Const c
+        | Param (t,e) -> P.Param (ty env t, rw env e)
+        | Var (v,i) ->
+            let s = id env v.var in
+            P.Var (s, inst env i, ty env term.t)
+        | App (t1,t2,p) ->
+            P.App (t env t1, t env t2, p)
+        | LetReg (l,e) ->
+            let env = add_ids env l in
+            P.LetReg (List.map (id env) l,t env e)
+        | Lam (x,at,b) ->
+            let env = add_id env x in
+            P.Lam (id env x,ty env at, body env b )
+        | HoareTriple b -> P.HoareTriple (body env b)
+        | PureFun (at,b) ->
+            let x,e = vopen b in
+            let env = add_id env x in
+            P.PureFun (id env x, ty env at, t env e )
+        | Quant (k,at,b) ->
+            let x,e = vopen b in
+            let env = add_id env x in
+            P.Quant (k,id env x, ty env at,t env e)
+        | Let (g,e1,b,r) ->
+            let x, e2 = vopen b in
+            let env', g = gen env g in
+            let e1 = t env' e1 in
+            let env = add_id env x in
+            P.Let (g,e1,id env x, t env e2, rrec env r)
+        | Ite (e1,e2,e3) -> P.Ite (t env e1, t env e2, t env e3)
+        | Gen (g,e) ->
+            let env, g = gen env g in
+            P.Gen (g,t env e)
+        | Case (e,bl) ->
+            let e = t env e in
+            P.Case (e, List.map (branch env) bl)
   and body env (t1,t2,t3) = t env t1, t env t2, t env t3
   and branch env pb =
     let nvl, p,e = popen pb in
@@ -336,32 +385,6 @@ module Branch = struct
 end
 
 module N = Name
-
-let destruct_app' = function
-  | App (f1,f2,_) -> Some (f1,f2)
-  | _ -> None
-
-let destruct_app2 = function
-  | App ({v = App (f1,f2,_)},f3,_) -> Some (f1,f2,f3)
-  | _ -> None
-
-let destruct_app2_var' x =
-  match destruct_app2 x with
-  | Some ({v = Var (v,g)},f1,f2) -> Some (v,g,f1,f2)
-  | _ -> None
-
-let destruct_app2_var x = destruct_app2_var' x.v
-let destruct_app x = destruct_app' x.v
-
-let is_equality t =
-  match destruct_app2_var t with
-  | Some (v, _, _,_) when PL.equal v.var I.equal_id -> true
-  | _ -> false
-
-let destruct_varname x =
-  match x.v with
-  | Var (v, tl) -> Some (v,tl)
-  | _ -> None
 
 let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
   let rec aux t =
@@ -502,8 +525,6 @@ let simple_eq t1 t2 l =
 
 let get_tuple_var tl i j l =
   (predef (I.get_tuple_id i j) (tl,[],[])) l
-
-let id_equal v id = PL.equal v.var id
 
 let lam x t p e q =
   mk_val (Lam (x,t,(p,e,q))) (Ty.arrow t e.t e.e)
@@ -949,21 +970,6 @@ let rec is_param e =
   | Lam (_,_,(_,e,_)) -> is_param e
   | PureFun (_,(_,_,e)) -> is_param e
   | _ -> false
-
-let destruct_restrict' x =
-  match destruct_app' x with
-  | Some ({v = Var (v,([],[],[e1;e2]))},map)
-    when id_equal v I.restrict_id ->
-      Some (map,e1,e2)
-  | _ -> None
-
-let destruct_get' x =
-  match destruct_app2_var' x with
-  | Some (v, ([t],[reg],[e]), r,map) when id_equal v I.get_id ->
-      Some (t,r,reg,Effect.radd e reg,map)
-  | _ -> None
-
-let destruct_get x = destruct_get' x.v
 
 let get ref map l =
   match ref.t with

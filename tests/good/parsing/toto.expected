@@ -14,7 +14,7 @@ let forto [||'e
   'e1] = (fun (inv:int -> < 'e1> -> prop) ->
          (fun (start:int) ->
          (fun (end_:int) ->
-         (fun (f:int ->{{ 'e} + { 'e1}} unit) ->
+         (fun (f:int ->{ 'e +  'e1} unit) ->
          {(fun (cur:< 'e 'e1>) ->
           (inv start (restrict [|| { 'e} { 'e1}] cur)) /\
           (forall (i:int).
@@ -31,7 +31,7 @@ let forto [||'e
                                                               (restrict [||
                                                                { 'e} { 'e1}]
                                                                cur1))))]]))))}
-         parameter(unit,{ 'e} + { 'e1})
+         parameter(unit,{ 'e +  'e1})
          {(fun (old:< 'e 'e1>) ->
           (fun (cur:< 'e 'e1>) ->
           (fun (anon:unit) ->
@@ -40,7 +40,7 @@ let fordownto [||'e
   'e1] = (fun (inv:int -> < 'e1> -> prop) ->
          (fun (start:int) ->
          (fun (end_:int) ->
-         (fun (f:int ->{{ 'e} + { 'e1}} unit) ->
+         (fun (f:int ->{ 'e +  'e1} unit) ->
          {(fun (cur:< 'e 'e1>) ->
           (inv start (restrict [|| { 'e} { 'e1}] cur)) /\
           (forall (i:int).
@@ -57,7 +57,7 @@ let fordownto [||'e
                                                               (restrict [||
                                                                { 'e} { 'e1}]
                                                                cur1))))]]))))}
-         parameter(unit,{ 'e} + { 'e1})
+         parameter(unit,{ 'e +  'e1})
          {(fun (old:< 'e 'e1>) ->
           (fun (cur:< 'e 'e1>) ->
           (fun (anon:unit) ->

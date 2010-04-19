@@ -196,16 +196,16 @@ and infer env (x : I.t) =
         let e = check_type env t' e in
         Annot (e,t), t', e.e
     | I.Const c -> Const c, M.const (Const.type_of_constant c), M.rw_empty
-    | I.PureFun (nt,(_,x,e)) ->
+    | I.PureFun (x,nt,e) ->
         let nt = Opt.get_lazy M.new_ty nt in
         let env = Env.add_svar env x nt in
         let e = infer env e in
-        PureFun (nt, Name.close_bind x e), M.parr nt e.t, M.rw_empty
-    | I.Quant (k,nt,(_,x,e)) ->
+        PureFun (x,nt, e), M.parr nt e.t, M.rw_empty
+    | I.Quant (k,x, nt,e) ->
         let nt = Opt.get_lazy M.new_ty nt in
         let env = Env.add_svar env x nt in
         let e = check_type env M.prop e in
-        Quant (k, nt, Name.close_bind x e), M.prop, M.rw_empty
+        Quant (k, x, nt, e), M.prop, M.rw_empty
     | I.LetReg (rl,e) ->
         let e = infer env e in
         let eff = M.rw_rremove e.e (List.map M.from_region rl) in
@@ -245,10 +245,10 @@ and infer env (x : I.t) =
         let rw = List.fold_left (fun acc b ->
           M.rw_union acc (rw_of_branch b)) e.e bl in
         Case (e,bl), rt, rw
-    | I.Let (g,e1,(_,x,e2),r) ->
+    | I.Let (g,e1,x,e2,r) ->
         let env, e1 = letgen env x g e1 r in
         let e2 = infer env e2 in
-        Let (g, e1,Name.close_bind x e2,r), e2.t, M.rw_union e1.e e2.e
+        Let (g, e1,x,e2, r), e2.t, M.rw_union e1.e e2.e
     | I.Lam (x,xt,(p,e,q)) ->
         let nt = M.from_ty xt in
         let env = Env.add_svar env x nt in
@@ -259,21 +259,30 @@ and infer env (x : I.t) =
   in
   { v = e ; t = t ; e  = eff ; loc = l }
 and pre env eff (cur,x) l =
-  let f = match x with
-  | None -> I.ptrue l
-  | Some f -> f in
-  check_type (Env.to_logic_env env) (M.base_pre_ty eff) (pref eff cur f)
+  let p =
+    match x with
+    | Some ({ I.v = I.PureFun _} as f) -> f
+    | _ ->
+        let f = match x with
+        | None -> I.ptrue l
+        | Some f -> f in
+        pref eff cur f in
+  check_type (Env.to_logic_env env) (M.base_pre_ty eff) p
 
 and post env eff t (old,cur,x) l =
   let t = M.to_logic_type t in
   let eff = M.overapprox eff in
   let bp = M.base_post_ty eff t in
-  let r, f =
+  let p =
     match x with
-    | I.PNone -> Name.new_anon (), I.ptrue l
-    | I.PPlain f -> Name.new_anon (), f
-    | I.PResult (r,f) -> r, f in
-  let p = postf eff (Some t) old cur r f in
+    | I.PPlain ({ I.v = I.PureFun _ } as f) -> f
+    | _ ->
+        let r, f =
+          match x with
+          | I.PNone -> Name.new_anon (), I.ptrue l
+          | I.PPlain f -> Name.new_anon (), f
+          | I.PResult (r,f) -> r, f in
+        postf eff (Some t) old cur r f in
   check_type (Env.to_logic_env env) bp p
 
 and branch env exp (nvl, p, e) =

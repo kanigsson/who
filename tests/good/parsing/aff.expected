@@ -4,11 +4,10 @@ logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
   := ['a|r|] = (fun (x:ref(r,a)) ->
                (fun (v:a) -> {(fun (cur:<r >) -> True)}
-               parameter(unit,{ } + {r })
+               parameter(unit,{  + r })
                {(fun (old:<r >) ->
-                (fun (cur:<r >) ->
-                (fun (anon:unit) -> (!! [a| r| { }] x cur) =[a||] v)))})) 
+                (fun (cur:<r >) -> (fun (anon:unit) -> !!x@cur = v)))})) 
 let
-  f [|r|] = (fun (x:ref(r,int)) -> {(fun (cur:<r >) -> True)} x :=[int| r|] 0
+  f [|r|] = (fun (x:ref(r,int)) -> {(fun (cur:<r >) -> True)} x := 0
             {(fun (old:<r >) ->
              (fun (cur:<r >) -> (fun (anon:unit) -> True)))}) 

@@ -41,6 +41,7 @@ type scheme = gen * ty
 type t =
   | Const of Const.t
   | Var of string * inst * ty
+  | Get of t * t
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
   | App of t * t * [`Infix | `Prefix ]
@@ -86,8 +87,37 @@ module Generic = struct
 
   let effect fmt e = fprintf fmt "{%a}" effect_no_sep e
 
-  let rw fmt (e1,e2) =
-    fprintf fmt "%a + %a" effect e1 effect e2
+  let rw_nosep fmt (e1,e2) =
+    fprintf fmt "%a + %a" effect_no_sep e1 effect_no_sep e2
+
+  let rw fmt rw = fprintf fmt "{%a}" rw_nosep rw
+
+  let eff_empty = [], []
+  let rw_empty = eff_empty, eff_empty
+
+  let split t =
+    match t with
+    | PureArr (t1,t2) -> t1, None, t2
+    | Arrow (t1,t2,eff) -> t1, Some eff, t2
+    | _ -> raise Exit
+
+  let nsplit =
+    let rec aux (tl,eff) t =
+      try
+        let t1,eff', t2 = split t in
+        match eff' with
+        | None -> aux (t1::tl,None) t2
+        | Some _ -> List.rev tl, eff', t2
+      with Exit -> List.rev tl, eff, t in
+    aux ([],None)
+
+  let lambdadestruct =
+    let rec aux acc t =
+      match t with
+      | PureFun (x,t,e) -> aux ((x,t)::acc) e
+      | Lam (x,t,(p,e,q)) -> List.rev ((x,t)::acc), p, e, q
+      | _ -> assert false in
+    aux []
 
   let is_compound kind = function
     | TConst _ | Ref _ | Map _ -> false
@@ -113,7 +143,7 @@ module Generic = struct
     fprintf fmt "(%a :@ %s)" (list space string) l s
 
   let is_compound_term = function
-    | Const _ | Var _ | Lam _ | PureFun _ -> false
+    | Const _ | Var _ | Lam _ | PureFun _ | Get _ -> false
     | App _ | Let _ | Ite _ | Case _
     | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
 
@@ -176,7 +206,7 @@ module Coq = struct
         if tl = [] then term fmt t else
           fprintf fmt "%a %a" pr_generalize tl term t
     (* specific to Who, will not be printed in backends *)
-    | Param _ | HoareTriple _ | LetReg _ | Lam _ -> assert false
+    | Param _ | HoareTriple _ | LetReg _ | Lam _ | Get _ -> assert false
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
   and branch fmt (p,t) =
@@ -295,7 +325,7 @@ module Pangoline = struct
         fprintf fmt "@[case %a of @[%a@] end @]" term t
           (list inductive_sep branch) bl
     (* specific to Who, will not be printed in backends *)
-    | Param _ | HoareTriple _ | LetReg _ | Lam _ -> assert false
+    | Param _ | HoareTriple _ | LetReg _ | Lam _ | Get _ -> assert false
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
   and branch fmt (p,t) =
@@ -372,14 +402,10 @@ module Who = struct
   open Myformat
   open Generic
 
-  let rec inst fmt ((tl,rl,el) as g) =
-    (* separate types with comma, the others by spaces *)
-    if is_empty g then () else
-    fprintf fmt "[%a|%a|%a]" (prl ty) tl (prsl string) rl (prsl effect) el
-  and ty fmt x =
+  let rec ty fmt x =
     match x with
       | Arrow (t1,t2,eff) ->
-          fprintf fmt "%a ->{%a} %a" mayp t1 rw eff ty t2
+          fprintf fmt "%a ->%a %a" mayp t1 rw eff ty t2
       | Map e -> fprintf fmt "<%a>" effect_no_sep e
       | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 ty t2
       | Tuple tl -> list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
@@ -395,6 +421,11 @@ module Who = struct
     if par then paren p else p
   let binder fmt b = binder' true fmt b
 
+  let inst fmt ((tl,rl,el) as g) =
+    (* separate types with comma, the others by spaces *)
+    if is_empty g then () else
+    fprintf fmt "[%a|%a|%a]" (prl ty) tl (prsl string) rl (prsl effect) el
+
   let prrec fmt = function
     | Const.NoRec -> ()
     | Const.Rec t -> fprintf fmt "rec(%a) " ty t
@@ -403,9 +434,8 @@ module Who = struct
   let rec term fmt t =
     match t with
     | Const c -> Const.print `Who fmt c
-    | App (App (Var(v,i,_),t1,_),t2,`Infix) ->
-        fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst i
-          with_paren t2
+    | App (App (Var(v,_,_),t1,_),t2,`Infix) ->
+        fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 string v with_paren t2
     | App (t1,t2,_) ->
           fprintf fmt "@[%a@ %a@]" term t1 with_paren t2
     | Ite (e1,e2,e3) ->
@@ -426,7 +456,6 @@ module Who = struct
     | Gen (g,t) ->
         if is_empty g then term fmt t else
           fprintf fmt "forall %a. %a" gen g term t
-    (* specific to Who, will not be printed in backends *)
     | Param (t,e) ->
         fprintf fmt "parameter(%a,%a)" ty t rw e
     | HoareTriple (p,f,q) ->
@@ -440,6 +469,7 @@ module Who = struct
     | Case (t,bl) ->
         fprintf fmt "@[case %a of @[%a@] end @]" term t
           (list inductive_sep branch) bl
+    | Get (r,t) -> fprintf fmt "!!%a@@%a" term r term t
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
   and branch fmt (p,t) =
@@ -479,14 +509,24 @@ module Who = struct
     | Section (s,d, `Structure) ->
         fprintf fmt "@[<hov 2>section %s @\n %a@] end" s theory d
     | Program (x,g,t,r) ->
-        fprintf fmt "@[<hov 2>let@ %a%a %a = %a @]" prrec r string x gen g
-          term t
+        begin match r with
+        | Const.NoRec | Const.LogicDef ->
+            fprintf fmt "@[<hov 2>let@ %a %a = %a @]" string x gen g term t
+        | Const.Rec recty ->
+            let _,eff,rt = nsplit recty in
+            let eff = match eff with None -> rw_empty | Some eff -> eff in
+            let args, p,e,q = lambdadestruct t in
+            fprintf fmt "@[<hov 2>let rec@ %a %a %a : %a %a = {%a} %a {%a} @]"
+              string x gen g arglist args ty rt rw eff term p term e term q
+        end
     | DGen g -> fprintf fmt "@[INTROS %a@]" gen g
     | Decl s -> string fmt s
   and constdef fmt (c,tl) =
     if tl = [] then string fmt c
     else fprintf fmt "%a of %a" string c (list consttysep ty) tl
   and theory fmt t = list newline decl fmt t
+  and arglist fmt l = list space arg fmt l
+  and arg fmt (x,t) = fprintf fmt "(%a : %a)" string x ty t
 
 end
 

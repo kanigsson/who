@@ -66,22 +66,41 @@
   let mk_quant k l e loc =
     List.fold_right (fun (x,t) acc -> quant k x t acc loc) l e
 
-  (* remove location information from a list of annotated values *)
   (* build a for loop *)
   let forfunction dir i start end_ inv body pos =
-    let s = "__start" and e = "__end" in
-    let forterm = mk (For (dir,inv,i.c,s,e,body)) pos in
+(*     let s = "__start" and e = "__end" in *)
+    let forterm = mk (For (dir,inv,i.c,start,end_,body)) pos in
+    forterm
+(*
     let em = [],[],[] in
     (* let start = start and end_ = end_ in
        forvar inv start end_ body *)
     let_ em start s (let_ em end_ e forterm NoRec end_.loc)
       NoRec start.loc
+*)
 
 
   let mk_pvar x = { pv = PVar (Some x.c) ; ploc = x.info }
   let mk_pconstr c l p = { pv = PApp (c.c, l) ; ploc = p }
   let mk_underscore p = { pv = PVar None; ploc = p }
 
+  let may_annot annot e =
+    match annot with
+    | None -> e
+    | Some t -> mk (Annot (e,t)) e.loc
+
+  let rec_annot args (t,eff) l =
+    let argtys = List.rev_map snd args in
+    match argtys with
+    | [] -> failwith "recursive objects must be functions"
+    | None:: _ ->
+        failwith "annotation needed for arguments of recursive functions"
+    | Some x::xs ->
+        List.fold_left (fun acc t ->
+          match t with
+          | None ->
+              failwith "annotation needed for arguments of recursive functions"
+          | Some t -> purearrow t acc l) (effarrow x t eff l) xs
 
 %}
 
@@ -107,6 +126,8 @@ aterm:
 (*   | p = REF { var "ref" p} *)
   | p = prefix t = aterm
     { app (var (snd p) (fst p)) t (embrace (fst p) t.loc) }
+  | p = prefix inst = term_inst t = aterm
+    { app (var ~inst (snd p) (fst p)) t (embrace (fst p) t.loc) }
   | x = IDENT AT e = sepeffect
     { mk (Restrict (var x.c x.info,e)) x.info }
   | p = DEXCLAM x = IDENT
@@ -168,6 +189,8 @@ nterm:
        e3 = seq_term
     en = DONE
     { forfunction dir i e1 e2 (snd p) e3 (embrace st en) }
+  | sp = FORALL g = gen DOT e = nterm %prec forall
+    { mk (Gen (g,e)) (embrace sp e.loc) }
   | sp = FORALL l = arglist DOT e = nterm %prec forall
     { mk_quant `FA l e (embrace sp e.loc) }
   | sp = EXISTS l = arglist DOT e = nterm %prec forall
@@ -179,6 +202,8 @@ nterm:
   | p1 = MATCH t = seq_term WITH option(MID)
     bl = separated_nonempty_list(MID,branch) p2 = END
     { mk (Case (t, bl)) (embrace p1 p2) }
+  | p = PARAMETER LPAREN t = ty COMMA e = sep_readwrite r = RPAREN
+    { mk (Param (t,e)) (embrace p r) }
 
 branch: p = pattern ARROW e = seq_term { p, e }
 
@@ -212,28 +237,35 @@ onetyarg:
 
 arglist: l = onetyarg+ { List.flatten l }
 may_empty_arglist: l = onetyarg* { List.flatten l}
-
+may_tyannot :
+  | { None }
+  | COLON t = ty { Some t }
 (* the common part of every let binding *)
 letcommon:
-  | p = LET x = defprogvar_no_pos l = gen args = may_empty_arglist EQUAL
-    { p, x ,l,args }
+  | p = LET x = defprogvar_no_pos l = gen args = may_empty_arglist
+    t = may_tyannot EQUAL
+    { p, x ,l,args, t }
 
 alllet:
 (* the simplest case *)
   | b = letcommon t = seq_term
-    { let p,x,l,args = b in
-      l, mk_pure_lam args t p, x, NoRec }
+    { let p,x,l,args, annot = b in
+      let t = may_annot annot t in
+      l, mk_pure_lam args t p, x,  NoRec }
 (* the function definition case *)
   | b = letcommon body = funcbody
-    { let p,x,l,args = b in
+    { let p,x,l,args, annot = b in
       let pre,e,q = body in
+      let e = may_annot annot e in
       if args = [] then $syntaxerror;
       l, mk_efflam args (snd pre) e (snd q) p, x, NoRec
     }
 (* the recursive function definition case *)
-  | p = LET REC l = gen LPAREN x = defprogvar_no_pos
-    COLON t = ty RPAREN args = arglist EQUAL b = funcbody
-    { let pre,e,q = b in
+  | p = LET REC l = gen x = defprogvar_no_pos args = arglist
+    COLON pt = param_annot EQUAL b = funcbody
+    {
+      let t = rec_annot args pt p in
+      let pre,e,q = b in
       l, mk_efflam args (snd pre) e (snd q) p, x, Rec t
     }
 
@@ -267,16 +299,16 @@ param_annot:
 
 decl:
   | g = alllet
-    { let g, e, x, r = g in Program (x,g,e,r) }
+    { let g, e, x, r = g in Program (x,g,e, r) }
   | p = PARAMETER x = defprogvar_no_pos l = gen COLON rt = ty
     { let par = mk (Param (rt,rw_empty)) p in
-      Program (x,l,par,NoRec) }
+      Program (x,l,par, NoRec) }
   | p = PARAMETER x = defprogvar_no_pos l = gen args = arglist
     COLON ann = param_annot EQUAL pre = precond post = postcond
   {
     let rt, e = ann in
     let par = mk_param args (snd pre) (snd post) rt e p in
-    Program (x,l,par,NoRec)
+    Program (x,l,par, NoRec)
   }
   | AXIOM x = defprogvar_no_pos l = gen COLON t = nterm
     { Axiom (x, l, t) }

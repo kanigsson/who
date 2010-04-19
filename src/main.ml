@@ -44,16 +44,6 @@ let parse_string p s =
   let buf = Lexing.from_string s in
   parse p buf (fun () -> ()) (Some "prelude")
 
-let annotparser abort fn token buf =
-  try AnnotParser.main token buf
-  with
-  | AnnotParser.Error ->
-      Error.print_pos_error fn buf "Parse error"; abort ()
-  | Lexer.Error msg ->
-        Error.print_pos_error fn buf
-          (Myformat.sprintf "Unexpected character: %s" msg);
-        abort ()
-
 let infer_parser abort fn token buf =
   try Parser.main token buf
   with
@@ -96,18 +86,14 @@ let _ =
   Options.update ();
   try
     let p =
-      if !Options.input_annot then
-        let p = parse_file annotparser !Options.filename in
-        AnnotInternalize.theory p
-      else
-        let prelude =
-          if !Options.no_prelude then []
-          else parse_string infer_parser Prelude.prelude in
-        let user_text = parse_file infer_parser !Options.filename in
-        let p = prelude @ user_text in
-        let p = Internalize.theory p in
-        let p = Infer.theory p in
-        Recon.theory p in
+      let prelude =
+        if !Options.no_prelude then []
+        else parse_string infer_parser Prelude.prelude in
+      let user_text = parse_file infer_parser !Options.filename in
+      let p = prelude @ user_text in
+      let p = Internalize.theory p in
+      let p = Infer.theory p in
+      Recon.theory p in
     maybe_abort !Options.parse_only Ast.print_theory p;
     let l = apply_all_trans p in
     let l =

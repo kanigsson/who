@@ -35,11 +35,11 @@ type t' =
   obligatory *)
   | App of t * t * [`Infix | `Prefix ]
   | Lam of Name.t * Ty.t * funcbody
-  | Let of G.t * t * t Name.bind * isrec
-  | PureFun of MutableType.t option * t Name.bind
+  | Let of G.t * t * Name.t * t * isrec
+  | PureFun of Name.t * MutableType.t option * t
   | Ite of t * t * t
   | Annot of t * Ty.t
-  | Quant of [`FA | `EX ] * MutableType.t option * t Name.bind
+  | Quant of [`FA | `EX ] * Name.t * MutableType.t option * t
   | Param of Ty.t * Rw.t
   | Gen of G.t * t
   | For of string * pre * Name.t * Name.t * Name.t * t
@@ -87,6 +87,6 @@ let var ?(inst=Inst.empty) v = mk (Var (v,inst))
 let print _ _ = assert false (* TODO *)
 
 let ptrue l = mk (Const Const.Ptrue) l
-let pure_lam x t e = mk (PureFun (t, Name.close_bind x e))
+let pure_lam x t e = mk (PureFun (x, t, e))
 
 let mkvar is_constr v = { var = v; is_constr = is_constr }

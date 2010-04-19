@@ -6,12 +6,10 @@ logic snd ['a 'b||] : (a * b) -> b
 logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
 let
   ! ['a|r|] = (fun (x:ref(r,a)) -> {(fun (cur:<r >) -> True)}
-              parameter(a,{ } + {r })
+              parameter(a,{  + r })
               {(fun (old:<r >) ->
                (fun (cur:<r >) ->
-               (fun (r1:a) ->
-               ((!! [a| r| { }] x cur) =[a||] r1) /\
-               ((!! [a| r| { }] x old) =[a||] (!! [a| r| { }] x cur)))))}) 
+               (fun (r1:a) -> (!!x@cur = r1) /\ (!!x@old = !!x@cur))))}) 
 let
   f ['a|toto|] = (fun (x:ref(toto,a)) -> {(fun (cur:<toto >) -> True)}
                  ! [a| toto|] x

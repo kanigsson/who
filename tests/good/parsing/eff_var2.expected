@@ -12,6 +12,4 @@ letregion r r1
 goal g:
   forall (x:ref(r1,int)).
   forall (k:ref(r,int)).
-  forall (u:<r1 r >).
-  (z =[int||] (f [| r1| {r }] x u)) ->
-  ((!! [int| r1| {r }] x u) =[int||] (!! [int| r| {r1 }] k u))
+  forall (u:<r1 r >). (z = (f [| r1| {r }] x u)) -> (!!x@u = !!k@u)

@@ -40,19 +40,20 @@ type t' =
   | App of t * t * [`Infix | `Prefix ]
   | Seq of t * t
   | Lam of var option * ty * t option * t * post
-  | Let of generalize * t * var * t * ParseTypes.t Const.isrec
+  | Let of generalize * t * var * t * ty Const.isrec
   | PureFun of var option * ty option * t
   | Ite of t * t * t
   | Annot of t * ty
   | Quant of [`FA | `EX] * var option * ty option * t
   | Param of ty * rw
-  | For of var * t option * var * var * var * t
+  | For of var * t option * var * t * t * t
   | LetReg of rvar list * t
   | Restrict of t * effect
   | Get of t * t
   | Ref of rvar
   | HoareTriple of t option * t * post
   | Case of t * branch list
+  | Gen of generalize * t
 and t = { v : t' ; loc : Loc.loc }
 and post =
   | PNone
@@ -71,7 +72,7 @@ type decl =
   | Goal of string * generalize * t
   | Section of var * Const.takeover list * decl list
   | TypeDef of var * generalize * typedef
-  | Program of var * generalize * t * ParseTypes.t Const.isrec
+  | Program of var * generalize * t * ty Const.isrec
   | Inductive of var * generalize * ty list * t list
   | DLetReg of rvar list
 and typedef =

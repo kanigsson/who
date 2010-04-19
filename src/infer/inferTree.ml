@@ -37,11 +37,11 @@ type t' =
   obligatory *)
   | App of t * t * [`Infix | `Prefix ]
   | Lam of Name.t * Ty.t * funcbody
-  | Let of G.t * t * t Name.bind * isrec
-  | PureFun of M.t * t Name.bind
+  | Let of G.t * t * Name.t * t * isrec
+  | PureFun of Name.t * M.t * t
   | Ite of t * t * t
   | Annot of t * Ty.t
-  | Quant of [`FA | `EX ] * M.t * t Name.bind
+  | Quant of [`FA | `EX ] * Name.t * M.t * t
   | Param of Ty.t * Rw.t
   | Gen of G.t * t
   | For of string * pre * Name.t * Name.t * Name.t * t
@@ -78,6 +78,6 @@ let mk_val v t = mk v t M.rw_empty
 let const c = mk_val (Const c) (M.const (Const.type_of_constant c))
 
 let pure_lam x t e =
-  mk_val (PureFun (t, Name.close_bind x e)) (M.parr t e.t)
+  mk_val (PureFun (x, t, e)) (M.parr t e.t)
 
 let annot e t = mk (Annot (e,t)) e.t e.e
