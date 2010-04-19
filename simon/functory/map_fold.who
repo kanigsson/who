@@ -15,7 +15,7 @@
 (**************************************************************************)
 
 (* ====================================
-data struct
+data struct (* TODO *)
 ======================================= *)
 
 (* ============ hash tables =========== *)
@@ -63,6 +63,10 @@ axiom append_does_append ['a] :
 axiom list_length_map ['a 'b||'e]:
   forall (l:'a list) (f:'a ->{'e} 'b).
   [[]] List.map [{'e}] f l [[res : List.length l = List.length res]]
+(* (map f l)[i] = f l[i] *)
+axiom list_index_map ['a 'b||] :
+  forall (x:'a) (l:'a list) (i:int) (f:'a ->{} 'b).
+  i >= 0 /\ i < List.length l -> [[]] List.map [{}] f l [[res: [[]] f (List.index i l)[[r : r = List.index i res]] ]]
 axiom list_cons_mem ['a]:
   forall (x:'a) (l:'a list).
   List.mem x (List.cons x l)
@@ -183,12 +187,30 @@ parameter X.compute ['c||'e]
   }
 
 
+(* =============================
+tests
+================================ *)
+
+let test2 (f : int -> b) (l : int list) =
+  {
+    exists (l2 : int list). l = List.cons 1 l2
+  }
+  letregion r in
+  let r = ref (r) 0 in
+  let answer = List.map [{r}] (fun (x:int) ->{} incr r; f x {}) l in
+  (answer, !r)
+  {res:
+    snd res = List.length l  /\
+    exists (l2 : int list). l = List.cons 1 l2 ->
+      [[]] List.map [{}] f l2 [[r: (fst res) = List.cons (f 1) r]]
+  }
+
+(*
 
 
 (* =====================================
 computing strategies specifications
 ======================================== *)
-
 
 
 (* =============== map ============ *)
@@ -199,9 +221,9 @@ let map (f : a -> b) (l : a list) =
   letregion r2 in
   let results = ref (r2) (Hashtbl.create 17) in
   let inv (s : <r2>) (l1 : (a * int) list) = (* invariant *)
-    (Hashtbl.length (!!results@s)) + List.length l1 = List.length l (*/\
+    (Hashtbl.length (!!results@s)) + List.length l1 = List.length l /\
     (forall (i:int).
-      [[Hashtbl.mem !!results@s i]] Hashtbl.find !results i [[res : res = f (List.index (i-1) l) ]])*)
+      [[Hashtbl.mem !!results@s i]] Hashtbl.find !results i [[res : res = f (List.index (i-1) l) ]])
   in
   X.compute [{r2}]
     inv
@@ -217,7 +239,6 @@ let map (f : a -> b) (l : a list) =
     (forall (x:a). [[List.mem x l]] f x [[r : List.mem r res]])
   }
 
-(*
 
 (* ============= map_local_fold ========= *)
 logic logic_fold ['a 'b] : ('b -> 'a -> 'b) -> 'b -> 'a list -> 'b
