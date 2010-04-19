@@ -112,35 +112,43 @@ module He = Hashtbl.Make(HBe)
 let new_ty () = Uf.fresh U
 let mkt t = Uf.fresh t
 
+module Convert = struct
+  module P = PrintTree
+
+  let id = Name.Env.id
+  let region env x =
+    match Uf.desc x with
+    | RU -> Myformat.sprintf "%d" (Uf.tag x)
+    | RT n -> id env n
+
+  let effect env (r,e) =
+    List.map (region env) r, List.map (id env) (Name.S.elements e)
+
+  let rw env (r1,r2) = effect env r1, effect env r2
+
+  let ty env =
+    let rec aux x =
+      match Uf.desc x with
+      | U -> P.TApp (Myformat.sprintf "%d" (Uf.tag x), [])
+      | Const c -> P.TConst c
+      | Tuple tl -> P.Tuple (List.map aux tl)
+      | PureArr (t1,t2) -> P.PureArr (aux t1, aux t2)
+      | Ref (r,t) -> P.Ref (region env r, aux t)
+      | Arrow (t1,t2,e) -> P.Arrow (aux t2, aux t2, rw env e)
+      | Map e -> P.Map (effect env e)
+      | App (n,i) -> P.TApp (id env n, List.map aux i) in
+    aux
+end
+
 module Print = struct
+
   open Myformat
-
-  let rec inst fmt i =
-    Inst.print ~kind:`Who ~intype:true ty region effect fmt i
-
-  and ty fmt (x : t) =
-    let mayp fmt t = if is_compound t then paren ty fmt t else ty fmt t in
-    match Uf.desc x with
-    | U -> fprintf fmt "%d" (Uf.tag x)
-    | Tuple tl ->
-        list (fun fmt () -> fprintf fmt " *@ ") mayp fmt tl
-    | Ref (r,t) -> fprintf fmt "ref(%a,%a)" region r ty t
-    | PureArr (t1,t2) -> fprintf fmt "%a ->@ %a" mayp t1 ty t2
-    | Map e -> fprintf fmt "<%a>" effect_no_sep e
-    | Const c -> Const.print_ty `Who fmt c
-    | App (v,i) -> fprintf fmt "%a%a" Name.print v (list comma ty) i
-    | Arrow (t1,t2,eff) ->
-        fprintf fmt "%a ->{%a} %a" mayp t1 rw eff ty t2
-  and region fmt x =
-    match Uf.desc x with
-    | RU -> fprintf fmt "%d" (Uf.tag x)
-    | RT n -> Name.print fmt n
-  and region_list fmt l = list space region fmt l
-  and effect_no_sep fmt (rl,el) =
-    fprintf fmt "%a|" region_list rl;
-    Name.print_set fmt el;
-  and effect fmt e = fprintf fmt "{%a}" effect_no_sep e
-  and rw fmt (e1,e2) = fprintf fmt "%a + %a" effect e1 effect e2
+  let empty = Name.Env.empty Name.M.empty
+  let ty fmt t = PrintTree.Print.ty fmt (Convert.ty empty t)
+  let effect fmt t = PrintTree.Print.effect fmt (Convert.effect empty t)
+  let rw fmt t = PrintTree.Print.rw fmt (Convert.rw empty t)
+  let region fmt t = string fmt (Convert.region empty t)
+  let region_list fmt t = list space region fmt t
 end
 
 let memo =
