@@ -305,7 +305,7 @@ module Branch = struct
   let open_ = popen
   let close = pclose
 
-  let term b = 
+  let term b =
     let _,_,t = open_ b in t
 
   let rw b =
@@ -505,6 +505,9 @@ let get_tuple_var tl i j l =
 
 let id_equal v id = PL.equal v.var id
 
+let lam x t p e q =
+  mk_val (Lam (x,t,(p,e,q))) (Ty.arrow t e.t e.e)
+
 let case e bl l =
   let rw =
     List.fold_left (fun acc b ->
@@ -519,8 +522,8 @@ let case e bl l =
   let pt = ptrue_ l in
   let terms = List.map Branch.term bl in
   if List.for_all (equal pt) terms then pt
-  else mk (Case (e,bl)) t rw l 
-  
+  else mk (Case (e,bl)) t rw l
+
 
 let mk_pattern p t l = { pv = p; pt = t; ploc = l }
 
@@ -654,7 +657,8 @@ and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
       | HoareTriple (p,e,q) ->
           hoare_triple (aux p) (aux e) (aux q) l
       | Case (e,bl) -> case (aux e) (List.map branch bl) l
-      | LetReg _ | Param _ | Lam _ -> assert false in
+      | Lam (x,t,(p,e,q)) -> lam x t (aux p) (aux e) (aux q) l
+      | LetReg _ | Param _ -> assert false in
     termfun t
   and branch b =
     let nvl, p,t = popen b in
@@ -870,8 +874,6 @@ let le t1 t2 loc =
 
 let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
 let efflam x eff e = plam x (Ty.map eff) e
-let lam x t p e q =
-  mk_val (Lam (x,t,(p,e,q))) (Ty.arrow t e.t e.e)
 let plus t1 t2 loc =
   infer_predef ~fix:`Infix I.plus_id [t1;t2] loc
 
