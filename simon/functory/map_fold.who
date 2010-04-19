@@ -88,33 +88,31 @@ axiom is_not_map_fold ['a 'b] :
   forall (x : 'b) (y : ('a, 'b) map_or_fold).
   y = Fold x -> ((~ (is_map y)) /\ is_fold y)
 
-parameter fromMap ['a 'b] (x : ('a, 'b) map_or_fold) : {} 'a =
-  { is_map x }
-  { res:
-    forall (y : 'a). x = Map y -> (res = y)
-  }
-parameter fromFold ['a 'b] (x : ('a, 'b) map_or_fold) : {} 'b =
-  { is_fold x }
-  { res:
-    forall (y : 'b). x = Fold y -> (res = y)
-  }
+logic fromMap ['a 'b] : (('a, 'b) map_or_fold) -> 'a
+logic fromFold ['a 'b] : (('a, 'b) map_or_fold) -> 'b
+axiom from_map ['a 'b] :
+  forall (x : ('a, 'b) map_or_fold) (y : 'a).
+  is_map x -> x = Map y -> (fromMap x = y)
+axiom from_fold ['a 'b] :
+  forall (x : ('a, 'b) map_or_fold) (y : 'b).
+  is_fold x -> x = Fold y -> (fromFold x = y)
 
 
 
 parameter map_fold_wrapper ['a 'b 'c 'd 'e]
-  (map : 'a -> 'e)
-  (fold : 'b -> 'c -> 'd)
+  (map : ('a -> 'e))
+  (fold : ('b -> 'c -> 'd))
   (truc : ('a, ('b * 'c)) map_or_fold) : {} ('e, 'd) map_or_fold =
   {}
   { res:
-    (is_map truc -> res = Map (map (fromMap truc))) /\
-    (is_fold truc -> res = Fold (fold (fst (fromFold truc)) (snd (fromFold truc))))
+    ((is_map truc) -> res = Map (map (fromMap truc))) /\
+    ((is_fold truc) -> res = Fold (fold (fst (fromFold truc)) (snd (fromFold truc))))
   }
 
 parameter map_fold_wrapper2 ['a 'b 'c 'd 'e]
-  (map : 'a -> 'e)
+  (map : 'a -> 'd)
   (fold : 'b -> 'c -> 'd)
-  (truc : ('a, ('b * 'c)) map_or_fold) : {} ('e, 'd) map_or_fold =
+  (truc : ('a, ('b * 'c)) map_or_fold) : {} 'd =
   {}
   { res:
     (is_map truc -> res = map (fromMap truc)) /\
@@ -198,7 +196,9 @@ let map (f : a -> b) (l : a list) =
     f
     (fun tuple r -> Hashtbl.add results (snd tuple) r; nil)
     tasks;
-  List.map [{r2}] (fun (tuple : a*int) -> {} Hashtbl.find !results (snd tuple) {}) tasks
+  List.map [{r2}]
+    (fun (tuple : a*int) -> {} results := !results (* FIXME : dirty hack *); Hashtbl.find !results (snd tuple) {})
+    tasks
   { res:
     (forall (x:a). (List.mem x l -> List.mem (f x) res
         /\ List.length res = List.length l)) /\
@@ -218,17 +218,17 @@ axiom logic_fold_basic ['a 'b]: (* recursion *)
 
 
 
-let map_local_fold ['a 'b 'c] (map : 'a -> 'b) (fold : 'c -> 'b -> 'c) (acc : 'c) (l : 'a list) =
+let map_local_fold ['c] (map : a -> b) (fold : 'c -> b -> 'c) (acc : 'c) (l : a list) =
   {}
   letregion r in
   let acc = ref{{r}} acc in
-  let inv (s:<r>) (acc1 : 'c) (l1 : 'a list) =
+  let inv (s:<r>) (l1 : (a * unit) list) =
     True in (* TODO *)
   X.compute [{r}]
     inv
     map
-    (fun _blah r -> acc := fold !acc r; nil)
-    (List.map (fun x -> x, ()) l);
+    (fun _blah (r : b) -> {} acc := fold !acc r; (nil : (a*unit)list) {})
+    (List.map [{}] (fun (x : a) -> x, ()) l);
   !acc
   { res:
   [[]] List.map map l [[l_map : res = logic_fold fold l_map acc]]
