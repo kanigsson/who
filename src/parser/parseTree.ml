@@ -32,9 +32,11 @@ type effect = ParseTypes.effect
 type rw = ParseTypes.rw
 type ty = ParseTypes.t
 
+type inst = ty list * rvar list * effect list
+
 type t' =
   | Const of Const.t
-  | Var of var * effect list
+  | Var of var * inst
   | App of t * t * [`Infix | `Prefix ]
   | Seq of t * t
   | Lam of var option * ty * t option * t * post
@@ -82,7 +84,7 @@ type theory = decl list
 
 let mk v loc = { v = v; loc = loc }
 let app ?(kind=`Prefix) t1 t2 = mk (App (t1,t2, kind))
-let var ?(inst=[]) s = mk (Var (s,inst))
+let var ?(inst=([],[],[])) s = mk (Var (s,inst))
 let const c = mk (Const c)
 let app2 s t1 t2 loc = app (app (var s loc) t1 loc) t2 loc
 let appi s t1 t2 loc = app ~kind:`Infix (app (var s loc) t1 loc) t2 loc

@@ -109,7 +109,7 @@ let
                 (fun (cur:<r >) ->
                 (fun (anon:unit) -> (!! [a| r| { }] x cur) =[a||] v)))})) 
 let
-  ref ['a|r|] = (fun (v:a) ->allocates r {(fun (cur:<r >) -> True)}
+  ref ['a|r|] = (fun (v:a) -> {(fun (cur:<r >) -> True)}
                 parameter(ref(r,a),{ } + {r })
                 {(fun (old:<r >) ->
                  (fun (cur:<r >) ->

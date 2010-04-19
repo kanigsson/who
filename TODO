@@ -16,7 +16,8 @@ INTERNAL
 * infix at variable place instead of application
 * remove annotparser
 * type annotations at let
-* positions in parser much better
+* use positions in parser better
+* use printTree for MutableType
 
 
 BUGS

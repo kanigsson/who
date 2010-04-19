@@ -279,10 +279,6 @@ let tsubst tvl tl t =
     invalid_arg "rsubst" end;
   node_map ~f:(ty_subst table) ~eff_fun:Misc.id ~rfun:Misc.id t
 
-let bh f l =
-  let h = Name.H.create 3 in
-  List.map (fun x -> let n = f () in Name.H.add h x n; n) l,h
-
 let split t =
   match Uf.desc t with
   | PureArr (t1,t2) -> t1, t2
@@ -297,14 +293,22 @@ let nsplit =
   in
   aux []
 
+let bh f l =
+  let h = Name.H.create 3 in
+  List.map (fun x -> let n = f () in Name.H.add h x n; n) l,h
+
+let bh2 f tvl tl =
+  let h = Name.H.create 3 in
+  List.map2 (fun v t -> let n = f t in Name.H.add h v n; n) tvl tl,h
+
+open Myformat
 let refresh ((tvl, rvl, evl) : Ty.Generalize.t)
             ((tl,rl,el) : Ty.t list * Name.t list * Effect.t list) (t : t)
             : t * (t,r,effect) Inst.t  =
-  let tn, th = bh new_ty tvl and rn, rh = bh new_r rvl in
   let el = List.map from_effect el in
   let t = esubst evl el t in
-  let t = if tl = [] then t else tsubst tvl (List.map from_ty tl) t in
-  let t = if rl = [] then t else rsubst rvl (List.map from_region rl) t in
+  let tn, th = if tl = [] then bh new_ty tvl else bh2 from_ty tvl tl in
+  let rn, rh = if rl = [] then bh new_r rvl else bh2 from_region rvl rl in
   let f x =
     match Uf.desc x with
     | App (v,[]) ->

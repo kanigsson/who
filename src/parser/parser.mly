@@ -97,13 +97,10 @@ protected_term:
     { mk (Annot (e,t)) (embrace l r) }
 
 term_inst:
-(*   | { [],[],[] } *)
-  | LBRACKET e = sepeffect* RBRACKET { e }
-(*
+  | LBRACKET e = sepeffect* RBRACKET { ([],[],e) }
   | LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
     MID el = sepeffect* RBRACKET
     { (tl, strip_info rl, el) }
-*)
 
 aterm:
   | p = VOID { var I.void_id p }

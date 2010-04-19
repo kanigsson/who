@@ -42,7 +42,7 @@ let inst loc env i =
 let rec ast' loc env = function
   | I.Const c -> Const c
   | I.Var (v,i) ->
-      Var (mk_var loc env v,inst loc env ([],[],i))
+      Var (mk_var loc env v,inst loc env i)
   | I.App (e1,e2,f) ->
       App (ast env e1, ast env e2, f)
   | I.Lam (x,t,p,e,q) ->
@@ -80,8 +80,8 @@ let rec ast' loc env = function
   | I.Case (t,bl) ->
       let t = ast env t in
       Case (t, List.map (branch env) bl)
-  | I.Ref _ ->
-      assert false
+  | I.Ref r ->
+      Var (mk_var loc env "ref", ([],[Env.rvar loc env r], []))
 and to_mutable env t = MutableType.from_ty (ty env t)
 
 and post env x =

@@ -123,6 +123,7 @@ let rw_of_branch (_,_,e) = e.e
 module Uf = Unionfind
 
 let varfun env v inst l =
+(*   Myformat.printf "treating var: %a@." Name.print v.I.var; *)
   let m ,xt =
     try Env.lookup env v.I.var
     with Not_found ->
@@ -231,7 +232,6 @@ and infer env (x : I.t) =
         let q = post env e.e e.t q l in
         HoareTriple (p,e,q), M.prop, M.rw_empty
     | I.Var (v,inst) ->
-(*         Myformat.printf "treating var: %a@." Name.print v; *)
         let v, i, nt = varfun env v inst l in
         Var (v, i), nt, M.rw_empty
     | I.Case (e,bl) ->

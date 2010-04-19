@@ -11,13 +11,13 @@ let
                ((!! [a| r| { }] x cur) =[a||] r1) /\
                ((!! [a| r| { }] x old) =[a||] (!! [a| r| { }] x cur)))))}) 
 let
-  ref ['a|r|] = (fun (v:a) ->allocates r {(fun (cur:<r >) -> True)}
+  ref ['a|r|] = (fun (v:a) -> {(fun (cur:<r >) -> True)}
                 parameter(ref(r,a),{ } + {r })
                 {(fun (old:<r >) ->
                  (fun (cur:<r >) ->
                  (fun (x:ref(r,a)) -> (!! [a| r| { }] x cur) =[a||] v)))}) 
 let
   main  = (fun (anon:unit) -> {(fun (cur:< >) -> True)}
-          letregion rho in let x = ref [int| rho|]{rho} 5 in ! [int| rho|] x
+          letregion rho in let x = ref [int| rho|] 5 in ! [int| rho|] x
           {(fun (old:< >) ->
            (fun (cur:< >) -> (fun (r:int) -> r =[int||] 5)))}) 
