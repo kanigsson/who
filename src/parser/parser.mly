@@ -114,6 +114,7 @@ aterm:
   | p = DEXCLAM x = IDENT AT t = aterm
     { mk (Get (var x.c x.info, t)) (embrace p t.loc) }
   | x = IDENT { var x.c x.info }
+  | x = CONSTRUCTOR { var x.c x.info }
   | x = IDENT inst = term_inst { var ~inst x.c x.info }
   | l = LPAREN x = prefix r = RPAREN
     { var (snd x) (embrace l r) }
