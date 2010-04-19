@@ -27,6 +27,7 @@ logic Hashtbl.length ['a 'b] : ('a, 'b) hashtbl -> int
 parameter Hashtbl.find ['a 'b||] (hshtbl : ('a, 'b) hashtbl) (x : 'a) : {} 'b =
   { Hashtbl.mem hshtbl x }
   {}
+
 axiom hashtbl_empty_lengh ['a 'b|r|] :
   forall (n: int).
   [[]] (Hashtbl.create n : ('a, 'b) hashtbl) [[res : (Hashtbl.length res) = 0 /\ forall (x:'a). ~ (Hashtbl.mem res x)]]
@@ -38,6 +39,9 @@ axiom hashtbl_add ['a 'b|r|] :
 axiom hashtbl_add_length ['a 'b|r|] :
   forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
   [[~ (Hashtbl.mem !!hshtbl x)]] Hashtbl.add hshtbl x y [[(Hashtbl.length !!hshtbl) = (Hashtbl.length !!hshtbl@old) +1]]
+axiom hashtbl_add_find ['a 'b|r|] :
+  forall (x : 'a) (y : 'b) (hshtbl : ref(r,('a, 'b) hashtbl)).
+  [[]] Hashtbl.add hshtbl x y  [[ [[]] Hashtbl.find !hshtbl x [[ r: r = y ]] ]]
 
 
 (* ============ lists ============= *)
@@ -47,25 +51,31 @@ logic List.map ['a 'b||'e] : ('a ->{'e} 'b) -> 'a list ->{'e} 'b list
 logic List.length ['a] : 'a list -> int
 logic List.append ['a] : 'a list -> 'a list -> 'a list
 logic List.cons ['a] : 'a -> 'a list -> 'a list
+logic List.index ['a] : int -> 'a list -> 'a
 
 axiom remove_does_remove ['a] :
-  forall (x : 'a) (l : 'a list).
-    ~ (List.mem x (List.remove x l))
+  forall (x : 'a) (l l2 : 'a list).
+  l = List.cons x l2 -> List.remove x l = l2
 axiom append_does_append ['a] :
   forall (l1 l2 : 'a list) (x : 'a).
-    (List.mem x l1 -> List.mem x (List.append l1 l2)) /\
-    (List.mem x l2 -> List.mem x (List.append l1 l2))
-(* axiom list_mem_map ['a 'b||'e]:
-  forall (x:'a) (l:'a list) (f:'a ->{'e} 'b).
-  [[List.mem x l]] List.map [{'e}] f l, f x [[res: List.mem (snd res) (fst res)]] FIXME*)
+  (List.mem x l1 -> List.mem x (List.append l1 l2)) /\
+  (List.mem x l2 -> List.mem x (List.append l1 l2))
 axiom list_length_map ['a 'b||'e]:
   forall (l:'a list) (f:'a ->{'e} 'b).
   [[]] List.map [{'e}] f l [[res : List.length l = List.length res]]
-axiom list_cons ['a]:
+axiom list_cons_mem ['a]:
   forall (x:'a) (l:'a list).
-  List.mem x (List.cons x l) /\
+  List.mem x (List.cons x l)
+axiom list_cons_mem_tail ['a]:
+  forall (x:'a) (l:'a list).
   (forall (y:'a). List.mem y l -> List.mem y (List.cons x l)) /\
   (List.length (List.cons x l) = List.length l + 1)
+axiom list_index ['a]:
+  forall (i : int) (x : 'a) (l l2: 'a list).
+  i = 0 -> l = List.cons x l2 -> List.index i l = x
+axiom list_index_rec ['a]:
+  forall (i : int) (x : 'a) (l l2: 'a list).
+  i > 0 /\ i < List.length l -> l = List.cons x l2 -> List.index i l = List.index (i-1) l2
 
 (* =========== refs ========== *)
 
@@ -175,7 +185,6 @@ parameter X.compute ['c||'e]
 
 
 
-
 (* =====================================
 computing strategies specifications
 ======================================== *)
@@ -190,21 +199,25 @@ let map (f : a -> b) (l : a list) =
   letregion r2 in
   let results = ref {{r2}} (Hashtbl.create 17) in
   let inv (s : <r2>) (l1 : (a * int) list) = (* invariant *)
-    (Hashtbl.length (!!results@s)) + List.length l1 = List.length l in
+    (Hashtbl.length (!!results@s)) + List.length l1 = List.length l (*/\
+    (forall (i:int).
+      [[Hashtbl.mem !!results@s i]] Hashtbl.find !results i [[res : res = f (List.index (i-1) l) ]])*)
+  in
   X.compute [{r2}]
     inv
     f
     (fun (tuple : (a*int)) (r : b) ->{} Hashtbl.add results (snd tuple) r; nil {})
     tasks;
   List.map [{r2}]
-    (fun (tuple : a*int) -> {} results := !results (* FIXME : dirty hack *); Hashtbl.find !results (snd tuple) {})
+    (fun (tuple : a*int) -> {} results := !results; (* FIXME : dirty hack *) Hashtbl.find !results (snd tuple) {})
     tasks
   { res:
-    (forall (x:a). [[List.mem x l]] f x [[r : List.mem r res]]
-        /\ List.length res = List.length l) /\
-    (forall (x:a). [[~ (List.mem x l)]] f x [[r : ~ (List.mem r res)]]) (* redundant ? *)
+    List.length res = List.length l /\
+    [[]] List.map [{}] (fun (x:a) ->{} f x {}) l [[ r : r = res ]] /\
+    (forall (x:a). [[List.mem x l]] f x [[r : List.mem r res]])
   }
 
+(*
 
 (* ============= map_local_fold ========= *)
 logic logic_fold ['a 'b] : ('b -> 'a -> 'b) -> 'b -> 'a list -> 'b
@@ -235,7 +248,7 @@ let map_local_fold ['c] (map : a -> b) (fold : 'c -> b -> 'c) (acc : 'c) (l : a 
   }
 
 
-(*
+
 
 let map_remote_fold  ~(map : 'a -> 'b) ~(fold : 'c -> 'b -> 'c) acc l =
   let acc = ref (Some acc) in
