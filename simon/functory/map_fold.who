@@ -178,8 +178,8 @@ parameter X.compute ['c||'e]
     forall (e1 e2 : <'e>) (l1 l2 : (a * 'c) list). inv e1 l1 -> relat [{'e}] e1 l1 e2 l2 -> inv e2 l2
   }
   { r:
-    relat_trans [{'e}] old l cur nil /\
-    inv cur nil
+    relat_trans [{'e}] old l cur Nil /\
+    inv cur Nil
   }
 
 
@@ -195,9 +195,9 @@ computing strategies specifications
 let map (f : a -> b) (l : a list) =
   {}
   letregion r in
-  let tasks = let i = ref {{r}} 0 in List.map [{r}] (fun (x:'a) -> {} incr i; x, !i {}) l in
+  let tasks = let i = ref (r) 0 in List.map [{r}] (fun (x:'a) -> {} incr i; x, !i {}) l in
   letregion r2 in
-  let results = ref {{r2}} (Hashtbl.create 17) in
+  let results = ref (r2) (Hashtbl.create 17) in
   let inv (s : <r2>) (l1 : (a * int) list) = (* invariant *)
     (Hashtbl.length (!!results@s)) + List.length l1 = List.length l (*/\
     (forall (i:int).
@@ -206,7 +206,7 @@ let map (f : a -> b) (l : a list) =
   X.compute [{r2}]
     inv
     f
-    (fun (tuple : (a*int)) (r : b) ->{} Hashtbl.add results (snd tuple) r; nil {})
+    (fun (tuple : (a*int)) (r : b) ->{} Hashtbl.add results (snd tuple) r; Nil {})
     tasks;
   List.map [{r2}]
     (fun (tuple : a*int) -> {} results := !results; (* FIXME : dirty hack *) Hashtbl.find !results (snd tuple) {})
@@ -224,7 +224,7 @@ logic logic_fold ['a 'b] : ('b -> 'a -> 'b) -> 'b -> 'a list -> 'b
 
 axiom logic_fold_empty ['a 'b]:
   forall (f : 'b -> 'a -> 'b) (l : 'a list) (acc : 'b).
-  l = nil -> logic_fold f acc l = acc
+  l = Nil -> logic_fold f acc l = acc
 axiom logic_fold_basic ['a 'b]: (* recursion *)
   forall (x : 'a) (f : 'b -> 'a -> 'b) (l l2: 'a list) (acc : 'b).
   l = List.cons x l2 -> logic_fold f acc l = f (logic_fold f acc l2) x
@@ -234,13 +234,13 @@ axiom logic_fold_basic ['a 'b]: (* recursion *)
 let map_local_fold ['c] (map : a -> b) (fold : 'c -> b -> 'c) (acc : 'c) (l : a list) =
   {}
   letregion r in
-  let acc = ref{{r}} acc in
+  let acc = ref (r) acc in
   let inv (s:<r>) (l1 : (a * unit) list) =
     True in (* TODO *)
   X.compute [{r}]
     inv
     map
-    (fun (_ : (a*unit)) (r : b) -> {} acc := (fold !acc r); nil {})
+    (fun (_ : (a*unit)) (r : b) -> {} acc := (fold !acc r); Nil {})
     (List.map [{}] (fun (x : a) -> {} x, () {}) l);
   !acc
   { res:
