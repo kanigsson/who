@@ -57,16 +57,16 @@ let to_rw loc t =
 
 let var loc v =
   let g,t = v.I.scheme in
-  { var = v.I.var ; scheme = g, to_ty loc t}
+  { var = v.I.var ; scheme = g, to_ty loc t; is_constr = v.I.is_constr}
 
 let rec recon' loc = function
   | I.Var (x,i) -> Var (var loc x,inst loc i)
   | I.Const c -> Const c
-  | I.App (e1,e2,k) -> App (recon e1, recon e2,k)
   | I.PureFun (t,(s,x,e)) ->
       let e = recon e in
       if not (Rw.is_empty e.e) then error loc PureFunctionWithEffect;
       PureFun (to_ty loc t,(s,x, e))
+  | I.App (e1,e2,k) -> App (recon e1, recon e2,k)
   | I.Quant (k,t,(s,x,e)) -> Quant (k,to_ty loc t,(s,x, recon e))
   | I.Lam (x,ot,(p,e,q)) -> Lam (x,ot, (recon p, recon e, recon q))
   | I.Param (t,e) -> Param (t,e)
