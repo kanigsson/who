@@ -174,7 +174,7 @@ section whoref
     {}
     { !!x = v}
 
-  parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r} = allocates r
+  parameter ref ['a|r|] (v : 'a) : ref(r,'a), {r} =
     {}
     { x : !!x = v }
 

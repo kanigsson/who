@@ -33,8 +33,8 @@ type t' =
   | Var of var * Effect.t list
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t * [`Infix | `Prefix ] * Name.t list
-  | Lam of Name.t * Ty.t * Name.t list * funcbody
+  | App of t * t * [`Infix | `Prefix ]
+  | Lam of Name.t * Ty.t * funcbody
   | Let of G.t * t * t Name.bind * isrec
   | PureFun of MutableType.t option * t Name.bind
   | Ite of t * t * t
@@ -80,7 +80,7 @@ let annot e t = mk (Annot (e,t))
 let gen g t l =
   if Ty.Generalize.is_empty g then t else mk (Gen (g,t)) l
 
-let app t1 t2 = mk (App (t1,t2,`Prefix,[]))
+let app t1 t2 = mk (App (t1,t2,`Prefix))
 let var ?(inst=[]) v = mk (Var (v,inst))
 
 let print _ _ = assert false (* TODO *)

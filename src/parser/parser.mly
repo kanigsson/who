@@ -50,17 +50,17 @@
 
   (* construct a sequence of pure lambdas on top of [e], using [l];
     the innermost lambda is effectful, using [p] and [q] as pre and post *)
-  let mk_efflam l cap p e q = mk_lam (fun x t ->
+  let mk_efflam l p e q = mk_lam (fun x t ->
     let t =
       try Opt.force t
       with Invalid_argument "force" ->
         failwith "type annotation obligatory for lambda" in
-    lamcap x t cap p e q) l
+    lam x t p e q) l
 
   (* construct a sequence of pure lambdas on top of a parameter with type [rt]
      and effect [eff]; the innermost lambda is effectful as in [mk_efflam] *)
-  let mk_param l cap p q rt eff loc =
-    mk_efflam l cap p (mk (Param (rt,eff)) loc) q loc
+  let mk_param l p q rt eff loc =
+    mk_efflam l p (mk (Param (rt,eff)) loc) q loc
 
   (* construct a sequence of quantifiers on top of [e] *)
   let mk_quant k l e loc =
@@ -130,8 +130,10 @@ nterm:
   | t = aterm { t }
   | t = aterm l = aterm+
     { appn t l }
+(*
   | t1 = aterm DLCURL l = IDENT* DRCURL tl = aterm+
     { cap_appn t1 tl (strip_info l) }
+*)
   | tl = tuple_list %prec below_COMMA
     {
       let n = List.length tl in
@@ -141,8 +143,8 @@ nterm:
   | t1 = nterm i = infix t2 = nterm
     { appi (snd i) t1 t2 (embrace t1.loc t2.loc) }
   | sp = FUN l = arglist ARROW body = funcbody
-    { let cap, p,e,q = body in
-      mk_efflam l cap (snd p) e (snd q) (embrace sp (fst q)) }
+    { let p,e,q = body in
+      mk_efflam l (snd p) e (snd q) (embrace sp (fst q)) }
   | sp = FUN l = arglist ARROW e = seq_term
     { mk_pure_lam l e (embrace sp e.loc) }
   | st = IF it = seq_term THEN tb = nterm ELSE eb = nterm
@@ -215,19 +217,19 @@ alllet:
 (* the function definition case *)
   | b = letcommon body = funcbody
     { let p,x,l,args = b in
-      let cap, pre,e,q = body in
+      let pre,e,q = body in
       if args = [] then $syntaxerror;
-      l, mk_efflam args cap (snd pre) e (snd q) p, x, NoRec
+      l, mk_efflam args (snd pre) e (snd q) p, x, NoRec
     }
 (* the recursive function definition case *)
   | p = LET REC l = gen LPAREN x = defprogvar_no_pos
     COLON t = ty RPAREN args = arglist EQUAL b = funcbody
-    { let cap, pre,e,q = b in
-      l, mk_efflam args cap (snd pre) e (snd q) p, x, Rec t
+    { let pre,e,q = b in
+      l, mk_efflam args (snd pre) e (snd q) p, x, Rec t
     }
 
 funcbody:
-  cap = maycapdef p = precond e = seq_term q = postcond { cap, p,e,q }
+  p = precond e = seq_term q = postcond { p,e,q }
 
 postcond_int:
   | {PNone }
@@ -261,11 +263,10 @@ decl:
     { let par = mk (Param (rt,rw_empty)) p in
       Program (x,l,par,NoRec) }
   | p = PARAMETER x = defprogvar_no_pos l = gen args = arglist
-    COLON ann = param_annot EQUAL
-      cap = maycapdef pre = precond post = postcond
+    COLON ann = param_annot EQUAL pre = precond post = postcond
   {
     let rt, e = ann in
-    let par = mk_param args cap (snd pre) (snd post) rt e p in
+    let par = mk_param args (snd pre) (snd post) rt e p in
     Program (x,l,par,NoRec)
   }
   | AXIOM x = defprogvar_no_pos l = gen COLON t = nterm

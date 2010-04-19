@@ -33,8 +33,8 @@ type node =
   | Var of var * inst
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t * [`Infix | `Prefix ] * Name.t list
-  | Lam of Name.t * Ty.t * Name.t list * funcbody
+  | App of t * t * [`Infix | `Prefix ]
+  | Lam of Name.t * Ty.t * funcbody
   | Let of G.t * t * t Name.bind * isrec
   | PureFun of Ty.t * t Name.bind
   | Ite of t * t * t
@@ -82,9 +82,8 @@ let map ~varfun ~varbindfun ~patternbindfun ~tyfun ~rvarfun ~effectfun f =
     | Param (t,e) -> Param (tyfun t, rwfun e)
     | Var (v,i) ->
         Var (varmap ~tyfun ~varfun v, Inst.map tyfun rvarfun effectfun i)
-    | App (t1,t2,p,cap) -> App (aux t1, aux t2, p, List.map rvarfun cap)
-    | Lam (x,t,cap,b) ->
-        Lam (x,tyfun t, List.map rvarfun cap, body b )
+    | App (t1,t2,p) -> App (aux t1, aux t2, p)
+    | Lam (x,t,b) -> Lam (x,tyfun t, body b )
     | LetReg (l,e) -> LetReg (l,aux e)
     | HoareTriple b -> HoareTriple (body b)
     | Let (g,e1,b,r) -> Let (g,aux e1,varbindfun b, r)
@@ -142,7 +141,7 @@ let rec equal' a b =
   | Var (v1,i1), Var (v2,i2) ->
       var_equal v1 v2 &&
       Inst.equal Ty.equal Name.equal Effect.equal i1 i2
-  | App (a1,b1,_,_), App (a2,b2,_,_) -> equal a1 a2 && equal b1 b2
+  | App (a1,b1,_), App (a2,b2,_) -> equal a1 a2 && equal b1 b2
   | Gen (g1,t1), Gen (g2,t2) ->
       G.equal g1 g2 && equal t1 t2
   | Ite (a1,b1,c1), Ite (a2,b2,c2) -> equal a1 a2 && equal b1 b2 && equal c1 c2
@@ -188,14 +187,14 @@ module Convert = struct
     | Var (v,i) ->
         let s = id env v.var in
         P.Var (s, inst env i, ty env term.t)
-    | App (t1,t2,p,cap) ->
-        P.App (t env t1, t env t2, p, List.map (id env) cap)
+    | App (t1,t2,p) ->
+        P.App (t env t1, t env t2, p)
     | LetReg (l,e) ->
         let env = add_ids env l in
         P.LetReg (List.map (id env) l,t env e)
-    | Lam (x,at,cap,b) ->
+    | Lam (x,at,b) ->
         let env = add_id env x in
-        P.Lam (id env x,ty env at, List.map (id env) cap, body env b )
+        P.Lam (id env x,ty env at, body env b )
     | HoareTriple b -> P.HoareTriple (body env b)
     | PureFun (at,b) ->
         let x,e = vopen b in
@@ -305,11 +304,11 @@ end
 module N = Name
 
 let destruct_app' = function
-  | App (f1,f2,_,_) -> Some (f1,f2)
+  | App (f1,f2,_) -> Some (f1,f2)
   | _ -> None
 
 let destruct_app2 = function
-  | App ({v = App (f1,f2,_,_)},f3,_,_) -> Some (f1,f2,f3)
+  | App ({v = App (f1,f2,_)},f3,_) -> Some (f1,f2,f3)
   | _ -> None
 
 let destruct_app2_var' x =
@@ -444,11 +443,11 @@ let hoare_triple p e q l = mk_val (HoareTriple (p,e,q)) Ty.prop l
 
 let gen g e l = true_or e (mk (Gen (g, e)) e.t e.e l)
 
-let simple_app ?(kind=`Prefix) ?(cap=[]) t1 t2 l =
+let simple_app ?(kind=`Prefix) t1 t2 l =
   try
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
     if not (Ty.equal (Ty.arg t1.t) t2.t) then raise Exit;
-    mk (App (t1,t2,kind,cap)) t (Rw.union3 t1.e t2.e e) l
+    mk (App (t1,t2,kind)) t (Rw.union3 t1.e t2.e e) l
   with
   | Exit ->
       Myformat.printf "type mismatch on application: function %a has type %a,
@@ -539,7 +538,7 @@ let destr_tuple i =
       | _ -> None
     else
       match t.v with
-      | App (t1,t2,_,_) -> aux (k-1) (t2::acc) t1
+      | App (t1,t2,_) -> aux (k-1) (t2::acc) t1
       | _ -> None in
   aux i []
 
@@ -556,7 +555,7 @@ let boolcmp_to_propcmp x =
   | x when eq x I.orb_id -> fun _ -> spredef I.or_id
   | _ -> raise Exit
 
-let rec app ?kind ?cap t1 t2 l : t =
+let rec app ?kind t1 t2 l : t =
 (*     Myformat.printf "app: %a and %a@." print t1 print t2; *)
     try match t1.v with
     (* we are trying to build (λx.t) e, reduce to t[x|->e] *)
@@ -564,7 +563,7 @@ let rec app ?kind ?cap t1 t2 l : t =
         let x, body = vopen l in
         subst x (fun _ -> t2) body
     (* double application, check if we are not in a simplification case *)
-    | App (op,t1,_,_) ->
+    | App (op,t1,_) ->
         begin match destruct_varname op with
         | Some (v,_) when id_equal v I.and_id -> and_ t1 t2 l
         | Some (v,_) when id_equal v I.or_id -> or_ t1 t2 l
@@ -587,11 +586,11 @@ let rec app ?kind ?cap t1 t2 l : t =
             | Some i -> get_tuple i t2 l
             end
         | _ -> raise Exit
-    with Exit -> simple_app ?kind ?cap t1 t2 l
+    with Exit -> simple_app ?kind t1 t2 l
 
 and app2 ?kind t t1 t2 loc = app ?kind (app t t1 loc) t2 loc
 and appi t t1 t2 loc = app2 ~kind:`Infix t t1 t2 loc
-and allapp t1 t2 kind cap loc = app ~kind ~cap t1 t2 loc
+and allapp t1 t2 kind loc = app ~kind t1 t2 loc
 and appn t tl loc =
   List.fold_left (fun acc t -> app acc t loc) t tl
 
@@ -628,7 +627,7 @@ and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
       match t.v with
       | Const _ -> t
       | Var (v,i) -> varfun v.var (inst i) t
-      | App (t1,t2,p,cap) -> allapp (aux t1) (aux t2) p cap l
+      | App (t1,t2,p) -> allapp (aux t1) (aux t2) p l
       | Let (g,e1,b,r) ->
           let x,f = vopen b in
           let_ g (aux e1) x (aux f) r l
@@ -860,9 +859,7 @@ let le t1 t2 loc =
 let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
 let efflam x eff e = plam x (Ty.map eff) e
 let lam x t p e q =
-  mk_val (Lam (x,t,[],(p,e,q))) (Ty.arrow t e.t e.e)
-let caplam x t cap p e q =
-  mk_val (Lam (x,t,cap,(p,e,q))) (Ty.caparrow t e.t e.e cap)
+  mk_val (Lam (x,t,(p,e,q))) (Ty.arrow t e.t e.e)
 let plus t1 t2 loc =
   infer_predef ~fix:`Infix I.plus_id [t1;t2] loc
 
@@ -896,7 +893,7 @@ let rec is_value x =
   | Const _ | Var _ | Lam _ | PureFun _ | Quant _ | HoareTriple _ -> true
   | Let _ | Ite _ | LetReg _ | Param _ | Case _ -> false
   | Gen (_,e) -> is_value e
-  | App (t1,_,_,_) ->
+  | App (t1,_,_) ->
       match t1.t with
       | Ty.PureArr _ -> true
       | _ -> false
@@ -935,7 +932,7 @@ let efflamho ?s e f loc = plamho ?s (Ty.map e) f loc
 let rec is_param e =
   match e.v with
   | Param _ -> true
-  | Lam (_,_,_,(_,e,_)) -> is_param e
+  | Lam (_,_,(_,e,_)) -> is_param e
   | PureFun (_,(_,_,e)) -> is_param e
   | _ -> false
 

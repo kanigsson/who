@@ -70,7 +70,7 @@ let id_or_keyword =
         ("rec", fun _ -> REC );
         ("section", fun i -> SECTION (create_info i) );
         ("coq", fun _ -> COQ );
-        ("allocates", fun _ -> ALLOCATES );
+(*         ("allocates", fun _ -> ALLOCATES ); *)
         ("predefined", fun _ -> PREDEFINED );
         ("takeover", fun _ -> TAKEOVER );
         ("pangoline", fun _ -> PANGOLINE );
@@ -132,8 +132,10 @@ rule token = parse
   | ']' { RBRACKET (create_info lexbuf) }
   | '{' { LCURL (create_info lexbuf) }
   | '}' { RCURL (create_info lexbuf) }
+(*
   | "{{" { DLCURL }
   | "}}" { DRCURL }
+*)
   | "[[" { DLBRACKET (create_info lexbuf) }
   | "]]" { DRBRACKET (create_info lexbuf) }
   | "!!" { DEXCLAM (create_info lexbuf) }

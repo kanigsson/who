@@ -27,7 +27,7 @@ type ty =
   | U
   | Const of Const.ty
   | Tuple of t list
-  | Arrow of t * t * rw * r list
+  | Arrow of t * t * rw
   | PureArr of t * t
   | App of Name.t * t list
   | Ref of r * t
@@ -48,7 +48,7 @@ val bool : unit -> t
 val int : t
 val unit : unit -> t
 val parr : t -> t -> t
-val arrow : t -> t -> rw -> r list -> t
+val arrow : t -> t -> rw -> t
 val map : effect -> t
 
 val new_ty : unit -> t

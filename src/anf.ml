@@ -31,9 +31,9 @@ and normalize e k =
   let loc = e.loc in
   match e.v with
   | (Const _ | Ast.Var _ | Param _ ) -> k e
-  | Lam (x,t,cap,(p,e,q)) ->
+  | Lam (x,t,(p,e,q)) ->
 (*       Format.printf "found effectful function %a@." Name.print x; *)
-      k (caplam x t cap (normalize_term p)
+      k (lam x t (normalize_term p)
         (normalize_term e) (normalize_term q) loc)
   | PureFun (t,(_,x,e))-> k (plam x t (normalize_term e) loc)
   | Let (g,e1,(_,x,e2),r) ->
@@ -47,11 +47,11 @@ and normalize e k =
       normalize_name e1
         (fun v ->
           k (ite ~logic:false v (normalize_term e2) (normalize_term e3) loc))
-  | App (e1,e2,f,c) ->
+  | App (e1,e2,f) ->
 (*       Format.printf "applying: %a@." print e1; *)
       normalize_name e1
         (fun v1 -> normalize_name e2
-          (fun v2 -> k (allapp v1 v2 f c loc)))
+          (fun v2 -> k (allapp v1 v2 f loc)))
   | HoareTriple (p,e,q) ->
 (*       Format.printf "found hoare_triple@."; *)
       k (hoare_triple (normalize_term p)

@@ -37,8 +37,8 @@ type t' =
   | Var of var * (ty,rvar,effect) Inst.t
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t * [`Infix | `Prefix ] * rvar list
-  | Lam of var * ty * rvar list * t * t * t
+  | App of t * t * [`Infix | `Prefix ]
+  | Lam of var * ty * t * t * t
   (* boolean which describes if the let comes from the prelude or not *)
   | Let of generalize * t * var * t * ParseTypes.t Const.isrec
   | LetReg of rvar list * t
@@ -64,8 +64,7 @@ type decl =
 type theory = decl list
 
 let mk_term v l = { v = v ; loc = l }
-let app ?(fix=`Prefix) ?(cap=[]) t1 t2 =
-  mk_term (App (t1,t2,fix, cap))
+let app ?(fix=`Prefix) t1 t2 = mk_term (App (t1,t2,fix))
 let var v i = mk_term (Var (v,i))
 let svar v = var v Inst.empty
 

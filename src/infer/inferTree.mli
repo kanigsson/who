@@ -32,8 +32,8 @@ type t' =
   | Var of var * inst
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t * [`Infix | `Prefix ] * Name.t list
-  | Lam of Name.t * Ty.t * Name.t list * funcbody
+  | App of t * t * [`Infix | `Prefix ]
+  | Lam of Name.t * Ty.t * funcbody
   | Let of Ty.Generalize.t * t * t Name.bind * isrec
   | PureFun of MutableType.t * t Name.bind
   | Ite of t * t * t

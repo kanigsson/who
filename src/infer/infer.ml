@@ -180,23 +180,16 @@ and infer env (x : I.t) =
             errorm l "using !! on term which is not a reference but of type
             %a@." M.print ref'.t
         end
-    | I.App (e1,e2, k, cap) ->
+    | I.App (e1,e2, k) ->
         let e1 = infer env e1 in
         let t1,t2, eff =
           match Uf.desc e1.t with
-          | M.Arrow (t1,t2, eff, cap') ->
-              begin try
-                List.iter2 (fun a b -> U.runify a (M.from_region b)) cap' cap;
-                t1,t2, eff
-              with
-              | Unify.CannotUnify -> error l WrongRegionCap
-              | Invalid_argument _ -> error l WrongRegionCapNumber
-        end
+          | M.Arrow (t1,t2, eff) -> t1,t2, eff
           | M.PureArr (t1,t2) -> t1, t2, M.rw_empty
           | _ -> error l (NotAFunction e1.t)
         in
         let e2 = check_type env t1 e2 in
-        App (e1,e2,k, cap), t2, M.rw_union3 e1.e e2.e eff
+        App (e1,e2,k), t2, M.rw_union3 e1.e e2.e eff
     | I.Annot (e,t) ->
         let t' = M.from_ty t in
         let e = check_type env t' e in
@@ -256,14 +249,13 @@ and infer env (x : I.t) =
         let env, e1 = letgen env x g e1 r in
         let e2 = infer env e2 in
         Let (g, e1,Name.close_bind x e2,r), e2.t, M.rw_union e1.e e2.e
-    | I.Lam (x,xt,cap,(p,e,q)) ->
+    | I.Lam (x,xt,(p,e,q)) ->
         let nt = M.from_ty xt in
         let env = Env.add_svar env x nt in
         let e = infer (Env.to_program_env env) e in
         let p = pre env (fst e.e) p l in
         let q = post env e.e e.t q l in
-        Lam (x,xt,cap,(p,e,q)), M.arrow nt e.t e.e (List.map M.from_region cap),
-        M.rw_empty
+        Lam (x,xt,(p,e,q)), M.arrow nt e.t e.e, M.rw_empty
   in
   { v = e ; t = t ; e  = eff ; loc = l }
 and pre env eff (cur,x) l =

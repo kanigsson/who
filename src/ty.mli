@@ -24,7 +24,7 @@
 type t =
   | Const of Const.ty
   | Tuple of t list
-  | Arrow of t * t * Rw.t * Name.t list
+  | Arrow of t * t * Rw.t
   | PureArr of t * t
   | App of Name.t * inst
   | Ref of Name.t * t
@@ -39,7 +39,6 @@ val gen_print : ?kind:[`Coq | `Who | `Pangoline ] -> t Myformat.fmt
 val var : Name.t -> t
 val const : Const.ty -> t
 val arrow : t -> t -> Rw.t -> t
-val caparrow : t -> t -> Rw.t -> Name.t list -> t
 val parr : t -> t -> t
 val tuple : t list -> t
 val ref_ : Name.t -> t -> t

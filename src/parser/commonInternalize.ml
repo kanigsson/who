@@ -192,9 +192,8 @@ let ty env t =
     | IT.TVar v -> Ty.var (Env.tyvar loc env v)
     | IT.TConst c -> Ty.const c
     | IT.Tuple tl -> Ty.tuple (List.map aux tl)
-    | IT.Arrow (t1,t2,e,cap) ->
-        Ty.caparrow (aux t1) (aux t2) (rw loc env e)
-          (List.map (Env.rvar loc env) cap)
+    | IT.Arrow (t1,t2,e) ->
+        Ty.arrow (aux t1) (aux t2) (rw loc env e)
     | IT.PureArr (t1,t2) -> Ty.parr (aux t1) (aux t2)
     | IT.TApp (v,i) ->
         let i = inst loc i in

@@ -133,7 +133,7 @@ let rec formtyping' env loc = function
         r
       with Not_found -> error loc (Unboundvar s.var)
       end
-  | Ast.App (e1,e2,_,_) ->
+  | Ast.App (e1,e2,_) ->
       let t1 = formtyping env e1 in
       let t2 = formtyping env e2 in
 (*
@@ -158,14 +158,12 @@ let rec formtyping' env loc = function
       let t = formtyping env e2 in
       fis_oftype env t e3;
       t
-  | Lam (x,t,cap,(p,e,q)) ->
+  | Lam (x,t,(p,e,q)) ->
       let env = add_svar env x t in
-      let t',eff, capreal = typing env e in
-      if not (set_list_contained cap capreal) then
-        errorm loc "wrong declaration of capacities on lambda";
+      let t',eff = typing env e in
       pre env eff p;
       post env eff t' q;
-      to_logic_type (caparrow t t' eff cap)
+      to_logic_type (arrow t t' eff)
   | Gen (_,e)-> formtyping env e
   | Let (g,e1,b,_) ->
       let x,e2 = sopen b in
@@ -175,13 +173,10 @@ let rec formtyping' env loc = function
       let t = formtyping env e2 in
       t
   | HoareTriple (p,e,q) ->
-      let t', eff, capreal = typing env e in
-      if not (RS.is_empty capreal) then
-        errorm loc "allocation is forbidden in hoaretriples"
-      else
-        pre env eff p;
-        post env eff t' q;
-        prop
+      let t', eff = typing env e in
+      pre env eff p;
+      post env eff t' q;
+      prop
   | Case (t,bl) ->
       let t = formtyping env t in
       let tl = List.map (formbranch env t) bl in
@@ -212,8 +207,7 @@ and formbranch env exp_pat b =
 and branch env exp_pat b =
   let _, p, t = popen b in
   let env = pattern env exp_pat p in
-  let t,eff,_ = typing env t in
-  t, eff
+  typing env t
 
 and pattern env exp p =
   let loc = p.ploc in
@@ -241,98 +235,84 @@ and pattern env exp p =
 
 and typing' env loc = function
   | Ast.Const c ->
-      Ty.const (Const.type_of_constant c), Rw.empty, RS.empty
+      Ty.const (Const.type_of_constant c), Rw.empty
   |Ast.Var (s,i) ->
       begin try
         let g, t = type_of_var loc env s in
-        Ty.allsubst g i t, Rw.empty, RS.empty
+        Ty.allsubst g i t, Rw.empty
       with Not_found -> error loc (Unboundvar s.var) end
-  | Ast.App (e1,e2,_,capapp) ->
-      let t1, eff1, cap1 = typing env e1 in
-      let t2,eff2, cap2 = typing env e2 in
+  | Ast.App (e1,e2,_) ->
+      let t1, eff1 = typing env e1 in
+      let t2,eff2 = typing env e2 in
       let effi = Rw.union eff2 eff1 in
 (*
       printf "app of %a and %a: eff1:%a eff2:%a@."
       Recon.print e1 Recon.print e2 Effect.print eff1 Effect.print eff2;
 *)
       begin match t1 with
-      | Arrow (ta,tb,eff,caparg) ->
-          if Ty.equal ta t2 then
-            if ExtList.equal Name.equal capapp caparg then
-              tb, Rw.union eff effi,
-              disj_union3 loc cap1 cap2 (Name.list_to_set caparg)
-            else error loc (CapMismatch (caparg, capapp))
+      | Arrow (ta,tb,eff) ->
+          if Ty.equal ta t2 then tb, Rw.union eff effi
           else error loc (TyAppmismatch (ta,t2))
       | PureArr (ta,tb) ->
-          if Ty.equal ta t2 then tb, effi, disjoint_union loc cap1 cap2
+          if Ty.equal ta t2 then tb, effi
           else error loc (TyAppmismatch (ta,t2))
       | _ -> error loc (NotAFunction t1)
       end
-  | Lam (x,t,cap,(p,e,q)) ->
+  | Lam (x,t,(p,e,q)) ->
       let env = add_svar env x t in
-      let t',eff,capreal = typing env e in
-      if not (set_list_contained cap capreal) then
-        errorm loc "wrong declaration of capacities";
+      let t',eff = typing env e in
       pre env eff p;
       post env eff t' q;
-      caparrow t t' eff cap, Rw.empty, RS.empty
+      arrow t t' eff, Rw.empty
   | Let (g,e1,b,r) ->
       let x, e2 = sopen b in
 (*       Myformat.printf "plet: %a@." Name.print x; *)
-      let env, eff1, cap1 = letgen env x g e1 r in
-      let t, eff2, cap2 = typing env e2 in
-      t, Rw.union eff1 eff2, disjoint_union loc cap1 cap2
-  | Param (t,e) -> t,e, RS.empty
+      let env, eff1 = letgen env x g e1 r in
+      let t, eff2 = typing env e2 in
+      t, Rw.union eff1 eff2
+  | Param (t,e) -> t,e
   | PureFun (t,b) ->
       let x,e = sopen b in
       let env = add_svar env x t in
-      let t', eff, cap = typing env e in
-      if Rw.is_empty eff && RS.is_empty cap then parr t t', eff, cap
+      let t', eff = typing env e in
+      if Rw.is_empty eff then parr t t', eff
       else errorm loc "effectful pure function"
   | Quant (_,t,b) ->
       let x, e = sopen b in
       let env = add_svar env x t in
-      let t', eff, cap = typing env e in
-      if Rw.is_empty eff && RS.is_empty cap && Ty.equal t' Ty.prop
-      then Ty.prop, eff, cap
+      let t', eff = typing env e in
+      if Rw.is_empty eff && Ty.equal t' Ty.prop then Ty.prop, eff
       else error loc (TyMismatch (Ty.prop, t'))
   | Ite (e1,e2,e3) ->
-      let t1, eff1, cap1 = typing env e1 in
+      let t1, eff1 = typing env e1 in
       if Ty.equal t1 (Ty.bool ()) then
-        let t2, eff2, cap2 = typing env e2 in
-        let t3, eff3, cap3 = typing env e3 in
-        if Ty.equal t2 t3 then
-          t2, Rw.union3 eff1 eff2 eff3,
-          (* we have the right to create the same ref on both sides of the
-            branch *)
-          disjoint_union loc cap1 (RS.union cap2 cap3)
+        let t2, eff2 = typing env e2 in
+        let t3, eff3 = typing env e3 in
+        if Ty.equal t2 t3 then t2, Rw.union3 eff1 eff2 eff3
         else error e3.loc (TyMismatch (t2, t3))
       else error e1.loc (TyMismatch (Ty.bool (), t1))
   | LetReg (vl,e) ->
-      let t, eff, cap = typing env e in
-      t, Rw.rremove eff vl, Name.remove_list_from_set vl cap
+      let t, eff = typing env e in
+      t, Rw.rremove eff vl
   | Case (e,bl) ->
-      let t,eff,_ = typing env e in
+      let t,eff = typing env e in
       let tl, effl = List.split (List.map (branch env t) bl) in
       begin match tl with
       | [] -> assert false
       | t::tl ->
           assert (List.for_all (Ty.equal t) tl);
-          t, List.fold_left Rw.union eff effl, RS.empty
+          t, List.fold_left Rw.union eff effl
       end
   | Gen _ -> assert false
   | HoareTriple (p,e,q) ->
-      let t', eff, capreal = typing env e in
-      if not (RS.is_empty capreal) then
-        errorm loc "allocation is forbidden in hoaretriples"
-      else
-        pre env eff p;
-        post env eff t' q;
-        prop, Rw.empty, RS.empty
+      let t', eff = typing env e in
+      pre env eff p;
+      post env eff t' q;
+      prop, Rw.empty
 
-and typing env (e : Ast.t) : Ty.t * Rw.t * RS.t =
+and typing env (e : Ast.t) : Ty.t * Rw.t =
 (*   Myformat.printf "typing %a@." Ast.print e; *)
-  let ((t',_,_) as x) = typing' env e.loc e.v in
+  let ((t',_) as x) = typing' env e.loc e.v in
   if Ty.equal e.t t' then x else error e.loc (TyAnnotationMismatch (e,e.t,t'))
 and fis_oftype env t e =
   let t' = formtyping env e in
@@ -345,11 +325,11 @@ and letgen env x g e r =
     match r with
     | Const.NoRec | Const.LogicDef -> env
     | Const.Rec t -> add_svar env x t in
-  let t, eff, cap =
-    if r = Const.LogicDef then formtyping env' e, Rw.empty, RS.empty
+  let t, eff =
+    if r = Const.LogicDef then formtyping env' e, Rw.empty
     else typing env' e in
   let env = add_var env x g t in
-  env, eff, cap
+  env, eff
 
 let rec decl env d =
   match d with
@@ -368,7 +348,7 @@ let rec decl env d =
         let t = Ty.nparr tl bt in
         add_var env n (tvl,[],[]) t) env bl
   | Program (x,g,e,r) ->
-      let env,  _, _ = letgen env x g e r in
+      let env,  _ = letgen env x g e r in
       env
 
 and theory env th = List.fold_left decl env th

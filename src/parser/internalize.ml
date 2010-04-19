@@ -41,12 +41,11 @@ let rec ast' loc env = function
   | I.Const c -> Const c
   | I.Var (v,i) ->
       Var (mk_var loc env v,List.map (effect loc env) i)
-  | I.App (e1,e2,f,c) ->
-      App (ast env e1, ast env e2, f, List.map (Env.rvar loc env) c)
-  | I.Lam (x,t,cap,p,e,q) ->
+  | I.App (e1,e2,f) ->
+      App (ast env e1, ast env e2, f)
+  | I.Lam (x,t,p,e,q) ->
       let env, nv = Env.add_var env x in
-      Lam (nv, ty env t, List.map (Env.rvar loc env) cap,
-            (pre env p, ast env e, post env q))
+      Lam (nv, ty env t, (pre env p, ast env e, post env q))
   | I.Let (g,e1,x,e2,r) ->
       let env, nv, g , e1, r = letgen env x g e1 r in
       let e2 = ast env e2 in

@@ -1,7 +1,6 @@
 IMPORTANT FEATURES
 
 polymorphic arguments
-remove stuff about singleton regions
 subtyping
 initial label for beginning of function
 
@@ -14,6 +13,10 @@ Hashtbl
 COQ
 
 INTERNAL
+* infix at variable place instead of application
+* remove annotparser
+* type annotations at let
+
 
 BUGS
 
@@ -33,8 +36,7 @@ inductive declarations
 * void/ unit type
 * instantiation for polymorphic constants
 * int_max, int_min
-
-
+* remove stuff about singleton regions
 
 
 MANUAL

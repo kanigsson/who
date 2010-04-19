@@ -210,8 +210,8 @@ let rec term env t =
   with Exit ->
     match t.v with
     | Const _ -> t
-    | App (f1,f2,k,c) ->
-        app ~kind:k ~cap:c (term env f1) (term env f2) l
+    | App (f1,f2,k) ->
+        app ~kind:k (term env f1) (term env f2) l
     | Var (v,(tl,rl,el)) ->
         let rl = List.map (Env.rlookup env) rl in
         let el = List.map (effect_to_tuple_type env) el in
