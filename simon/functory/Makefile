@@ -1,5 +1,5 @@
 
-all: memo_const
+all: map_fold
 
 %: %.who
 	rm -f $*_who*.why $*_who*.pge 
