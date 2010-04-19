@@ -35,7 +35,9 @@ let new_name =
   let x = ref 0 in
   function n -> incr x; {n with n = !x}
 let new_anon () = new_name { name = None; n = 0 }
-let from_string s = new_name {name = Some s; n = 0}
+let from_string s =
+  let subst_s = Str.global_replace (Str.regexp "\\.") "_" s in
+  new_name {name = Some subst_s; n = 0}
 let unsafe_to_string n =
   match n.name with
   | Some s -> s
