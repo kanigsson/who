@@ -8,3 +8,6 @@ Definition is_nil (a : Type) (l : list a) :=
     | nil => true
     | cons _ _ => false
   end.
+
+Notation Nil := @nil (only parsing).
+Notation Cons := cons (only parsing).

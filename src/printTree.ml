@@ -157,12 +157,14 @@ module Coq = struct
   open Myformat
   open Generic
 
-  let is_ty_app t =
+(*
+  let needs_inst t =
     match t with
-    | TApp _ -> true
+    | TApp _ | Tuple _ -> true
     | _ -> false
 
-  let rec inst fmt (tl,_,_) = fprintf fmt "%a" (prsl ty) tl
+*)
+  let rec inst fmt (tl,_,_) = fprintf fmt "%a" (prsl mayp) tl
   and ty fmt x =
     match x with
     | Arrow _ | Map _ | Ref _ -> assert false
@@ -193,8 +195,8 @@ module Coq = struct
     | Let (g,e1,x,e2,_) ->
         fprintf fmt "@[let@ %a %a=@[@ %a@]@ in@ %a@]" string x gen g
           term e1 term e2
-    | Var (v,i,t,_) ->
-        if is_ty_app t && not (is_empty i) then
+    | Var (v,i,_,_) ->
+        if not (is_empty i) then
           fprintf fmt "(@@%a %a)" string v inst i
         else string fmt v
     | Quant (k,x,t,e) ->
