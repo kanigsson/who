@@ -203,7 +203,7 @@ module Coq = struct
         let bind = if k = `FA then binder else binder' false in
         fprintf fmt "@[%a %a,@ %a@]" Const.quant k bind (x,t) term e
     | Case (t,bl) ->
-        fprintf fmt "@[match %a with @[%a@] @]" term t
+        fprintf fmt "@[match %a with @[%a@] end @]" term t
           (list inductive_sep branch) bl
     | Gen ((tl,_,_),t) ->
         if tl = [] then term fmt t else
@@ -214,11 +214,17 @@ module Coq = struct
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
   and branch fmt (p,t) =
-    fprintf fmt "%a@ ->@ @[ %a @]" pattern p term t
+    fprintf fmt "%a@ =>@ @[ %a @]" pattern p term t
   and pattern fmt p =
     match p with
     | PVar v -> string fmt v
-    | PApp (v,_,pl) -> fprintf fmt "%a(%a)" string v (list comma pattern) pl
+    | PApp (v,_,pl) ->
+        if pl = [] then string fmt v
+        else fprintf fmt "%a %a" string v (list space mayparen_pattern) pl
+  and mayparen_pattern fmt p =
+    match p with
+    | PVar _ -> pattern fmt p
+    | _ -> paren pattern fmt p
   and pr_generalize fmt tl =
     if tl = [] then ()
     else fprintf fmt "forall@ %a@ ,@ " (lname "Type") tl
