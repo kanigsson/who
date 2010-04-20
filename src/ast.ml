@@ -124,7 +124,6 @@ let pattern_map ~varfun ~tyfun ~rvarfun ~effectfun p =
 
 let vopen = Name.open_bind refresh
 let close = Name.close_bind
-let sopen = Name.sopen refresh
 let vopen_with x = Name.open_with refresh x
 
 let pattern_refresh s =

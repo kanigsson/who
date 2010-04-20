@@ -35,12 +35,16 @@ and normalize e k =
 (*       Format.printf "found effectful function %a@." Name.print x; *)
       k (lam x t (normalize_term p)
         (normalize_term e) (normalize_term q) loc)
-  | PureFun (t,(_,x,e))-> k (plam x t (normalize_term e) loc)
-  | Let (g,e1,(_,x,e2),r) ->
+  | PureFun (t,b)->
+      let x,e = vopen b in
+      k (plam x t (normalize_term e) loc)
+  | Let (g,e1,b,r) ->
+      let x,e2 = vopen b in
       normalize e1 (fun v -> let_ g v x (normalize e2 k) r loc)
   | LetReg (l,e) -> k (letreg l (normalize_term e) loc)
   | Gen (g,e) -> k (gen g (normalize_term e) loc)
-  | Quant (kind,t,(_,x,e)) -> k (squant kind x t (normalize_term e) loc)
+  | Quant (kind,t,b) ->
+      let x, e = vopen b in k (squant kind x t (normalize_term e) loc)
   | Case (e1,bl) ->
       normalize_name e1 (fun v -> k (case v (List.map branch bl) loc))
   | Ite (e1,e2,e3) ->
@@ -58,7 +62,8 @@ and normalize e k =
         (normalize_term e) (normalize_term q) loc)
 and branch b =
   let nvl,p,e = popen b in
-  pclose nvl p (normalize_term e)
+  let e = normalize_term e in
+  pclose nvl p e
 
 and normalize_name e k =
   normalize e

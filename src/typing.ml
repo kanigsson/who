@@ -83,16 +83,28 @@ let errorm loc s =
   Myformat.ksprintf (fun s -> raise (Error (loc, Other s))) s
 
 (* TODO build environment module *)
-type env =
-  { types : (G.t * Ty.t) Name.M.t; }
+module Env : sig
+  type t
+  val empty : t
+  val add_var : t -> Name.t -> G.t -> Ty.t -> t
+  val add_svar : t -> Name.t -> Ty.t -> t
+  val has_binding : t -> Name.t -> bool
+  val lookup : t -> Name.t -> G.t * Ty.t
+  val print_domain : t Myformat.fmt
+end = struct
+  type t = (G.t * Ty.t) Name.M.t
 
-let add_var env x g t =
-  { types = Name.M.add x (g,t) env.types }
-let add_svar env x t =
-  { types = Name.M.add x (G.empty,t) env.types }
+  let empty = Name.M.empty
+  let add_var env x g t = Name.M.add x (g,t) env
+  let add_svar env x t = Name.M.add x (G.empty,t) env
 
-let has_binding env x =
-  Name.M.mem x env.types
+  let has_binding env x = Name.M.mem x env
+
+  let lookup env x = Name.M.find x env
+
+  let print_domain fmt env =
+    Name.M.iter (fun x _ -> Myformat.fprintf fmt "%a;" Name.print x) env
+end
 
 let disjoint_union loc s1 s2 =
   if RS.is_empty (RS.inter s1 s2) then RS.union s1 s2
@@ -103,14 +115,14 @@ let disj_union3 loc s1 s2 s3 =
 
 
 let type_of_var loc env x =
-  let g = Name.M.find x.var env.types in
+  let g = Env.lookup env x.var in
   if not (Ty.scheme_equal x.scheme g) then
   if not (Ty.scheme_equal x.scheme g) then
     error loc (KindAnnotationMismatch (x.var,x.scheme, g));
   g
 
 let ftype_of_var loc env x =
-  let m,t = Name.M.find x.var env.types in
+  let m,t = Env.lookup env x.var in
   let g = m, to_logic_type t in
   if not (Ty.scheme_equal x.scheme g) then
     error loc (KindAnnotationMismatch (x.var,x.scheme, g));
@@ -147,11 +159,11 @@ let rec formtyping' env loc = function
       | t -> error loc (NotAFunction t)
       end
   | PureFun (t,b) ->
-      let x,e = sopen b in
-      parr t (formtyping (add_svar env x t) e)
+      let x,e = vopen b in
+      parr t (formtyping (Env.add_svar env x t) e)
   | Quant (_,t,b) ->
-      let x,e = sopen b in
-      fis_oftype (add_svar env x t) prop e;
+      let x,e = vopen b in
+      fis_oftype (Env.add_svar env x t) prop e;
       prop
   | Ite (e1,e2,e3) ->
       fis_oftype env (bool ()) e1;
@@ -159,17 +171,18 @@ let rec formtyping' env loc = function
       fis_oftype env t e3;
       t
   | Lam (x,t,(p,e,q)) ->
-      let env = add_svar env x t in
+      let env = Env.add_svar env x t in
       let t',eff = typing env e in
       pre env eff p;
       post env eff t' q;
       to_logic_type (arrow t t' eff)
   | Gen (_,e)-> formtyping env e
   | Let (g,e1,b,_) ->
-      let x,e2 = sopen b in
+      Myformat.printf "formlet@.";
+      let x,e2 = vopen b in
 (*       Myformat.printf "let: %a@." Name.print x; *)
       let t = formtyping env e1 in
-      let env = add_var env x g t in
+      let env = Env.add_var env x g t in
       let t = formtyping env e2 in
       t
   | HoareTriple (p,e,q) ->
@@ -213,8 +226,8 @@ and pattern env exp p =
   let loc = p.ploc in
   match p.pv with
   | PVar v ->
-      assert (not (has_binding env v));
-      add_svar env v exp
+      assert (not (Env.has_binding env v));
+      Env.add_svar env v exp
   | PApp (v,i,pl) ->
     begin try
       assert (v.is_constr);
@@ -259,27 +272,26 @@ and typing' env loc = function
       | _ -> error loc (NotAFunction t1)
       end
   | Lam (x,t,(p,e,q)) ->
-      let env = add_svar env x t in
+      let env = Env.add_svar env x t in
       let t',eff = typing env e in
       pre env eff p;
       post env eff t' q;
       arrow t t' eff, Rw.empty
   | Let (g,e1,b,r) ->
-      let x, e2 = sopen b in
-(*       Myformat.printf "plet: %a@." Name.print x; *)
+      let x, e2 = vopen b in
       let env, eff1 = letgen env x g e1 r in
       let t, eff2 = typing env e2 in
       t, Rw.union eff1 eff2
   | Param (t,e) -> t,e
   | PureFun (t,b) ->
-      let x,e = sopen b in
-      let env = add_svar env x t in
+      let x,e = vopen b in
+      let env = Env.add_svar env x t in
       let t', eff = typing env e in
       if Rw.is_empty eff then parr t t', eff
       else errorm loc "effectful pure function"
   | Quant (_,t,b) ->
-      let x, e = sopen b in
-      let env = add_svar env x t in
+      let x, e = vopen b in
+      let env = Env.add_svar env x t in
       let t', eff = typing env e in
       if Rw.is_empty eff && Ty.equal t' Ty.prop then Ty.prop, eff
       else error loc (TyMismatch (Ty.prop, t'))
@@ -324,11 +336,11 @@ and letgen env x g e r =
   let env' =
     match r with
     | Const.NoRec | Const.LogicDef -> env
-    | Const.Rec t -> add_svar env x t in
+    | Const.Rec t -> Env.add_svar env x t in
   let t, eff =
     if r = Const.LogicDef then formtyping env' e, Rw.empty
     else typing env' e in
-  let env = add_var env x g t in
+  let env = Env.add_var env x g t in
   env, eff
 
 let rec decl env d =
@@ -336,9 +348,9 @@ let rec decl env d =
   | Formula (_,f,_) -> fis_oftype env prop f; env
   | Section (_,th,_) -> theory env th
   | DLetReg _ | DGen _ | Decl _ -> env
-  | Logic (n,(g,t)) -> add_var env n g t
+  | Logic (n,(g,t)) -> Env.add_var env n g t
   | Inductive (n,g,t,tel) ->
-      let env = add_var env n g t in
+      let env = Env.add_var env n g t in
       List.iter (fis_oftype env prop) tel;
       env
   | TypeDef (_, _, Abstract) -> env
@@ -346,13 +358,13 @@ let rec decl env d =
       let bt = Ty.app n (List.map Ty.var tvl) in
       List.fold_left (fun env (n,tl) ->
         let t = Ty.nparr tl bt in
-        add_var env n (tvl,[],[]) t) env bl
+        Env.add_var env n (tvl,[],[]) t) env bl
   | Program (x,g,e,r) ->
       let env,  _ = letgen env x g e r in
       env
 
 and theory env th = List.fold_left decl env th
 
-let typing t = ignore (typing { types = Name.M.empty} t)
-let formtyping t = ignore (formtyping {types = Name.M.empty} t)
-let theory th = ignore (theory { types = Name.M.empty} th)
+let typing t = ignore (typing Env.empty t)
+let formtyping t = ignore (formtyping Env.empty t)
+let theory th = ignore (theory Env.empty th)

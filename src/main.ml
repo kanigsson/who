@@ -94,6 +94,7 @@ let _ =
       let p = Internalize.theory p in
       let p = Infer.theory p in
       Recon.theory p in
+    if !Options.no_check then () else Typing.theory p;
     maybe_abort !Options.parse_only Ast.print_theory p;
     let l = apply_all_trans p in
     let l =

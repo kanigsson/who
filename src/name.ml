@@ -43,7 +43,11 @@ let unsafe_to_string n =
   | Some s -> s
   | None -> default_string
 
-let refresh' (y,t) x = if equal x y then t else x
+let dprint fmt n = Myformat.int fmt n.n
+let dprint_list = Myformat.list Myformat.space dprint
+
+let refresh' (y,t) x =
+  if equal x y then t else x
 let refresh = List.fold_right refresh'
 let refresh_bind s (s',v,t) = List.append s s', v, t
 let refresh_listbind s (s',v,t) = List.append s s', v, t
@@ -73,7 +77,8 @@ let open_listbind f ((_,vl,_) as k) =
   let t = list_open_with f nvl k in
   nvl,t
 
-let close_listbind nvl t = ([],nvl,t)
+let close_listbind nvl t =
+  ([],nvl,t)
 
 let append n s = from_string (unsafe_to_string n ^ s)
 
@@ -145,6 +150,7 @@ let get_cur_name =
 
 open Myformat
 let print fmt x = string fmt (get_cur_name x)
+(* let print fmt x = int fmt x.n *)
 let print_list fmt x = list space print fmt x
 
 let print_set fmt s =

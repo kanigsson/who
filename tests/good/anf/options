@@ -1,1 +1,1 @@
---clear --anf --input-annot --transform-only --noprelude
+--clear --anf --transform-only --noprelude

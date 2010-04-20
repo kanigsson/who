@@ -522,7 +522,8 @@ module Who = struct
             let _,eff,rt = nsplit recty in
             let eff = match eff with None -> rw_empty | Some eff -> eff in
             let args, p,e,q = lambdadestruct t in
-            fprintf fmt "@[<hov 2>let rec@ %a %a %a : %a %a = {%a} %a {%a} @]"
+            fprintf fmt
+              "@[<hov 2>let rec@ %a@ %a@ %a@ :@ %a %a = {%a}@ %a@ {%a} @]"
               string x gen g arglist args ty rt rw eff term p term e term q
         end
     | DGen g -> fprintf fmt "@[INTROS %a@]" gen g

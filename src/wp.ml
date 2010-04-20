@@ -56,7 +56,7 @@ let rec lift_value v =
       let p = plam x t (scan p) l and q = plam x t (scan q) l in
       mk_pair p q l
   | Let (g,e1,b,Const.LogicDef) ->
-      let x,f = sopen b in
+      let x,f = vopen b in
       let_ g (lift_value e1) x (lift_value f) Const.LogicDef l
   | Case (t,bl) ->
       case (lift_value t) (List.map lift_branch bl) l
@@ -75,7 +75,7 @@ and correct v =
   | Lam (x,t,(p,e,q)) -> sforall x (ty t) (bodyfun p e q) l
   | PureFun (t,(_,x,e)) -> sforall x (ty t) (correct e) l
   | Let (g,e1,b,Const.LogicDef) ->
-      let x,e2 = sopen b in
+      let x,e2 = vopen b in
       and_ (gen g (correct e1) l)
         (let_ g (lift_value e1) x (correct e2) Const.LogicDef l) l
   | Case (t,bl) ->
@@ -125,12 +125,11 @@ and wp m q e =
               impl (applist [post lv1 l; lv2; m; m2'; x] l)
                 (applist [q;m2; x] l) l) l) l ] l
     | Let (g,e1,b,Const.LogicDef) ->
-        let x,e2 = sopen b in
+        let x,e2 = vopen b in
         let f = wp_node m q e2 in
         let_ g e1 x f (Const.LogicDef) l
     | Let (g,e1,b,r) ->
-        let x,e2 = sopen b in
-        (* TODO recursive case *)
+        let x,e2 = vopen b in
         if is_value e1 then
           let lv = lift_value e1 in
           let f = gen g (correct e1) l in
