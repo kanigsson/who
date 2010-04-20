@@ -47,11 +47,35 @@ axiom hashtbl_add_find ['a 'b|r|] :
 (* ============ lists ============= *)
 logic List.mem ['a] : 'a -> 'a list -> prop
 logic List.remove ['a] : 'a -> 'a list -> 'a list
-logic List.map ['a 'b||'e] : ('a ->{'e} 'b) -> 'a list ->{'e} 'b list
 logic List.length ['a] : 'a list -> int
 logic List.append ['a] : 'a list -> 'a list -> 'a list
 logic List.cons ['a] : 'a -> 'a list -> 'a list
 logic List.index ['a] : int -> 'a list -> 'a
+
+parameter fromCons ['a] (l : 'a list) : {} ('a * 'a list) =
+  { ~ (l = Nil) }
+  { res:
+    exists (x : 'a) (l2 : 'a list).
+    l = List.cons x l2 /\ res = (x, l2)
+  }
+
+(* spec of List.map *)
+logic List.map ['a 'b||'e] : (<'e> -> 'a list -> prop) -> ('a ->{'e} 'b) -> 'a list ->{'e} 'b list
+
+axiom list_map_awesome_1 ['a 'b||'e] : 
+  forall (inv : <'e> -> 'a list -> prop) (f : 'a ->{'e} 'b) (l : 'a list).
+  [[  inv cur l /\
+    (~ (l = Nil) -> pre f (fst (fromCons l)) cur) /\ (* precondition of f on head of list *)
+    (forall (x2 : 'a) (l2 : 'a list). 
+      [[inv cur (List.cons x2 l2) /\ pre f x2 cur]] f x2 [[post f x2 cur -> inv old cur l2]]) (* invariant iteration *)
+  ]] List.map [{'e}] inv f l
+  [[ res:
+    (l = Nil -> res = Nil) /\
+    ~ (l=Nil) -> (~ (res = Nil)) /\
+      [[cur = old]] f (fst (fromCons l)) [[r : r = (fst (fromCons res))]]
+  ]]
+
+
 
 axiom remove_does_remove ['a] :
   forall (x : 'a) (l l2 : 'a list).
@@ -67,12 +91,18 @@ axiom list_length_map ['a 'b||'e]:
 axiom list_index_map ['a 'b||] :
   forall (x:'a) (l:'a list) (i:int) (f:'a ->{} 'b).
   i >= 0 /\ i < List.length l -> [[]] List.map [{}] f l [[res: [[]] f (List.index i l)[[r : r = List.index i res]] ]]
+axiom list_not_empty ['a]:
+  forall (l:'a list).
+  ~ (l=Nil) -> exists (x:'a) (l2:'a list). 
+    (l = List.cons x l2)
 axiom list_cons_mem ['a]:
   forall (x:'a) (l:'a list).
   List.mem x (List.cons x l)
 axiom list_cons_mem_tail ['a]:
   forall (x:'a) (l:'a list).
-  (forall (y:'a). List.mem y l -> List.mem y (List.cons x l)) /\
+  (forall (y:'a). List.mem y l -> List.mem y (List.cons x l))
+axiom list_cons_length_tail ['a]:
+  forall (x:'a) (l:'a list).
   (List.length (List.cons x l) = List.length l + 1)
 axiom list_index ['a]:
   forall (i : int) (x : 'a) (l l2: 'a list).
@@ -80,6 +110,9 @@ axiom list_index ['a]:
 axiom list_index_rec ['a]:
   forall (i : int) (x : 'a) (l l2: 'a list).
   i > 0 /\ i < List.length l -> l = List.cons x l2 -> List.index i l = List.index (i-1) l2
+
+
+
 
 (* =========== refs ========== *)
 
@@ -202,7 +235,7 @@ let test2 (f : int -> b) (l : int list) =
   {res:
     snd res = List.length l  /\
     exists (l2 : int list). l = List.cons 1 l2 ->
-      [[]] List.map [{}] f l2 [[r: (fst res) = List.cons (f 1) r]]
+      [[]] List.map [{}] (fun (x:int) ->{} f x {}) l2 [[r: (fst res) = List.cons (f 1) r]]
   }
 
 (*
