@@ -36,11 +36,12 @@
 %%
 
 %public annotated(X): t = X { Loc.mk_pos $startpos $endpos t }
+%public %inline annotated_inl(X): t = X { Loc.mk_pos $startpos $endpos t }
 (* a program variable which can be used in declarations *)
 %public defprogvar:
   | x = IDENT { x }
-  | x = infix { snd x }
-  | x = prefix { snd x }
+  | x = infix { x }
+  | x = prefix { x }
   | REF { "ref" }
   | DEXCLAM { "!!" }
 
@@ -56,30 +57,30 @@ tconstant:
 
 (* infix operators - can be used in definitions *)
 %public %inline infix:
-  | p = GT         { p,">" }
-  | p = LT         { p,"<" }
-  | p = MINUS      { p,"-" }
-  | p = PLUS       { p,"+" }
-  | p = STAR       { p,"*" }
-  | p = ASSIGN     { p,":=" }
-  | p = LE         { p,"<=" }
-  | p = GE         { p,">=" }
-  | p = EQUAL      { p,"=" }
-  | p = BEQUAL     { p,"==" }
-  | p = BNEQ       { p,"!=" }
-  | p = NEQ        { p,"<>" }
-  | p = AND        { p,"/\\" }
-  | p = OR        { p,"\\/" }
-  | p = ARROW      { p,"->" }
-  | p = BLE         { p,"<<=" }
-  | p = BGE         { p,">>=" }
-  | p = BGT         { p,">>" }
-  | p = BLT         { p,"<<" }
+  | GT         { ">" }
+  | LT         { "<" }
+  | MINUS      { "-" }
+  | PLUS       { "+" }
+  | STAR       { "*" }
+  | ASSIGN     { ":=" }
+  | LE         { "<=" }
+  | GE         { ">=" }
+  | EQUAL      { "=" }
+  | BEQUAL     { "==" }
+  | BNEQ       { "!=" }
+  | NEQ        { "<>" }
+  | AND        { "/\\" }
+  | OR         { "\\/" }
+  | ARROW      { "->" }
+  | BLE        { "<<=" }
+  | BGE        { ">>=" }
+  | BGT        { ">>" }
+  | BLT        { "<<" }
 
 (* prefix operators - can be used in definitions *)
 %public prefix:
-  | p = EXCLAM { p, "!" }
-  | p = TILDE { p, "~" }
+  | EXCLAM { "!" }
+  | TILDE  { "~" }
 
 %public constant:
   | n = INT    { Const.Int n }
@@ -98,19 +99,19 @@ prover:
 %public takeoverdecl:
   | p = prover t = takeover { p, t }
 
-%public inst:
-  | p1 = LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
-    MID el = sepeffect* p2 = RBRACKET
-    { (tl, rl, el), embrace p1 p2 }
-  | p1 = LBRACKET tl = separated_list(COMMA,ty) p2 = RBRACKET
-    { (tl, [] ,[]), embrace p1 p2 }
+inst:
+  | LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
+    MID el = sepeffect* RBRACKET
+    { (tl, rl, el) }
+  | LBRACKET tl = separated_list(COMMA,ty) RBRACKET
+    { (tl, [] ,[]) }
 
 (* basic types *)
 stype_nopos:
   | x = tconstant { TConst x }
   | v = TYVAR { TVar (v) }
   | LPAREN t = ty_nopos RPAREN { t }
-  | v = IDENT i = inst { TApp (v,fst i) }
+  | v = IDENT i = inst { TApp (v,i) }
   | v = IDENT { TApp (v,([],[],[])) }
   | t = stype v = IDENT { TApp (v,([t],[],[])) }
   | LPAREN t = ty COMMA l = separated_list(COMMA,ty) RPAREN v = IDENT

@@ -60,34 +60,18 @@
   (* construct a sequence of pure lambdas on top of a parameter with type [rt]
      and effect [eff]; the innermost lambda is effectful as in [mk_efflam] *)
   let mk_param l p q rt eff loc =
-    mk_efflam l p (mk (Param (rt,eff)) loc) q loc
+    mk_efflam l p (Loc.mk loc (Param (rt,eff))) q loc
 
   (* construct a sequence of quantifiers on top of [e] *)
   let mk_quant k l e loc =
     List.fold_right (fun (x,t) acc -> quant k x t acc loc) l e
 
   (* build a for loop *)
-  let forfunction dir i start end_ inv body pos =
-(*     let s = "__start" and e = "__end" in *)
-    let forterm = mk (For (dir,inv,i,start,end_,body)) pos in
-    forterm
-(*
-    let em = [],[],[] in
-    (* let start = start and end_ = end_ in
-       forvar inv start end_ body *)
-    let_ em start s (let_ em end_ e forterm NoRec end_.loc)
-      NoRec start.loc
-*)
-
-
-  let mk_pvar x pos = { pv = PVar (Some x) ; ploc = pos }
-  let mk_pconstr c l p = { pv = PApp (c.c, l) ; ploc = p }
-  let mk_underscore p = { pv = PVar None; ploc = p }
 
   let may_annot annot e =
     match annot with
     | None -> e
-    | Some t -> mk (Annot (e,t)) e.loc
+    | Some t -> Loc.mk e.info (Annot (e,t))
 
   let rec_annot args (t,eff) l =
     let argtys = List.rev_map snd args in
@@ -109,12 +93,6 @@
 
 (* basic terms *)
 
-protected_term:
-  | l = LPAREN t = seq_term e = RPAREN { mk t.v (embrace l e) }
-  | l = BEGIN t = seq_term e = END { mk t.v (embrace l e) }
-  | l = LPAREN e = seq_term COLON t = ty r = RPAREN
-    { mk (Annot (e,t)) (embrace l r) }
-
 term_inst:
   | LBRACKET e = sepeffect* RBRACKET { ([],[],e) }
   | LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
@@ -122,34 +100,23 @@ term_inst:
     { (tl, rl, el) }
 
 aterm_nopos:
-  | p = VOID { var I.void_id p }
-(*   | p = REF { var "ref" p} *)
-  | p = prefix t = aterm
-    { app (var (snd p) (fst p)) t (embrace (fst p) t.loc) }
-  | p = prefix inst = term_inst t = aterm
-    { app (var ~inst (snd p) (fst p)) t (embrace (fst p) t.loc) }
-  | x = IDENT AT e = sepeffect
-    { let pos = build $startpos $endpos in
-      mk (Restrict (var x pos,e)) pos }
-  | p = DEXCLAM x = IDENT
-    {
-      let pos = build $startpos $endpos in
-      mk (Get (var x pos, var "cur" p)) pos }
-  | DEXCLAM x = IDENT AT t = aterm
-    {
-      let pos = build $startpos $endpos in
-      mk (Get (var x pos, t)) pos
-    }
-  | x = IDENT { var x (build $startpos $endpos) }
-  | x = CONSTRUCTOR { var x.c (build $startpos $endpos) }
-  | x = IDENT inst = term_inst { var ~inst x (build $startpos $endpos) }
-  | l = LPAREN x = prefix r = RPAREN
-    { var (snd x) (embrace l r) }
-  | c = constant { let p,c = c in const c p }
-  | l = LPAREN x = infix e = RPAREN { var (snd x) (embrace l e) }
-  | t = protected_term { t }
-  | p1 = REF LPAREN r = IDENT p2 = RPAREN
-    { mk (ParseTree.Ref r) (embrace p1 p2) }
+  | VOID { Var (I.void_id,([],[],[])) }
+  | p = annotated_inl(prefix) t = aterm { App (var p.c p.info, t, `Prefix) }
+  | p = annotated_inl(prefix) inst = term_inst t = aterm
+    { App (var ~inst p.c p.info ,t, `Prefix) }
+  | x = annotated(IDENT) AT e = sepeffect { Restrict (var x.c x.info,e) }
+  | DEXCLAM x = annotated(IDENT) { Get (var x.c x.info, var "cur" x.info) }
+  | DEXCLAM x = annotated(IDENT) AT t = aterm { Get (var x.c x.info, t) }
+  | x = IDENT { Var (x,([],[],[])) }
+  | x = CONSTRUCTOR { Var (x, ([],[],[])) }
+  | x = IDENT inst = term_inst { Var (x,inst) }
+  | LPAREN x = prefix RPAREN { Var (x, ([],[],[])) }
+  | c = constant { Const c }
+  | LPAREN x = infix RPAREN { Var (x, ([],[],[])) }
+  | LPAREN t = seq_term RPAREN { t.c }
+  | BEGIN t = seq_term END { t.c }
+  | LPAREN e = seq_term COLON t = ty RPAREN { Annot (e,t) }
+  | REF LPAREN r = IDENT RPAREN { ParseTree.Ref r }
 aterm: t = annotated(aterm_nopos) { t }
 
 tuple_list:
@@ -160,71 +127,69 @@ tuple_list:
 seq_term:
   | t = nterm %prec below_SEMI { t }
   | t1 = nterm SEMICOLON t2 = seq_term
-    { mk (Seq (t1,t2)) (embrace t1.loc t2.loc) }
+    { Loc.mk (Loc.join_with t1 t2) (Seq (t1,t2)) }
 
 (* all the more complex terms *)
-nterm:
-  | t = aterm { t }
-  | t = aterm l = aterm+
-    { appn t l }
-(*
-  | t1 = aterm DLCURL l = IDENT* DRCURL tl = aterm+
-    { cap_appn t1 tl (strip_info l) }
-*)
+nterm_nopos:
+  | t = aterm_nopos { t }
+  | t = aterm l = aterm+ { (appn t l).Loc.c }
   | tl = tuple_list %prec below_COMMA
     {
       let n = List.length tl in
       let tl = List.rev tl in
-      appni (Identifiers.mk_tuple_id n) tl (List.hd tl).loc
+      (appni (Identifiers.mk_tuple_id n) tl (List.hd tl).info).c
     }
-  | t1 = nterm i = infix t2 = nterm
-    { appi (snd i) t1 t2 (embrace t1.loc t2.loc) }
-  | sp = FUN l = arglist ARROW body = funcbody
-    { let p,e,q = body in
-      mk_efflam l (snd p) e (snd q) (embrace sp (fst q)) }
-  | sp = FUN l = arglist ARROW e = seq_term
-    { mk_pure_lam l e (embrace sp e.loc) }
-  | st = IF it = seq_term THEN tb = nterm ELSE eb = nterm
-    { mk (Ite(it,tb,eb)) (embrace st eb.loc) }
+  | t1 = nterm i = annotated_inl(infix) t2 = nterm
+    { let pos1 = Loc.embrace t1.info i.info in
+      App (Loc.mk pos1 (App(var i.c i.info, t1,`Prefix)), t2, `Infix) }
+  | FUN l = arglist ARROW body = annotated(funcbody)
+    { let p,e,q = body.c in
+      (mk_efflam l p e q (left_join $startpos body.info)).c }
+  | FUN l = arglist ARROW e = seq_term
+    { (mk_pure_lam l e (left_join $startpos e.info)).c }
+  | IF it = seq_term THEN tb = nterm ELSE eb = nterm
+    { Ite(it,tb,eb) }
   (* a local let is like a global one, but with an IN following *)
   | f = alllet IN e2 = seq_term
-    { let g, e, x, r = f in let_ g e x e2 r e2.loc }
-  | p = LETREGION l = IDENT* IN t = seq_term
-    { mk (LetReg (l,t)) p }
-  | st = FOR i = IDENT EQUAL e1 = seq_term dir = todownto e2 = seq_term DO
+    { let g, e, x, r = f in Let (g,e,x,e2,r) }
+  | LETREGION l = IDENT* IN t = seq_term
+    { LetReg (l,t) }
+  | FOR i = IDENT EQUAL e1 = seq_term dir = todownto e2 = seq_term DO
        p = precond
        e3 = seq_term
-    en = DONE
-    { forfunction dir i e1 e2 (snd p) e3 (embrace st en) }
-  | sp = FORALL g = gen DOT e = nterm %prec forall
-    { mk (Gen (g,e)) (embrace sp e.loc) }
-  | sp = FORALL l = arglist DOT e = nterm %prec forall
-    { mk_quant `FA l e (embrace sp e.loc) }
-  | sp = EXISTS l = arglist DOT e = nterm %prec forall
-    { mk_quant `EX l e (embrace sp e.loc) }
-  | l = DLBRACKET p = nterm? DRBRACKET
+    DONE
+    { For (dir,p,i,e1,e2,e3) }
+  | FORALL g = gen DOT e = nterm %prec forall
+    { Gen (g,e) }
+  | FORALL l = arglist DOT e = nterm %prec forall
+    { (mk_quant `FA l e (left_join $startpos e.info)).c }
+  | EXISTS l = arglist DOT e = nterm %prec forall
+    { (mk_quant `EX l e (left_join $startpos e.info)).c }
+  | DLBRACKET p = nterm? DRBRACKET
      e = nterm
-    DLBRACKET q = postcond_int r = DRBRACKET
-    { mk (HoareTriple (p,e,q)) (embrace l r) }
-  | p1 = MATCH t = seq_term WITH option(MID)
-    bl = separated_nonempty_list(MID,branch) p2 = END
-    { mk (Case (t, bl)) (embrace p1 p2) }
-  | p = PARAMETER LPAREN t = ty COMMA e = sep_readwrite r = RPAREN
-    { mk (Param (t,e)) (embrace p r) }
+    DLBRACKET q = postcond_int DRBRACKET
+    { HoareTriple (p,e,q) }
+  | MATCH t = seq_term WITH option(MID)
+    bl = separated_nonempty_list(MID,branch) END
+    { Case (t, bl) }
+  | PARAMETER LPAREN t = ty COMMA e = sep_readwrite RPAREN
+    { Param (t,e) }
+
+nterm: t = annotated(nterm_nopos) { t }
 
 branch: p = pattern ARROW e = seq_term { p, e }
 
 basic_pattern:
-  | x = IDENT { mk_pvar x (build $startpos $endpos)  }
-  | p = UNDERSCORE { mk_underscore p }
-  | x = CONSTRUCTOR { mk_pconstr x [] x.info  }
-(*   | LPAREN p = pattern RPAREN { p } *)
-pattern:
+  | x = IDENT { PVar (Some x)  }
+  | UNDERSCORE { PVar None }
+  | x = CONSTRUCTOR { PApp (x,[]) }
+
+pattern_nopos:
   | p = basic_pattern { p }
-  | x = CONSTRUCTOR p = basic_pattern
-    { mk_pconstr x [p] (embrace x.info p.ploc) }
-  | x = CONSTRUCTOR LPAREN pl = separated_list(COMMA, pattern) p2 = RPAREN
-    { mk_pconstr x pl (embrace x.info p2) }
+  | x = CONSTRUCTOR p = annotated(basic_pattern) { PApp(x,[p]) }
+  | x = CONSTRUCTOR LPAREN pl = separated_list(COMMA, pattern) RPAREN
+    { PApp(x,pl) }
+pattern: p = annotated(pattern_nopos) { p }
 
 todownto:
   | TO { "forto" }
@@ -249,31 +214,32 @@ may_tyannot :
   | COLON t = ty { Some t }
 (* the common part of every let binding *)
 letcommon:
-  | p = LET x = defprogvar l = gen args = may_empty_arglist
+  | LET x = defprogvar l = gen args = may_empty_arglist
     t = may_tyannot EQUAL
-    { p, x ,l,args, t }
+    { x ,l,args, t }
 
 alllet:
 (* the simplest case *)
-  | b = letcommon t = seq_term
-    { let p,x,l,args, annot = b in
+  | b = annotated(letcommon) t = seq_term
+    { let x,l,args, annot = b.c in
       let t = may_annot annot t in
-      l, mk_pure_lam args t p, x,  NoRec }
+      l, mk_pure_lam args t b.info, x,  NoRec }
 (* the function definition case *)
-  | b = letcommon body = funcbody
-    { let p,x,l,args, annot = b in
+  | b = annotated(letcommon) body = funcbody
+    { let x,l,args, annot = b.c in
       let pre,e,q = body in
       let e = may_annot annot e in
       if args = [] then $syntaxerror;
-      l, mk_efflam args (snd pre) e (snd q) p, x, NoRec
+      l, mk_efflam args pre e q b.info, x, NoRec
     }
 (* the recursive function definition case *)
-  | p = LET REC x = defprogvar l = gen args = arglist
+  | LET REC x = defprogvar l = gen args = arglist
     COLON pt = param_annot EQUAL b = funcbody
     {
+      let p = build $startpos $endpos in
       let t = rec_annot args pt p in
       let pre,e,q = b in
-      l, mk_efflam args (snd pre) e (snd q) p, x, Rec t
+      l, mk_efflam args pre e q p, x, Rec t
     }
 
 funcbody:
@@ -284,9 +250,9 @@ postcond_int:
   | t = nterm { PPlain t }
   | x = defprogvar COLON t = nterm { PResult (x,t) }
 
-postcond: l = LCURL q = postcond_int r = RCURL { embrace l r, q }
+postcond: LCURL q = postcond_int RCURL { q }
 
-precond: | p = LCURL t = nterm? RCURL { p, t }
+precond: | LCURL t = nterm? RCURL { t }
 
 (* a declaration is either
   - a let
@@ -307,14 +273,17 @@ param_annot:
 decl:
   | g = alllet
     { let g, e, x, r = g in Program (x,g,e, r) }
-  | p = PARAMETER x = defprogvar l = gen COLON rt = ty
-    { let par = mk (Param (rt,rw_empty)) p in
+  | PARAMETER x = defprogvar l = gen COLON rt = ty
+    {
+      let p = build $startpos $endpos in
+      let par = Loc.mk p (Param (rt,rw_empty)) in
       Program (x,l,par, NoRec) }
-  | p = PARAMETER x = defprogvar l = gen args = arglist
+  | PARAMETER x = defprogvar l = gen args = arglist
     COLON ann = param_annot EQUAL pre = precond post = postcond
   {
     let rt, e = ann in
-    let par = mk_param args (snd pre) (snd post) rt e p in
+    let p = build $startpos $endpos in
+    let par = mk_param args pre post rt e p in
     Program (x,l,par, NoRec)
   }
   | AXIOM x = defprogvar l = gen COLON t = nterm
@@ -338,8 +307,8 @@ decl:
     { Inductive (x,l,tl,tel) }
 
 constructorbranch:
-    | x = CONSTRUCTOR  { x.c, []}
-    | x = CONSTRUCTOR OF tl = separated_nonempty_list(STAR,stype) { x.c, tl }
+    | x = CONSTRUCTOR  { x, []}
+    | x = CONSTRUCTOR OF tl = separated_nonempty_list(STAR,stype) { x, tl }
 
 (* a program is simply a list of declarations; we call [to_abst_ast] to
   obtain a single AST *)

@@ -64,7 +64,7 @@ and branch = pattern * t
 and pattern_node =
   | PVar of string option
   | PApp of string * pattern list
-and pattern = { pv : pattern_node ; ploc : Loc.loc }
+and pattern = pattern_node Loc.t
 
 type decl =
   | Logic of var * generalize * ty

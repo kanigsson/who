@@ -75,7 +75,7 @@ let rec ast' loc env = function
       let env, nrl = Env.add_rvars env rl in
       LetReg (nrl, ast env e)
   | I.Seq (e1,e2) ->
-      Let (G.empty, annot (ast env e1) (Ty.unit ()) e1.I.loc,
+      Let (G.empty, annot (ast env e1) (Ty.unit ()) e1.Loc.info,
            Name.new_anon (), ast env e2, Const.NoRec)
   | I.Restrict (t,e) ->
       let t = ast env t and e = effect loc env e in
@@ -126,11 +126,11 @@ and pattern_node env acc p l =
         env, acc, p::pl) (env,Name.S.empty,[]) pl in
       env, acc, PApp (v, List.rev pl)
 and pattern env acc p =
-  let loc = p.I.ploc in
-  let env, acc, p = pattern_node env acc p.I.pv loc in
+  let loc = p.Loc.info in
+  let env, acc, p = pattern_node env acc p.Loc.c loc in
   env, acc, { pv = p ; ploc = loc }
 
-and ast env {I.v = v; loc = loc} = { v = ast' loc env v; loc = loc }
+and ast env {Loc.c = v; info = loc} = { v = ast' loc env v; loc = loc }
 
 and letgen env x g e r =
   let env', g = Env.add_gen env g in

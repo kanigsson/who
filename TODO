@@ -14,8 +14,6 @@ COQ
 
 INTERNAL
 * infix at variable place instead of application
-* use positions in parser better
-tconstant TYVAR
 * simplify pattern-matching expressions (match A 5 with A i -> i end)
 
 
@@ -41,6 +39,7 @@ inductive declarations
 * use printTree for MutableType
 * remove annotparser
 * type annotations at let
+* use positions in parser better
 
 
 MANUAL

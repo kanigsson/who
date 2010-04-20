@@ -27,69 +27,56 @@
 
   exception Error of string
 
-let create_info lexbuf =
-  let spos_p = Lexing.lexeme_start_p lexbuf in
-  let epos_p = Lexing.lexeme_end_p lexbuf in
-    { Loc.st= spos_p ; en = epos_p}
-
-
 (* decide if a string is a keyword or an identifier *)
 let id_or_keyword =
   let h = Hashtbl.create 17 in
     List.iter (fun (s,k) -> Hashtbl.add h s k)
       [
-        ("True", fun i -> PTRUE (create_info i) );
-        ("False", fun i -> PFALSE (create_info i) );
-        ("let", fun i -> LET (create_info i)  );
-        ("axiom", fun i -> AXIOM (create_info i)  );
-        ("goal", fun i -> GOAL (create_info i)  );
-        ("logic", fun i -> LOGIC (create_info i)  );
-        ("parameter", fun i -> PARAMETER (create_info i)  );
-        ("type", fun i -> TYPE (create_info i)  );
-        ("forall", fun i -> FORALL (create_info i)  );
-        ("exists", fun i -> EXISTS (create_info i)  );
-        ("for", fun i -> FOR (create_info i)  );
-        ("to", fun i -> TO (create_info i)  );
-        ("of", fun _ -> OF );
-        ("downto", fun i -> DOWNTO (create_info i)  );
-        ("do", fun _ -> DO );
-        ("done", fun i -> DONE (create_info i)  );
-        ("int", fun i -> TINT (create_info i));
-        ("prop", fun i -> PROP (create_info i));
-        ("begin", fun i -> BEGIN (create_info i));
-        ("end", fun i -> END (create_info i) );
-        ("ref", fun i -> REF (create_info i) );
-        ("match", fun i -> MATCH (create_info i) );
-        ("with", fun i -> WITH (create_info i) );
-        ("in", fun _ -> IN );
-        ("if", fun i -> IF (create_info i) );
-        ("letregion", fun i -> LETREGION (create_info i) );
-        ("then", fun _ -> THEN );
-        ("else", fun _ -> ELSE );
-        ("rec", fun _ -> REC );
-        ("section", fun i -> SECTION (create_info i) );
-        ("coq", fun _ -> COQ );
-(*         ("allocates", fun _ -> ALLOCATES ); *)
-        ("predefined", fun _ -> PREDEFINED );
-        ("takeover", fun _ -> TAKEOVER );
-        ("pangoline", fun _ -> PANGOLINE );
-        ("inductive", fun _ -> INDUCTIVE );
-        ("end", fun i -> END (create_info i) );
-        ("fun", fun i -> FUN (create_info i) );
-(*         ("INTROS", fun _ -> INTROS ); *)
+        ("let", LET );
+        ("axiom", AXIOM  );
+        ("goal",  GOAL  );
+        ("logic",  LOGIC  );
+        ("parameter",  PARAMETER  );
+        ("type",  TYPE );
+        ("forall",  FORALL   );
+        ("exists",  EXISTS  );
+        ("for",  FOR );
+        ("to",  TO );
+        ("of",  OF );
+        ("downto",  DOWNTO );
+        ("do",  DO );
+        ("done",  DONE );
+        ("int",  TINT );
+        ("prop",  PROP );
+        ("begin",  BEGIN );
+        ("end",  END );
+        ("ref",  REF );
+        ("match",  MATCH );
+        ("with",  WITH );
+        ("in",  IN );
+        ("if",  IF );
+        ("letregion",  LETREGION );
+        ("then",  THEN );
+        ("else",  ELSE );
+        ("rec",  REC );
+        ("section",  SECTION );
+        ("coq",  COQ );
+        ("predefined",  PREDEFINED );
+        ("takeover",  TAKEOVER );
+        ("pangoline",  PANGOLINE );
+        ("inductive",  INDUCTIVE );
+        ("fun",  FUN );
       ];
-    fun s -> try Hashtbl.find h s with Not_found ->
-      fun i -> IDENT s
+    fun s -> try Hashtbl.find h s with Not_found -> IDENT s
 
 let constructor_or_keyword =
   let h = Hashtbl.create 17 in
     List.iter (fun (s,k) -> Hashtbl.add h s k)
       [
-        ("True", fun i -> PTRUE (create_info i) );
-        ("False", fun i -> PFALSE (create_info i) );
+        ("True",  PTRUE );
+        ("False", PFALSE  );
       ];
-    fun s -> try Hashtbl.find h s with Not_found ->
-      fun i -> CONSTRUCTOR (Loc.mk (create_info i) s)
+    fun s -> try Hashtbl.find h s with Not_found -> CONSTRUCTOR s
 
 let incr_linenum lexbuf =
     let pos = lexbuf.lex_curr_p in
@@ -112,55 +99,50 @@ let identifier = (module_or_constructor_name '.')* name
 rule token = parse
   | [' ' '\t' ]
       { token lexbuf }
-  | '_' { UNDERSCORE (create_info lexbuf) }
-  | digit+ as i
-      { INT (Loc.mk (create_info lexbuf) (Big_int.big_int_of_string i)) }
-  | identifier as i { id_or_keyword i lexbuf}
-  | module_or_constructor_name as m { constructor_or_keyword m lexbuf }
+  | '_' { UNDERSCORE }
+  | digit+ as i { INT (Big_int.big_int_of_string i) }
+  | identifier as i { id_or_keyword i }
+  | module_or_constructor_name as m { constructor_or_keyword m }
   | '"' ( [ ^ '"' ] * as str ) '"'
       { STRING str }
   | '\'' (name as tv) { TYVAR tv}
-  | "->" { ARROW (create_info lexbuf) }
-  | "==" { BEQUAL (create_info lexbuf) }
-  | '=' { EQUAL (create_info lexbuf) }
-  | "<>" { NEQ (create_info lexbuf) }
-  | "()" { VOID (create_info lexbuf)  }
-  | '(' { LPAREN (create_info lexbuf)  }
-  | ')' { RPAREN (create_info lexbuf)  }
-  | '[' { LBRACKET (create_info lexbuf) }
-  | ']' { RBRACKET (create_info lexbuf) }
-  | '{' { LCURL (create_info lexbuf) }
-  | '}' { RCURL (create_info lexbuf) }
-(*
-  | "{{" { DLCURL }
-  | "}}" { DRCURL }
-*)
-  | "[[" { DLBRACKET (create_info lexbuf) }
-  | "]]" { DRBRACKET (create_info lexbuf) }
-  | "!!" { DEXCLAM (create_info lexbuf) }
-  | "!=" { BNEQ (create_info lexbuf) }
-  | '!' { EXCLAM (create_info lexbuf) }
-  | ":=" { ASSIGN (create_info lexbuf)   }
+  | "->" { ARROW }
+  | "==" { BEQUAL }
+  | '=' { EQUAL }
+  | "<>" { NEQ }
+  | "()" { VOID }
+  | '(' { LPAREN }
+  | ')' { RPAREN  }
+  | '[' { LBRACKET }
+  | ']' { RBRACKET }
+  | '{' { LCURL }
+  | '}' { RCURL }
+  | "[[" { DLBRACKET }
+  | "]]" { DRBRACKET }
+  | "!!" { DEXCLAM }
+  | "!=" { BNEQ }
+  | '!' { EXCLAM }
+  | ":=" { ASSIGN }
   | '|'  { MID }
   | '@'  { AT }
   | ';' { SEMICOLON   }
-  | '*' { STAR (create_info lexbuf)  }
+  | '*' { STAR  }
   | ':' { COLON }
-  | ',' { COMMA (create_info lexbuf) }
+  | ',' { COMMA }
   | '.' { DOT }
-  | '~' { TILDE (create_info lexbuf) }
-  | "<=" { LE (create_info lexbuf)  }
-  | "/\\" { AND (create_info lexbuf) }
-  | "\\/" { OR (create_info lexbuf) }
-  | '<' { LT (create_info lexbuf)  }
-  | "<<" { BLT (create_info lexbuf) }
-  | ">>" { BGT (create_info lexbuf) }
-  | "<<=" { BLE (create_info lexbuf) }
-  | ">>=" { BGE (create_info lexbuf) }
-  | '>' { GT (create_info lexbuf)  }
-  | ">=" { GE (create_info lexbuf)  }
-  | '+' { PLUS (create_info lexbuf)  }
-  | '-' { MINUS (create_info lexbuf)  }
+  | '~' { TILDE }
+  | "<=" { LE  }
+  | "/\\" { AND }
+  | "\\/" { OR }
+  | '<' { LT  }
+  | "<<" { BLT }
+  | ">>" { BGT }
+  | "<<=" { BLE }
+  | ">>=" { BGE }
+  | '>' { GT  }
+  | ">=" { GE  }
+  | '+' { PLUS }
+  | '-' { MINUS }
   | "(*" { comment lexbuf; token lexbuf }
   | eof { EOF  }
   | '\n' { incr_linenum lexbuf ; token lexbuf }
