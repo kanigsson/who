@@ -228,6 +228,7 @@ parameter X.compute ['c||'e]
 (* =============================
 tests
 ================================ *)
+(*
 
 let test2 (f : int -> b) (l : int list) =
   {
@@ -245,8 +246,7 @@ let test2 (f : int -> b) (l : int list) =
       [[]] List.map [{}] (fun (s:< >)(ll:int list)->True) (fun (x:int) ->{} f x {}) l2 [[r: (fst res) = List.cons (f 1) r]]
   }
 
-(*
-
+*)
 
 (* =====================================
 computing strategies specifications
@@ -257,7 +257,10 @@ computing strategies specifications
 let map (f : a -> b) (l : a list) =
   {}
   letregion r in
-  let tasks = let i = ref (r) 0 in List.map [{r}] (fun (x:'a) -> {} incr i; x, !i {}) l in
+  let tasks = 
+    let i = ref (r) 0 in 
+    let inv (s:<r>) (ll:a list) = !!i@s + List.length ll = List.length l in
+    List.map [{r}] inv (fun (x:'a) -> {} incr i; x, !i {}) l in
   letregion r2 in
   let results = ref (r2) (Hashtbl.create 17) in
   let inv (s : <r2>) (l1 : (a * int) list) = (* invariant *)
@@ -271,15 +274,16 @@ let map (f : a -> b) (l : a list) =
     (fun (tuple : (a*int)) (r : b) ->{} Hashtbl.add results (snd tuple) r; Nil {})
     tasks;
   List.map [{r2}]
+    (fun (s:<r2>) (ll:(a*int) list) -> (~(ll=Nil) -> (snd (fst (fromCons ll))) + List.length ll = List.length l + 1))  
     (fun (tuple : a*int) -> {} results := !results; (* FIXME : dirty hack *) Hashtbl.find !results (snd tuple) {})
     tasks
   { res:
     List.length res = List.length l /\
-    [[]] List.map [{}] (fun (x:a) ->{} f x {}) l [[ r : r = res ]] /\
+    [[]] List.map [{}] (fun (s:< >)(ll:a list) -> True) (fun (x:a) ->{} f x {}) l [[ r : r = res ]] /\
     (forall (x:a). [[List.mem x l]] f x [[r : List.mem r res]])
   }
 
-
+(*
 (* ============= map_local_fold ========= *)
 logic logic_fold ['a 'b] : ('b -> 'a -> 'b) -> 'b -> 'a list -> 'b
 
