@@ -1,0 +1,8 @@
+logic + : int -> int -> int
+logic f : int -> int
+type t =
+ | A of int * int
+let f x =
+  match x with
+  | A (a,b) -> let k = f b in k + a
+  end

@@ -174,6 +174,9 @@ let correct_name n = Name.append n "_correct"
 
 let scheme (g,t) = g, ty t
 
+let to_inst g =
+  Inst.map Ty.var Misc.id Effect.esingleton g
+
 let rec decl d =
   match d with
   | TypeDef _ | Inductive _
@@ -185,13 +188,20 @@ let rec decl d =
       [DGen ([],rl,[])]
   | Section (s,dl, kind) -> [Section (s, theory dl, kind)]
   | Program (x,g,e,_) when is_value e ->
-      (* TODO recursive functions *)
       let lv = lift_value e in
-      let f = gen g (correct e) e.loc in
+      let f = correct e in
+      let loc = lv.loc in
+      let f =
+        if G.is_empty g then f else
+          let v = mk_var_with_scheme false `Prefix x (g,lv.t) in
+          gen g (subst x (fun _ -> var v (to_inst g) loc) f) loc in
       let def = Program (x,g,lv, Const.LogicDef) in
       begin match mk_goal (correct_name x) f with
       | None -> [def]
-      | Some goal -> [goal ; def ]
+      (* we have the right to put the def. first; either the def was not
+       * recursive, then this does not change anything; or it was, in which
+       * case we can use the definition to prove the goal *)
+      | Some goal -> [def ; goal ]
       end
   | Program _ -> assert false
 

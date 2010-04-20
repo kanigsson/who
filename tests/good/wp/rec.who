@@ -1,0 +1,25 @@
+type unit
+logic tt : unit
+logic /\ : prop -> prop -> prop
+logic \/ : prop -> prop -> prop
+logic -> : prop -> prop -> prop
+logic mk_2tuple ['a 'b||] : 'a -> 'b -> 'a * 'b
+logic get_2_1_tuple ['a 'b||] : 'a * 'b -> 'a
+logic get_2_2_tuple ['a 'b||] : 'a * 'b -> 'b
+
+logic combine [||'e1 'e2 'e3] : <'e1 'e2> -> <'e2 'e3> -> <'e1 'e2 'e3>
+logic restrict [||'e1 'e2] : <'e1 'e2> -> <'e2>
+logic empty : < >
+
+logic = ['a||] : 'a -> 'a -> prop
+logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
+parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r + } =
+  {}
+  {r : !!x = r }
+
+type list ['a] = | Nil | Cons of a* list[a]
+let rec map ['a 'b||'e]
+  (f : a ->{ 'e} b) (l : list[a]) : list[b] { 'e} =
+  { }
+    map f l
+  { }

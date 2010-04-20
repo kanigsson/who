@@ -1,0 +1,58 @@
+type unit
+logic tt  : unit
+logic /\  : prop -> prop -> prop
+logic \/  : prop -> prop -> prop
+logic ->  : prop -> prop -> prop
+logic mk_2tuple ['a 'b||] : a -> b -> a * b
+logic get_2_1_tuple ['a 'b||] : (a * b) -> a
+logic get_2_2_tuple ['a 'b||] : (a * b) -> b
+logic combine [||'e 'e1 'e2] : < 'e 'e1> -> < 'e1 'e2> -> < 'e 'e1 'e2>
+logic restrict [||'e 'e1] : < 'e 'e1> -> < 'e1>
+logic empty  : < >
+logic = ['a||] : a -> a -> prop
+logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
+let
+  ! ['a|r|] = mk_2tuple [ref(r,a) -> <r > -> prop,ref(r,a) -> <r > -> <r > ->
+              a -> prop||] (fun (x:ref(r,a)) -> (fun (cur:<r >) -> True))
+              (fun (x:ref(r,a)) ->
+              (fun (old:<r >) ->
+              (fun (cur:<r >) -> (fun (r1:a) -> r1 = !!x@cur)))) 
+let
+  := ['a|r|] = (fun (x:ref(r,a)) ->
+               mk_2tuple [a -> <r > -> prop,a -> <r > -> <r > -> unit ->
+               prop||] (fun (v:a) -> (fun (cur:<r >) -> True))
+               (fun (v:a) ->
+               (fun (old:<r >) ->
+               (fun (cur:<r >) -> (fun (anon:unit) -> v = !!x@cur))))) 
+let
+  f [|r|] = mk_2tuple [ref(r,int) -> <r > -> prop,ref(r,int) -> <r > ->
+            <r > -> int -> prop||]
+            (fun (x:ref(r,int)) -> (fun (cur:<r >) -> True))
+            (fun (x:ref(r,int)) ->
+            (fun (old:<r >) ->
+            (fun (cur:<r >) -> (fun (r1:int) -> r1 = !!x@cur)))) 
+goal f_correct:
+  forall [|r|]. forall (x:ref(r,int)).
+                forall (s:<r >).
+                (get_2_1_tuple [ref(r,int) -> <r > -> prop,ref(r,int) ->
+                 <r > -> <r > -> int -> prop||] ! [int| r|] x s)
+                /\
+                (forall (anon:int).
+                 (get_2_2_tuple [ref(r,int) -> <r > -> prop,ref(r,int) ->
+                  <r > -> <r > -> int -> prop||] ! [int| r|] x s s anon)
+                 ->
+                 ((get_2_1_tuple [int -> <r > -> prop,int -> <r > -> <r > ->
+                   unit -> prop||] ((:= [int| r|]) x) anon s)
+                  /\
+                  (forall (s1:<r >).
+                   (get_2_2_tuple [int -> <r > -> prop,int -> <r > -> <r > ->
+                    unit -> prop||] ((:= [int| r|]) x) anon s s1 tt)
+                   ->
+                   ((get_2_1_tuple [ref(r,int) -> <r > -> prop,ref(r,int) ->
+                     <r > -> <r > -> int -> prop||] ! [int| r|] x s1)
+                    /\
+                    (forall (anon1:int).
+                     (get_2_2_tuple [ref(r,int) -> <r > -> prop,ref(r,int) ->
+                      <r > -> <r > -> int -> prop||] ! [int| r|] x s1 s1
+                      anon1)
+                     -> (anon1 = !!x@s1))))))

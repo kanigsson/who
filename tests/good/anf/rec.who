@@ -1,0 +1,9 @@
+type list ['a] = | Nil | Cons of a* list[a]
+
+let rec map ['a 'b||'e] (inv : < 'e> -> list[a] -> prop)
+  (f : a ->{ 'e} b) (l : list[a]) : list[b] { 'e} =
+  { }
+    match l with
+    | Nil -> Nil
+    | Cons(x,rl) -> (let r = f x in Cons r (map inv f rl))  end
+  { }

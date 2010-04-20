@@ -10,10 +10,9 @@ PROOFS
 
 Hashtbl
 
-COQ
-
 INTERNAL
 * simplify pattern-matching expressions (match A 5 with A i -> i end)
+* pretty printer for Coq: find out when we can omit type annotations
 
 
 BUGS

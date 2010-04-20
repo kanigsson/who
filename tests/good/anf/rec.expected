@@ -1,0 +1,7 @@
+type list ['a||] = | Nil | Cons of a* list[a] 
+let rec map ['a 'b||'e] (inv : < 'e> -> list[a] -> prop)
+  (f : a ->{  +  'e} b) (l : list[a]) :
+  list[b] {  +  'e} = {(fun (cur:< 'e>) -> True)}
+  match l with Nil ->  Nil [b||]  | Cons(x,rl) ->
+                let r = f x in let anf = map inv f rl in Cons [b||] r anf  end 
+  {(fun (old:< 'e>) -> (fun (cur:< 'e>) -> (fun (anon:list[b]) -> True)))} 

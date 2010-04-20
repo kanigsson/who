@@ -1,0 +1,35 @@
+type unit
+logic tt  : unit
+logic /\  : prop -> prop -> prop
+logic \/  : prop -> prop -> prop
+logic ->  : prop -> prop -> prop
+logic mk_2tuple ['a 'b||] : a -> b -> a * b
+logic get_2_1_tuple ['a 'b||] : (a * b) -> a
+logic get_2_2_tuple ['a 'b||] : (a * b) -> b
+logic combine [||'e 'e1 'e2] : < 'e 'e1> -> < 'e1 'e2> -> < 'e 'e1 'e2>
+logic restrict [||'e 'e1] : < 'e 'e1> -> < 'e1>
+logic empty  : < >
+logic = ['a||] : a -> a -> prop
+logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
+let
+  ! ['a|r|] = mk_2tuple [ref(r,a) -> <r > -> prop,ref(r,a) -> <r > -> <r > ->
+              a -> prop||] (fun (x:ref(r,a)) -> (fun (cur:<r >) -> True))
+              (fun (x:ref(r,a)) ->
+              (fun (old:<r >) ->
+              (fun (cur:<r >) -> (fun (r1:a) -> r1 = !!x@cur)))) 
+type list ['a||] = | Nil | Cons of a* list[a] 
+let map ['a
+  'b||'e] = (fun (f:(a -> < 'e> -> prop) * (a -> < 'e> -> < 'e> -> b ->
+            prop)) ->
+            mk_2tuple [list[a] -> < 'e> -> prop,list[a] -> < 'e> -> < 'e> ->
+            list[b] -> prop||] (fun (l:list[a]) -> (fun (cur:< 'e>) -> True))
+            (fun (l:list[a]) ->
+            (fun (old:< 'e>) ->
+            (fun (cur:< 'e>) -> (fun (anon:list[b]) -> True))))) 
+goal map_correct: forall ['a
+  'b||'e]. forall (f:(a -> < 'e> -> prop) * (a -> < 'e> -> < 'e> -> b ->
+           prop)).
+           forall (l:list[a]).
+           forall (s:< 'e>).
+           get_2_1_tuple [list[a] -> < 'e> -> prop,list[a] -> < 'e> ->
+           < 'e> -> list[b] -> prop||] (map [a,b|| { 'e}] f) l s
