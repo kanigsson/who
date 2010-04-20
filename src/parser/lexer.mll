@@ -120,7 +120,7 @@ rule token = parse
   | module_or_constructor_name as m { constructor_or_keyword m lexbuf }
   | '"' ( [ ^ '"' ] * as str ) '"'
       { STRING str }
-  | '\'' (identifier as tv) { TYVAR (Loc.mk (create_info lexbuf) tv)}
+  | '\'' (name as tv) { TYVAR (Loc.mk (create_info lexbuf) tv)}
   | "->" { ARROW (create_info lexbuf) }
   | "==" { BEQUAL (create_info lexbuf) }
   | '=' { EQUAL (create_info lexbuf) }
