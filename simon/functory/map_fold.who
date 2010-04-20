@@ -245,6 +245,16 @@ let test2 (f : int -> b) (l : int list) = (* NOTE : test passed *)
       [[]] List.map [{}] (fun (s:< >)(ll:int list)->True) (fun (x:int) ->{} f x {}) l2 [[r: (fst res) = Cons (f 1) r]] 
   }
 
+let test3 (l : int list) = 
+  {}
+  letregion t in
+  let i = ref(t) 0 in
+  let inv (s:<t>) (ll:int list) = (!!i@s + List.length ll) = List.length l in
+  List.map [{t}] inv (fun (x:int) ->{} i := !i + 1; !i {}) l
+  { res:
+    forall (j:int).
+    0 <= j /\ j < List.length l -> List.index j res = j+1
+  }
 
 (* =====================================
 computing strategies specifications
