@@ -49,13 +49,12 @@ logic List.mem ['a] : 'a -> 'a list -> prop
 logic List.remove ['a] : 'a -> 'a list -> 'a list
 logic List.length ['a] : 'a list -> int
 logic List.append ['a] : 'a list -> 'a list -> 'a list
-logic List.cons ['a] : 'a -> 'a list -> 'a list
 logic List.index ['a] : int -> 'a list -> 'a
 
 logic fromCons ['a] : 'a list -> ('a * 'a list)
 axiom from_cons_normal ['a] :
   forall (l l2 : 'a list) (x : 'a).
-  l = List.cons x l2 -> fromCons l = (x, l2)
+  l = Cons x l2 -> fromCons l = (x, l2)
 
 (*parameter fromCons ['a] (l : 'a list) : {} ('a * 'a list) =
   { ~ (l = Nil) }
@@ -72,19 +71,19 @@ axiom list_map_awesome_1 ['a 'b||'e] :
   [[  inv cur l /\
     (~ (l = Nil) -> pre f (fst (fromCons l)) cur) /\ (* precondition of f on head of list *)
     (forall (x2 : 'a) (l2 : 'a list). 
-      [[inv cur (List.cons x2 l2) /\ pre f x2 cur]] f x2 [[res: post f x2 old cur res -> inv cur l2]]) (* invariant iteration *)
+      [[inv cur (Cons x2 l2) /\ pre f x2 cur]] f x2 [[res: post f x2 old cur res -> inv cur l2]]) (* invariant iteration *)
   ]] List.map [{'e}] inv f l
   [[ res:
     (l = Nil -> res = Nil) /\
-    ~ (l=Nil) -> (~ (res = Nil)) /\
-      [[cur = old]] f (fst (fromCons l)) [[r : r = (fst (fromCons res))]]
+    ~ (l=Nil) -> ((~ (res = Nil)) /\
+      [[cur = old]] f (fst (fromCons l)) [[r : r = (fst (fromCons res))]]) (* NOTE : to be enhanced *)
   ]]
 
 
 
 axiom remove_does_remove ['a] :
   forall (x : 'a) (l l2 : 'a list).
-  l = List.cons x l2 -> List.remove x l = l2
+  l = Cons x l2 -> List.remove x l = l2
 axiom append_does_append ['a] :
   forall (l1 l2 : 'a list) (x : 'a).
   (List.mem x l1 -> List.mem x (List.append l1 l2)) /\
@@ -95,26 +94,27 @@ axiom list_length_map ['a 'b||'e]:
 (* (map f l)[i] = f l[i] *)
 axiom list_index_map ['a 'b||] :
   forall (x:'a) (l:'a list) (i:int) (f:'a ->{} 'b) (inv:< > -> 'a list -> prop).
-  i >= 0 /\ i < List.length l -> [[]] List.map [{}] inv f l [[res: [[]] f (List.index i l)[[r : r = List.index i res]] ]]
-axiom list_not_empty ['a]:
+  i >= 0 /\ i < List.length l -> 
+  [[]] List.map [{}] inv f l [[res: [[]] f (List.index i l)[[r : r = List.index i res]] ]]
+axiom list_not_empty_is_cons ['a]:
   forall (l:'a list).
-  ~ (l=Nil) -> exists (x:'a) (l2:'a list). 
-    (l = List.cons x l2)
+  (l=Nil) \/ exists (x:'a) (l2:'a list). 
+    (l = Cons x l2)
 axiom list_cons_mem ['a]:
   forall (x:'a) (l:'a list).
-  List.mem x (List.cons x l)
+  List.mem x (Cons x l)
 axiom list_cons_mem_tail ['a]:
   forall (x:'a) (l:'a list).
-  (forall (y:'a). List.mem y l -> List.mem y (List.cons x l))
+  (forall (y:'a). List.mem y l -> List.mem y (Cons x l))
 axiom list_cons_length_tail ['a]:
   forall (x:'a) (l:'a list).
-  (List.length (List.cons x l) = List.length l + 1)
+  (List.length (Cons x l) = List.length l + 1)
 axiom list_index ['a]:
   forall (i : int) (x : 'a) (l l2: 'a list).
-  i = 0 -> l = List.cons x l2 -> List.index i l = x
+  i = 0 -> l = Cons x l2 -> List.index i l = x
 axiom list_index_rec ['a]:
   forall (i : int) (x : 'a) (l l2: 'a list).
-  i > 0 /\ i < List.length l -> l = List.cons x l2 -> List.index i l = List.index (i-1) l2
+  i > 0 /\ i < List.length l -> l = Cons x l2 -> List.index i l = List.index (i-1) l2
 
 
 
@@ -228,11 +228,10 @@ parameter X.compute ['c||'e]
 (* =============================
 tests
 ================================ *)
-(*
 
-let test2 (f : int -> b) (l : int list) =
+let test2 (f : int -> b) (l : int list) = (* NOTE : test passed *)
   {
-    exists (l2 : int list). l = List.cons 1 l2
+    exists (l2 : int list). l = Cons 1 l2
   }
   letregion t in
   let r = ref (t) 0 in
@@ -241,17 +240,17 @@ let test2 (f : int -> b) (l : int list) =
   let answer = List.map [{t}] inv (fun (x:int) ->{} incr r; f x {}) l in
   (answer, !r)
   {res:
-    snd res = List.length l  /\
-    exists (l2 : int list). l = List.cons 1 l2 ->
-      [[]] List.map [{}] (fun (s:< >)(ll:int list)->True) (fun (x:int) ->{} f x {}) l2 [[r: (fst res) = List.cons (f 1) r]]
+    (* snd res = List.length l  /\ *)
+    exists (l2 : int list). l = Cons 1 l2 ->
+      [[]] List.map [{}] (fun (s:< >)(ll:int list)->True) (fun (x:int) ->{} f x {}) l2 [[r: (fst res) = Cons (f 1) r]] 
   }
 
-*)
 
 (* =====================================
 computing strategies specifications
 ======================================== *)
 
+(*
 
 (* =============== map ============ *)
 let map (f : a -> b) (l : a list) =
@@ -283,7 +282,6 @@ let map (f : a -> b) (l : a list) =
     (forall (x:a). [[List.mem x l]] f x [[r : List.mem r res]])
   }
 
-(*
 (* ============= map_local_fold ========= *)
 logic logic_fold ['a 'b] : ('b -> 'a -> 'b) -> 'b -> 'a list -> 'b
 
@@ -292,7 +290,7 @@ axiom logic_fold_empty ['a 'b]:
   l = Nil -> logic_fold f acc l = acc
 axiom logic_fold_basic ['a 'b]: (* recursion *)
   forall (x : 'a) (f : 'b -> 'a -> 'b) (l l2: 'a list) (acc : 'b).
-  l = List.cons x l2 -> logic_fold f acc l = f (logic_fold f acc l2) x
+  l = Cons x l2 -> logic_fold f acc l = f (logic_fold f acc l2) x
 
 
 
