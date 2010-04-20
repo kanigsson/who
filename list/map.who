@@ -1,0 +1,10 @@
+let rec map ['a 'b||'e] (inv : <'e> -> 'a list -> 'b list -> prop) (f : 'a ->{'e} 'b) (l : 'a
+list) : 'b list {'e} =
+  { inv cur l Nil /\ forall x l l2. [[ inv cur (Cons x l) l2]]f x [[ r : inv cur l (Cons r l2)]] }
+  match l with
+  | Nil -> Nil
+  | Cons (x,rl) ->
+      let r = f x in
+      Cons r (map inv f rl)
+  end
+  {r : inv cur Nil r }
