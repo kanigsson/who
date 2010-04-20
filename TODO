@@ -13,7 +13,6 @@ Hashtbl
 COQ
 
 INTERNAL
-* infix at variable place instead of application
 * simplify pattern-matching expressions (match A 5 with A i -> i end)
 
 
@@ -40,6 +39,7 @@ inductive declarations
 * remove annotparser
 * type annotations at let
 * use positions in parser better
+* infix at variable place instead of application
 
 
 MANUAL
