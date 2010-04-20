@@ -76,11 +76,11 @@ the arg list, the state before call, the state after call and the result list *)
 parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop) (f : 'a ->{'e} 'b) (l : 'a list) : {'e} 'b list =
   {
     (~ (l = Nil) -> pre f (List.head l) cur) /\ (* precondition of f on head of list *)
-    (forall (x2 : 'a) (l2 : 'a list) (res_l2 : 'b list) (s1 s2:<'e>).
-      [[rel l2 s1 s2 res_l2]] f x2 [[res : rel l cur s2 (Cons res res_l2)]]) (* propagate relationship *)
+    (forall (x2 : 'a) (l1 l2 : 'a list) (res_l2 : 'b list) (s1 s2:<'e>). l1 = Cons x2 l2 ->
+      [[rel l2 s1 s2 res_l2]] f x2 [[res : cur = s1 -> rel l1 cur s2 (Cons res res_l2)]]) (* propagate relationship *)
   }
   { res:
-    (l = Nil -> res = Nil) /\
+    (l = Nil -> res = Nil /\ cur = old) /\
     ~ (l=Nil) -> ((~ (res = Nil)) /\
       forall (l2 : 'a list) (x : 'a) (s1 s2 : <'e>).
       cur = s2 -> l = Cons x l2 ->
@@ -261,7 +261,8 @@ let test1 (f : int -> b) (l : int list) =
   letregion t in
   let r = ref (t) 0 in
   let rel (l_old : int list) (s1:<t>) (s2:<t>) (l_res : b list) =
-    (List.length l_old + !!r@s1 = List.length l_res + !!r@s2) in
+    (List.length l_old + !!r@s1 = List.length l_res + !!r@s2 /\
+    !!r@s2 = !!r@s1 + 1 /\ !!r@s2 = List.length l_res) in
   let answer = List.map [{t}] rel (fun (x:int) ->{} incr r; f x {}) l in
   (answer, !r)
   {res:
