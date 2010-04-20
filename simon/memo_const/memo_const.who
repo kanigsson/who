@@ -1,23 +1,23 @@
 (* emplacement de la référence *)
-letregion t 
+letregion t
 type u
 
 
-logic res : ref(t, u option) 
+logic res : ref(t, u option)
 
 
 
 (* f0 est une fonction pure, isomorphe à f *)
 logic f0 ['a] : 'a -> u
 
-parameter f ['a||'e] (var : unit ->{'e} 'a) : {'e} u  = 
+parameter f ['a||'e] (var : unit ->{'e} 'a) : {'e} u  =
   { pre var () cur /\
     exists (const : 'a). [[]] var () [[ r : r = const ]] (* var est constante *)
   }
-  { r : 
+  { r :
     exists (const : 'a). [[]] var () [[ rvar : rvar = const ]] /\
     r = f0 const /\
-    ( (forall (x:'a). r = f0 x) \/ 
+    ( (forall (x:'a). r = f0 x) \/
       exists (s:<'e>) (c:'a). post var () s cur c /\ r = f0 c
     )
   }
@@ -30,37 +30,37 @@ parameter fromSome ['a||] (x : 'a option ) : {} 'a =
     x <> None
   }
   {
-    r : forall (y:'a). (x = Some y) -> r = y 
+    r : forall (y:'a). (x = Some y) -> r = y
   }
 
 
 (* fonction principale *)
 let memo_const ['a ||] (arg : 'a) =
   {
-    (!!res <> None -> forall (x:'a). !!res = Some (f0 x)) 
+    (!!res <> None -> forall (x:'a). !!res = Some (f0 x))
   }
   if !res == None
-    then 
+    then
       letregion t' in
       let w = ref {{ t' }} false in
 
       (* fonction témoin constante *)
-      let g (z : unit) = 
+      let g (z : unit) =
         {  }
         w := true; arg
         { r : r = arg /\ (* implique constance de g (cloture) *)
-          !!w = true 
+          !!w = true
         } in
 
       let r = f [{t'}] g in
-      if !w 
+      if !w
         then r
         else ( res := Some r; r )
     else
       fromSome !res
-  { 
+  {
     r: (r = f0 arg) /\
-    (!!res <> None -> forall (x:'a). !!res = Some (f0 x)) 
+    (!!res <> None -> forall (x:'a). !!res = Some (f0 x))
   }
 
 let main (z : unit) =
