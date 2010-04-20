@@ -133,7 +133,7 @@ let rec formtyping' env loc = function
         r
       with Not_found -> error loc (Unboundvar s.var)
       end
-  | Ast.App (e1,e2,_) ->
+  | Ast.App (e1,e2) ->
       let t1 = formtyping env e1 in
       let t2 = formtyping env e2 in
 (*
@@ -241,7 +241,7 @@ and typing' env loc = function
         let g, t = type_of_var loc env s in
         Ty.allsubst g i t, Rw.empty
       with Not_found -> error loc (Unboundvar s.var) end
-  | Ast.App (e1,e2,_) ->
+  | Ast.App (e1,e2) ->
       let t1, eff1 = typing env e1 in
       let t2,eff2 = typing env e2 in
       let effi = Rw.union eff2 eff1 in

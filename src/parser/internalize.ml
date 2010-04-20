@@ -36,7 +36,9 @@ open InternalParseTree
 module G = Ty.Generalize
 
 let mk_var loc env v =
-  mkvar (Env.is_constr env v) (Env.fix env v) (Env.var loc env v)
+  let f = Env.fix env v in
+(*   Myformat.printf "encountering var: %s, infix: %b@." v (f = `Infix); *)
+  mkvar (Env.is_constr env v) f (Env.var loc env v)
 
 let inst loc env i =
   Inst.map (ty env) (Env.rvar loc env) (effect loc env) i
@@ -49,7 +51,7 @@ let rec ast' loc env = function
       let env, nv = Env.add_var env x in
       Lam (nv, ty env t, (pre env p, ast env e, post env q))
   | I.Let (g,e1,x,e2,r) ->
-      let env, nv, g , e1, r = letgen env x g e1 r in
+      let env, nv, g , e1, r = letgen env x g e1 r `Prefix in
       let e2 = ast env e2 in
       Let (g, e1,nv, e2, r)
   | I.PureFun (x,t,e) ->
@@ -131,15 +133,15 @@ and pattern env acc p =
 
 and ast env {Loc.c = v; info = loc} = { v = ast' loc env v; loc = loc }
 
-and letgen env x g e r =
+and letgen env x g e r fix =
   let env', g = Env.add_gen env g in
   let nv = Name.from_string x in
   let env' =
     match r with
     | Const.NoRec | Const.LogicDef -> env'
-    | Const.Rec _ -> Env.add_ex_var env' x nv in
+    | Const.Rec _ -> Env.add_ex_var env' ~fix x nv in
   let e = ast env' e in
-  let env = Env.add_ex_var env x nv in
+  let env = Env.add_ex_var env ~fix x nv in
   let r = rec_ env' r in
   env, nv, g, e, r
 
@@ -147,7 +149,7 @@ let rec decl env d =
   match d with
   | I.Logic (n,g,t,fix) ->
       let env', g = Env.add_gen env g in
-      let env, nv = Env.add_var env (Some n) in
+      let env, nv = Env.add_var ~fix env (Some n) in
       Predefined.add_symbol n nv;
       env, [Logic (nv,g, ty env' t, fix)]
   | I.Inductive (n,g,tl,tel) ->
@@ -191,7 +193,7 @@ let rec decl env d =
       let env, nrl = Env.add_rvars env rl in
       env, [DLetReg nrl]
   | I.Program (x,g,e,r, fix) ->
-      let env, nv, g , e, r = letgen env x g e r in
+      let env, nv, g , e, r = letgen env x g e r fix in
       Predefined.add_symbol x nv;
       env, [Program (nv, g, e, r, fix)]
 and theory x = ExtList.fold_map_flatten decl x

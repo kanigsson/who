@@ -69,7 +69,9 @@ module Env : sig
     t -> ?ty:(Ty.Generalize.t * Ty.t) ->
          ?fix:[`Prefix | `Infix] ->  string option -> t * Name.t
   val add_constr : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string -> t * Name.t
-  val add_ex_var : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string -> Name.t -> t
+  val add_ex_var :
+    t -> ?ty:(Ty.Generalize.t * Ty.t) ->
+         ?fix:[`Prefix | `Infix] -> string -> Name.t -> t
   val add_rvars : t -> string list -> t * Name.t list
   val add_tvars : t -> string list -> t * Name.t list
   val add_global_tyvar : t -> string -> t * Name.t
@@ -117,23 +119,25 @@ end = struct
   let only_add_type env x g =
     { env with typing = NM.add x g env.typing }
 
-  let add_ex_var env ?ty x y =
+  let add_fix_bool env ?fix x =
+    match fix with
+    | Some `Infix -> { env with infix = SS.add x env.infix }
+    | _ -> env
+
+  let add_ex_var env ?ty ?fix x y =
     let env = match ty with
     | None -> env
     | Some t -> only_add_type env y t in
-    { env with v = SM.add x y env.v }
+    add_fix_bool { env with v = SM.add x y env.v } ?fix x
 
-  let add_fix_bool env x =
-    { env with infix = SS.add x env.infix }
-
-  let add_var env ?ty ?(fix=`Prefix) x =
+  let add_var env ?ty ?fix x =
     match x with
       | None ->
           env, Name.new_anon ()
       | Some x ->
           let y = Name.from_string x in
           let env = add_ex_var env ?ty x y in
-          (if fix = `Infix then add_fix_bool env x else env), y
+          add_fix_bool env ?fix x, y
 
   let add_constr_bool env x = { env with constr = SS.add x env.constr }
   let add_constr env ?ty x =

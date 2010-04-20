@@ -143,6 +143,8 @@ and inst loc i = Inst.map (to_ty loc) (to_region loc) (to_effect loc) i
 let rec recon_decl x =
   match x with
   | I.Logic (x,g,t,f) ->
+(*       Myformat.printf "found logic: %a, infix: %b@." Name.print x (f =
+  *       `Infix); *)
       let s = g,t in
       Predefined.add_binding x (g,t,f);
       Logic (x,s)
@@ -151,9 +153,9 @@ let rec recon_decl x =
   | I.DLetReg rl -> DLetReg rl
   | I.TypeDef (n,tl,Abstract) -> TypeDef (n,tl, Abstract)
   | I.TypeDef (n,tl,ADT bl) -> TypeDef (n,tl, ADT (List.map constbranch bl))
-  | I.Program (n,g,t,r) ->
+  | I.Program (n,g,t,r,fix) ->
       let t = recon t in
-      Predefined.add_binding n (g,t.t, `Prefix);
+      Predefined.add_binding n (g,t.t, fix);
       Program (n,g,t, r)
   | I.Inductive (n,g,t,tel) ->
       Predefined.add_binding n (g,t, `Prefix);

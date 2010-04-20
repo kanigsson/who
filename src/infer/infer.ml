@@ -336,9 +336,9 @@ let rec infer_th env d =
       env, TypeDef (n,tl, k)
   | I.DLetReg rl -> env, DLetReg rl
   | I.DGen g -> env, DGen g
-  | I.Program (x,g,e,r) ->
+  | I.Program (x,g,e,r,fix) ->
       let env,e = letgen env x g e r in
-      env, Program (x,g,e,r)
+      env, Program (x,g,e,r,fix)
   | I.Inductive (n,g,t,tel) ->
       let env = Env.add_var env n g (M.from_ty t) in
       let tel = List.map (check_type env M.prop) tel in
