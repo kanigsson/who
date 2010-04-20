@@ -76,26 +76,25 @@ the arg list, the state before call, the state after call and the result list *)
 parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop) (f : 'a ->{'e} 'b) (l : 'a list) : {'e} 'b list =
   {
     (~ (l = Nil) -> pre f (List.head l) cur) /\ (* precondition of f on head of list *)
-    (forall (x2 : 'a) (l1 l2 : 'a list) (res_l2 : 'b list) (s1 s2:<'e>). l1 = Cons x2 l2 ->
-      [[rel l2 s1 s2 res_l2]] f x2 [[res : cur = s1 -> rel l1 cur s2 (Cons res res_l2)]]) (* propagate relationship *)
+    (forall (x2 : 'a) (l1 l2 : 'a list) (res_l2 : 'b list) (s0 s1 s2:<'e>). l1 = Cons x2 l2 ->
+      [[cur = s0 /\ rel l2 s1 s2 res_l2]] f x2 [[res : cur = s1 -> rel l1 s0 s2 (Cons res res_l2)]]) (* propagate relationship *)
   }
   { res:
-    (l = Nil -> res = Nil /\ cur = old) /\
+    (l = Nil -> res = Nil /\ cur = old /\ rel l cur cur res) /\ (* terminal case *)
     ~ (l=Nil) -> ((~ (res = Nil)) /\
-      forall (l2 : 'a list) (x : 'a) (s1 s2 : <'e>).
-      cur = s2 -> l = Cons x l2 ->
-      [[rel l2 s1 s2 (List.tail res)]] f (List.head l) [[r : r = List.head res /\ (cur = s1 -> rel l old s2 res)]])
-    (* this means, roughly : rel (List.map f (tail l)) -> rel (List.map f l) *)
+      rel l old cur res)
+      (* [[cur = s1 /\ rel l2 s2 s3 (List.tail res)]] f x [[r : r = List.head res /\ (cur = s2 -> rel l old s3 res)]]) TODO delete *)
+      (* this means, roughly : rel (List.map f (tail l)) -> rel (List.map f l) *)
   }
 (*
   l =             [x]--------------->l2
-  states :   old          s1               s2
+  states : s1=old         s2               s3
               \          / \               /
                \-> f x -/   \-> map f l2 -/
 
                             `------------'
                             rel l2 s1 s2 (tail res)
-=====>
+====>
               `--------------------------'
                   rel l old s2 res
 *)
@@ -262,16 +261,16 @@ let test1 (f : int -> b) (l : int list) =
   let r = ref (t) 0 in
   let rel (l_old : int list) (s1:<t>) (s2:<t>) (l_res : b list) =
     (List.length l_old + !!r@s1 = List.length l_res + !!r@s2 /\
-    !!r@s2 = !!r@s1 + 1 /\ !!r@s2 = List.length l_res) in
+    !!r@s2 = !!r@s1 + 1 /\ !!r@s2 = List.length l_res+1) in
   let answer = List.map [{t}] rel (fun (x:int) ->{} incr r; f x {}) l in
   (answer, !r)
   {res:
-    (* snd res = List.length l  /\ *)
+    (*snd res = List.length l+1 /\*)
     exists (l2 : int list). l = Cons 1 l2 ->
       let rel (l_old : int list) (s1:< >) (s2:< >) (l_res : b list) = True in
       [[]] List.map [{}] rel (fun (x:int) ->{} f x {}) l2 [[r: (fst res) = Cons (f 1) r]]
   }
-
+(*
 let test2 (l : int list) =
   {}
   letregion t in
@@ -283,7 +282,7 @@ let test2 (l : int list) =
     forall (j:int).
     0 <= j /\ j < List.length l -> List.index j res = j+1
   }
-
+*)
 (* =====================================
 computing strategies specifications
 ======================================== *)
