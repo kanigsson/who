@@ -157,7 +157,8 @@ let rec decl env d =
       let env, nv = Env.add_var env (Some n) in
       Predefined.add_symbol n nv;
       let tl = List.map (ty env) tl in
-      let tel = List.map (ast env) tel in
+      let tel = List.map (fun (n,t) ->
+        Name.from_string n, ast env t) tel in
       env, [Inductive (nv,g,Ty.nparr tl Ty.prop, tel)]
   | I.Axiom (s,g,t) ->
       let env', g = Env.add_gen env g in

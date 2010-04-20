@@ -68,7 +68,7 @@ type decl =
   | Formula of string * t * [ `Proved | `Assumed ]
   | Section of string * decl list * section_kind
   | TypeDef of string * string list * typedef
-  | Inductive of string * gen * ty list * t list
+  | Inductive of string * gen * ty list * inductive_branch list
   | Program of string * gen * t * isrec
   | DLetReg of string list
   | DGen of gen
@@ -77,6 +77,7 @@ and typedef =
   | Abstract
   | ADT of constbranch list
 and constbranch = string * ty list
+and inductive_branch = string * t
 
 and section_kind = [ `Block of Const.takeover list | `Structure ]
 
@@ -241,6 +242,7 @@ module Coq = struct
     if l = [] then () else
     fprintf fmt "Variables %a :@ %s.@ " (list space string) l s
 
+  let arrow fmt () = string fmt "->@ "
   let rec decl insection fmt d =
     match d with
     | Logic (x,((tl,_,_),t)) ->
@@ -257,8 +259,9 @@ module Coq = struct
         fprintf fmt "@[<hov 2>Inductive %a %a : Type := | %a . @]"
           string n (lname "Type") tl (list inductive_sep (constdef n tl)) bl
     | Inductive (n,g,tyl, fl) ->
-        fprintf fmt "@[<hov 2>Inductive %a %a : %a = %a.@]" string n gen g
-          (list space ty) tyl (list inductive_sep term) fl
+        fprintf fmt "@[<hov 2>Inductive %a %a : %a -> Prop := %a.@]"
+          string n inductive_intros g
+          (list arrow mayp) tyl (list space ind_term) fl
     | Section (_,d, `Block cl) ->
         let choice = List.fold_left (fun acc (p,c) ->
           if p = `Coq then c else acc) Const.TakeOver cl in
@@ -281,6 +284,9 @@ module Coq = struct
       (list space string) tvl
   and theory insection fmt t = list newline (decl insection) fmt t
   and arrow fmt () = fprintf fmt "->@ "
+  and inductive_intros fmt (tl,_,_) =
+    fprintf fmt "( %a : Type)" (list space string) tl
+  and ind_term fmt (s,t) = fprintf fmt "| %s : %a" s term t
 
 end
 
@@ -386,7 +392,7 @@ module Pangoline = struct
             (list inductive_sep constdef) bl
     | Inductive (n,g,tyl, fl) ->
         fprintf fmt "@[<hov 2>inductive %a %a %a = %a@]" string n gen g
-          (list space ty) tyl (list inductive_sep term) fl
+          (list space ty) tyl (list inductive_sep induct_branch) fl
     | DLetReg _ -> assert false
     | Section (_,d, `Block cl) ->
         let choice = List.fold_left (fun acc (p,c) ->
@@ -407,6 +413,7 @@ module Pangoline = struct
     if tl = [] then string fmt c
     else fprintf fmt "%a of %a" string c (list consttysep ty) tl
   and theory fmt t = list newline decl fmt t
+  and induct_branch fmt (_,t) = term fmt t
 end
 
 module Who = struct
@@ -506,7 +513,7 @@ module Who = struct
         fprintf fmt "@[type %a%a@]" string x gen (tl,[],[])
     | Inductive (n,g,tyl, fl) ->
         fprintf fmt "@[<hov 2>inductive %a %a %a = %a end@]" string n gen g
-          (list comma ty) tyl (list inductive_sep term) fl
+          (list comma ty) tyl (list inductive_sep induct_branch) fl
     | TypeDef (n,tl,ADT bl) ->
         fprintf fmt "@[<hov 2>type %a %a = | %a @]"
           string n gen (tl,[],[]) (list inductive_sep constdef) bl
@@ -542,6 +549,7 @@ module Who = struct
   and theory fmt t = list newline decl fmt t
   and arglist fmt l = list space arg fmt l
   and arg fmt (x,t) = fprintf fmt "(%a : %a)" string x ty t
+  and induct_branch fmt (_,t) = term fmt t
 
 end
 

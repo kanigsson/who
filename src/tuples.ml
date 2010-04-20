@@ -280,7 +280,7 @@ let rec decl env d =
   | Inductive (n,g,t,tel) ->
       let env', g = genfun env g in
       let t = tyfun env' t in
-      let tel = List.map (term env') tel in
+      let tel = List.map (fun (n,b) -> n, term env' b) tel in
       env, Inductive (n,g,t,tel)
   | Decl _ -> env, d
 and adtbranch env (n,tl) = n, List.map (tyfun env) tl

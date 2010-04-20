@@ -44,7 +44,7 @@ let rec decl env d =
   | Logic _ | TypeDef _ | DLetReg _ | DGen _ | Decl _  -> env, [d]
   | Formula (n,f,k) -> env, [Formula (n, term env f, k) ]
   | Inductive (n,g,t,tel) ->
-      env, [Inductive (n,g,t, List.map (term env) tel)]
+      env, [Inductive (n,g,t, List.map (fun (n,b) -> n, term env b) tel)]
   | Section (s,th, kind) ->
       let env, th = theory env th in
       env, [Section (s,th, kind)]

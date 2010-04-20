@@ -70,9 +70,10 @@ type decl =
   | Section of Name.t * Const.takeover list * decl list
   | TypeDef of Name.t * Name.t list * Ast.typedef
   | Program of Name.t * G.t * t * isrec * [`Infix | `Prefix ]
-  | Inductive of Name.t * G.t * Ty.t * t list
+  | Inductive of Name.t * G.t * Ty.t * induct_branch list
   | DLetReg of Name.t list
   | DGen of G.t
+and induct_branch = Name.t * t
 
 type theory = decl list
 

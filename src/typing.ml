@@ -350,9 +350,9 @@ let rec decl env d =
   | DLetReg _ | DGen _ | Decl _ -> env
   | Logic (n,(g,t)) -> Env.add_var env n g t
   | Inductive (n,g,t,tel) ->
-      let env = Env.add_var env n g t in
-      List.iter (fis_oftype env prop) tel;
-      env
+      let inner_env = Env.add_svar env n t in
+      List.iter (fun (_,t) -> fis_oftype inner_env prop t) tel;
+      Env.add_var env n g t
   | TypeDef (_, _, Abstract) -> env
   | TypeDef (n, tvl, ADT bl) ->
       let bt = Ty.app n (List.map Ty.var tvl) in

@@ -303,8 +303,10 @@ decl:
   | SECTION x = IDENT fn = takeoverdecl* l = decl+ END
     { Section (x, fn, l) }
   | INDUCTIVE x = IDENT l = gen tl = separated_nonempty_list(COMMA,stype) EQUAL
-    option(MID) tel = separated_list(MID,nterm) END
+    option(MID) tel = separated_list(MID,inductive_branch) END
     { Inductive (x,l,tl,tel) }
+
+inductive_branch: x = IDENT COLON t = nterm { x, t }
 
 constructorbranch:
     | x = CONSTRUCTOR  { x, []}

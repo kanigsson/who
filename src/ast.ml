@@ -65,7 +65,7 @@ type decl =
   | Section of Name.t *  decl list * section_kind
   | TypeDef of Name.t * Name.t list * typedef
   | Program of Name.t * G.t * t * isrec
-  | Inductive of Name.t * G.t * Ty.t * t list
+  | Inductive of Name.t * G.t * Ty.t * inductive_branch list
   | DLetReg of Name.t list
   | DGen of G.t
   | Decl of string
@@ -74,6 +74,7 @@ and typedef =
   | Abstract
   | ADT of constbranch list
 and constbranch = Name.t * Ty.t list
+and inductive_branch = Name.t * t
 
 type theory = decl list
 
@@ -325,10 +326,13 @@ module Convert = struct
         let env', g = gen env g in
         let args,_ = Ty.nsplit ity in
         env, P.Inductive (id env n, g,
-          List.map (ty env') args, List.map (t env') tl)
+          List.map (ty env') args, List.map (ind_branch env) tl) 
   and constbranch inner outer (n,tl) =
     let env = add_id outer n in
     env, (id outer n, List.map (ty inner) tl)
+  and ind_branch env (n,b) =
+    let env = add_id env n in
+    id env n, t env b
   and theory env th =
     ExtList.fold_map decl env th
 
@@ -991,7 +995,8 @@ let rec decl_map ?varfun ?termfun ?(declfun=ExtList.singleton) =
       | Formula (s,t,k) -> Formula (s,rebuild_map ?varfun ?termfun t, k)
       | Section (s,th,kind) ->
           Section (s,theory_map ?varfun ?termfun ~declfun th, kind)
-      | Inductive (n,g,t,tel) -> Inductive (n,g,t, List.map term_map tel)
+      | Inductive (n,g,t,tel) ->
+          Inductive (n,g,t, List.map (fun (x,b) -> x, term_map b) tel)
       | Program (n,g,t,r) -> Program (n,g,term_map t, r) in
     declfun d
 and theory_map ?varfun ?termfun ?declfun th =

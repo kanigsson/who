@@ -159,7 +159,7 @@ let rec recon_decl x =
       Program (n,g,t, r)
   | I.Inductive (n,g,t,tel) ->
       Predefined.add_binding n (g,t, `Prefix);
-      let tel = List.map recon tel in
+      let tel = List.map (fun (n,b) -> n, recon b) tel in
       Inductive (n,g,t,tel)
   | I.DGen g -> DGen g
 and recon_th l = List.map recon_decl l

@@ -1,6 +1,12 @@
-let rec map ['a 'b||'e] (inv : <'e> -> 'a list -> 'b list -> prop) (f : 'a ->{'e} 'b) (l : 'a
-list) : 'b list {'e} =
-  { inv cur l Nil /\ forall x l l2. [[ inv cur (Cons x l) l2]]f x [[ r : inv cur l (Cons r l2)]] }
+inductive map_ind ['a 'b||'e] (<'e> -> prop), (<'e>), (<'e>), 'a list, 'b list =
+| map_nil : forall (i : <'e> -> prop) s. map_ind i s s Nil Nil
+end
+
+let rec map ['a 'b||'e] (inv : <'e> -> 'a list -> 'b list -> prop)
+  (f : 'a ->{'e} 'b) (l : 'a list) : 'b list {'e} =
+  { inv cur l Nil /\
+    forall x l l2.
+    [[inv cur (Cons x l) l2]]f x [[ r : inv cur l (Cons r l2)]] }
   match l with
   | Nil -> Nil
   | Cons (x,rl) ->

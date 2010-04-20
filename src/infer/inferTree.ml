@@ -69,8 +69,9 @@ type decl =
   | TypeDef of Name.t * Name.t list * Ast.typedef
   | Program of Name.t * G.t * t * isrec * [`Infix | `Prefix ]
   | DLetReg of Name.t list
-  | Inductive of Name.t * G.t * Ty.t * t list
+  | Inductive of Name.t * G.t * Ty.t * inductive_branch list
   | DGen of G.t
+and inductive_branch = Name.t * t
 
 type theory = decl list
 

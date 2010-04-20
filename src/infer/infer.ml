@@ -340,8 +340,9 @@ let rec infer_th env d =
       let env,e = letgen env x g e r in
       env, Program (x,g,e,r,fix)
   | I.Inductive (n,g,t,tel) ->
+      let inner_env = Env.add_svar env n (M.from_ty t) in
+      let tel = List.map (fun (n,t) -> n,check_type inner_env M.prop t) tel in
       let env = Env.add_var env n g (M.from_ty t) in
-      let tel = List.map (check_type env M.prop) tel in
       env, Inductive (n,g,t,tel)
 and theory env th = ExtList.fold_map infer_th env th
 and typedef env tl n k =
