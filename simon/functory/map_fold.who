@@ -80,11 +80,11 @@ parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop
       [[cur = s0 /\ rel l2 s1 s2 res_l2]] f x2 [[res : cur = s1 -> rel l1 s0 s2 (Cons res res_l2)]]) (* propagate relationship *)
   }
   { res:
-    (l = Nil -> res = Nil /\ cur = old /\ rel l cur cur res) /\ (* terminal case *)
-    ~ (l=Nil) -> ((~ (res = Nil)) /\
-      rel l old cur res)
+    (l = Nil -> res = Nil /\ cur = old) /\ (* terminal case *)
+    (~ (l=Nil) -> (~ (res = Nil))) /\
+    rel l old cur res
       (* [[cur = s1 /\ rel l2 s2 s3 (List.tail res)]] f x [[r : r = List.head res /\ (cur = s2 -> rel l old s3 res)]]) TODO delete *)
-      (* this means, roughly : rel (List.map f (tail l)) -> rel (List.map f l) *)
+    (* this means, roughly : rel (List.map f (tail l)) -> rel (List.map f l) *)
   }
 (*
   l =             [x]--------------->l2
@@ -122,7 +122,7 @@ axiom list_index_map ['a 'b||'e] :
   [[]] List.map [{'e}] rel f l [[res: [[]] f (List.index i l)[[r : r = List.index i res]] ]]
 axiom list_not_empty_is_cons ['a]:
   forall (l:'a list).
-  (l=Nil) \/ exists (x:'a) (l2:'a list).
+  ~ (l=Nil) -> exists (x:'a) (l2:'a list).
     (l = Cons x l2)
 axiom list_cons_mem ['a]:
   forall (x:'a) (l:'a list).
