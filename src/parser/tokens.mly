@@ -21,21 +21,21 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-%token <Big_int.big_int Loc.t> INT
+%token <Big_int.big_int> INT
 %token <Loc.loc> LPAREN RPAREN LCURL SECTION BEGIN END
 (* %token DLCURL DRCURL *)
 %token PREDEFINED
-%token <string Loc.t> IDENT TYVAR CONSTRUCTOR
-%token <string> STRING
+%token <string Loc.t> CONSTRUCTOR
+%token <string> STRING IDENT TYVAR 
 %token IN SEMICOLON COQ TAKEOVER PANGOLINE
 %token <Loc.loc> PLUS MINUS EQUAL STAR NEQ BEQUAL BNEQ ARROW COMMA AND OR
 %token <Loc.loc> ASSIGN GE GT LE LT REF LETREGION TILDE UNDERSCORE
 %token <Loc.loc> BLE BLT BGT BGE DLBRACKET DRBRACKET LBRACKET RBRACKET
 %token <Loc.loc> MATCH WITH
 %token EOF
-%token REC
-%token <Loc.loc> EXCLAM DEXCLAM IF FUN PTRUE PFALSE VOID LET AXIOM RCURL TINT
-%token <Loc.loc> LOGIC TYPE FORALL EXISTS PARAMETER TO DOWNTO FOR DONE GOAL PROP
+%token REC PTRUE PFALSE TINT PROP
+%token <Loc.loc> EXCLAM DEXCLAM IF FUN VOID LET AXIOM RCURL
+%token <Loc.loc> LOGIC TYPE FORALL EXISTS PARAMETER TO DOWNTO FOR DONE GOAL
 %token COLON MID AT THEN ELSE DOT DO INDUCTIVE OF
 
 %nonassoc below_SEMI

@@ -54,7 +54,7 @@ type t' =
   | HoareTriple of t option * t * post
   | Case of t * branch list
   | Gen of generalize * t
-and t = { v : t' ; loc : Loc.loc }
+and t = t' Loc.t
 and post =
   | PNone
   | PPlain of t
@@ -83,20 +83,19 @@ and constbranch = var * ty list
 
 type theory = decl list
 
-let mk v loc = { v = v; loc = loc }
-let app ?(kind=`Prefix) t1 t2 = mk (App (t1,t2, kind))
-let var ?(inst=([],[],[])) s = mk (Var (s,inst))
-let const c = mk (Const c)
+let app ?(kind=`Prefix) t1 t2 pos = Loc.mk pos (App (t1,t2, kind))
+let var ?(inst=([],[],[])) s pos = Loc.mk pos (Var (s,inst))
+let const c pos = Loc.mk pos (Const c)
 let app2 s t1 t2 loc = app (app (var s loc) t1 loc) t2 loc
 let appi s t1 t2 loc = app ~kind:`Infix (app (var s loc) t1 loc) t2 loc
 
 let appn t1 tl =
-  List.fold_left (fun t1 t2 -> app t1 t2 (Loc.embrace t1.loc t2.loc)) t1 tl
+  List.fold_left (fun t1 t2 -> app t1 t2 (Loc.join_with t1 t2)) t1 tl
 
 let appni s tl loc = appn (var s loc) tl
 
-let let_ l e1 x e2 r = mk (Let (l,e1,x,e2,r))
-let lam x t p e q = mk (Lam (x,t,p,e,q))
-let pure_lam x t e = mk (PureFun (x,t,e))
-let quant k x t e = mk (Quant (k,x,t,e))
+let let_ l e1 x e2 r pos = Loc.mk pos (Let (l,e1,x,e2,r))
+let lam x t p e q pos = Loc.mk pos (Lam (x,t,p,e,q))
+let pure_lam x t e pos = Loc.mk pos (PureFun (x,t,e))
+let quant k x t e pos = Loc.mk pos (Quant (k,x,t,e))
 

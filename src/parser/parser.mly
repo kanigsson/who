@@ -29,7 +29,7 @@
   open ParseTree
   module I = Identifiers
 
-  let unit = mkty (TVar "unit") Loc.dummy
+  let unit = Loc.mk Loc.dummy (TVar "unit")
 
   (* build a new location out of two old ones by forming the large region
   containing both *)
@@ -69,7 +69,7 @@
   (* build a for loop *)
   let forfunction dir i start end_ inv body pos =
 (*     let s = "__start" and e = "__end" in *)
-    let forterm = mk (For (dir,inv,i.c,start,end_,body)) pos in
+    let forterm = mk (For (dir,inv,i,start,end_,body)) pos in
     forterm
 (*
     let em = [],[],[] in
@@ -80,7 +80,7 @@
 *)
 
 
-  let mk_pvar x = { pv = PVar (Some x.c) ; ploc = x.info }
+  let mk_pvar x pos = { pv = PVar (Some x) ; ploc = pos }
   let mk_pconstr c l p = { pv = PApp (c.c, l) ; ploc = p }
   let mk_underscore p = { pv = PVar None; ploc = p }
 
@@ -119,9 +119,9 @@ term_inst:
   | LBRACKET e = sepeffect* RBRACKET { ([],[],e) }
   | LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
     MID el = sepeffect* RBRACKET
-    { (tl, strip_info rl, el) }
+    { (tl, rl, el) }
 
-aterm:
+aterm_nopos:
   | p = VOID { var I.void_id p }
 (*   | p = REF { var "ref" p} *)
   | p = prefix t = aterm
@@ -129,21 +129,28 @@ aterm:
   | p = prefix inst = term_inst t = aterm
     { app (var ~inst (snd p) (fst p)) t (embrace (fst p) t.loc) }
   | x = IDENT AT e = sepeffect
-    { mk (Restrict (var x.c x.info,e)) x.info }
+    { let pos = build $startpos $endpos in
+      mk (Restrict (var x pos,e)) pos }
   | p = DEXCLAM x = IDENT
-    { mk (Get (var x.c x.info, var "cur" p)) (embrace p x.info) }
-  | p = DEXCLAM x = IDENT AT t = aterm
-    { mk (Get (var x.c x.info, t)) (embrace p t.loc) }
-  | x = IDENT { var x.c x.info }
-  | x = CONSTRUCTOR { var x.c x.info }
-  | x = IDENT inst = term_inst { var ~inst x.c x.info }
+    {
+      let pos = build $startpos $endpos in
+      mk (Get (var x pos, var "cur" p)) pos }
+  | DEXCLAM x = IDENT AT t = aterm
+    {
+      let pos = build $startpos $endpos in
+      mk (Get (var x pos, t)) pos
+    }
+  | x = IDENT { var x (build $startpos $endpos) }
+  | x = CONSTRUCTOR { var x.c (build $startpos $endpos) }
+  | x = IDENT inst = term_inst { var ~inst x (build $startpos $endpos) }
   | l = LPAREN x = prefix r = RPAREN
     { var (snd x) (embrace l r) }
   | c = constant { let p,c = c in const c p }
   | l = LPAREN x = infix e = RPAREN { var (snd x) (embrace l e) }
   | t = protected_term { t }
   | p1 = REF LPAREN r = IDENT p2 = RPAREN
-    { mk (ParseTree.Ref r.c) (embrace p1 p2) }
+    { mk (ParseTree.Ref r) (embrace p1 p2) }
+aterm: t = annotated(aterm_nopos) { t }
 
 tuple_list:
   | t1 = nterm COMMA t2 = nterm { [t2; t1] }
@@ -183,7 +190,7 @@ nterm:
   | f = alllet IN e2 = seq_term
     { let g, e, x, r = f in let_ g e x e2 r e2.loc }
   | p = LETREGION l = IDENT* IN t = seq_term
-    { mk (LetReg (strip_info l,t)) p }
+    { mk (LetReg (l,t)) p }
   | st = FOR i = IDENT EQUAL e1 = seq_term dir = todownto e2 = seq_term DO
        p = precond
        e3 = seq_term
@@ -208,7 +215,7 @@ nterm:
 branch: p = pattern ARROW e = seq_term { p, e }
 
 basic_pattern:
-  | x = IDENT { mk_pvar x  }
+  | x = IDENT { mk_pvar x (build $startpos $endpos)  }
   | p = UNDERSCORE { mk_underscore p }
   | x = CONSTRUCTOR { mk_pconstr x [] x.info  }
 (*   | LPAREN p = pattern RPAREN { p } *)
@@ -224,13 +231,13 @@ todownto:
   | DOWNTO { "fordownto" }
 
 funargvar:
-  | x = defprogvar_no_pos { Some x }
+  | x = defprogvar { Some x }
   | UNDERSCORE { None }
 
 onetyarg:
   | LPAREN xl = funargvar+ COLON t = ty RPAREN
     { List.map (fun x -> x,Some t) xl }
-  | x = IDENT { [Some x.c, None] }
+  | x = IDENT { [Some x, None] }
   | UNDERSCORE { [None, None ] }
   | VOID { [None, Some unit] }
 
@@ -242,7 +249,7 @@ may_tyannot :
   | COLON t = ty { Some t }
 (* the common part of every let binding *)
 letcommon:
-  | p = LET x = defprogvar_no_pos l = gen args = may_empty_arglist
+  | p = LET x = defprogvar l = gen args = may_empty_arglist
     t = may_tyannot EQUAL
     { p, x ,l,args, t }
 
@@ -261,7 +268,7 @@ alllet:
       l, mk_efflam args (snd pre) e (snd q) p, x, NoRec
     }
 (* the recursive function definition case *)
-  | p = LET REC x = defprogvar_no_pos l = gen args = arglist
+  | p = LET REC x = defprogvar l = gen args = arglist
     COLON pt = param_annot EQUAL b = funcbody
     {
       let t = rec_annot args pt p in
@@ -275,7 +282,7 @@ funcbody:
 postcond_int:
   | {PNone }
   | t = nterm { PPlain t }
-  | x = defprogvar_no_pos COLON t = nterm { PResult (x,t) }
+  | x = defprogvar COLON t = nterm { PResult (x,t) }
 
 postcond: l = LCURL q = postcond_int r = RCURL { embrace l r, q }
 
@@ -300,35 +307,35 @@ param_annot:
 decl:
   | g = alllet
     { let g, e, x, r = g in Program (x,g,e, r) }
-  | p = PARAMETER x = defprogvar_no_pos l = gen COLON rt = ty
+  | p = PARAMETER x = defprogvar l = gen COLON rt = ty
     { let par = mk (Param (rt,rw_empty)) p in
       Program (x,l,par, NoRec) }
-  | p = PARAMETER x = defprogvar_no_pos l = gen args = arglist
+  | p = PARAMETER x = defprogvar l = gen args = arglist
     COLON ann = param_annot EQUAL pre = precond post = postcond
   {
     let rt, e = ann in
     let par = mk_param args (snd pre) (snd post) rt e p in
     Program (x,l,par, NoRec)
   }
-  | AXIOM x = defprogvar_no_pos l = gen COLON t = nterm
+  | AXIOM x = defprogvar l = gen COLON t = nterm
     { Axiom (x, l, t) }
-  | GOAL x = defprogvar_no_pos l = gen COLON t = nterm
+  | GOAL x = defprogvar l = gen COLON t = nterm
     { Goal (x, l, t) }
-  | LOGIC x = defprogvar_no_pos l = gen COLON t = ty
+  | LOGIC x = defprogvar l = gen COLON t = ty
     { Logic (x,l,t) }
   | TYPE x = IDENT l = gen
-    { TypeDef (x.c, l, Abstract ) }
+    { TypeDef (x, l, Abstract ) }
   | TYPE x = IDENT l = gen EQUAL t = ty
-    { TypeDef (x.c, l,Alias t) }
+    { TypeDef (x, l,Alias t) }
   | TYPE x = IDENT l = gen EQUAL MID bl =
     separated_nonempty_list(MID,constructorbranch)
-    { TypeDef (x.c,l,ADT bl) }
-  | LETREGION l = IDENT* { DLetReg (strip_info l) }
+    { TypeDef (x,l,ADT bl) }
+  | LETREGION l = IDENT* { DLetReg (l) }
   | SECTION x = IDENT fn = takeoverdecl* l = decl+ END
-    { Section (x.c, fn, l) }
+    { Section (x, fn, l) }
   | INDUCTIVE x = IDENT l = gen tl = separated_nonempty_list(COMMA,stype) EQUAL
     option(MID) tel = separated_list(MID,nterm) END
-    { Inductive (x.c,l,tl,tel) }
+    { Inductive (x,l,tl,tel) }
 
 constructorbranch:
     | x = CONSTRUCTOR  { x.c, []}

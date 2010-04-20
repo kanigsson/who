@@ -31,10 +31,9 @@ let error fn l c s =
   eprintf "%s: line %d char %d : %s @." fn l c s
 
 let print_pos_error fn buf s =
-  let p = buf.lex_curr_p in
-  let l = p.pos_lnum in
-  let c = p.pos_cnum - p.pos_bol in
-    error fn l c s
+  let l, c = Loc.lex_to_lc buf.lex_curr_p in
+  error fn l c s
 
-let with_loc msg {Loc.st = (sta,stb); en = _} =
-  error !Options.filename sta stb msg; exit(1)
+let with_loc msg {Loc.st = st; en = _} =
+  let l, c = Loc.lex_to_lc st in
+  error !Options.filename l c msg; exit(1)

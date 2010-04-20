@@ -30,8 +30,7 @@
 let create_info lexbuf =
   let spos_p = Lexing.lexeme_start_p lexbuf in
   let epos_p = Lexing.lexeme_end_p lexbuf in
-    { Loc.st= (spos_p.pos_lnum, spos_p.pos_cnum - spos_p.pos_bol ) ;
-      en = (epos_p.pos_lnum, epos_p.pos_cnum - epos_p.pos_bol )}
+    { Loc.st= spos_p ; en = epos_p}
 
 
 (* decide if a string is a keyword or an identifier *)
@@ -80,7 +79,7 @@ let id_or_keyword =
 (*         ("INTROS", fun _ -> INTROS ); *)
       ];
     fun s -> try Hashtbl.find h s with Not_found ->
-      fun i -> IDENT (Loc.mk (create_info i) s)
+      fun i -> IDENT s
 
 let constructor_or_keyword =
   let h = Hashtbl.create 17 in
@@ -120,7 +119,7 @@ rule token = parse
   | module_or_constructor_name as m { constructor_or_keyword m lexbuf }
   | '"' ( [ ^ '"' ] * as str ) '"'
       { STRING str }
-  | '\'' (name as tv) { TYVAR (Loc.mk (create_info lexbuf) tv)}
+  | '\'' (name as tv) { TYVAR tv}
   | "->" { ARROW (create_info lexbuf) }
   | "==" { BEQUAL (create_info lexbuf) }
   | '=' { EQUAL (create_info lexbuf) }

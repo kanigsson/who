@@ -14,9 +14,8 @@ COQ
 
 INTERNAL
 * infix at variable place instead of application
-* remove annotparser
-* type annotations at let
 * use positions in parser better
+tconstant TYVAR
 * simplify pattern-matching expressions (match A 5 with A i -> i end)
 
 
@@ -40,6 +39,8 @@ inductive declarations
 * int_max, int_min
 * remove stuff about singleton regions
 * use printTree for MutableType
+* remove annotparser
+* type annotations at let
 
 
 MANUAL

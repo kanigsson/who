@@ -21,9 +21,11 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-type loc = {st: int * int; en: int * int}
+open Lexing
+
+type loc = { st : position ; en : position }
 type 'a t = { info:loc ; c : 'a }
-let dummy = {st = (0,0); en = (0,0) }
+let dummy = {st = dummy_pos; en = dummy_pos }
 
 let with_dummy v = { c = v; info = dummy }
 
@@ -33,8 +35,30 @@ let with_loc f v = { c = f v.c; info = v.info }
 
 let strip_info l = List.map (fun x -> x.c) l
 
-let embrace inf1 inf2 =
-  if inf1 = dummy then inf2
-  else if inf2 = dummy then inf1
-  else { st = inf1.st ; en = inf2.en }
+let join x1 x2 =
+  {
+    st = if x1 = dummy then x2.st else x1.st;
+    en = if x2 = dummy then x1.en else x2.en
+  }
 
+let build p1 p2 =
+  {
+    st = p1;
+    en = p2
+  }
+
+let left_join p x =
+  { st = p; en = if x = dummy then p else x.en }
+
+let right_join x p =
+  { st = if x = dummy then p else x.st ; en = p }
+
+let lex_to_lc lex =
+  let l = lex.pos_lnum in
+  let c = lex.pos_cnum - lex.pos_bol in
+  l, c
+
+let embrace = join
+let mk_pos p1 p2 t = mk (build p1 p2) t
+
+let join_with a1 a2 = join a1.info a2.info

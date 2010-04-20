@@ -34,13 +34,14 @@ type t' =
   | Ref of string * t
   | Map of effect
   | ToLogic of t
-and t = { tv : t' ; tloc : Loc.loc }
+and t = t' Loc.t
 
 open Myformat
 
+(* TODO print using PrintTree *)
 let print fmt t =
   let rec pt fmt x =
-    match x.tv with
+    match x.Loc.c with
     | TVar v -> pp_print_string fmt v
     | TConst c -> Const.print_ty `Who fmt c
     | Tuple tl -> paren (list (fun fmt () -> fprintf fmt " *@ ") pt) fmt tl
@@ -55,7 +56,5 @@ let print fmt t =
 let eff_empty = [], []
 let rw_empty = eff_empty, eff_empty
 
-let mkty t l = { tv = t; tloc = l }
-
-let purearrow t1 t2 = mkty (PureArr (t1,t2))
-let effarrow t1 t2 eff = mkty (Arrow (t1,t2,eff))
+let purearrow t1 t2 pos = Loc.mk pos (PureArr (t1,t2))
+let effarrow t1 t2 eff pos = Loc.mk pos (Arrow (t1,t2,eff))

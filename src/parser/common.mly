@@ -35,23 +35,23 @@
 %}
 %%
 
+%public annotated(X): t = X { Loc.mk_pos $startpos $endpos t }
 (* a program variable which can be used in declarations *)
 %public defprogvar:
   | x = IDENT { x }
-  | x = infix { { c = snd x; info = fst x } }
-  | x = prefix { { c = snd x; info = fst x } }
-  | p = REF { Loc.mk p "ref" }
-  | p = DEXCLAM { Loc.mk p "!!" }
+  | x = infix { snd x }
+  | x = prefix { snd x }
+  | REF { "ref" }
+  | DEXCLAM { "!!" }
 
-%public defprogvar_no_pos : x = defprogvar { x.c }
-%public tconstant:
-  | p = TINT { Const.TInt, p }
-  | p = PROP { Const.TProp, p }
+tconstant:
+  | TINT { Const.TInt }
+  | PROP { Const.TProp }
 
 %public gen:
   | LBRACKET tl = TYVAR* MID rl=IDENT* MID el = TYVAR* RBRACKET
-    { strip_info tl, strip_info rl, strip_info el }
-  | LBRACKET tl = TYVAR* RBRACKET { strip_info tl, [], [] }
+    { tl, rl, el }
+  | LBRACKET tl = TYVAR* RBRACKET { tl, [], [] }
   | { [], [], [] }
 
 (* infix operators - can be used in definitions *)
@@ -82,9 +82,9 @@
   | p = TILDE { p, "~" }
 
 %public constant:
-  | n = INT    { n.info, Const.Int n.c }
-  | p = PTRUE  { p, Const.Ptrue }
-  | p = PFALSE { p, Const.Pfalse }
+  | n = INT    { Const.Int n }
+  | PTRUE  { Const.Ptrue }
+  | PFALSE { Const.Pfalse }
 
 takeover:
   | PREDEFINED { Predefined }
@@ -101,54 +101,49 @@ prover:
 %public inst:
   | p1 = LBRACKET tl = separated_list(COMMA,ty) MID rl = IDENT*
     MID el = sepeffect* p2 = RBRACKET
-    { (tl, strip_info rl, el), embrace p1 p2 }
+    { (tl, rl, el), embrace p1 p2 }
   | p1 = LBRACKET tl = separated_list(COMMA,ty) p2 = RBRACKET
     { (tl, [] ,[]), embrace p1 p2 }
 
 (* basic types *)
-%public stype:
-  | x = tconstant { let x, p = x in mkty (TConst x) p }
-  | v = TYVAR { mkty (TVar v.c) v.info }
-  | LPAREN t = ty RPAREN { t }
-  | v = IDENT i = inst
-    { let i, p =  i in mkty (TApp (v.c,i)) (embrace v.info p) }
-  | v = IDENT { mkty (TApp (v.c,([],[],[]))) v.info }
-  | t = stype v = IDENT
-    { mkty (TApp (v.c,([t],[],[]))) (embrace t.tloc v.info) }
-  | p1 = LPAREN t = ty COMMA l = separated_list(COMMA,ty) RPAREN v = IDENT
-    { mkty (TApp(v.c,(t::l,[],[]))) (embrace p1 v.info) }
+stype_nopos:
+  | x = tconstant { TConst x }
+  | v = TYVAR { TVar (v) }
+  | LPAREN t = ty_nopos RPAREN { t }
+  | v = IDENT i = inst { TApp (v,fst i) }
+  | v = IDENT { TApp (v,([],[],[])) }
+  | t = stype v = IDENT { TApp (v,([t],[],[])) }
+  | LPAREN t = ty COMMA l = separated_list(COMMA,ty) RPAREN v = IDENT
+    { TApp(v,(t::l,[],[])) }
+
+%public stype: t = annotated(stype_nopos) { t }
 
 rvar_or_effectvar:
-  | x = IDENT { `Rvar x.c }
-  | e = TYVAR { `Effvar e.c }
+  | x = IDENT { `Rvar x }
+  | e = TYVAR { `Effvar e }
 
-effect:
-  | l = rvar_or_effectvar*
-  { partition_effect l }
+effect: | l = rvar_or_effectvar* { partition_effect l }
 
 read_write :
   | e1 = effect PLUS e2 = effect { e1, e2}
   | e = effect { e,e }
 
-%public sepeffect:
-  | LCURL e = effect RCURL { e }
-%public sep_readwrite:
-  | LCURL e = read_write RCURL { e }
+%public sepeffect: | LCURL e = effect RCURL { e }
+%public sep_readwrite: | LCURL e = read_write RCURL { e }
 
 
 (* more complex types *)
-%public ty:
-  | t = stype { t }
-  | t1 = ty ARROW t2 = ty { mkty (PureArr (t1, t2)) (embrace t1.tloc t2.tloc) }
+ty_nopos:
+  | t = stype_nopos { t }
+  | t1 = ty ARROW t2 = ty { PureArr (t1,t2) }
   | t1 = ty ARROW e = sep_readwrite t2 = ty %prec ARROW
-    { mkty (Arrow (t1,t2,e)) (embrace t1.tloc t2.tloc)  }
-  | tl = product_ty
-    { let fst = List.hd tl and last = List.hd (List.rev tl) in
-      mkty (Tuple tl) (embrace fst.tloc last.tloc) }
-  | p1 = LT e = effect p2 = GT { mkty (Map e) (embrace p1 p2) }
-  | p1 = DLBRACKET t = ty p2 = DRBRACKET { mkty (ToLogic t) (embrace p1 p2) }
-  | p1 = REF LPAREN id = IDENT COMMA t = ty  p2 = RPAREN
-    { mkty (ParseTypes.Ref (id.c,t)) (embrace p1 p2) }
+    { Arrow (t1,t2,e)  }
+  | tl = product_ty { Tuple tl }
+  | LT e = effect GT { Map e }
+  | DLBRACKET t = ty DRBRACKET { ToLogic t }
+  | REF LPAREN id = IDENT COMMA t = ty RPAREN
+    { ParseTypes.Ref(id,t) }
+%public ty: t = annotated(ty_nopos) { t }
 
 product_ty:
   | t1 = stype STAR t2 = stype { [t1;t2] }

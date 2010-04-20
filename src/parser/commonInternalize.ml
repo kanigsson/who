@@ -187,8 +187,8 @@ let rw loc env (e1,e2) =
 
 let ty env t =
   let rec aux x =
-    let loc = x.IT.tloc in
-    match x.IT.tv with
+    let loc = x.Loc.info in
+    match x.Loc.c with
     | IT.TVar v -> Ty.var (Env.tyvar loc env v)
     | IT.TConst c -> Ty.const c
     | IT.Tuple tl -> Ty.tuple (List.map aux tl)
