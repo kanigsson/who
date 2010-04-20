@@ -27,15 +27,16 @@ exception Error of error
 
 val explain : error -> string
 
-val var_and_type : string -> Name.t * (Ty.Generalize.t * Ty.t)
+type binding = Ty.Generalize.t * Ty.t * [`Infix | `Prefix ]
+val var_and_type : string -> Name.t * binding
 val var : string -> Name.t
 
 val equal : Name.t -> string -> bool
 
-val add_binding : Name.t -> (Ty.Generalize.t * Ty.t) -> unit
+val add_binding : Name.t -> binding -> unit
 val add_symbol : string -> Name.t -> unit
 val add_symbol_and_binding :
-  string -> Name.t -> (Ty.Generalize.t * Ty.t) -> unit
+  string -> Name.t -> binding -> unit
 
 val belongs_to : Name.t -> string list -> bool
 

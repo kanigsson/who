@@ -25,6 +25,7 @@ type var =
   { var : Name.t;
     scheme : Ty.Generalize.t * MutableType.t;
     is_constr : bool;
+    fix : [`Prefix | `Infix ]
   }
 
 type t' =
@@ -32,7 +33,7 @@ type t' =
   | Var of var * inst
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t * [`Infix | `Prefix ]
+  | App of t * t
   | Lam of Name.t * Ty.t * funcbody
   | Let of Ty.Generalize.t * t * Name.t * t * isrec
   | PureFun of Name.t * MutableType.t * t
@@ -60,11 +61,11 @@ and pattern = { pv : pattern_node ; pt : MutableType.t ; ploc : Loc.loc}
 
 
 type decl =
-  | Logic of Name.t * Ty.Generalize.t * Ty.t
+  | Logic of Name.t * Ty.Generalize.t * Ty.t * [`Infix | `Prefix ]
   | Formula of Name.t * t * [ `Proved | `Assumed ]
   | Section of Name.t * Const.takeover list * decl list
   | TypeDef of Name.t * Name.t list * Ast.typedef
-  | Program of Name.t * Ty.Generalize.t * t * isrec
+  | Program of Name.t * Ty.Generalize.t * t * isrec * [`Infix | `Prefix ]
   | DLetReg of Name.t list
   | Inductive of Name.t * Ty.Generalize.t * Ty.t * t list
   | DGen of Ty.Generalize.t

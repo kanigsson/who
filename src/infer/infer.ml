@@ -67,8 +67,8 @@ end = struct
 
 end
 
-let mk_var_with_m_scheme is_constr v s =
-  { var = v; scheme = s; is_constr = is_constr }
+let mk_var_with_m_scheme is_constr fix v s =
+  { var = v; scheme = s; is_constr = is_constr ; fix = fix }
 
 type error =
   | Basic of string
@@ -132,7 +132,7 @@ let varfun env v inst l =
   let nt,i =
     try M.refresh m inst xt
     with Invalid_argument _ -> error l (Instantiation v.I.var) in
-  let v = mk_var_with_m_scheme v.I.is_constr v.I.var (m,xt) in
+  let v = mk_var_with_m_scheme v.I.is_constr v.I.fix v.I.var (m,xt) in
   v, i, nt
 
 let rec check_type env t (x : I.t) =
@@ -153,7 +153,7 @@ and infer env (x : I.t) =
           | M.Map em ->
               let em = M.to_effect em in
               let v = PL.var PI.restrict_id in
-              let v = I.mkvar false v in
+              let v = I.mkvar false `Prefix v in
               let new_e =
                 I.app (I.var ~inst:([],[],[Effect.diff em e; e]) v l) m l in
               let e = infer env new_e in
@@ -169,7 +169,7 @@ and infer env (x : I.t) =
             let e = M.rremove e [r] in
             let e = M.to_effect e in
             let v = PL.var PI.get_id in
-            let v = I.mkvar false v in
+            let v = I.mkvar false `Prefix v in
             let new_e =
               I.app (I.app (I.var ~inst:([],[],[e]) v l) ref l) map l in
             let e = infer env new_e in
@@ -181,7 +181,7 @@ and infer env (x : I.t) =
             errorm l "using !! on term which is not a reference but of type
             %a@." M.print ref'.t
         end
-    | I.App (e1,e2, k) ->
+    | I.App (e1,e2) ->
         let e1 = infer env e1 in
         let t1,t2, eff =
           match Uf.desc e1.t with
@@ -190,7 +190,7 @@ and infer env (x : I.t) =
           | _ -> error l (NotAFunction e1.t)
         in
         let e2 = check_type env t1 e2 in
-        App (e1,e2,k), t2, M.rw_union3 e1.e e2.e eff
+        App (e1,e2), t2, M.rw_union3 e1.e e2.e eff
     | I.Annot (e,t) ->
         let t' = M.from_ty t in
         let e = check_type env t' e in
@@ -327,10 +327,10 @@ let rec infer_th env d =
   | I.Section (s,cl,th) ->
       let env, dl = theory env th in
       env, Section (s,cl,dl)
-  | I.Logic (n,g,t) ->
+  | I.Logic (n,g,t, f) ->
       let env = Env.add_var env n g (M.from_ty t) in
 (*       Myformat.printf "added: %a : %a@." Name.print n Ty.print t; *)
-      env, Logic (n,g,t)
+      env, Logic (n,g,t, f)
   | I.TypeDef (n,tl,k) ->
       let env = typedef env tl n k in
       env, TypeDef (n,tl, k)

@@ -101,9 +101,9 @@ term_inst:
 
 aterm_nopos:
   | VOID { Var (I.void_id,([],[],[])) }
-  | p = annotated_inl(prefix) t = aterm { App (var p.c p.info, t, `Prefix) }
+  | p = annotated_inl(prefix) t = aterm { App (var p.c p.info, t) }
   | p = annotated_inl(prefix) inst = term_inst t = aterm
-    { App (var ~inst p.c p.info ,t, `Prefix) }
+    { App (var ~inst p.c p.info ,t) }
   | x = annotated(IDENT) AT e = sepeffect { Restrict (var x.c x.info,e) }
   | DEXCLAM x = annotated(IDENT) { Get (var x.c x.info, var "cur" x.info) }
   | DEXCLAM x = annotated(IDENT) AT t = aterm { Get (var x.c x.info, t) }
@@ -141,7 +141,7 @@ nterm_nopos:
     }
   | t1 = nterm i = annotated_inl(infix) t2 = nterm
     { let pos1 = Loc.embrace t1.info i.info in
-      App (Loc.mk pos1 (App(var i.c i.info, t1,`Prefix)), t2, `Infix) }
+      App (Loc.mk pos1 (App(var i.c i.info, t1)), t2) }
   | FUN l = arglist ARROW body = annotated(funcbody)
     { let p,e,q = body.c in
       (mk_efflam l p e q (left_join $startpos body.info)).c }
@@ -151,7 +151,7 @@ nterm_nopos:
     { Ite(it,tb,eb) }
   (* a local let is like a global one, but with an IN following *)
   | f = alllet IN e2 = seq_term
-    { let g, e, x, r = f in Let (g,e,x,e2,r) }
+    { let g, e, x, r = f in Let (g,e,fst x,e2,r) }
   | LETREGION l = IDENT* IN t = seq_term
     { LetReg (l,t) }
   | FOR i = IDENT EQUAL e1 = seq_term dir = todownto e2 = seq_term DO
@@ -196,7 +196,7 @@ todownto:
   | DOWNTO { "fordownto" }
 
 funargvar:
-  | x = defprogvar { Some x }
+  | x = IDENT { Some x }
   | UNDERSCORE { None }
 
 onetyarg:
@@ -248,7 +248,7 @@ funcbody:
 postcond_int:
   | {PNone }
   | t = nterm { PPlain t }
-  | x = defprogvar COLON t = nterm { PResult (x,t) }
+  | x = IDENT COLON t = nterm { PResult (x,t) }
 
 postcond: LCURL q = postcond_int RCURL { q }
 
@@ -272,26 +272,26 @@ param_annot:
 
 decl:
   | g = alllet
-    { let g, e, x, r = g in Program (x,g,e, r) }
+    { let g, e, x, r = g in Program (fst x,g,e, r, snd x) }
   | PARAMETER x = defprogvar l = gen COLON rt = ty
     {
       let p = build $startpos $endpos in
       let par = Loc.mk p (Param (rt,rw_empty)) in
-      Program (x,l,par, NoRec) }
+      Program (fst x,l,par, NoRec, snd x) }
   | PARAMETER x = defprogvar l = gen args = arglist
     COLON ann = param_annot EQUAL pre = precond post = postcond
   {
     let rt, e = ann in
     let p = build $startpos $endpos in
     let par = mk_param args pre post rt e p in
-    Program (x,l,par, NoRec)
+    Program (fst x,l,par, NoRec, snd x)
   }
-  | AXIOM x = defprogvar l = gen COLON t = nterm
+  | AXIOM x = IDENT l = gen COLON t = nterm
     { Axiom (x, l, t) }
-  | GOAL x = defprogvar l = gen COLON t = nterm
+  | GOAL x = IDENT l = gen COLON t = nterm
     { Goal (x, l, t) }
   | LOGIC x = defprogvar l = gen COLON t = ty
-    { Logic (x,l,t) }
+    { Logic (fst x,l,t, snd x) }
   | TYPE x = IDENT l = gen
     { TypeDef (x, l, Abstract ) }
   | TYPE x = IDENT l = gen EQUAL t = ty

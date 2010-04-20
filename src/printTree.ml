@@ -40,11 +40,11 @@ type scheme = gen * ty
 
 type t =
   | Const of Const.t
-  | Var of string * inst * ty
+  | Var of string * inst * ty * [`Infix | `Prefix ]
   | Get of t * t
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t * [`Infix | `Prefix ]
+  | App of t * t
   | Lam of string * ty * funcbody
   | Let of gen * t * string * t * isrec
   | PureFun of string * ty * t
@@ -182,9 +182,9 @@ module Coq = struct
   let rec term fmt x =
     match x with
     | Const c -> Const.print `Coq fmt c
-    | App (App (Var(v,_,_),t1,_),t2,`Infix) ->
+    | App (App (Var(v,_,_,`Infix),t1),t2) ->
         fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 string v with_paren t2
-    | App (t1,t2,_) ->
+    | App (t1,t2) ->
           fprintf fmt "@[%a@ %a@]" term t1 with_paren t2
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then@ %a else@ %a@]" term e1 term e2 term e3
@@ -193,7 +193,7 @@ module Coq = struct
     | Let (g,e1,x,e2,_) ->
         fprintf fmt "@[let@ %a %a=@[@ %a@]@ in@ %a@]" string x gen g
           term e1 term e2
-    | Var (v,i,t) ->
+    | Var (v,i,t,_) ->
         if is_ty_app t && not (is_empty i) then
           fprintf fmt "(@@%a %a)" string v inst i
         else string fmt v
@@ -301,10 +301,10 @@ module Pangoline = struct
   let rec term fmt t =
     match t with
     | Const c -> Const.print `Pangoline fmt c
-    | App (App (Var(v,i,_),t1,_),t2,`Infix) ->
+    | App (App (Var(v,i,_,`Infix),t1),t2) ->
         fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst i
           with_paren t2
-    | App (t1,t2,_) ->
+    | App (t1,t2) ->
           fprintf fmt "@[%a@ %a@]" term t1 with_paren t2
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then@ %a else@ %a@]" term e1 term e2 term e3
@@ -313,7 +313,7 @@ module Pangoline = struct
     | Let (g,e1,x,e2,_) ->
         fprintf fmt "@[let@ %a %a=@[@ %a@]@ in@ %a@]" string x gen g
           term e1 term e2
-    | Var (v,i,_) ->
+    | Var (v,i,_,_) ->
         let pr fmt () =
           if is_empty i then string fmt v
           else fprintf fmt "%a %a" string v inst i in
@@ -437,9 +437,9 @@ module Who = struct
   let rec term fmt t =
     match t with
     | Const c -> Const.print `Who fmt c
-    | App (App (Var(v,_,_),t1,_),t2,`Infix) ->
+    | App (App (Var(v,_,_,`Infix),t1),t2) ->
         fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 string v with_paren t2
-    | App (t1,t2,_) ->
+    | App (t1,t2) ->
           fprintf fmt "@[%a@ %a@]" term t1 with_paren t2
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then@ %a else@ %a@]" term e1 term e2 term e3
@@ -448,7 +448,7 @@ module Who = struct
     | Let (g,e1,x,e2,r) ->
         fprintf fmt "@[let@ %a%a %a=@[@ %a@]@ in@ %a@]"
           prrec r string x gen g term e1 term e2
-    | Var (v,i,_) ->
+    | Var (v,i,_,_) ->
         let pr fmt () =
           if is_empty i then string fmt v
           else fprintf fmt "%a %a" string v inst i

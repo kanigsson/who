@@ -61,10 +61,13 @@ module Env : sig
   val effvar :Loc.loc ->  t -> string -> Name.t
   val tyvar :Loc.loc ->  t -> string -> Name.t
   val is_constr : t -> string -> bool
+  val fix : t -> string -> [`Prefix | `Infix ]
 
   val typedef : t -> string -> Ty.Generalize.t * Ty.t
 
-  val add_var : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string option -> t * Name.t
+  val add_var :
+    t -> ?ty:(Ty.Generalize.t * Ty.t) ->
+         ?fix:[`Prefix | `Infix] ->  string option -> t * Name.t
   val add_constr : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string -> t * Name.t
   val add_ex_var : t -> ?ty:(Ty.Generalize.t * Ty.t) -> string -> Name.t -> t
   val add_rvars : t -> string list -> t * Name.t list
@@ -76,6 +79,7 @@ module Env : sig
   val only_add_type : t -> Name.t -> Ty.Generalize.t * Ty.t -> t
   val lookup_type : t -> Name.t -> Ty.Generalize.t * Ty.t
 
+
 end = struct
 
   type t =
@@ -85,6 +89,7 @@ end = struct
       r : Name.t SM.t ;
       e : Name.t SM.t ;
       constr: SS.t ;
+      infix : SS.t ;
       tyrepl : (Ty.Generalize.t * Ty.t) Misc.StringMap.t ;
       typing : (Ty.Generalize.t * Ty.t) NM.t
     }
@@ -93,6 +98,7 @@ end = struct
     { v = SM.empty; t = SM.empty;
       r = SM.empty; e = SM.empty; constr = SS.empty;
       tyrepl = Misc.StringMap.empty;
+      infix = SS.empty ;
       typing = NM.empty ;
     }
 
@@ -105,6 +111,8 @@ end = struct
   let effvar l env = gen_var l "effect" env.e
 
   let is_constr env x = SS.mem x env.constr
+  let fix env x =
+    if SS.mem x env.infix then `Infix else `Prefix
 
   let only_add_type env x g =
     { env with typing = NM.add x g env.typing }
@@ -115,13 +123,17 @@ end = struct
     | Some t -> only_add_type env y t in
     { env with v = SM.add x y env.v }
 
-  let add_var env ?ty x =
+  let add_fix_bool env x =
+    { env with infix = SS.add x env.infix }
+
+  let add_var env ?ty ?(fix=`Prefix) x =
     match x with
       | None ->
           env, Name.new_anon ()
       | Some x ->
           let y = Name.from_string x in
-          add_ex_var env ?ty x y, y
+          let env = add_ex_var env ?ty x y in
+          (if fix = `Infix then add_fix_bool env x else env), y
 
   let add_constr_bool env x = { env with constr = SS.add x env.constr }
   let add_constr env ?ty x =

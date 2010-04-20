@@ -38,11 +38,12 @@ let explain error =
       Myformat.sprintf "the prelude is incomplete; the following symbol is \
         missing: %s" s
 
+type binding = Ty.Generalize.t * Ty.t * [`Infix | `Prefix ]
 open Identifiers
 
 type env =
   {
-    mutable ty_map : (Ty.Generalize.t * Ty.t) Name.M.t ;
+    mutable ty_map : binding Name.M.t ;
     mutable name_map : Name.t Misc.StringMap.t
   }
 

@@ -47,11 +47,11 @@ and normalize e k =
       normalize_name e1
         (fun v ->
           k (ite ~logic:false v (normalize_term e2) (normalize_term e3) loc))
-  | App (e1,e2,f) ->
+  | App (e1,e2) ->
 (*       Format.printf "applying: %a@." print e1; *)
       normalize_name e1
         (fun v1 -> normalize_name e2
-          (fun v2 -> k (allapp v1 v2 f loc)))
+          (fun v2 -> k (app v1 v2 loc)))
   | HoareTriple (p,e,q) ->
 (*       Format.printf "found hoare_triple@."; *)
       k (hoare_triple (normalize_term p)
@@ -66,7 +66,7 @@ and normalize_name e k =
       if is_value e then k e
       else
         let nv = Name.from_string "anf" in
-        let nvv = svar (mk_var_with_type false nv e.t) e.loc in
+        let nvv = svar (mk_var_with_type false `Prefix nv e.t) e.loc in
         let_ Generalize.empty e nv (k nvv) Const.NoRec e.loc)
 
 let term = normalize_term

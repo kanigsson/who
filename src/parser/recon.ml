@@ -57,7 +57,8 @@ let to_rw loc t =
 
 let var loc v =
   let g,t = v.I.scheme in
-  { var = v.I.var ; scheme = g, to_ty loc t; is_constr = v.I.is_constr}
+  { var = v.I.var ; scheme = g, to_ty loc t;
+    is_constr = v.I.is_constr; fix = v.I.fix }
 
 let rec recon' loc = function
   | I.Var (x,i) -> Var (var loc x,inst loc i)
@@ -66,7 +67,7 @@ let rec recon' loc = function
       let e = recon e in
       if not (Rw.is_empty e.e) then error loc PureFunctionWithEffect;
       PureFun (to_ty loc t,Name.close_bind x e)
-  | I.App (e1,e2,k) -> App (recon e1, recon e2,k)
+  | I.App (e1,e2) -> App (recon e1, recon e2)
   | I.Quant (k,x,t,e) -> Quant (k,to_ty loc t, Name.close_bind x (recon e))
   | I.Lam (x,ot,(p,e,q)) -> Lam (x,ot, (recon p, recon e, recon q))
   | I.Param (t,e) -> Param (t,e)
@@ -79,11 +80,11 @@ let rec recon' loc = function
       let rw = body.e and l = body.loc in
       let inv = recon inv in
       let inv' = plam i Ty.int inv l in
-      let intvar s = svar (mk_var_with_type false s Ty.int) l in
+      let intvar s = svar (mk_var_with_type false `Prefix s Ty.int) l in
       let cur = Name.from_string "cur" in
       let sv = intvar st and ev = intvar en and iv = intvar i in
       let read = Rw.reads rw and write = Rw.writes rw in
-      let curvar = svar (mk_var_with_type false cur (Ty.map read)) l in
+      let curvar = svar (mk_var_with_type false `Prefix cur (Ty.map read)) l in
       let pre =
         if bdir then
         (* forto: λcur. start <= i /\ i <= end_ /\ inv *)
@@ -141,9 +142,9 @@ and recon (t : InferTree.t) : Ast.t =
 and inst loc i = Inst.map (to_ty loc) (to_region loc) (to_effect loc) i
 let rec recon_decl x =
   match x with
-  | I.Logic (x,g,t) ->
+  | I.Logic (x,g,t,f) ->
       let s = g,t in
-      Predefined.add_binding x s;
+      Predefined.add_binding x (g,t,f);
       Logic (x,s)
   | I.Formula (s,t,k) -> Formula (s, recon t, k)
   | I.Section (s,cl, dl) -> Section (s,recon_th dl, `Block cl)
@@ -152,10 +153,10 @@ let rec recon_decl x =
   | I.TypeDef (n,tl,ADT bl) -> TypeDef (n,tl, ADT (List.map constbranch bl))
   | I.Program (n,g,t,r) ->
       let t = recon t in
-      Predefined.add_binding n (g,t.t);
+      Predefined.add_binding n (g,t.t, `Prefix);
       Program (n,g,t, r)
   | I.Inductive (n,g,t,tel) ->
-      Predefined.add_binding n (g,t);
+      Predefined.add_binding n (g,t, `Prefix);
       let tel = List.map recon tel in
       Inductive (n,g,t,tel)
   | I.DGen g -> DGen g

@@ -26,14 +26,19 @@ module G = Ty.Generalize
 module PL = Predefined
 module I = Identifiers
 
-type var = { var : Name.t; scheme : Ty.scheme ; is_constr : bool }
+type var = {
+  var : Name.t;
+  scheme : Ty.scheme ;
+  is_constr : bool;
+  fix : [ `Infix | `Prefix ]
+}
 
 type node =
   | Const of Const.t
   | Var of var * inst
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t * [`Infix | `Prefix ]
+  | App of t * t
   | Lam of Name.t * Ty.t * funcbody
   | Let of G.t * t * t Name.bind * isrec
   | PureFun of Ty.t * t Name.bind
@@ -74,7 +79,8 @@ type theory = decl list
 
 let varmap ~varfun ~tyfun v =
   let (g,t) = v.scheme in
-  { var = varfun v.var ; scheme = g, tyfun t ; is_constr = v.is_constr }
+  { var = varfun v.var ; scheme = g, tyfun t ;
+    is_constr = v.is_constr ; fix = v.fix}
 
 let map ~varfun ~varbindfun ~patternbindfun ~tyfun ~rvarfun ~effectfun f =
   let rec aux' = function
@@ -82,7 +88,7 @@ let map ~varfun ~varbindfun ~patternbindfun ~tyfun ~rvarfun ~effectfun f =
     | Param (t,e) -> Param (tyfun t, rwfun e)
     | Var (v,i) ->
         Var (varmap ~tyfun ~varfun v, Inst.map tyfun rvarfun effectfun i)
-    | App (t1,t2,p) -> App (aux t1, aux t2, p)
+    | App (t1,t2) -> App (aux t1, aux t2)
     | Lam (x,t,b) -> Lam (x,tyfun t, body b )
     | LetReg (l,e) -> LetReg (l,aux e)
     | HoareTriple b -> HoareTriple (body b)
@@ -141,7 +147,7 @@ let rec equal' a b =
   | Var (v1,i1), Var (v2,i2) ->
       var_equal v1 v2 &&
       Inst.equal Ty.equal Name.equal Effect.equal i1 i2
-  | App (a1,b1,_), App (a2,b2,_) -> equal a1 a2 && equal b1 b2
+  | App (a1,b1), App (a2,b2) -> equal a1 a2 && equal b1 b2
   | Gen (g1,t1), Gen (g2,t2) ->
       G.equal g1 g2 && equal t1 t2
   | Ite (a1,b1,c1), Ite (a2,b2,c2) -> equal a1 a2 && equal b1 b2 && equal c1 c2
@@ -166,11 +172,11 @@ and equal a b = equal' a.v b.v
 let id_equal v id = PL.equal v.var id
 
 let destruct_app' = function
-  | App (f1,f2,_) -> Some (f1,f2)
+  | App (f1,f2) -> Some (f1,f2)
   | _ -> None
 
 let destruct_app2 = function
-  | App ({v = App (f1,f2,_)},f3,_) -> Some (f1,f2,f3)
+  | App ({v = App (f1,f2)},f3) -> Some (f1,f2,f3)
   | _ -> None
 
 let destruct_app2_var' x =
@@ -237,9 +243,9 @@ module Convert = struct
             P.PRef (id env (List.hd rl))
         | Var (v,i) ->
             let s = id env v.var in
-            P.Var (s, inst env i, ty env term.t)
-        | App (t1,t2,p) ->
-            P.App (t env t1, t env t2, p)
+            P.Var (s, inst env i, ty env term.t,v.fix)
+        | App (t1,t2) ->
+            P.App (t env t1, t env t2)
         | LetReg (l,e) ->
             let env = add_ids env l in
             P.LetReg (List.map (id env) l,t env e)
@@ -446,13 +452,13 @@ let const c =
   mk_val (Const c) (Ty.const (Const.type_of_constant c))
 
 let simple_var v t = mk_val (Var (v, Inst.empty)) t
-let mk_var_with_scheme is_constr v s =
- { var = v; scheme = s ; is_constr = is_constr }
-let mk_var_with_type is_constr v t =
-  { var = v; scheme = Ty.as_scheme t; is_constr = is_constr }
+let mk_var_with_scheme is_constr fix v s =
+  { var = v; scheme = s ; is_constr = is_constr ; fix = fix }
+let mk_var_with_type is_constr fix v t =
+  { var = v; scheme = Ty.as_scheme t; is_constr = is_constr; fix = fix }
 let simple_var_id s =
-  let x, ((_,t) as s) = PL.var_and_type s in
-  simple_var (mk_var_with_scheme false x s) t
+  let x, (g,t,f) = PL.var_and_type s in
+  simple_var (mk_var_with_scheme false f x (g,t)) t
 
 let mempty l = simple_var_id I.empty_id l
 let btrue_ l = simple_var_id I.btrue_id l
@@ -473,8 +479,8 @@ let var x inst =
 let svar s = var s Inst.empty
 
 let predef s i =
-  let x, t = PL.var_and_type s in
-  let v = mk_var_with_scheme false x t in
+  let x, (g,t, fix) = PL.var_and_type s in
+  let v = mk_var_with_scheme false fix x (g,t) in
   var v i
 
 let spredef s =
@@ -502,11 +508,11 @@ let hoare_triple p e q l = mk_val (HoareTriple (p,e,q)) Ty.prop l
 
 let gen g e l = true_or e (mk (Gen (g, e)) e.t e.e l)
 
-let simple_app ?(kind=`Prefix) t1 t2 l =
+let simple_app t1 t2 l =
   try
     let t = Ty.result t1.t and e = Ty.latent_effect t1.t in
     if not (Ty.equal (Ty.arg t1.t) t2.t) then raise Exit;
-    mk (App (t1,t2,kind)) t (Rw.union3 t1.e t2.e e) l
+    mk (App (t1,t2)) t (Rw.union3 t1.e t2.e e) l
   with
   | Exit ->
       Myformat.printf "type mismatch on application: function %a has type %a,
@@ -518,12 +524,11 @@ let simple_app ?(kind=`Prefix) t1 t2 l =
       invalid_arg "app"
 
 
-let simple_app2 ?kind t t1 t2 loc =
-  simple_app ?kind (simple_app t t1 loc) t2 loc
-let simple_appi t t1 t2 loc = simple_app2 ~kind:`Infix t t1 t2 loc
+let simple_app2 t t1 t2 loc =
+  simple_app (simple_app t t1 loc) t2 loc
 
 let simple_eq t1 t2 l =
-  simple_appi (predef I.equal_id ([t1.t],[],[]) l) t1 t2 l
+  simple_app2 (predef I.equal_id ([t1.t],[],[]) l) t1 t2 l
 
 let get_tuple_var tl i j l =
   (predef (I.get_tuple_id i j) (tl,[],[])) l
@@ -576,7 +581,7 @@ let destr_tuple i =
       | _ -> None
     else
       match t.v with
-      | App (t1,t2,_) -> aux (k-1) (t2::acc) t1
+      | App (t1,t2) -> aux (k-1) (t2::acc) t1
       | _ -> None in
   aux i []
 
@@ -593,7 +598,7 @@ let boolcmp_to_propcmp x =
   | x when eq x I.orb_id -> fun _ -> spredef I.or_id
   | _ -> raise Exit
 
-let rec app ?kind t1 t2 l : t =
+let rec app t1 t2 l : t =
 (*     Myformat.printf "app: %a and %a@." print t1 print t2; *)
     try match t1.v with
     (* we are trying to build (λx.t) e, reduce to t[x|->e] *)
@@ -601,7 +606,7 @@ let rec app ?kind t1 t2 l : t =
         let x, body = vopen l in
         subst x (fun _ -> t2) body
     (* double application, check if we are not in a simplification case *)
-    | App (op,t1,_) ->
+    | App (op,t1) ->
         begin match destruct_varname op with
         | Some (v,_) when id_equal v I.and_id -> and_ t1 t2 l
         | Some (v,_) when id_equal v I.or_id -> or_ t1 t2 l
@@ -624,13 +629,10 @@ let rec app ?kind t1 t2 l : t =
             | Some i -> get_tuple i t2 l
             end
         | _ -> raise Exit
-    with Exit -> simple_app ?kind t1 t2 l
+    with Exit -> simple_app t1 t2 l
 
-and app2 ?kind t t1 t2 loc = app ?kind (app t t1 loc) t2 loc
-and appi t t1 t2 loc = app2 ~kind:`Infix t t1 t2 loc
-and allapp t1 t2 kind loc = app ~kind t1 t2 loc
-and appn t tl loc =
-  List.fold_left (fun acc t -> app acc t loc) t tl
+and app2 t t1 t2 loc = app (app t t1 loc) t2 loc
+and appn t tl loc = List.fold_left (fun acc t -> app acc t loc) t tl
 
 and neg f l =
   match f.v with
@@ -650,7 +652,7 @@ and reduce_bool t l =
               if id_equal op I.andb_id || id_equal op I.orb_id then
                 aux arg1, aux arg2
               else arg1, arg2 in
-            appi (v i l) arg1 arg2 l
+            app2 (v i l) arg1 arg2 l
         | None -> raise Exit in
   aux t
 and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
@@ -665,7 +667,7 @@ and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
       match t.v with
       | Const _ -> t
       | Var (v,i) -> varfun v.var (inst i) t
-      | App (t1,t2,p) -> allapp (aux t1) (aux t2) p l
+      | App (t1,t2) -> app (aux t1) (aux t2) l
       | Let (g,e1,b,r) ->
           let x,f = vopen b in
           let_ g (aux e1) x (aux f) r l
@@ -711,7 +713,7 @@ and impl h1 goal l =
     | _, Const Const.Ptrue -> goal
     | Const Const.Pfalse, _ -> ptrue_ l
     | _, _ when equal h1 goal -> ptrue_ l
-    | _ -> simple_appi (spredef I.impl_id l) h1 goal l
+    | _ -> simple_app2 (spredef I.impl_id l) h1 goal l
 
 and ite ?(logic=true) e1 e2 e3 l =
   let im b c = impl (eq e1 (b l) l) c l in
@@ -742,7 +744,7 @@ and and_ t1 t2 l =
   | _, Const Const.Ptrue -> t1
   | Const Const.Pfalse, _ -> t1
   | _, Const Const.Pfalse -> t2
-  | _ -> simple_appi (spredef I.and_id l) t1 t2 l
+  | _ -> simple_app2 (spredef I.and_id l) t1 t2 l
 
 and or_ t1 t2 l =
   match t1.v,t2.v with
@@ -750,7 +752,7 @@ and or_ t1 t2 l =
   | _, Const Const.Ptrue -> t2
   | Const Const.Pfalse, _ -> t2
   | _, Const Const.Pfalse -> t1
-  | _ -> simple_appi (spredef I.or_id l) t1 t2 l
+  | _ -> simple_app2 (spredef I.or_id l) t1 t2 l
 and subst x v e =
 (*     Myformat.printf "subst: %a@." Name.print x ; *)
   rebuild_map
@@ -859,14 +861,14 @@ and get_tuple i t l =
   end
 
 
-let applist ?(fix=`Prefix) l loc =
+let applist l loc =
   match l with
   | [] | [ _ ] -> failwith "not enough arguments given"
-  | [f;a;b] when fix = `Infix -> appi f a b loc
+  | [f;a;b] -> app2 f a b loc
   | a::b::rest ->
       List.fold_left (fun acc x -> app acc x loc) (app a b loc) rest
 
-let infer_app ?fix ?(regions=[]) ?(effects=[]) ?rty x tel l =
+let infer_app ?(regions=[]) ?(effects=[]) ?rty x tel l =
   let (tvl,rl,el),ty = x.scheme in
   let ty = Ty.elsubst el effects (Ty.rlsubst rl regions ty) in
 (*
@@ -885,22 +887,22 @@ let infer_app ?fix ?(regions=[]) ?(effects=[]) ?rty x tel l =
     | Some rty -> matching Name.M.empty xrty rty in
   let s = List.fold_left2 matching initial tyl (List.map (fun t -> t.t) tel) in
   let tl = List.map (fun x -> Name.M.find x s) tvl in
-  applist ?fix (var x (tl,regions,effects) l :: tel) l
+  applist (var x (tl,regions,effects) l :: tel) l
 
-let infer_predef ?fix ?regions ?effects ?rty id =
-  let x,t = PL.var_and_type id in
-  let x = mk_var_with_scheme false x t in
-  infer_app ?fix ?regions ?effects ?rty x
+let infer_predef ?regions ?effects ?rty id =
+  let x,(g,t,f) = PL.var_and_type id in
+  let x = mk_var_with_scheme false f x (g,t) in
+  infer_app ?regions ?effects ?rty x
 
 let le t1 t2 loc =
-  simple_appi (spredef I.le_id loc) t1 t2 loc
+  simple_app2 (spredef I.le_id loc) t1 t2 loc
 
 let encl lower i upper loc = and_ (le lower i loc) (le i upper loc) loc
 let efflam x eff e = plam x (Ty.map eff) e
 let plus t1 t2 loc =
-  infer_predef ~fix:`Infix I.plus_id [t1;t2] loc
+  infer_predef I.plus_id [t1;t2] loc
 
-let minus t1 t2 loc = appi (spredef I.minus_id loc) t1 t2 loc
+let minus t1 t2 loc = app2 (spredef I.minus_id loc) t1 t2 loc
 let ref_get reg ref l = infer_predef I.refget_id [reg; ref] l
 
 let one = mk_val (Const (Const.Int Big_int.unit_big_int)) Ty.int
@@ -930,7 +932,7 @@ let rec is_value x =
   | Const _ | Var _ | Lam _ | PureFun _ | Quant _ | HoareTriple _ -> true
   | Let _ | Ite _ | LetReg _ | Param _ | Case _ -> false
   | Gen (_,e) -> is_value e
-  | App (t1,_,_) ->
+  | App (t1,_) ->
       match t1.t with
       | Ty.PureArr _ -> true
       | _ -> false
@@ -949,7 +951,7 @@ let quant ?s k t f loc =
     match s with
     | None -> Name.new_anon ()
     | Some s -> Name.from_string s in
-  let var = mk_var_with_type false v t in
+  let var = mk_var_with_type false `Prefix v t in
   let tv = svar var loc in
   squant k v t (f tv) loc
 
@@ -960,7 +962,7 @@ let plamho ?s t f loc =
     match s with
     | None -> Name.new_anon ()
     | Some s -> Name.from_string s in
-  let var = mk_var_with_type false v t in
+  let var = mk_var_with_type false `Prefix v t in
   let tv = svar var loc in
   plam v t (f tv) loc
 

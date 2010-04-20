@@ -28,6 +28,7 @@ type var =
   { var : Name.t;
     scheme : G.t * M.t;
     is_constr : bool;
+    fix : [`Prefix | `Infix ]
   }
 
 type t' =
@@ -35,7 +36,7 @@ type t' =
   | Var of var * inst
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t * [`Infix | `Prefix ]
+  | App of t * t
   | Lam of Name.t * Ty.t * funcbody
   | Let of G.t * t * Name.t * t * isrec
   | PureFun of Name.t * M.t * t
@@ -62,7 +63,7 @@ and pattern_node =
 and pattern = { pv : pattern_node ; pt : M.t ; ploc : Loc.loc}
 
 type decl =
-  | Logic of Name.t * G.t * Ty.t
+  | Logic of Name.t * G.t * Ty.t * [`Infix | `Prefix ]
   | Formula of Name.t * t * [ `Proved | `Assumed ]
   | Section of Name.t * Const.takeover list * decl list
   | TypeDef of Name.t * Name.t list * Ast.typedef

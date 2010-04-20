@@ -37,7 +37,7 @@ type inst = ty list * rvar list * effect list
 type t' =
   | Const of Const.t
   | Var of var * inst
-  | App of t * t * [`Infix | `Prefix ]
+  | App of t * t
   | Seq of t * t
   | Lam of var option * ty * t option * t * post
   | Let of generalize * t * var * t * ty Const.isrec
@@ -67,12 +67,12 @@ and pattern_node =
 and pattern = pattern_node Loc.t
 
 type decl =
-  | Logic of var * generalize * ty
+  | Logic of var * generalize * ty * [`Infix | `Prefix ]
   | Axiom of string * generalize * t
   | Goal of string * generalize * t
   | Section of var * Const.takeover list * decl list
   | TypeDef of var * generalize * typedef
-  | Program of var * generalize * t * ty Const.isrec
+  | Program of var * generalize * t * ty Const.isrec * [`Infix | `Prefix ]
   | Inductive of var * generalize * ty list * t list
   | DLetReg of rvar list
 and typedef =
@@ -83,11 +83,10 @@ and constbranch = var * ty list
 
 type theory = decl list
 
-let app ?(kind=`Prefix) t1 t2 pos = Loc.mk pos (App (t1,t2, kind))
+let app t1 t2 pos = Loc.mk pos (App (t1,t2))
 let var ?(inst=([],[],[])) s pos = Loc.mk pos (Var (s,inst))
 let const c pos = Loc.mk pos (Const c)
 let app2 s t1 t2 loc = app (app (var s loc) t1 loc) t2 loc
-let appi s t1 t2 loc = app ~kind:`Infix (app (var s loc) t1 loc) t2 loc
 
 let appn t1 tl =
   List.fold_left (fun t1 t2 -> app t1 t2 (Loc.join_with t1 t2)) t1 tl

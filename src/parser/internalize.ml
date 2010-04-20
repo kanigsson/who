@@ -36,16 +36,15 @@ open InternalParseTree
 module G = Ty.Generalize
 
 let mk_var loc env v =
-  mkvar (Env.is_constr env v) (Env.var loc env v)
+  mkvar (Env.is_constr env v) (Env.fix env v) (Env.var loc env v)
 
 let inst loc env i =
   Inst.map (ty env) (Env.rvar loc env) (effect loc env) i
 let rec ast' loc env = function
   | I.Const c -> Const c
-  | I.Var (v,i) ->
-      Var (mk_var loc env v,inst loc env i)
-  | I.App (e1,e2,f) ->
-      App (ast env e1, ast env e2, f)
+  | I.Var (v,i) -> Var (mk_var loc env v,inst loc env i)
+  | I.App (e1,e2) ->
+      App (ast env e1, ast env e2)
   | I.Lam (x,t,p,e,q) ->
       let env, nv = Env.add_var env x in
       Lam (nv, ty env t, (pre env p, ast env e, post env q))
@@ -146,11 +145,11 @@ and letgen env x g e r =
 
 let rec decl env d =
   match d with
-  | I.Logic (n,g,t) ->
+  | I.Logic (n,g,t,fix) ->
       let env', g = Env.add_gen env g in
       let env, nv = Env.add_var env (Some n) in
       Predefined.add_symbol n nv;
-      env, [Logic (nv,g, ty env' t)]
+      env, [Logic (nv,g, ty env' t, fix)]
   | I.Inductive (n,g,tl,tel) ->
       let env, g = Env.add_gen env g in
       let env, nv = Env.add_var env (Some n) in
@@ -191,10 +190,10 @@ let rec decl env d =
   | I.DLetReg rl ->
       let env, nrl = Env.add_rvars env rl in
       env, [DLetReg nrl]
-  | I.Program (x,g,e,r) ->
+  | I.Program (x,g,e,r, fix) ->
       let env, nv, g , e, r = letgen env x g e r in
       Predefined.add_symbol x nv;
-      env, [Program (nv, g, e, r)]
+      env, [Program (nv, g, e, r, fix)]
 and theory x = ExtList.fold_map_flatten decl x
 and constbranch env_inner env_outer (n,tyl) =
   let tyl = List.map (ty env_inner) tyl in

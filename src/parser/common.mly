@@ -39,11 +39,11 @@
 %public %inline annotated_inl(X): t = X { Loc.mk_pos $startpos $endpos t }
 (* a program variable which can be used in declarations *)
 %public defprogvar:
-  | x = IDENT { x }
-  | x = infix { x }
-  | x = prefix { x }
-  | REF { "ref" }
-  | DEXCLAM { "!!" }
+  | x = IDENT { x, `Prefix }
+  | x = infix { x, `Infix }
+  | x = prefix { x, `Prefix }
+  | REF { "ref", `Prefix }
+  | DEXCLAM { "!!", `Prefix }
 
 tconstant:
   | TINT { Const.TInt }

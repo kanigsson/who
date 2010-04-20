@@ -46,8 +46,7 @@ let rec lift_value v =
   match v.v with
   | Var (v,i) -> var (lift_var v) (lift_inst i) l
   | Const _ -> v
-  | App (v1,v2,kind) ->
-      app ~kind (lift_value v1) (lift_value v2) l
+  | App (v1,v2) -> app (lift_value v1) (lift_value v2) l
   | PureFun (t,(_,x,e)) ->
       plam x (ty t) (lift_value e) l
   | Quant (k,t,(_,x,e)) ->
@@ -72,7 +71,7 @@ and correct v =
   let l = v.loc in
   match v.v with
   | Var _ | Const _ | Quant _ -> ptrue_ l
-  | App (v1,v2,_) -> and_ (correct v1) (correct v2) l
+  | App (v1,v2) -> and_ (correct v1) (correct v2) l
   | Lam (x,t,(p,e,q)) -> sforall x (ty t) (bodyfun p e q) l
   | PureFun (t,(_,x,e)) -> sforall x (ty t) (correct e) l
   | Let (g,e1,b,Const.LogicDef) ->
@@ -115,7 +114,7 @@ and wp m q e =
           wp_node (combine m cur l)
             (efflamho (Effect.union (Rw.writes se.e) ef) (fun s ->
               app q (restrict write s l) l) l) se) l) l
-    | App (v1,v2,_) ->
+    | App (v1,v2) ->
         let lv1 = lift_value v1 and lv2 = lift_value v2 in
         andlist
         [ correct v1; correct v2;
