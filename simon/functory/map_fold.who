@@ -52,12 +52,17 @@ logic List.append ['a] : 'a list -> 'a list -> 'a list
 logic List.cons ['a] : 'a -> 'a list -> 'a list
 logic List.index ['a] : int -> 'a list -> 'a
 
-parameter fromCons ['a] (l : 'a list) : {} ('a * 'a list) =
+logic fromCons ['a] : 'a list -> ('a * 'a list)
+axiom from_cons_normal ['a] :
+  forall (l l2 : 'a list) (x : 'a).
+  l = List.cons x l2 -> fromCons l = (x, l2)
+
+(*parameter fromCons ['a] (l : 'a list) : {} ('a * 'a list) =
   { ~ (l = Nil) }
   { res:
     exists (x : 'a) (l2 : 'a list).
     l = List.cons x l2 /\ res = (x, l2)
-  }
+  }*)
 
 (* spec of List.map *)
 logic List.map ['a 'b||'e] : (<'e> -> 'a list -> prop) -> ('a ->{'e} 'b) -> 'a list ->{'e} 'b list
@@ -67,7 +72,7 @@ axiom list_map_awesome_1 ['a 'b||'e] :
   [[  inv cur l /\
     (~ (l = Nil) -> pre f (fst (fromCons l)) cur) /\ (* precondition of f on head of list *)
     (forall (x2 : 'a) (l2 : 'a list). 
-      [[inv cur (List.cons x2 l2) /\ pre f x2 cur]] f x2 [[post f x2 cur -> inv old cur l2]]) (* invariant iteration *)
+      [[inv cur (List.cons x2 l2) /\ pre f x2 cur]] f x2 [[res: post f x2 old cur res -> inv cur l2]]) (* invariant iteration *)
   ]] List.map [{'e}] inv f l
   [[ res:
     (l = Nil -> res = Nil) /\
@@ -85,12 +90,12 @@ axiom append_does_append ['a] :
   (List.mem x l1 -> List.mem x (List.append l1 l2)) /\
   (List.mem x l2 -> List.mem x (List.append l1 l2))
 axiom list_length_map ['a 'b||'e]:
-  forall (l:'a list) (f:'a ->{'e} 'b).
-  [[]] List.map [{'e}] f l [[res : List.length l = List.length res]]
+  forall (l:'a list) (f:'a ->{'e} 'b) (inv:<'e> -> 'a list -> prop).
+  [[]] List.map [{'e}] inv f l [[res : List.length l = List.length res]]
 (* (map f l)[i] = f l[i] *)
 axiom list_index_map ['a 'b||] :
-  forall (x:'a) (l:'a list) (i:int) (f:'a ->{} 'b).
-  i >= 0 /\ i < List.length l -> [[]] List.map [{}] f l [[res: [[]] f (List.index i l)[[r : r = List.index i res]] ]]
+  forall (x:'a) (l:'a list) (i:int) (f:'a ->{} 'b) (inv:< > -> 'a list -> prop).
+  i >= 0 /\ i < List.length l -> [[]] List.map [{}] inv f l [[res: [[]] f (List.index i l)[[r : r = List.index i res]] ]]
 axiom list_not_empty ['a]:
   forall (l:'a list).
   ~ (l=Nil) -> exists (x:'a) (l2:'a list). 
@@ -228,14 +233,16 @@ let test2 (f : int -> b) (l : int list) =
   {
     exists (l2 : int list). l = List.cons 1 l2
   }
-  letregion r in
-  let r = ref (r) 0 in
-  let answer = List.map [{r}] (fun (x:int) ->{} incr r; f x {}) l in
+  letregion t in
+  let r = ref (t) 0 in
+  let inv (s:<t>) (ll:int list) = 
+    List.length ll + !!r@s = List.length l in
+  let answer = List.map [{t}] inv (fun (x:int) ->{} incr r; f x {}) l in
   (answer, !r)
   {res:
     snd res = List.length l  /\
     exists (l2 : int list). l = List.cons 1 l2 ->
-      [[]] List.map [{}] (fun (x:int) ->{} f x {}) l2 [[r: (fst res) = List.cons (f 1) r]]
+      [[]] List.map [{}] (fun (s:< >)(ll:int list)->True) (fun (x:int) ->{} f x {}) l2 [[r: (fst res) = List.cons (f 1) r]]
   }
 
 (*
