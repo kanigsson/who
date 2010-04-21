@@ -76,8 +76,8 @@ the arg list, the state before call, the state after call and the result list *)
 parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop) (f : 'a ->{'e} 'b) (l : 'a list) : {'e} 'b list =
   {
     (~ (l = Nil) -> pre f (List.head l) cur) /\ (* precondition of f on head of list *)
-    (forall (x2 : 'a) (l1 l2 : 'a list) (res_l2 : 'b list) (s0 s1 s2:<'e>). l1 = Cons x2 l2 ->
-      [[cur = s0 /\ rel l2 s1 s2 res_l2]] f x2 [[res : cur = s1 -> rel l1 s0 s2 (Cons res res_l2)]]) (* propagate relationship *)
+    (forall (x2 : 'a) (l2 : 'a list) (res_l2 : 'b list) (s2:<'e>). l = Cons x2 l2 ->
+      [[]] f x2 [[res : rel l2 cur s2 res_l2 -> rel l old s2 (Cons res res_l2)]]) (* propagate relationship *)
   }
   { res:
     (l = Nil -> res = Nil /\ cur = old) /\ (* terminal case *)
@@ -112,6 +112,9 @@ axiom append_cons_list ['a] :
 axiom append_list_list ['a] :
   forall (x:'a) (l1 l2 l3: 'a list).
   l1 = Cons x l2 -> List.append l1 l3 = Cons x (List.append l2 l3)
+axiom list_length_nil ['a]:
+  forall (l : 'a list).
+  l = Nil -> List.length l = 0
 axiom list_length_map ['a 'b||'e]:
   forall (l:'a list) (f:'a ->{'e} 'b) (rel: 'a list -> <'e> -> <'e> -> 'b list -> prop).
   [[]] List.map [{'e}] rel f l [[res : List.length l = List.length res]]
@@ -122,7 +125,7 @@ axiom list_index_map ['a 'b||'e] :
   [[]] List.map [{'e}] rel f l [[res: [[]] f (List.index i l)[[r : r = List.index i res]] ]]
 axiom list_not_empty_is_cons ['a]:
   forall (l:'a list).
-  ~ (l=Nil) -> exists (x:'a) (l2:'a list).
+  (~ (l=Nil)) -> exists (x:'a) (l2:'a list).
     (l = Cons x l2)
 axiom list_cons_mem ['a]:
   forall (x:'a) (l:'a list).
@@ -261,11 +264,11 @@ let test1 (f : int -> b) (l : int list) =
   let r = ref (t) 0 in
   let rel (l_old : int list) (s1:<t>) (s2:<t>) (l_res : b list) =
     (List.length l_old + !!r@s1 = List.length l_res + !!r@s2 /\
-    !!r@s2 = !!r@s1 + 1 /\ !!r@s2 = List.length l_res+1) in
+    !!r@s2 = !!r@s1 + 1 /\ !!r@s2 = List.length l_res) in
   let answer = List.map [{t}] rel (fun (x:int) ->{} incr r; f x {}) l in
   (answer, !r)
   {res:
-    (*snd res = List.length l+1 /\*)
+    snd res = List.length l+1 /\
     exists (l2 : int list). l = Cons 1 l2 ->
       let rel (l_old : int list) (s1:< >) (s2:< >) (l_res : b list) = True in
       [[]] List.map [{}] rel (fun (x:int) ->{} f x {}) l2 [[r: (fst res) = Cons (f 1) r]]
