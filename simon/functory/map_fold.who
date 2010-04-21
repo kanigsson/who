@@ -52,7 +52,6 @@ logic List.append ['a] : 'a list -> 'a list -> 'a list
 logic List.index ['a] : int -> 'a list -> 'a
 logic List.head ['a] : 'a list -> 'a
 logic List.tail ['a] : 'a list -> 'a list
-
 logic fromCons ['a] : 'a list -> ('a * 'a list)
 axiom from_cons_normal ['a] :
   forall (l l2 : 'a list) (x : 'a).
@@ -63,7 +62,27 @@ axiom list_head ['a] :
 axiom list_tail ['a] :
   forall (l l2: 'a list) (x: 'a).
   l = Cons x l2 -> List.tail l = l2
+(*
+parameter List.head ['a] (l : 'a list) : {} 'a =
+  { l <> Nil }
+  { res:
+    exists (x : 'a) (l2 : 'a list).
+    l = Cons x l2 /\ res = x
+  }
+parameter List.tail ['a] (l : 'a list) : {} 'a list =
+  { l <> Nil }
+  { res:
+    exists (x : 'a) (l2 : 'a list).
+    l = Cons x l2 /\ res = l2
+  }
 
+parameter fromCons ['a] (l : 'a list) : {} ('a * 'a list) =
+  { ~ (l = Nil) }
+  { res:
+    exists (x : 'a) (l2 : 'a list).
+    l = Cons x l2 /\ res = (x, l2)
+  }
+*)
 
 (* spec of List.map. It takes a relationship rel in arg, which describe a bound between
 the arg list, the state before call, the state after call and the result list *)
@@ -148,18 +167,34 @@ axiom list_index ['a]:
 axiom list_index_rec ['a]:
   forall (i : int) (x : 'a) (l l2: 'a list).
   i > 0 /\ i < List.length l -> l = Cons x l2 -> List.index i l = List.index (i-1) l2
+axiom list_mem_inverse ['a] :
+  forall (x x2:'a) (l l2:'a list).
+  ~ (List.mem x l) -> l = Cons x2 l2 ->
+  x2 <> x /\ ~ (List.mem x l2)
 
 (* tests for those axioms *)
 goal g1 ['a] :
   forall (x x2:'a) (l:'a list).
-    (List.length (Cons x (Cons x2 l)) >= 2 /\
-    List.length (Cons x (Cons x2 Nil)) = 2 /\
-    List.length (Cons x (Cons x2 (Cons x l))) = List.length l + 3 /\
-    List.remove x (Cons x l) = l /\
-    List.mem x l -> List.length (List.remove x l) < List.length l)
-goal g2 ['a 'b] :
+  List.length (Cons x (Cons x2 l)) >= 2
+goal g2 ['a] :
+  forall (x x2:'a) (l:'a list).
+  List.length (Cons x (Cons x2 Nil)) = 2
+goal g3 ['a] :
+  forall (x x2:'a) (l:'a list).
+  List.length (Cons x (Cons x2 (Cons x l))) = List.length l + 4
+goal g4 ['a] :
+  forall (x x2:'a) (l:'a list).
+  List.remove x (Cons x l) = l
+(*goal g5 ['a] :
+  forall (x x2:'a) (l:'a list).
+  List.mem x l -> List.length (List.remove x l) < List.length l
+*)
+goal g6 ['a 'b] :
   forall (l:'a list)(f:'a -> 'b).
   [[]] List.map [{}] (empty_rel [{}]) (fun (x:'a) ->{} f x {}) l [[res: List.length res = List.length l]]
+goal g7 ['a] :
+  forall (x:'a) (l:'a list).
+  ~ (List.mem x l) -> List.remove x l = l
 
 
 
