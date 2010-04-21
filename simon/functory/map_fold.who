@@ -75,6 +75,7 @@ axiom list_tail ['a] :
 the arg list, the state before call, the state after call and the result list *)
 parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop) (f : 'a ->{'e} 'b) (l : 'a list) : {'e} 'b list =
   {
+    (forall (l:'a list). l = Nil -> rel l cur cur Nil) /\
     (~ (l = Nil) -> pre f (List.head l) cur) /\ (* precondition of f on head of list *)
     (forall (x2 : 'a) (l2 : 'a list) (res_l2 : 'b list) (s2:<'e>). l = Cons x2 l2 ->
       [[]] f x2 [[res : rel l2 cur s2 res_l2 -> rel l old s2 (Cons res res_l2)]]) (* propagate relationship *)
@@ -100,8 +101,14 @@ parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop
 *)
 
 axiom remove_does_remove ['a] :
-  forall (x : 'a) (l l2 : 'a list).
-  l = Cons x l2 -> List.remove x l = l2
+  forall (x : 'a) (l : 'a list).
+  List.remove x (Cons x l) = l
+axiom remove_does_not_rampage ['a] :
+  forall (x y : 'a) (l : 'a list).
+  ~(y=x) -> List.remove y (Cons x l) = Cons x (List.remove y l)
+axiom remove_empty ['a]:
+  forall (x: 'a) (l : 'a list).
+  l = Nil -> List.remove x l = Nil
 axiom append_does_append ['a] :
   forall (l1 l2 : 'a list) (x : 'a).
   (List.mem x l1 -> List.mem x (List.append l1 l2)) /\
@@ -127,6 +134,9 @@ axiom list_not_empty_is_cons ['a]:
   forall (l:'a list).
   (~ (l=Nil)) -> exists (x:'a) (l2:'a list).
     (l = Cons x l2)
+axiom list_not_cons_is_empty ['a]:
+  forall (l : 'a list).
+  (forall (x : 'a) (l2 : 'a list). ~ (l = Cons x l2)) -> l = Nil
 axiom list_cons_mem ['a]:
   forall (x:'a) (l:'a list).
   List.mem x (Cons x l)
