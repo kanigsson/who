@@ -36,7 +36,7 @@ axiom set_equal ['a] :
 
 let map ['a 'b|in_ out|'e]
   (inv : <in_ 'e> -> 'a array -> int -> prop)
-  (ar : ref(in_, 'a array)) (f : 'a ->{in_ 'e} 'a)  = allocates out
+  (ar : ref(in_, 'a array)) (f : 'a ->{in_ 'e} 'a) =
   {
     inv cur@{in_ 'e} ar_empty 0 /\
      [[ ]] f (get 0 !ar) [[ k : forall (r : 'a array). inv cur (sub (set 0 k r) 1) 1 ]] /\
@@ -45,10 +45,10 @@ let map ['a 'b|in_ out|'e]
     [[ inv cur (sub k i) i ]] f (get i !ar) [[ r: inv cur (sub (set i r k) (i+1)) (i+1) ]]
   }
   let l = len !ar in
-  if l == 0 then ref{{out}} ar_empty
+  if l == 0 then ref(out) ar_empty
   else
     let k = f (get 0 !ar) in
-    let r = ref{{out}} (create l k) in
+    let r = ref(out) (create l k) in
     assert ( !r = set 0 k !r);
     assert ( sub !r 1 = sub (set 0 k !r) 1);
     (for i = 1 to l - 1 do

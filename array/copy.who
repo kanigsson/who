@@ -3,12 +3,12 @@ let identical ['a] (x y : 'a array) =
     forall (k : int).
       0 <= k -> k < len x -> get k x = get k y
 
-let copy ['a| r1 r2|] (ar : ref(r1,'a array)) = allocates r2
+let copy ['a| r1 r2|] (ar : ref(r1,'a array)) = 
   {}
   let l = len !ar in
-  if l == 0 then ref{{r2}} ar_empty
+  if l == 0 then ref(r2) ar_empty
   else
-    let r = ref{{r2}} (create l (get 0 !ar)) in
+    let r = ref(r2) (create l (get 0 !ar)) in
     (for i = 0 to l - 1 do
       { len !!r = l /\
         forall k.  0 <= k /\ k < i -> get k !!r = get k !!ar }

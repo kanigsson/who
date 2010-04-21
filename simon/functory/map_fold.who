@@ -15,7 +15,7 @@
 (**************************************************************************)
 
 (* ====================================
-data struct (* TODO *)
+data struct
 ======================================= *)
 
 (* ============ hash tables =========== *)
@@ -64,12 +64,6 @@ axiom list_tail ['a] :
   forall (l l2: 'a list) (x: 'a).
   l = Cons x l2 -> List.tail l = l2
 
-(*parameter fromCons ['a] (l : 'a list) : {} ('a * 'a list) =
-  { ~ (l = Nil) }
-  { res:
-    exists (x : 'a) (l2 : 'a list).
-    l = List.cons x l2 /\ res = (x, l2)
-  }*)
 
 (* spec of List.map. It takes a relationship rel in arg, which describe a bound between
 the arg list, the state before call, the state after call and the result list *)
@@ -87,6 +81,8 @@ parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop
       (* [[cur = s1 /\ rel l2 s2 s3 (List.tail res)]] f x [[r : r = List.head res /\ (cur = s2 -> rel l old s3 res)]]) TODO delete *)
     (* this means, roughly : rel (List.map f (tail l)) -> rel (List.map f l) *)
   }
+
+let empty_rel ['a 'b||'e] (l_old : 'a list) (s1:<'e>) (s2:<'e>) (l_res : b list) = True
 (*
   l =             [x]--------------->l2
   states : s1=old         s2               s3
@@ -105,7 +101,7 @@ axiom remove_does_remove ['a] :
   List.remove x (Cons x l) = l
 axiom remove_does_not_rampage ['a] :
   forall (x y : 'a) (l : 'a list).
-  ~(y=x) -> List.remove y (Cons x l) = Cons x (List.remove y l)
+  y <> x -> List.remove y (Cons x l) = Cons x (List.remove y l)
 axiom remove_empty ['a]:
   forall (x: 'a) (l : 'a list).
   l = Nil -> List.remove x l = Nil
@@ -153,6 +149,17 @@ axiom list_index_rec ['a]:
   forall (i : int) (x : 'a) (l l2: 'a list).
   i > 0 /\ i < List.length l -> l = Cons x l2 -> List.index i l = List.index (i-1) l2
 
+(* tests for those axioms *)
+goal g1 ['a] :
+  forall (x x2:'a) (l:'a list).
+    (List.length (Cons x (Cons x2 l)) >= 2 /\
+    List.length (Cons x (Cons x2 Nil)) = 2 /\
+    List.length (Cons x (Cons x2 (Cons x l))) = List.length l + 3 /\
+    List.remove x (Cons x l) = l /\
+    List.mem x l -> List.length (List.remove x l) < List.length l)
+goal g2 ['a 'b] :
+  forall (l:'a list)(f:'a -> 'b).
+  [[]] List.map [{}] (empty_rel [{}]) (fun (x:'a) ->{} f x {}) l [[res: List.length res = List.length l]]
 
 
 
@@ -267,6 +274,7 @@ tests
 ================================ *)
 
 (*
+
 let test1 (f : int -> b) (l : int list) =
   {
     exists (l2 : int list). l = Cons 1 l2
@@ -275,7 +283,7 @@ let test1 (f : int -> b) (l : int list) =
   let r = ref (t) 0 in
   let rel (l_old : int list) (s1:<t>) (s2:<t>) (l_res : b list) =
     (List.length l_old + !!r@s1 = List.length l_res + !!r@s2 /\
-    (( l_old <> Nil) -> !!r@s2 = !!r@s1 + 1) /\
+    ((l_old <> Nil) -> !!r@s2 = !!r@s1 + 1) /\
     !!r@s2 = List.length l_res) in
   let answer = List.map [{t}] rel (fun (x:int) ->{} incr r; f x {}) l in
   (answer, !r)
@@ -304,16 +312,19 @@ let test2 (l : int list) =
 computing strategies specifications
 ======================================== *)
 
+(*
 
 (* =============== map ============ *)
 let map (f : a -> b) (l : a list) =
-  {}
+  {
+  }
   letregion r in
   let tasks =
     let i = ref (r) 0 in
     let rel (l_old : a list) (s1:<r>) (s2:<r>) (l_res : (a*int) list) =
       !!i@s1 + List.length l_old = !!i@s2 + List.length l_res /\
-      !!i@s2 + List.length l_res = List.length l in
+      !!i@s2 + List.length l_res = List.length l /\
+      (l_res <> Nil -> snd (List.head l_res) = !!i@s2) in
     List.map [{r}] rel (fun (x:'a) -> {} incr i; x, !i {}) l in
   letregion r2 in
   let results = ref (r2) (Hashtbl.create 17) in
@@ -334,11 +345,13 @@ let map (f : a -> b) (l : a list) =
     (fun (tuple : a*int) -> {} results := !results; (* FIXME : dirty hack *) Hashtbl.find !results (snd tuple) {})
     tasks
   { res:
+    (l = Nil -> res = Nil) /\
     List.length res = List.length l /\
     [[]] List.map [{}] (fun (l_old : a list) (s1:< >) (s2:< >) (l_res : b list) -> True) (fun (x:a) ->{} f x {}) l [[ r : r = res ]] /\
     (forall (x:a). [[List.mem x l]] f x [[r : List.mem r res]])
   }
-(*
+
+
 
 (* ============= map_local_fold ========= *)
 logic logic_fold ['a 'b] : ('b -> 'a -> 'b) -> 'b -> 'a list -> 'b
