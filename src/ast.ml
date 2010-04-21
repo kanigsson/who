@@ -40,7 +40,8 @@ type node =
   obligatory *)
   | App of t * t
   | Lam of Name.t * Ty.t * funcbody
-  | Let of G.t * t * t Name.bind * isrec
+  | Let of G.t * t * t Name.bind
+  | LetRec of G.t * Ty.t * (t * t) Name.bind
   | PureFun of Ty.t * t Name.bind
   | Ite of t * t * t
   | Quant of [`FA | `EX ] * Ty.t * t Name.bind
@@ -83,7 +84,8 @@ let varmap ~varfun ~tyfun v =
   { var = varfun v.var ; scheme = g, tyfun t ;
     is_constr = v.is_constr ; fix = v.fix}
 
-let map ~varfun ~varbindfun ~patternbindfun ~tyfun ~rvarfun ~effectfun f =
+let map ~varfun ~varbindfun ~patternbindfun 
+        ~recbindfun ~tyfun ~rvarfun ~effectfun f =
   let rec aux' = function
     | (Const _ ) as t -> t
     | Param (t,e) -> Param (tyfun t, rwfun e)
@@ -93,7 +95,8 @@ let map ~varfun ~varbindfun ~patternbindfun ~tyfun ~rvarfun ~effectfun f =
     | Lam (x,t,b) -> Lam (x,tyfun t, body b )
     | LetReg (l,e) -> LetReg (l,aux e)
     | HoareTriple b -> HoareTriple (body b)
-    | Let (g,e1,b,r) -> Let (g,aux e1,varbindfun b, r)
+    | Let (g,e1,b) -> Let (g,aux e1,varbindfun b)
+    | LetRec (g,t,b) -> LetRec (g,tyfun t, recbindfun b)
     | PureFun (t,b) -> PureFun (tyfun t, varbindfun b)
     | Ite (e1,e2,e3) -> Ite (aux e1, aux e2, aux e3)
     | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
@@ -109,6 +112,7 @@ let refresh s t =
   map ~varfun:(Name.refresh s)
     ~varbindfun:(Name.refresh_bind s)
     ~patternbindfun:(Name.refresh_listbind s)
+    ~recbindfun:(Name.refresh_bind s)
     ~tyfun:Misc.id
     ~rvarfun:Misc.id
     ~effectfun:Misc.id t
@@ -131,12 +135,21 @@ let pattern_refresh s =
   pattern_map ~varfun:(Name.refresh s)
     ~tyfun:(Misc.id) ~rvarfun:Misc.id ~effectfun:Misc.id
 
+let rec_refresh s (t1,t2) = refresh s t1, refresh s t2
+
 let popen pb =
   let nvl, (p,t) =
     Name.open_listbind (fun s (p,t) -> pattern_refresh s p, refresh s t) pb in
   nvl, p, t
 
 let pclose nvl p t = Name.close_listbind nvl (p,t)
+
+let recopen b =
+  let v,(t1,t2) = Name.open_bind rec_refresh b in
+  v, t1, t2
+
+let recclose v t1 t2 =
+  Name.close_bind v (t1,t2)
 
 let var_equal v1 v2 =
   Name.equal v1.var v2.var && Ty.scheme_equal v1.scheme v2.scheme
@@ -151,7 +164,7 @@ let rec equal' a b =
   | Gen (g1,t1), Gen (g2,t2) ->
       G.equal g1 g2 && equal t1 t2
   | Ite (a1,b1,c1), Ite (a2,b2,c2) -> equal a1 a2 && equal b1 b2 && equal c1 c2
-  | Let (g1,ea1,b1,_), Let (g2,ea2,b2,_) ->
+  | Let (g1,ea1,b1), Let (g2,ea2,b2) ->
       G.equal g1 g2 && equal ea1 ea2 && bind_equal b1 b2
   | PureFun (t1,b1), PureFun (t2,b2) -> Ty.equal t1 t2 && bind_equal b1 b2
   | Quant (k1,t1,b1), Quant (k2,t2,b2) ->
@@ -226,7 +239,6 @@ module Convert = struct
   let inst env i = Inst.map (ty env) (id env) (effect env) i
   let rrec env r =
     match r with
-    | Const.LogicDef -> Const.LogicDef
     | Const.NoRec -> Const.NoRec
     | Const.Rec t -> Const.Rec (ty env t)
   let add_id = Name.Env.add_id
@@ -261,12 +273,18 @@ module Convert = struct
             let x,e = vopen b in
             let env = add_id env x in
             P.Quant (k,id env x, ty env at,t env e)
-        | Let (g,e1,b,r) ->
+        | Let (g,e1,b) ->
             let x, e2 = vopen b in
             let env', g = gen env g in
             let e1 = t env' e1 in
             let env = add_id env x in
-            P.Let (g,e1,id env x, t env e2, rrec env r)
+            P.Let (g,e1,id env x, t env e2, Const.NoRec)
+        | LetRec (g,targ,b) ->
+            let x, e1,e2 = recopen b in
+            let env = add_id env x in
+            let env', g = gen env g in
+            let e1 = t env' e1 in
+            P.Let (g,e1,id env x, t env e2, Const.Rec (ty env targ))
         | Ite (e1,e2,e3) -> P.Ite (t env e1, t env e2, t env e3)
         | Gen (g,e) ->
             let env, g = gen env g in
@@ -401,6 +419,8 @@ let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
   let rec aux t =
     map ~varfun
       ~varbindfun:(fun b -> let x,f = vopen b in close x (aux f))
+      ~recbindfun:(fun b ->
+        let x, e1, e2 = recopen b in recclose x (aux e1) (aux e2))
       ~patternbindfun:(fun pb ->
         let nvl, p,t = popen pb in pclose nvl p (aux t))
       ~tyfun ~rvarfun ~effectfun t
@@ -500,9 +520,13 @@ let domain t =
   | _ -> assert false
 
 let let_ g e1 x e2 r l =
-  true_or e2
-    (mk (Let (g, e1,Name.close_bind x e2,r)) e2.t
-      (Rw.union e1.e e2.e) l)
+  let rt = e2.t in
+  let eff = Rw.union e1.e e2.e in
+  match r with
+  | Const.Rec t ->
+      mk (LetRec (g, t, recclose x e1 e2)) rt eff l
+  | _ ->
+      true_or e2 (mk (Let (g, e1,Name.close_bind x e2)) rt eff l)
 
 let plam x t e loc =
   mk_val (PureFun (t,Name.close_bind x e)) (Ty.parr t e.t) loc
@@ -671,9 +695,12 @@ and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
       | Const _ -> t
       | Var (v,i) -> varfun v.var (inst i) t
       | App (t1,t2) -> app (aux t1) (aux t2) l
-      | Let (g,e1,b,r) ->
+      | Let (g,e1,b) ->
           let x,f = vopen b in
-          let_ g (aux e1) x (aux f) r l
+          let_ g (aux e1) x (aux f) Const.NoRec l
+      | LetRec (g,t,b) ->
+          let x,e1,e2 = recopen b in
+          let_ g (aux e1) x (aux e2) (Const.Rec t) l
       | PureFun (t,b) ->
           let x,f = vopen b in
           plam x (tyfun t) (aux f) l
@@ -933,7 +960,7 @@ let andlist l loc =
 let rec is_value x =
   match x.v with
   | Const _ | Var _ | Lam _ | PureFun _ | Quant _ | HoareTriple _ -> true
-  | Let _ | Ite _ | LetReg _ | Param _ | Case _ -> false
+  | Let _ | Ite _ | LetReg _ | Param _ | Case _ | LetRec _ -> false
   | Gen (_,e) -> is_value e
   | App (t1,_) ->
       match t1.t with

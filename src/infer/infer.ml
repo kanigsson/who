@@ -316,7 +316,7 @@ and pattern env exp p =
 and letgen env x g e r =
   let env' =
     match r with
-    | Const.NoRec | Const.LogicDef -> env
+    | Const.NoRec -> env
     | Const.Rec ty -> Env.add_svar env x (M.from_ty ty) in
   let e = infer env' e in
   Env.add_var env x g e.t, e

@@ -38,9 +38,12 @@ and normalize e k =
   | PureFun (t,b)->
       let x,e = vopen b in
       k (plam x t (normalize_term e) loc)
-  | Let (g,e1,b,r) ->
+  | Let (g,e1,b) ->
       let x,e2 = vopen b in
-      normalize e1 (fun v -> let_ g v x (normalize e2 k) r loc)
+      normalize e1 (fun v -> let_ g v x (normalize e2 k) Const.NoRec loc)
+  | LetRec (g,t,b) ->
+      let x,e1,e2 = recopen b in
+      normalize e1 (fun v -> let_ g v x (normalize e2 k) (Const.Rec t) loc)
   | LetReg (l,e) -> k (letreg l (normalize_term e) loc)
   | Gen (g,e) -> k (gen g (normalize_term e) loc)
   | Quant (kind,t,b) ->

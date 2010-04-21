@@ -72,7 +72,10 @@ let rec recon' loc = function
   | I.Lam (x,ot,(p,e,q)) -> Lam (x,ot, (recon p, recon e, recon q))
   | I.Param (t,e) -> Param (t,e)
   | I.Let (g,e1,x,e2,r) ->
-      Let (g, recon e1, Name.close_bind x (recon e2),r)
+      begin match r with
+      | Const.Rec t -> LetRec (g, t, recclose x (recon e1) (recon e2))
+      | Const.NoRec -> Let (g, recon e1, Name.close_bind x (recon e2))
+      end
   | I.Ite (e1,e2,e3) -> Ite (recon e1, recon e2, recon e3)
   | I.For (dir,inv,i,st,en,body) ->
       let bdir = match dir with "forto" -> true|_ -> false in

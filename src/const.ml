@@ -31,7 +31,6 @@ type ty =
   | TProp
 
 type 'a isrec =
-  | LogicDef
   | NoRec
   | Rec of 'a
 

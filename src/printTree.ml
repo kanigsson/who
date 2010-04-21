@@ -447,7 +447,6 @@ module Who = struct
   let prrec fmt = function
     | Const.NoRec -> ()
     | Const.Rec t -> fprintf fmt "rec(%a) " ty t
-    | Const.LogicDef -> fprintf fmt "logic "
 
   let rec term fmt t =
     match t with
@@ -531,7 +530,7 @@ module Who = struct
         fprintf fmt "@[<hov 2>section %s @\n %a@] end" s theory d
     | Program (x,g,t,r) ->
         begin match r with
-        | Const.NoRec | Const.LogicDef ->
+        | Const.NoRec ->
             fprintf fmt "@[<hov 2>let@ %a %a = %a @]" string x gen g term t
         | Const.Rec recty ->
             let _,eff,rt = nsplit recty in
