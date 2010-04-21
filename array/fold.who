@@ -15,7 +15,7 @@ let fold_left ['a 'b|r|'e]
     forall (z : 'b). [[ inv cur i z]] f z (get i !ar) [[ r : inv cur (i+1) r]]
   }
   letregion loc in
-  let acc = ref{{loc}} acc in
+  let acc = ref(loc) acc in
   for index = 0 to len !ar - 1 do
     { inv cur@{r 'e} index !!acc }
     acc := f !acc (get index !ar)

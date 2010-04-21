@@ -23,17 +23,16 @@ axiom set_equal ['a] :
 
 let init ['a|out| 'e]
   (inv : <'e> -> 'a array -> int -> prop ) (l : int) (f : int ->{'e} 'a) =
-    allocates out
   { 0 <= l /\ inv cur@{'e} ar_empty 0 /\
      [[ ]] f 0 [[ r : forall (k : 'a array). inv cur (sub (set 0 r k) 1) 1 ]] /\
     forall (k : 'a array) (i:int).
       1 <= i /\ i < l ->
     [[ inv cur (sub k i) i ]] f i [[ r: inv cur (sub (set i r k) (i+1)) (i+1) ]]
       }
-  if l == 0 then ref{{out}} ar_empty
+  if l == 0 then ref(out) ar_empty
   else
     let k = f 0 in
-    let res = ref{{out}} (create l k) in
+    let res = ref(out) (create l k) in
     assert ( !res = set 0 k !res);
     let z =
       for i = 1 to l - 1 do
