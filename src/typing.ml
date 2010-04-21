@@ -141,7 +141,8 @@ let rec formtyping' env loc = function
       begin try
         let g, t = ftype_of_var loc env s in
         let r = Ty.allsubst g i t in
-(*         printf "var : %a of type %a@." Vars.var s Ty.print r; r *)
+(*         Myformat.printf "var : %a of type %a@." Name.print s.var Ty.print r;
+ *         *)
         r
       with Not_found -> error loc (Unboundvar s.var)
       end
@@ -178,9 +179,7 @@ let rec formtyping' env loc = function
       to_logic_type (arrow t t' eff)
   | Gen (_,e)-> formtyping env e
   | Let (g,e1,b) ->
-      Myformat.printf "formlet@.";
       let x,e2 = vopen b in
-(*       Myformat.printf "let: %a@." Name.print x; *)
       let t = formtyping env e1 in
       let env = Env.add_var env x g t in
       let t = formtyping env e2 in

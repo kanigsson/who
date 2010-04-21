@@ -1,0 +1,28 @@
+type unit
+logic tt  : unit
+logic /\  : prop -> prop -> prop
+logic \/  : prop -> prop -> prop
+logic ->  : prop -> prop -> prop
+logic mk_2tuple ['a 'b||] : a -> b -> a * b
+logic get_2_1_tuple ['a 'b||] : (a * b) -> a
+logic get_2_2_tuple ['a 'b||] : (a * b) -> b
+logic combine [||'e 'e1 'e2] : < 'e 'e1> -> < 'e1 'e2> -> < 'e 'e1 'e2>
+logic restrict [||'e 'e1] : < 'e 'e1> -> < 'e1>
+logic empty  : < >
+type list ['a] = 
+| Nil
+| Cons of 'a * 'a list
+
+let rev_map ['a 'b||'e] (f:a ->{  +  'e} b) (l:list[a]) =
+  {}
+  let rec aux (acc:list[b]) (l1:list[a]) : 'b list,{'e} =
+    {}
+    match l1 with
+      Nil -> acc
+    | Cons(x,xs) ->
+       let anf = f x in aux (Cons anf acc) xs
+    end 
+  {}
+  in
+  aux Nil l
+  {}

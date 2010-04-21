@@ -47,9 +47,11 @@ let rec lift_value v =
   | Var (v,i) -> var (lift_var v) (lift_inst i) l
   | Const _ -> v
   | App (v1,v2) -> app (lift_value v1) (lift_value v2) l
-  | PureFun (t,(_,x,e)) ->
+  | PureFun (t,b) ->
+      let x, e = vopen b in
       plam x (ty t) (lift_value e) l
-  | Quant (k,t,(_,x,e)) ->
+  | Quant (k,t,b) ->
+      let x, e = vopen b in
       squant k x (ty t) (lift_value e) l
   | Lam (x,t,(p,_,q)) ->
       let t = ty t in
@@ -73,7 +75,9 @@ and correct v =
   | Var _ | Const _ | Quant _ -> ptrue_ l
   | App (v1,v2) -> and_ (correct v1) (correct v2) l
   | Lam (x,t,(p,e,q)) -> sforall x (ty t) (bodyfun p e q) l
-  | PureFun (t,(_,x,e)) -> sforall x (ty t) (correct e) l
+  | PureFun (t,b) ->
+      let x, e = vopen b in
+      sforall x (ty t) (correct e) l
   | Let (g,e1,b) ->
       let x,e2 = vopen b in
       and_ (gen g (correct e1) l)
@@ -145,7 +149,8 @@ and wp m q e =
     | LetRec (g,_,b) ->
         let x,e1,e2 = recopen b in
         let lv = lift_value e1 in
-        let f = gen g (correct e1) l in
+        let corr = correct e1 in
+        let f = gen g corr l in
         let wp = wp_node m q e2 in
         let_ g lv x (and_ f wp l) Const.NoRec l
     | Ite (c,th,el) -> ite (lift_value c) (wp_node m q th) (wp_node m q el) l
@@ -184,7 +189,7 @@ let to_inst g =
 let rec decl d =
   match d with
   | TypeDef _ | Inductive _
-  | Program (_,_,_,Const.NoRec) | DGen _ | Decl _ -> [d]
+  | DGen _ | Decl _ -> [d]
   | Logic (n,s) -> [ Logic (n,scheme s) ]
   | Formula (n,f,k) -> [Formula (n,scan f, k) ]
   | DLetReg rl ->
