@@ -75,16 +75,17 @@ axiom list_tail ['a] :
 the arg list, the state before call, the state after call and the result list *)
 parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop) (f : 'a ->{'e} 'b) (l : 'a list) : {'e} 'b list =
   {
+    (forall (l:'a list). l = Nil -> rel l cur cur Nil) /\
     (~ (l = Nil) -> pre f (List.head l) cur) /\ (* precondition of f on head of list *)
-    (forall (x2 : 'a) (l1 l2 : 'a list) (res_l2 : 'b list) (s0 s1 s2:<'e>). l1 = Cons x2 l2 ->
-      [[cur = s0 /\ rel l2 s1 s2 res_l2]] f x2 [[res : cur = s1 -> rel l1 s0 s2 (Cons res res_l2)]]) (* propagate relationship *)
+    (forall (x2 : 'a) (l2 : 'a list) (res_l2 : 'b list) (s2:<'e>). l = Cons x2 l2 ->
+      [[]] f x2 [[res : rel l2 cur s2 res_l2 -> rel l old s2 (Cons res res_l2)]]) (* propagate relationship *)
   }
   { res:
-    (l = Nil -> res = Nil /\ cur = old /\ rel l cur cur res) /\ (* terminal case *)
-    ~ (l=Nil) -> ((~ (res = Nil)) /\
-      rel l old cur res)
+    (l = Nil -> res = Nil /\ cur = old) /\ (* terminal case *)
+    (~ (l=Nil) -> (~ (res = Nil))) /\
+    rel l old cur res
       (* [[cur = s1 /\ rel l2 s2 s3 (List.tail res)]] f x [[r : r = List.head res /\ (cur = s2 -> rel l old s3 res)]]) TODO delete *)
-      (* this means, roughly : rel (List.map f (tail l)) -> rel (List.map f l) *)
+    (* this means, roughly : rel (List.map f (tail l)) -> rel (List.map f l) *)
   }
 (*
   l =             [x]--------------->l2
@@ -100,8 +101,14 @@ parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop
 *)
 
 axiom remove_does_remove ['a] :
-  forall (x : 'a) (l l2 : 'a list).
-  l = Cons x l2 -> List.remove x l = l2
+  forall (x : 'a) (l : 'a list).
+  List.remove x (Cons x l) = l
+axiom remove_does_not_rampage ['a] :
+  forall (x y : 'a) (l : 'a list).
+  ~(y=x) -> List.remove y (Cons x l) = Cons x (List.remove y l)
+axiom remove_empty ['a]:
+  forall (x: 'a) (l : 'a list).
+  l = Nil -> List.remove x l = Nil
 axiom append_does_append ['a] :
   forall (l1 l2 : 'a list) (x : 'a).
   (List.mem x l1 -> List.mem x (List.append l1 l2)) /\
@@ -112,6 +119,9 @@ axiom append_cons_list ['a] :
 axiom append_list_list ['a] :
   forall (x:'a) (l1 l2 l3: 'a list).
   l1 = Cons x l2 -> List.append l1 l3 = Cons x (List.append l2 l3)
+axiom list_length_nil ['a]:
+  forall (l : 'a list).
+  l = Nil -> List.length l = 0
 axiom list_length_map ['a 'b||'e]:
   forall (l:'a list) (f:'a ->{'e} 'b) (rel: 'a list -> <'e> -> <'e> -> 'b list -> prop).
   [[]] List.map [{'e}] rel f l [[res : List.length l = List.length res]]
@@ -122,8 +132,11 @@ axiom list_index_map ['a 'b||'e] :
   [[]] List.map [{'e}] rel f l [[res: [[]] f (List.index i l)[[r : r = List.index i res]] ]]
 axiom list_not_empty_is_cons ['a]:
   forall (l:'a list).
-  (l=Nil) \/ exists (x:'a) (l2:'a list).
+  (~ (l=Nil)) -> exists (x:'a) (l2:'a list).
     (l = Cons x l2)
+axiom list_not_cons_is_empty ['a]:
+  forall (l : 'a list).
+  (forall (x : 'a) (l2 : 'a list). ~ (l = Cons x l2)) -> l = Nil
 axiom list_cons_mem ['a]:
   forall (x:'a) (l:'a list).
   List.mem x (Cons x l)
@@ -253,6 +266,7 @@ parameter X.compute ['c||'e]
 tests
 ================================ *)
 
+(*
 let test1 (f : int -> b) (l : int list) =
   {
     exists (l2 : int list). l = Cons 1 l2
@@ -261,33 +275,35 @@ let test1 (f : int -> b) (l : int list) =
   let r = ref (t) 0 in
   let rel (l_old : int list) (s1:<t>) (s2:<t>) (l_res : b list) =
     (List.length l_old + !!r@s1 = List.length l_res + !!r@s2 /\
-    !!r@s2 = !!r@s1 + 1 /\ !!r@s2 = List.length l_res+1) in
+    (( l_old <> Nil) -> !!r@s2 = !!r@s1 + 1) /\
+    !!r@s2 = List.length l_res) in
   let answer = List.map [{t}] rel (fun (x:int) ->{} incr r; f x {}) l in
   (answer, !r)
   {res:
-    (*snd res = List.length l+1 /\*)
-    exists (l2 : int list). l = Cons 1 l2 ->
+    snd res = List.length l /\
+    (exists (l2 : int list). l = Cons 1 l2) ->
       let rel (l_old : int list) (s1:< >) (s2:< >) (l_res : b list) = True in
-      [[]] List.map [{}] rel (fun (x:int) ->{} f x {}) l2 [[r: (fst res) = Cons (f 1) r]]
+      [[]] List.map [{}] rel (fun (x:int) ->{} f x {}) (List.tail l) [[r: (fst res) = Cons (f 1) r]]
   }
-(*
+
 let test2 (l : int list) =
   {}
   letregion t in
   let r = ref(t) 0 in
   let rel (l_old : int list) (s1:<t>) (s2:<t>) (l_res : int list) =
-    List.length l_old + !!r@s1 = List.length l_res + !!r@s2 in
+    List.length l_old + !!r@s1 = List.length l_res + !!r@s2 /\
+    List.length l_old + !!r@s1 = List.length l in
   List.map [{t}] rel (fun (x:int) ->{} r := !r + 1; !r {}) l
   { res:
     forall (j:int).
     0 <= j /\ j < List.length l -> List.index j res = j+1
   }
 *)
+
 (* =====================================
 computing strategies specifications
 ======================================== *)
 
-(*
 
 (* =============== map ============ *)
 let map (f : a -> b) (l : a list) =
@@ -295,8 +311,10 @@ let map (f : a -> b) (l : a list) =
   letregion r in
   let tasks =
     let i = ref (r) 0 in
-    let inv (s:<r>) (ll:a list) = !!i@s + List.length ll = List.length l in
-    List.map [{r}] inv (fun (x:'a) -> {} incr i; x, !i {}) l in
+    let rel (l_old : a list) (s1:<r>) (s2:<r>) (l_res : (a*int) list) =
+      !!i@s1 + List.length l_old = !!i@s2 + List.length l_res /\
+      !!i@s2 + List.length l_res = List.length l in
+    List.map [{r}] rel (fun (x:'a) -> {} incr i; x, !i {}) l in
   letregion r2 in
   let results = ref (r2) (Hashtbl.create 17) in
   let inv (s : <r2>) (l1 : (a * int) list) = (* invariant *)
@@ -309,15 +327,18 @@ let map (f : a -> b) (l : a list) =
     f
     (fun (tuple : (a*int)) (r : b) ->{} Hashtbl.add results (snd tuple) r; Nil {})
     tasks;
+  let rel (l_old : (a*int) list) (s1:<r2>) (s2:<r2>) (l_res : b list) =
+    l_res <> Nil -> (snd (List.head l_old)) + List.length l_res = List.length l in
   List.map [{r2}]
-    (fun (s:<r2>) (ll:(a*int) list) -> (~(ll=Nil) -> (snd (fst (fromCons ll))) + List.length ll = List.length l + 1))
+    rel
     (fun (tuple : a*int) -> {} results := !results; (* FIXME : dirty hack *) Hashtbl.find !results (snd tuple) {})
     tasks
   { res:
     List.length res = List.length l /\
-    [[]] List.map [{}] (fun (s:< >)(ll:a list) -> True) (fun (x:a) ->{} f x {}) l [[ r : r = res ]] /\
+    [[]] List.map [{}] (fun (l_old : a list) (s1:< >) (s2:< >) (l_res : b list) -> True) (fun (x:a) ->{} f x {}) l [[ r : r = res ]] /\
     (forall (x:a). [[List.mem x l]] f x [[r : List.mem r res]])
   }
+(*
 
 (* ============= map_local_fold ========= *)
 logic logic_fold ['a 'b] : ('b -> 'a -> 'b) -> 'b -> 'a list -> 'b

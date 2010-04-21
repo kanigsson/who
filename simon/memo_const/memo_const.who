@@ -42,7 +42,7 @@ let memo_const ['a ||] (arg : 'a) =
   if !res == None
     then
       letregion t' in
-      let w = ref {{ t' }} false in
+      let w = ref( t') false in
 
       (* fonction témoin constante *)
       let g (z : unit) =
