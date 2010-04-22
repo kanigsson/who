@@ -54,20 +54,20 @@ logic List.index ['a] : int -> 'a list -> 'a
 (* spec of List.map. It takes a relationship rel in arg, which describe a bound between
 the arg list, the state before call, the state after call and the result list *)
 parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop) (f : 'a ->{'e} 'b) (l : 'a list) : {'e} 'b list =
-  {
+  { (*
     match l with
-    | Nil -> (rel l cur cur Nil)
+    | Nil -> rel l cur cur Nil
     | Cons (head,tail) -> (pre f head cur /\ (* precondition of f on head of list *)
       (forall (res_tail : 'b list) (s2:<'e>).
         [[]] f head [[res : rel tail cur s2 res_tail -> rel l old s2 (Cons res res_tail)]])) (* propagate relationship *)
-    end
+    end *)
   }
-  { res:
+  { (*res:
     match l with
     | Nil -> res = (Nil:'b list) /\ cur = old
     | Cons (head,tail) -> (res <> (Nil:'b list) /\
       rel l old cur res)
-    end
+    end *)
     (* this means, roughly : rel (List.map f (tail l)) -> rel (List.map f l) *)
   }
 
@@ -121,20 +121,12 @@ axiom list_length_map ['a 'b||'e]:
 goal blih : 
   forall (l:int list).
   List.length l < List.length (Cons 1 l)
-(*
 
 (* (map f l)[i] = f l[i] *)
 axiom list_index_map ['a 'b||'e] :
   forall (x:'a) (l:'a list) (i:int) (f:'a ->{'e} 'b) (rel: 'a list -> <'e> -> <'e> -> 'b list -> prop).
   i >= 0 /\ i < List.length l ->
   [[]] List.map [{'e}] rel f l [[res: [[]] f (List.index i l)[[r : r = List.index i res]] ]]
-axiom list_not_empty_is_cons ['a]:
-  forall (l:'a list).
-  (~ (l=Nil)) -> exists (x:'a) (l2:'a list).
-    (l = Cons x l2)
-axiom list_not_cons_is_empty ['a]:
-  forall (l : 'a list).
-  (forall (x : 'a) (l2 : 'a list). ~ (l = Cons x l2)) -> l = Nil
 axiom list_cons_mem ['a]:
   forall (x:'a) (l:'a list).
   List.mem x (Cons x l)
@@ -145,15 +137,24 @@ axiom list_cons_length_tail ['a]:
   forall (x:'a) (l:'a list).
   (List.length (Cons x l) = List.length l + 1)
 axiom list_index ['a]:
-  forall (i : int) (x : 'a) (l l2: 'a list).
-  i = 0 -> l = Cons x l2 -> List.index i l = x
+  forall (i : int) (l: 'a list).
+  match l with
+  | Cons (x, l2) -> i = 0 -> List.index i l = x
+  end
 axiom list_index_rec ['a]:
-  forall (i : int) (x : 'a) (l l2: 'a list).
-  i > 0 /\ i < List.length l -> l = Cons x l2 -> List.index i l = List.index (i-1) l2
+  forall (i : int) (l:'a list).
+  match l with
+  | Cons (x, l2) -> i > 0 /\ i < List.length l -> List.index i l = List.index (i-1) l2
+  end
 axiom list_mem_inverse ['a] :
   forall (x x2:'a) (l l2:'a list).
-  ~ (List.mem x l) -> l = Cons x2 l2 ->
-  x2 <> x /\ ~ (List.mem x l2)
+  match l with
+  | Cons (x2, l2) -> ~ (List.mem x l) ->
+    (x2 <> x /\ ~ (List.mem x l2))
+  end
+
+
+(*
 
 (* tests for those axioms *)
 goal g1 ['a] :
