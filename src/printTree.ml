@@ -312,47 +312,54 @@ module Pangoline = struct
     if par then paren p else p
   let binder fmt b = binder' true fmt b
 
-  let rec term fmt t =
+  let rec term env fmt t =
     match t with
     | Const c -> Const.print `Pangoline fmt c
     | App (App (Var(v,i,_,`Infix),t1),t2) ->
-        fprintf fmt "@[%a@ %a%a@ %a@]" with_paren t1 string v inst i
-          with_paren t2
+        fprintf fmt "@[%a@ %a%a@ %a@]" (with_paren env) t1 string v inst i
+          (with_paren env) t2
     | App (t1,t2) ->
-          fprintf fmt "@[%a@ %a@]" term t1 with_paren t2
+          fprintf fmt "@[%a@ %a@]" (term env) t1 (with_paren env) t2
     | Ite (e1,e2,e3) ->
-        fprintf fmt "@[if %a then@ %a else@ %a@]" term e1 term e2 term e3
+        fprintf fmt "@[if %a then@ %a else@ %a@]" (term env) e1 (term env) e2
+          (term env) e3
     | PureFun (x,t,e) ->
-        fprintf fmt "@[(fun %a@ ->@ %a)@]" binder (x,t) term e
+        fprintf fmt "@[(fun %a@ ->@ %a)@]" binder (x,t) (term env) e
     | Let (g,e1,x,e2,_) ->
         fprintf fmt "@[let@ %a %a=@[@ %a@]@ in@ %a@]" string x gen g
-          term e1 term e2
+          (term env) e1 (term env) e2
     | Var (v,i,_,_) ->
+        let i =
+          let x,tl = env in
+          if v = x then List.map (fun x -> TApp (x,[])) tl,[],[] else i in
         let pr fmt () =
           if is_empty i then string fmt v
           else fprintf fmt "%a %a" string v inst i in
         if Identifiers.is_infix_id v then paren pr fmt () else pr fmt ()
     | Quant (k,x,t,e) ->
-        fprintf fmt "@[%a %a.@ %a@]" Const.quant k binder (x,t) term e
+        fprintf fmt "@[%a %a.@ %a@]" Const.quant k binder (x,t) (term env) e
     | Gen ((tl,_,_) as g,t) ->
-        if is_empty g then term fmt t else
-          fprintf fmt "forall type %a. %a" (list space string) tl term t
+        if is_empty g then (term env) fmt t else
+          fprintf fmt "forall type %a. %a" (list space string) tl (term env) t
     | Case (t,bl) ->
-        fprintf fmt "@[case %a of @[%a@] end @]" term t
-          (list inductive_sep branch) bl
+        fprintf fmt "@[case %a of @[%a@] end @]" (term env) t
+          (list inductive_sep (branch env)) bl
     (* specific to Who, will not be printed in backends *)
     | Param _ | HoareTriple _ | LetReg _ | Lam _ | Get _ | PRef _ ->
         assert false
-  and with_paren fmt x =
-    if is_compound_term x then paren term fmt x else term fmt x
-  and branch fmt (p,t) =
-    fprintf fmt "%a@ ->@ @[ %a @]" pattern p term t
+  and with_paren env fmt x =
+    if is_compound_term x then paren (term env) fmt x else (term env) fmt x
+  and branch env fmt (p,t) =
+    fprintf fmt "%a@ ->@ @[ %a @]" pattern p (term env) t
   and pattern fmt p =
     match p with
     | PVar v -> string fmt v
     | PApp (v,_,pl) ->
         if pl = [] then fprintf fmt "%a" string v
         else fprintf fmt "%a(%a)" string v (list comma pattern) pl
+
+  let inductive_term = term
+  let term = term ("",[])
 
   let pr_generalize in_term fmt tl =
     if tl = [] then ()
@@ -390,9 +397,10 @@ module Pangoline = struct
           fprintf fmt "@[<hov 2>type %a %a = | %a @]"
             (paren (list comma string)) tl string n
             (list inductive_sep constdef) bl
-    | Inductive (n,g,tyl, fl) ->
-        fprintf fmt "@[<hov 2>inductive %a %a %a = %a@]" string n gen g
-          (list space ty) tyl (list inductive_sep induct_branch) fl
+    | Inductive (n,(tl,_,_),tyl, fl) ->
+        fprintf fmt "@[<hov 2>inductive %a %a %a = %a@]"
+          (paren (list space string)) tl string n (list space ty) tyl
+          (list inductive_sep (induct_branch (n,tl))) fl
     | DLetReg _ -> assert false
     | Section (_,d, `Block cl) ->
         let choice = List.fold_left (fun acc (p,c) ->
@@ -413,7 +421,7 @@ module Pangoline = struct
     if tl = [] then string fmt c
     else fprintf fmt "%a of %a" string c (list consttysep ty) tl
   and theory fmt t = list newline decl fmt t
-  and induct_branch fmt (_,t) = term fmt t
+  and induct_branch env fmt (_,t) = inductive_term env fmt t
 end
 
 module Who = struct

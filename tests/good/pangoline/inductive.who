@@ -1,0 +1,14 @@
+logic List.mem ['a] : 'a -> 'a list -> prop
+
+inductive ind_list_mem ['a] ('a * 'a list) =
+ | base_mem : forall (x:'a) (l:'a list). ind_list_mem (x, (Cons x l))
+ | rec_mem : forall (x y:'a) (l:'a list). ind_list_mem (x, l) -> ind_list_mem
+  (x, (Cons y l))
+ end
+
+ axiom list_mem_inductive ['a]:
+  forall (x:'a) (l:'a list).
+   ind_list_mem (x, l) -> List.mem x l /\
+    List.mem x l -> ind_list_mem (x, l)
+
+goal a : False
