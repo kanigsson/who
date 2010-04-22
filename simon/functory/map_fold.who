@@ -45,29 +45,28 @@ axiom hashtbl_add_find ['a 'b|r|] :
 
 
 (* ============ lists ============= *)
-logic List.mem ['a] : 'a -> 'a list -> prop
-logic List.remove ['a] : 'a -> 'a list -> 'a list
-logic List.length ['a] : 'a list -> int
 logic List.append ['a] : 'a list -> 'a list -> 'a list
 logic List.index ['a] : int -> 'a list -> 'a
+logic List.remove ['a] : 'a -> 'a list -> 'a list
+logic List.length ['a] : 'a list -> int
 
 (* spec of List.map. It takes a relationship rel in arg, which describe a bound between
 the arg list, the state before call, the state after call and the result list *)
 parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop) (f : 'a ->{'e} 'b) (l : 'a list) : {'e} 'b list =
-  { (*
+  { 
     match l with
     | Nil -> rel l cur cur Nil
     | Cons (head,tail) -> (pre f head cur /\ (* precondition of f on head of list *)
       (forall (res_tail : 'b list) (s2:<'e>).
         [[]] f head [[res : rel tail cur s2 res_tail -> rel l old s2 (Cons res res_tail)]])) (* propagate relationship *)
-    end *)
+    end
   }
-  { (*res:
+  { res:
     match l with
     | Nil -> res = (Nil:'b list) /\ cur = old
     | Cons (head,tail) -> (res <> (Nil:'b list) /\
       rel l old cur res)
-    end *)
+    end 
     (* this means, roughly : rel (List.map f (tail l)) -> rel (List.map f l) *)
   }
 
@@ -86,13 +85,40 @@ let empty_rel ['a 'b||'e] (l_old : 'a list) (s1:<'e>) (s2:<'e>) (l_res : b list)
                   rel l old s2 res
 *)
 
-axiom remove_does_remove ['a] :
+(* inductive for membership *)
+inductive List.mem ['a] 'a, 'a list =
+  | base_mem : forall (x:'a) (l:'a list). List.mem x (Cons x l)
+  | rec_mem : forall (x y:'a) (l:'a list). List.mem x l -> List.mem x (Cons y l)
+  end
+
+inductive ind_list_rem ['a] ('a * 'a list * 'a list) =
+  | base_success : forall (x:'a)(l:'a list). ind_list_rem (x, (Cons x l), l)
+  | base_failure : forall (x y:'a)(l l2:'a list). x <> y -> 
+      ind_list_rem (x, l, l2) -> ind_list_rem (x, (Cons y l), (Cons y l2))
+  | base_nil : forall (x:'a). ind_list_rem (x, Nil, Nil)
+  end
+axiom list_remove_ind ['a]:
+  forall (x:'a) (l l2:'a list).
+  (ind_list_rem (x, l, l2) -> List.remove x l = l2) /\
+  (List.remove x l = l2 -> ind_list_rem (x, l, l2))
+
+inductive ind_list_len ['a] ('a list * int) =
+  | base : ind_list_len (Nil, 0)
+  | recur : forall (x:'a) (l:'a list) (n:int). 
+      ind_list_len (l, n) -> ind_list_len (Cons x l, n+1)
+  end
+axiom list_length_ind ['a]:
+  forall (l:'a list) (n:int).
+  (ind_list_len (l, n) -> List.length l = n) /\
+  (List.length l = n -> ind_list_len (l, n))
+
+lemma remove_does_remove ['a] :
   forall (x : 'a) (l : 'a list).
   List.remove x (Cons x l) = l
-axiom remove_does_not_rampage ['a] :
+lemma remove_does_not_rampage ['a] :
   forall (x y : 'a) (l : 'a list).
   y <> x -> List.remove y (Cons x l) = Cons x (List.remove y l)
-axiom remove_empty ['a]:
+lemma remove_empty ['a]:
   forall (x: 'a) (l : 'a list).
   l = Nil -> List.remove x l = Nil
 axiom append_does_append ['a] :
@@ -109,10 +135,10 @@ axiom append_list_list ['a] :
   match l1 with
   | Cons (x, l2) -> List.append l1 l3 = Cons x (List.append l2 l3)
   end
-axiom list_length_nil ['a]:
+lemma list_length_nil ['a]:
   forall (l : 'a list).
   l = Nil -> List.length l = 0
-axiom list_length_pos ['a] :
+lemma list_length_pos ['a] :
   forall (l:'a list).
   List.length l >= 0
 axiom list_length_map ['a 'b||'e]:
@@ -154,7 +180,6 @@ axiom list_mem_inverse ['a] :
   end
 
 
-(*
 
 (* tests for those axioms *)
 goal g1 ['a] :
@@ -165,13 +190,10 @@ goal g2 ['a] :
   List.length (Cons x (Cons x2 Nil)) = 2
 goal g3 ['a] :
   forall (x x2:'a) (l:'a list).
-  List.length (Cons x (Cons x2 (Cons x l))) = List.length l + 4 (* FIXME !!! this is false !!! *)
+  List.length (Cons x (Cons x2 (Cons x l))) = List.length l + 3
 goal g4 ['a] :
   forall (x x2:'a) (l:'a list).
   List.remove x (Cons x l) = l
-goal g5 ['a] :
-  forall (x:'a) (l l2:'a list).
-  l = Cons x l2 -> List.head l = x /\ List.tail l = l2
 goal g6 ['a] :
   forall (l:'a list).
   l = Nil \/ (List.length l >= 1)
@@ -186,6 +208,7 @@ goal g7 ['a] :
   forall (x:'a) (l:'a list).
   ~ (List.mem x l) -> List.remove x l = l
 
+(*
 *)
 
 (* =========== refs ========== *)
@@ -200,25 +223,6 @@ type map_or_fold ['a 'b] =
   | Map of 'a
   | Fold of 'b
 
-logic is_map ['a 'b] : ('a, 'b) map_or_fold -> prop
-logic is_fold ['a 'b] : ('a, 'b) map_or_fold -> prop
-axiom is_map_map ['a 'b] :
-  forall (x : 'a) (y : ('a, 'b) map_or_fold).
-  y = Map x -> (is_map y /\ ~(is_fold y))
-axiom is_not_map_fold ['a 'b] :
-  forall (x : 'b) (y : ('a, 'b) map_or_fold).
-  y = Fold x -> ((~ (is_map y)) /\ is_fold y)
-
-logic fromMap ['a 'b] : (('a, 'b) map_or_fold) -> 'a
-logic fromFold ['a 'b] : (('a, 'b) map_or_fold) -> 'b
-axiom from_map ['a 'b] :
-  forall (x : ('a, 'b) map_or_fold) (y : 'a).
-  is_map x -> x = Map y -> (fromMap x = y)
-axiom from_fold ['a 'b] :
-  forall (x : ('a, 'b) map_or_fold) (y : 'b).
-  is_fold x -> x = Fold y -> (fromFold x = y)
-
-
 
 parameter map_fold_wrapper ['a 'b 'c 'd 'e]
   (map : ('a -> 'e))
@@ -226,8 +230,10 @@ parameter map_fold_wrapper ['a 'b 'c 'd 'e]
   (truc : ('a, ('b * 'c)) map_or_fold) : {} ('e, 'd) map_or_fold =
   {}
   { res:
-    ((is_map truc) -> res = Map (map (fromMap truc))) /\
-    ((is_fold truc) -> res = Fold (fold (fst (fromFold truc)) (snd (fromFold truc))))
+    match truc with 
+    | Map m -> res = Map (map m)
+    | Fold f ->  res = Fold (fold (fst f) (snd f))
+    end
   }
 
 parameter map_fold_wrapper2 ['a 'b 'c 'd 'e]
@@ -236,19 +242,11 @@ parameter map_fold_wrapper2 ['a 'b 'c 'd 'e]
   (truc : ('a, ('b * 'c)) map_or_fold) : {} 'd =
   {}
   { res:
-    (is_map truc -> res = map (fromMap truc)) /\
-    (is_fold truc -> res = fold (fst (fromFold truc)) (snd (fromFold truc)))
+    match truc with 
+    | Map m -> res = map m
+    | Fold f -> res = (fold (fst f) (snd f))
+    end
   }
-
-(*
-let map_fold_wrapper map fold = function
-  | Map x -> Map (map x)
-  | Fold (x, y) -> Fold (fold x y)
-
-let map_fold_wrapper2 map fold = function
-  | Map x -> map x
-  | Fold (x, y) -> fold x y
-*)
 
 (* =============================
 master and worker specs
