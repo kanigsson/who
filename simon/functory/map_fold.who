@@ -137,6 +137,9 @@ axiom append_list_list ['a] :
 axiom list_length_nil ['a]:
   forall (l : 'a list).
   l = Nil -> List.length l = 0
+axiom list_length_pos ['a] :
+  forall (l:'a list).
+  List.length l >= 0
 axiom list_length_map ['a 'b||'e]:
   forall (l:'a list) (f:'a ->{'e} 'b) (rel: 'a list -> <'e> -> <'e> -> 'b list -> prop).
   [[]] List.map [{'e}] rel f l [[res : List.length l = List.length res]]
@@ -181,10 +184,16 @@ goal g2 ['a] :
   List.length (Cons x (Cons x2 Nil)) = 2
 goal g3 ['a] :
   forall (x x2:'a) (l:'a list).
-  List.length (Cons x (Cons x2 (Cons x l))) = List.length l + 4
+  List.length (Cons x (Cons x2 (Cons x l))) = List.length l + 4 (* FIXME !!! this is false !!! *)
 goal g4 ['a] :
   forall (x x2:'a) (l:'a list).
   List.remove x (Cons x l) = l
+goal g5 ['a] :
+  forall (x:'a) (l l2:'a list).
+  l = Cons x l2 -> List.head l = x /\ List.tail l = l2
+goal g6 ['a] :
+  forall (l:'a list).
+  l = Nil \/ (List.length l >= 1)
 (*goal g5 ['a] :
   forall (x x2:'a) (l:'a list).
   List.mem x l -> List.length (List.remove x l) < List.length l
