@@ -50,58 +50,29 @@ logic List.remove ['a] : 'a -> 'a list -> 'a list
 logic List.length ['a] : 'a list -> int
 logic List.append ['a] : 'a list -> 'a list -> 'a list
 logic List.index ['a] : int -> 'a list -> 'a
-logic List.head ['a] : 'a list -> 'a
-logic List.tail ['a] : 'a list -> 'a list
-logic fromCons ['a] : 'a list -> ('a * 'a list)
-axiom from_cons_normal ['a] :
-  forall (l l2 : 'a list) (x : 'a).
-  l = Cons x l2 -> fromCons l = (x, l2)
-axiom list_head ['a] :
-  forall (l l2: 'a list) (x: 'a).
-  l = Cons x l2 -> List.head l = x
-axiom list_tail ['a] :
-  forall (l l2: 'a list) (x: 'a).
-  l = Cons x l2 -> List.tail l = l2
-(*
-parameter List.head ['a] (l : 'a list) : {} 'a =
-  { l <> Nil }
-  { res:
-    exists (x : 'a) (l2 : 'a list).
-    l = Cons x l2 /\ res = x
-  }
-parameter List.tail ['a] (l : 'a list) : {} 'a list =
-  { l <> Nil }
-  { res:
-    exists (x : 'a) (l2 : 'a list).
-    l = Cons x l2 /\ res = l2
-  }
-
-parameter fromCons ['a] (l : 'a list) : {} ('a * 'a list) =
-  { ~ (l = Nil) }
-  { res:
-    exists (x : 'a) (l2 : 'a list).
-    l = Cons x l2 /\ res = (x, l2)
-  }
-*)
 
 (* spec of List.map. It takes a relationship rel in arg, which describe a bound between
 the arg list, the state before call, the state after call and the result list *)
 parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop) (f : 'a ->{'e} 'b) (l : 'a list) : {'e} 'b list =
   {
-    (forall (l:'a list). l = Nil -> rel l cur cur Nil) /\
-    (~ (l = Nil) -> pre f (List.head l) cur) /\ (* precondition of f on head of list *)
-    (forall (x2 : 'a) (l2 : 'a list) (res_l2 : 'b list) (s2:<'e>). l = Cons x2 l2 ->
-      [[]] f x2 [[res : rel l2 cur s2 res_l2 -> rel l old s2 (Cons res res_l2)]]) (* propagate relationship *)
+    match l with
+    | Nil -> (rel l cur cur Nil)
+    | Cons (head,tail) -> (pre f head cur /\ (* precondition of f on head of list *)
+      (forall (res_tail : 'b list) (s2:<'e>).
+        [[]] f head [[res : rel tail cur s2 res_tail -> rel l old s2 (Cons res res_tail)]])) (* propagate relationship *)
+    end
   }
   { res:
-    (l = Nil -> res = Nil /\ cur = old) /\ (* terminal case *)
-    (~ (l=Nil) -> (~ (res = Nil))) /\
-    rel l old cur res
-      (* [[cur = s1 /\ rel l2 s2 s3 (List.tail res)]] f x [[r : r = List.head res /\ (cur = s2 -> rel l old s3 res)]]) TODO delete *)
+    match l with
+    | Nil -> res = (Nil:'b list) /\ cur = old
+    | Cons (head,tail) -> (res <> (Nil:'b list) /\
+      rel l old cur res)
+    end
     (* this means, roughly : rel (List.map f (tail l)) -> rel (List.map f l) *)
   }
 
 let empty_rel ['a 'b||'e] (l_old : 'a list) (s1:<'e>) (s2:<'e>) (l_res : b list) = True
+
 (*
   l =             [x]--------------->l2
   states : s1=old         s2               s3
@@ -129,11 +100,15 @@ axiom append_does_append ['a] :
   (List.mem x l1 -> List.mem x (List.append l1 l2)) /\
   (List.mem x l2 -> List.mem x (List.append l1 l2))
 axiom append_cons_list ['a] :
-  forall (x:'a) (l1 l2: 'a list).
-  l1 = Cons x Nil -> List.append l1 l2 = Cons x l2
+  forall (l l2:'a list).
+  match l with
+  | Cons (x, Nil) ->  List.append l l2 = Cons x l2
+  end
 axiom append_list_list ['a] :
-  forall (x:'a) (l1 l2 l3: 'a list).
-  l1 = Cons x l2 -> List.append l1 l3 = Cons x (List.append l2 l3)
+  forall (l1 l3: 'a list).
+  match l1 with
+  | Cons (x, l2) -> List.append l1 l3 = Cons x (List.append l2 l3)
+  end
 axiom list_length_nil ['a]:
   forall (l : 'a list).
   l = Nil -> List.length l = 0
@@ -143,6 +118,11 @@ axiom list_length_pos ['a] :
 axiom list_length_map ['a 'b||'e]:
   forall (l:'a list) (f:'a ->{'e} 'b) (rel: 'a list -> <'e> -> <'e> -> 'b list -> prop).
   [[]] List.map [{'e}] rel f l [[res : List.length l = List.length res]]
+goal blih : 
+  forall (l:int list).
+  List.length l < List.length (Cons 1 l)
+(*
+
 (* (map f l)[i] = f l[i] *)
 axiom list_index_map ['a 'b||'e] :
   forall (x:'a) (l:'a list) (i:int) (f:'a ->{'e} 'b) (rel: 'a list -> <'e> -> <'e> -> 'b list -> prop).
@@ -205,7 +185,7 @@ goal g7 ['a] :
   forall (x:'a) (l:'a list).
   ~ (List.mem x l) -> List.remove x l = l
 
-
+*)
 
 (* =========== refs ========== *)
 
