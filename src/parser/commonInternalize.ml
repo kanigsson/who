@@ -231,4 +231,3 @@ let ty env t =
 let rec_ env = function
   | Const.Rec t -> Const.Rec (ty env t)
   | Const.NoRec -> Const.NoRec
-  | Const.LogicDef -> Const.LogicDef

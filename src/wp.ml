@@ -47,21 +47,23 @@ let rec lift_value v =
   | Var (v,i) -> var (lift_var v) (lift_inst i) l
   | Const _ -> v
   | App (v1,v2) -> app (lift_value v1) (lift_value v2) l
-  | PureFun (t,(_,x,e)) ->
+  | PureFun (t,b) ->
+      let x, e = vopen b in
       plam x (ty t) (lift_value e) l
-  | Quant (k,t,(_,x,e)) ->
+  | Quant (k,t,b) ->
+      let x, e = vopen b in
       squant k x (ty t) (lift_value e) l
   | Lam (x,t,(p,_,q)) ->
       let t = ty t in
       let p = plam x t (scan p) l and q = plam x t (scan q) l in
       mk_pair p q l
-  | Let (g,e1,b,Const.LogicDef) ->
+  | Let (g,e1,b) ->
       let x,f = vopen b in
-      let_ g (lift_value e1) x (lift_value f) Const.LogicDef l
+      let_ g (lift_value e1) x (lift_value f) Const.NoRec l
   | Case (t,bl) ->
       case (lift_value t) (List.map lift_branch bl) l
   | HoareTriple (p,e,q) -> bodyfun p e q
-  | Let _ | LetReg _ | Gen _ | Param _ | Ite _  ->
+  | LetReg _ | Gen _ | Param _ | Ite _ | LetRec _  ->
       error (Myformat.sprintf "not a value: %a" print v) l
 and lift_branch b =
   let nvl, p, t = popen b in
@@ -73,14 +75,16 @@ and correct v =
   | Var _ | Const _ | Quant _ -> ptrue_ l
   | App (v1,v2) -> and_ (correct v1) (correct v2) l
   | Lam (x,t,(p,e,q)) -> sforall x (ty t) (bodyfun p e q) l
-  | PureFun (t,(_,x,e)) -> sforall x (ty t) (correct e) l
-  | Let (g,e1,b,Const.LogicDef) ->
+  | PureFun (t,b) ->
+      let x, e = vopen b in
+      sforall x (ty t) (correct e) l
+  | Let (g,e1,b) ->
       let x,e2 = vopen b in
       and_ (gen g (correct e1) l)
-        (let_ g (lift_value e1) x (correct e2) Const.LogicDef l) l
+        (let_ g (lift_value e1) x (correct e2) Const.NoRec l) l
   | Case (t,bl) ->
       and_ (correct t) (case (lift_value t) (List.map branch_correct bl) l) l
-  | Let _ | LetReg _ | Gen _ | Param _
+  | LetReg _ | Gen _ | Param _ | LetRec _
   | Ite _ | HoareTriple _ ->
       Myformat.printf "correct: not a value: %a@." print v;
       assert false
@@ -124,26 +128,31 @@ and wp m q e =
             forall ft (fun x ->
               impl (applist [post lv1 l; lv2; m; m2'; x] l)
                 (applist [q;m2; x] l) l) l) l ] l
-    | Let (g,e1,b,Const.LogicDef) ->
+(*
+    | Let (g,e1,b) ->
         let x,e2 = vopen b in
         let f = wp_node m q e2 in
-        let_ g e1 x f (Const.LogicDef) l
-    | Let (g,e1,b,r) ->
+        let_ g e1 x f NoRec l
+*)
+    | Let (g,e1,b) ->
         let x,e2 = vopen b in
         if is_value e1 then
           let lv = lift_value e1 in
           let f = gen g (correct e1) l in
           let wp = wp_node m q e2 in
-          let gen f = let_ g lv x f Const.LogicDef l in
-          match r with
-          | Const.NoRec -> and_ f (gen wp) l
-          | Const.Rec _ -> gen (and_ f wp l)
-          | Const.LogicDef -> assert false
+          and_ f (let_ g lv x wp Const.NoRec l) l
         else
           let t = ty e1.t in
           let f = efflamho write (fun m2 ->
             plam x t (wp_node (combine m m2 l) q e2) l) l in
           wp_node m f e1
+    | LetRec (g,_,b) ->
+        let x,e1,e2 = recopen b in
+        let lv = lift_value e1 in
+        let corr = correct e1 in
+        let f = gen g corr l in
+        let wp = wp_node m q e2 in
+        let_ g lv x (and_ f wp l) Const.NoRec l
     | Ite (c,th,el) -> ite (lift_value c) (wp_node m q th) (wp_node m q el) l
     | Case (v,bl) ->
         case (lift_value v) (List.map (branch m q) bl) l
@@ -180,7 +189,7 @@ let to_inst g =
 let rec decl d =
   match d with
   | TypeDef _ | Inductive _
-  | Program (_,_,_,Const.LogicDef) | DGen _ | Decl _ -> [d]
+  | DGen _ | Decl _ -> [d]
   | Logic (n,s) -> [ Logic (n,scheme s) ]
   | Formula (n,f,k) -> [Formula (n,scan f, k) ]
   | DLetReg rl ->
@@ -195,7 +204,7 @@ let rec decl d =
         if G.is_empty g then f else
           let v = mk_var_with_scheme false `Prefix x (g,lv.t) in
           gen g (subst x (fun _ -> var v (to_inst g) loc) f) loc in
-      let def = Program (x,g,lv, Const.LogicDef) in
+      let def = Program (x,g,lv, Const.NoRec) in
       begin match mk_goal (correct_name x) f with
       | None -> [def]
       (* we have the right to put the def. first; either the def was not

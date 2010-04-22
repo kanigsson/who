@@ -39,7 +39,6 @@ val compare : t -> t -> int
 val type_of_constant : t -> ty
 
 type 'a isrec =
-  | LogicDef
   | NoRec
   | Rec of 'a
 

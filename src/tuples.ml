@@ -238,14 +238,14 @@ let rec term env t =
         plam x (tyfun env t) (term env f) l
     | Ite (e1,e2,e3) ->
         ite (term env e1) (term env e2) (term env e3) l
-    | Let (g ,e1,b,r) ->
+    | Let (g ,e1,b) ->
         let x,e2 = vopen b in
         let env', g = genfun env g in
         let e1 = term env' e1 in
-        let_ g e1 x (term env e2) r l
+        let_ g e1 x (term env e2) Const.NoRec l
     | Case (t,bl) ->
         case (term env t) (List.map (branch env) bl) l
-    | Lam _ | LetReg _ | Param _ | HoareTriple _ ->
+    | Lam _ | LetReg _ | Param _ | HoareTriple _ | LetRec _ ->
         assert false
 and branch env b =
   let nvl, p, t = popen b in

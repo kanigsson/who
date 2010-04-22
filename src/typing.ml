@@ -141,7 +141,8 @@ let rec formtyping' env loc = function
       begin try
         let g, t = ftype_of_var loc env s in
         let r = Ty.allsubst g i t in
-(*         printf "var : %a of type %a@." Vars.var s Ty.print r; r *)
+(*         Myformat.printf "var : %a of type %a@." Name.print s.var Ty.print r;
+ *         *)
         r
       with Not_found -> error loc (Unboundvar s.var)
       end
@@ -177,10 +178,8 @@ let rec formtyping' env loc = function
       post env eff t' q;
       to_logic_type (arrow t t' eff)
   | Gen (_,e)-> formtyping env e
-  | Let (g,e1,b,_) ->
-      Myformat.printf "formlet@.";
+  | Let (g,e1,b) ->
       let x,e2 = vopen b in
-(*       Myformat.printf "let: %a@." Name.print x; *)
       let t = formtyping env e1 in
       let env = Env.add_var env x g t in
       let t = formtyping env e2 in
@@ -200,6 +199,7 @@ let rec formtyping' env loc = function
           t
       end
   | Param _ -> errorm loc "effectful parameter in logic"
+  | LetRec _ -> assert false
   | LetReg _ -> assert false
 and formtyping env (e : Ast.t) : Ty.t =
 (*   Myformat.printf "formtyping %a@." Ast.print e; *)
@@ -277,9 +277,14 @@ and typing' env loc = function
       pre env eff p;
       post env eff t' q;
       arrow t t' eff, Rw.empty
-  | Let (g,e1,b,r) ->
+  | Let (g,e1,b) ->
       let x, e2 = vopen b in
-      let env, eff1 = letgen env x g e1 r in
+      let env, eff1 = letgen env x g e1 Const.NoRec in
+      let t, eff2 = typing env e2 in
+      t, Rw.union eff1 eff2
+  | LetRec (g,t,b) ->
+      let x, e1,e2 = recopen b in
+      let env, eff1 = letgen env x g e1 (Const.Rec t) in
       let t, eff2 = typing env e2 in
       t, Rw.union eff1 eff2
   | Param (t,e) -> t,e
@@ -335,11 +340,11 @@ and letgen env x g e r =
         errorm e.loc "generalization over non-value";
   let env' =
     match r with
-    | Const.NoRec | Const.LogicDef -> env
-    | Const.Rec t -> Env.add_svar env x t in
-  let t, eff =
-    if r = Const.LogicDef then formtyping env' e, Rw.empty
-    else typing env' e in
+    | Const.NoRec ->
+        env
+    | Const.Rec t ->
+        Env.add_svar env x t in
+  let t, eff = typing env' e in
   let env = Env.add_var env x g t in
   env, eff
 

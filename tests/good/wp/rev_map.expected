@@ -1,0 +1,53 @@
+type unit
+logic tt  : unit
+logic /\  : prop -> prop -> prop
+logic \/  : prop -> prop -> prop
+logic ->  : prop -> prop -> prop
+logic mk_2tuple ['a 'b||] : a -> b -> a * b
+logic get_2_1_tuple ['a 'b||] : (a * b) -> a
+logic get_2_2_tuple ['a 'b||] : (a * b) -> b
+logic combine [||'e 'e1 'e2] : < 'e 'e1> -> < 'e1 'e2> -> < 'e 'e1 'e2>
+logic restrict [||'e 'e1] : < 'e 'e1> -> < 'e1>
+logic empty  : < >
+type list ['a||] = | Nil | Cons of a* list[a] 
+let rev_map ['a
+  'b||'e] = (fun (f:(a -> < 'e> -> prop) * (a -> < 'e> -> < 'e> -> b ->
+            prop)) ->
+            mk_2tuple [list[a] -> < 'e> -> prop,list[a] -> < 'e> -> < 'e> ->
+            list[b] -> prop||] (fun (l:list[a]) -> (fun (cur:< 'e>) -> True))
+            (fun (l:list[a]) ->
+            (fun (old:< 'e>) ->
+            (fun (cur:< 'e>) -> (fun (anon:list[b]) -> True))))) 
+goal rev_map_correct: forall ['a
+  'b||'e]. forall (f:(a -> < 'e> -> prop) * (a -> < 'e> -> < 'e> -> b ->
+           prop)).
+           forall (l:list[a]).
+           forall (s:< 'e>).
+           let
+           aux =
+                (fun (acc:list[b]) ->
+                mk_2tuple [list[a] -> < 'e> -> prop,list[a] -> < 'e> ->
+                < 'e> -> list[b] -> prop||]
+                (fun (l1:list[a]) -> (fun (cur:< 'e>) -> True))
+                (fun (l1:list[a]) ->
+                (fun (old:< 'e>) ->
+                (fun (cur:< 'e>) -> (fun (anon:list[b]) -> True)))))
+           in
+           (forall (acc:list[b]).
+            forall (l1:list[a]).
+            forall (s1:< 'e>).
+            match l1 with Nil ->  True  | Cons(x,xs) ->
+                           (get_2_1_tuple [a -> < 'e> -> prop,a -> < 'e> ->
+                            < 'e> -> b -> prop||] f x s1)
+                           /\
+                           (forall (s2:< 'e>).
+                            forall (anon:b).
+                            (get_2_2_tuple [a -> < 'e> -> prop,a -> < 'e> ->
+                             < 'e> -> b -> prop||] f x s1 s2 anon)
+                            ->
+                            (get_2_1_tuple [list[a] -> < 'e> ->
+                             prop,list[a] -> < 'e> -> < 'e> -> list[b] ->
+                             prop||] (aux (Cons [b||] anon acc)) xs s2))  end )
+           /\
+           (get_2_1_tuple [list[a] -> < 'e> -> prop,list[a] -> < 'e> ->
+            < 'e> -> list[b] -> prop||] (aux Nil [b||]) l s)

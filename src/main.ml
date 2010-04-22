@@ -70,15 +70,6 @@ let apply_all_trans t =
     (Myformat.list Myformat.newline Ast.print_theory) t;
   t
 
-let import input =
-  let ast =
-    match input with
-    | `File fn -> parse_file infer_parser fn
-    | `String s -> parse_string infer_parser s in
-  let ast = Internalize.theory ast in
-  let ast = Infer.theory ast in
-  Recon.theory ast
-
 let new_name () =
   Name.to_string (Name.from_string !Options.outfile)
 

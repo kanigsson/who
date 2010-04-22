@@ -138,7 +138,7 @@ and letgen env x g e r fix =
   let nv = Name.from_string x in
   let env' =
     match r with
-    | Const.NoRec | Const.LogicDef -> env'
+    | Const.NoRec -> env'
     | Const.Rec _ -> Env.add_ex_var env' ~fix x nv in
   let e = ast env' e in
   let env = Env.add_ex_var env ~fix x nv in
