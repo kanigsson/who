@@ -45,11 +45,10 @@ axiom hashtbl_add_find ['a 'b|r|] :
 
 
 (* ============ lists ============= *)
-logic List.mem ['a] : 'a -> 'a list -> prop
-logic List.remove ['a] : 'a -> 'a list -> 'a list
-logic List.length ['a] : 'a list -> int
 logic List.append ['a] : 'a list -> 'a list -> 'a list
 logic List.index ['a] : int -> 'a list -> 'a
+logic List.remove ['a] : 'a -> 'a list -> 'a list
+logic List.length ['a] : 'a list -> int
 
 (* spec of List.map. It takes a relationship rel in arg, which describe a bound between
 the arg list, the state before call, the state after call and the result list *)
@@ -87,14 +86,10 @@ let empty_rel ['a 'b||'e] (l_old : 'a list) (s1:<'e>) (s2:<'e>) (l_res : b list)
 *)
 
 (* inductive for membership *)
-inductive ind_list_mem ['a] ('a * 'a list) =
-  | base_mem : forall (x:'a) (l:'a list). ind_list_mem (x, (Cons x l))
-  | rec_mem : forall (x y:'a) (l:'a list). ind_list_mem (x, l) -> ind_list_mem (x, (Cons y l))
+inductive List.mem ['a] 'a, 'a list =
+  | base_mem : forall (x:'a) (l:'a list). List.mem x (Cons x l)
+  | rec_mem : forall (x y:'a) (l:'a list). List.mem x l -> List.mem x (Cons y l)
   end
-axiom list_mem_inductive ['a]:
-  forall (x:'a) (l:'a list).
-  (ind_list_mem (x, l) -> List.mem x l) /\
-  (List.mem x l -> ind_list_mem (x, l))
 
 inductive ind_list_rem ['a] ('a * 'a list * 'a list) =
   | base_success : forall (x:'a)(l:'a list). ind_list_rem (x, (Cons x l), l)
@@ -195,7 +190,7 @@ goal g2 ['a] :
   List.length (Cons x (Cons x2 Nil)) = 2
 goal g3 ['a] :
   forall (x x2:'a) (l:'a list).
-  List.length (Cons x (Cons x2 (Cons x l))) = List.length l + 3 (* FIXME !!! this is false !!! *)
+  List.length (Cons x (Cons x2 (Cons x l))) = List.length l + 3
 goal g4 ['a] :
   forall (x x2:'a) (l:'a list).
   List.remove x (Cons x l) = l
