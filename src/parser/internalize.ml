@@ -168,6 +168,11 @@ let rec decl env d =
       let env', g = Env.add_gen env g in
       let t = ast env' t in
       env,[Formula (Name.from_string s, gen g t t.loc, `Proved)]
+  | I.Lemma (s,g,t) ->
+      let env', g = Env.add_gen env g in
+      let t = ast env' t in
+      env, [Formula (Name.from_string s, gen g t t.loc, `Proved); 
+        Formula (Name.from_string s, gen g t t.loc, `Assumed)]
   | I.Section (s,cl, dl) ->
       let env, dl = theory env dl in
       env, [Section (Name.from_string s,cl,dl)]

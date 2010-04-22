@@ -290,6 +290,8 @@ decl:
     { Axiom (x, l, t) }
   | GOAL x = IDENT l = gen COLON t = nterm
     { Goal (x, l, t) }
+  | LEMMA x = IDENT l = gen COLON t = nterm
+    { Lemma (x, l, t) }
   | LOGIC x = defprogvar l = gen COLON t = ty
     { Logic (fst x,l,t, snd x) }
   | TYPE x = IDENT l = gen

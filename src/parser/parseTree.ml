@@ -70,6 +70,7 @@ type decl =
   | Logic of var * generalize * ty * [`Infix | `Prefix ]
   | Axiom of string * generalize * t
   | Goal of string * generalize * t
+  | Lemma of string * generalize * t
   | Section of var * Const.takeover list * decl list
   | TypeDef of var * generalize * typedef
   | Program of var * generalize * t * ty Const.isrec * [`Infix | `Prefix ]

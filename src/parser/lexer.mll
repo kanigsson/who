@@ -35,6 +35,7 @@ let id_or_keyword =
         ("let", LET );
         ("axiom", AXIOM  );
         ("goal",  GOAL  );
+        ("lemma",  LEMMA  );
         ("logic",  LOGIC  );
         ("parameter",  PARAMETER  );
         ("type",  TYPE );
