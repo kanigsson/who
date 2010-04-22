@@ -22,6 +22,9 @@ _build
 *.toc
 *.dvi
 *.swp
+simon/*/*.why
+*.pge
+*.sx
 TAGS
 autom4te.cache
 config.status
