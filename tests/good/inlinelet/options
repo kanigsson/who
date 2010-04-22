@@ -1,1 +1,1 @@
---input-annot --clear --inlinelet --transform-only
+--clear --inlinelet --noprelude --transform-only

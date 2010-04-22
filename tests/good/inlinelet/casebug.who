@@ -1,0 +1,21 @@
+type unit
+logic tt  : unit
+logic /\  : prop -> prop -> prop
+logic \/  : prop -> prop -> prop
+logic ->  : prop -> prop -> prop
+logic mk_2tuple ['a 'b||] : a -> b -> a * b
+logic get_2_1_tuple ['a 'b||] : (a * b) -> a
+type list ['a] = | Nil | Cons of a* list[a]
+let list_map ['a ] =
+  fun (_:int) ->
+    mk_2tuple
+    (fun (l:list[a]) -> True)
+    (fun (l:list[a]) ->
+    match l with
+    Nil ->  True
+    | Cons(head,tail) -> False
+    end
+    )
+axiom list_length_map:
+  forall ['a ||].
+         (get_2_1_tuple (list_map [a||] 5) Nil)

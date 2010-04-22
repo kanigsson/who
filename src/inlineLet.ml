@@ -48,7 +48,8 @@ let rec decl env d =
   | Section (s,th, kind) ->
       let env, th = theory env th in
       env, [Section (s,th, kind)]
-  | Program (n,g,t,Const.NoRec) -> Name.M.add n (g,term env t) env, []
+  | Program (n,g,t,Const.NoRec) ->
+      Name.M.add n (g,term env t) env, []
   | Program _ -> assert false
 and theory env th =
   let env, l = ExtList.fold_map decl env th in

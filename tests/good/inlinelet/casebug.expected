@@ -1,0 +1,9 @@
+type unit
+logic tt  : unit
+logic /\  : prop -> prop -> prop
+logic \/  : prop -> prop -> prop
+logic ->  : prop -> prop -> prop
+logic mk_2tuple ['a 'b||] : a -> b -> a * b
+logic get_2_1_tuple ['a 'b||] : (a * b) -> a
+type list ['a||] = | Nil | Cons of a* list[a] 
+axiom list_length_map: True 

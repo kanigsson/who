@@ -422,9 +422,9 @@ let open_close_map ~varfun ~tyfun ~rvarfun ~effectfun t =
       ~recbindfun:(fun b ->
         let x, e1, e2 = recopen b in recclose x (aux e1) (aux e2))
       ~patternbindfun:(fun pb ->
-        let nvl, p,t = popen pb in pclose nvl p (aux t))
+        let nvl, p,t = popen pb in pclose nvl (pattern p) (aux t))
       ~tyfun ~rvarfun ~effectfun t
-  in
+  and pattern p = pattern_map ~varfun ~tyfun ~rvarfun ~effectfun p in
   aux t
 
 exception Error of string * Loc.loc

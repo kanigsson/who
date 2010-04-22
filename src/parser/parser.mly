@@ -99,6 +99,17 @@ term_inst:
     MID el = sepeffect* RBRACKET
     { (tl, rl, el) }
 
+var_or_constr:
+  | x = IDENT { x }
+  | x = CONSTRUCTOR { x }
+
+ident_with_inst :
+  | v = var_or_constr inst = option(term_inst)
+    {
+      let inst = match inst with None -> [],[],[] | Some x -> x in
+      Var (v,inst)
+    }
+
 aterm_nopos:
   | VOID { Var (I.void_id,([],[],[])) }
   | p = annotated_inl(prefix) t = aterm { App (var p.c p.info, t) }
@@ -107,9 +118,7 @@ aterm_nopos:
   | x = annotated(IDENT) AT e = sepeffect { Restrict (var x.c x.info,e) }
   | DEXCLAM x = annotated(IDENT) { Get (var x.c x.info, var "cur" x.info) }
   | DEXCLAM x = annotated(IDENT) AT t = aterm { Get (var x.c x.info, t) }
-  | x = IDENT { Var (x,([],[],[])) }
-  | x = CONSTRUCTOR { Var (x, ([],[],[])) }
-  | x = IDENT inst = term_inst { Var (x,inst) }
+  | t = ident_with_inst { t }
   | LPAREN x = prefix RPAREN { Var (x, ([],[],[])) }
   | c = constant { Const c }
   | LPAREN x = infix RPAREN { Var (x, ([],[],[])) }
