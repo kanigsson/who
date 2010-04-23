@@ -77,5 +77,4 @@ Section sec.
       apply (B s1 anon H0).
     Qed.
       
-    Admitted.
      End sec.
