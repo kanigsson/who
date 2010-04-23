@@ -1,14 +1,38 @@
-let map ['a 'b||'e] (inv : <'e> -> 'a list -> 'b list -> prop)
-  (f : 'a ->{'e} 'b) (l : 'a list) =
-  { }
-  let rec aux acc l : 'b list {'e} =
-    { inv cur l acc}
-    match l with
-    | Nil -> Nil
-    | Cons (x,rl) ->
-        let r = f x in
-        Cons r (map inv f rl)
-    end
-    {r : inv cur l r } in
-  aux Nil l
-  {r : inv cur l r }
+let rec map ['a 'b||'e] (ia : <'e> -> 'a list -> prop) (ib : 'b list -> prop)
+  (f : 'a ->{'e} 'b) (l : 'a list) : 'b list,{'e} =
+  { ia cur l /\ ib Nil /\
+      forall x l k.
+        [[ ia cur (Cons x l) /\ ib k ]]
+        f x
+        [[ r : ia cur l /\ ib (Cons r k) ]]
+  }
+  match l with
+  | Nil -> Nil
+  | Cons (x,rl) ->
+      let r = f x in
+      Cons r (map ia ib f rl)
+  end
+  {r : ia cur Nil /\ ib r}
+
+(*
+type a
+type b
+letregion r
+
+logic inv : <r> -> a list -> b list -> prop
+
+parameter f (x : a) : {r} b =
+  {}
+  {}
+
+parameter map (l : a list) : 'b list {r} =
+  {}
+  {r : inv cur l r}
+
+let main (x : a) (l : a list) =
+  {}
+  let r = f x in
+  let k = map l in
+  Cons r k
+  {r : inv cur (Cons x l) r }
+*)

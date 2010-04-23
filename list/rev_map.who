@@ -1,0 +1,16 @@
+let rev_map ['a 'b||'e] (inv : <'e> -> 'a list -> 'b list -> prop) 
+  (f : 'a ->{'e} 'b) (l : 'a list) =
+  {inv cur l Nil}
+  let rec aux (acc : 'b list) (l : 'a list) : 'b list,{'e} =
+    { inv cur l acc /\
+      forall x l.
+      [[ inv cur (Cons x l) acc ]] f x [[ r : inv cur l (Cons r acc) ]]
+    }
+    match l with
+    | Nil -> acc
+    | Cons (x,xs) -> aux (Cons (f x) acc) xs
+    end
+    {r : inv cur Nil r}
+  in
+  aux Nil l
+  {r : inv cur Nil r }

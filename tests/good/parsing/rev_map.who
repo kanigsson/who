@@ -1,0 +1,8 @@
+type list['a] =
+| Nil
+| Cons of 'a * 'a list
+
+let rev_map (_ : int) =
+  {}
+  let rec aux (_ : int) : int,{} = {} aux 1 {} in 5
+  {}

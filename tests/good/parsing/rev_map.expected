@@ -1,0 +1,12 @@
+type list ['a||] = | Nil | Cons of a* list[a] 
+let
+  rev_map  = (fun (anon:int) -> {(fun (cur:< >) -> True)}
+             let
+             rec(int ->{  +  } int) aux =
+                                         (fun (anon1:int) ->
+                                         {(fun (cur:< >) -> True)} aux 1
+                                         {(fun (old:< >) ->
+                                          (fun (cur:< >) ->
+                                          (fun (anon2:int) -> True)))})
+             in 5
+             {(fun (old:< >) -> (fun (cur:< >) -> (fun (anon1:int) -> True)))}) 
