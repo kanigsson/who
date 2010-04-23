@@ -1,6 +1,0 @@
-type unit
-logic empty  : < >
-logic fst ['a 'b||] : (a * b) -> a
-axiom a:
-  forall (f:(int -> < > -> prop) * (int -> < > -> < > -> int -> prop)).
-  fst [int -> < > -> prop,int -> < > -> < > -> int -> prop||] f 5 empty 

@@ -1,8 +1,0 @@
-type unit
-logic tt : unit
-type bool
-logic <<  : int -> int -> bool
-let blit = (fun (d:int) ->
-   {(fun (cur10:<  >) -> True)}
-     if 0 << 0 then tt else tt
-   {fun (a:<  >) -> fun (b:<  >) -> fun (c:unit) -> True})

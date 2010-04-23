@@ -84,7 +84,7 @@ let varmap ~varfun ~tyfun v =
   { var = varfun v.var ; scheme = g, tyfun t ;
     is_constr = v.is_constr ; fix = v.fix}
 
-let map ~varfun ~varbindfun ~patternbindfun 
+let map ~varfun ~varbindfun ~patternbindfun
         ~recbindfun ~tyfun ~rvarfun ~effectfun f =
   let rec aux' = function
     | (Const _ ) as t -> t
@@ -344,7 +344,7 @@ module Convert = struct
         let env', g = gen env g in
         let args,_ = Ty.nsplit ity in
         env, P.Inductive (id env n, g,
-          List.map (ty env') args, List.map (ind_branch env) tl) 
+          List.map (ty env') args, List.map (ind_branch env') tl)
   and constbranch inner outer (n,tl) =
     let env = add_id outer n in
     env, (id outer n, List.map (ty inner) tl)

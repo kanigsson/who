@@ -1,5 +1,0 @@
-type unit
-logic = ['a||] : 'a -> 'a -> prop
-logic -> : prop -> prop -> prop
-let z =
-  forall (x : int). x =[int||] 0 -> x =[int||] 1

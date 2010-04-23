@@ -1,4 +1,0 @@
-type unit
-logic = ['a||] : a -> a -> prop
-logic ->  : prop -> prop -> prop
-let z  = 0 =[int||] 1 

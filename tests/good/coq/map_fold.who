@@ -1,0 +1,15 @@
+
+
+inductive List.mem ['a] 'a, 'a list =
+  | base_mem : forall (x:'a) (l:'a list). List.mem x (Cons x l)
+  | rec_mem : forall (x y:'a) (l:'a list). List.mem x l -> List.mem x (Cons y l)
+  end
+
+inductive ind_list_rem ['a] 'a, 'a list, 'a list =
+  | base_success : forall (x:'a)(l:'a list). ind_list_rem x (Cons x l) l
+  | base_failure : forall (x y:'a)(l l2:'a list). x <> y -> 
+      ind_list_rem x l l2 -> ind_list_rem x (Cons y l) (Cons y l2)
+  | base_nil : forall (x:'a). ind_list_rem x Nil Nil
+  end
+
+goal g: False
