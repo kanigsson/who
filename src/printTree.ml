@@ -399,7 +399,7 @@ module Pangoline = struct
             (list inductive_sep constdef) bl
     | Inductive (n,(tl,_,_),tyl, fl) ->
         fprintf fmt "@[<hov 2>inductive %a %a %a = %a@]"
-          (paren (list space string)) tl string n (list space ty) tyl
+        induct_tyargs tl string n (list space ty) tyl
           (list inductive_sep (induct_branch (n,tl))) fl
     | DLetReg _ -> assert false
     | Section (_,d, `Block cl) ->
@@ -422,6 +422,8 @@ module Pangoline = struct
     else fprintf fmt "%a of %a" string c (list consttysep ty) tl
   and theory fmt t = list newline decl fmt t
   and induct_branch env fmt (_,t) = inductive_term env fmt t
+  and induct_tyargs fmt tl =
+    if tl = [] then () else paren (list space string) fmt tl
 end
 
 module Who = struct
