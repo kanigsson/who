@@ -10,4 +10,4 @@ logic = ['a||] : a -> a -> prop
 logic ->  : prop -> prop -> prop
 logic z  : int
 logic f ['e||] : e -> int
-goal g: forall (x:int). (z =[int||] (f [unit||] tt)) -> (x =[int||] 3)
+goal g: forall (x:int). (z = (f [unit||] tt)) -> (x = 3)

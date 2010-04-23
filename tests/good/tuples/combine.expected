@@ -18,6 +18,6 @@ goal g:
   let
   f =
      (fun (c:region[b] * region[a]) ->
-     (ref_get [a,int||] (get_2_2_tuple [region[b],region[a]||] c) x) =[int||]
+     (ref_get [a,int||] (get_2_2_tuple [region[b],region[a]||] c) x) =
      (ref_get [b,int||] (get_2_1_tuple [region[b],region[a]||] c) k))
   in f (mk_2tuple [region[b],region[a]||] v u)

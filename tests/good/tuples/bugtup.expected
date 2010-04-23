@@ -12,7 +12,7 @@ logic ref_get ['reg 'u||] : region[reg] -> refty[reg,u] -> u
 logic mk_2tuple ['a 'b||] : a -> b -> a * b
 logic get_2_1_tuple ['a 'b||] : (a * b) -> a
 logic get_2_2_tuple ['a 'b||] : (a * b) -> b
-let logic forto ['e 'e1||] = (fun (f:((e1 * e) -> prop) * int) -> True) 
+let forto ['e 'e1||] = (fun (f:((e1 * e) -> prop) * int) -> True) 
 goal fill_correct: forall ['a
   'r||]. forto [unit,region[r]||]
          (mk_2tuple [(region[r] * unit) -> prop,int||]

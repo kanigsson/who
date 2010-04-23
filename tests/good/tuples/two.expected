@@ -12,6 +12,6 @@ goal g:
   forall (x:refty[r1,int]).
   forall (k:refty[r,int]).
   forall (u:region[r] * region[r1]).
-  (y =[int||] z) ->
-  ((ref_get [r1,int||] (get_2_2_tuple [region[r],region[r1]||] u) x) =[int||]
+  (y = z) ->
+  ((ref_get [r1,int||] (get_2_2_tuple [region[r],region[r1]||] u) x) =
    (ref_get [r,int||] (get_2_1_tuple [region[r],region[r1]||] u) k))

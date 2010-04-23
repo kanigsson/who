@@ -6,14 +6,14 @@ logic tt  : unit
 logic /\  : prop -> prop -> prop
 logic ->  : prop -> prop -> prop
 logic = ['a||] : a -> a -> prop
-type region['u||]
+type  region ['u]
 type refty['reg 'ty||]
 logic ref_get ['reg 'u||] : region[reg] -> refty[reg,u] -> u
 logic mk_2tuple ['a 'b||] : a -> b -> a * b
 logic get_2_1_tuple ['a 'b||] : (a * b) -> a
 logic get_2_2_tuple ['a 'b||] : (a * b) -> b
 logic !! ['a|r|'e] : ref(r,a) -> <r 'e> -> a
-let logic forto [||'e 'e1] = fun (f:(< 'e 'e1> -> prop) * int) -> True
+let forto [||'e 'e1] = fun (f:(< 'e 'e1> -> prop) * int) -> True
 goal fill_correct:
   forall ['a|r|].
        forto [|| { } {r }]
