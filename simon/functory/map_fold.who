@@ -91,26 +91,26 @@ inductive List.mem ['a] 'a, 'a list =
   | rec_mem : forall (x y:'a) (l:'a list). List.mem x l -> List.mem x (Cons y l)
   end
 
-inductive ind_list_rem ['a] ('a * 'a list * 'a list) =
-  | base_success : forall (x:'a)(l:'a list). ind_list_rem (x, (Cons x l), l)
+inductive ind_list_rem ['a] 'a, 'a list, 'a list =
+  | base_success : forall (x:'a)(l:'a list). ind_list_rem x (Cons x l) l
   | base_failure : forall (x y:'a)(l l2:'a list). x <> y -> 
-      ind_list_rem (x, l, l2) -> ind_list_rem (x, (Cons y l), (Cons y l2))
-  | base_nil : forall (x:'a). ind_list_rem (x, Nil, Nil)
+      ind_list_rem x l l2 -> ind_list_rem x (Cons y l) (Cons y l2)
+  | base_nil : forall (x:'a). ind_list_rem x Nil Nil
   end
 axiom list_remove_ind ['a]:
   forall (x:'a) (l l2:'a list).
-  (ind_list_rem (x, l, l2) -> List.remove x l = l2) /\
-  (List.remove x l = l2 -> ind_list_rem (x, l, l2))
+  (ind_list_rem x l l2 -> List.remove x l = l2) /\
+  (List.remove x l = l2 -> ind_list_rem x l l2)
 
-inductive ind_list_len ['a] ('a list * int) =
-  | base : ind_list_len (Nil, 0)
+inductive ind_list_len ['a] 'a list, int =
+  | base : ind_list_len Nil 0
   | recur : forall (x:'a) (l:'a list) (n:int). 
-      ind_list_len (l, n) -> ind_list_len (Cons x l, n+1)
+      ind_list_len l n -> ind_list_len (Cons x l) (n+1)
   end
 axiom list_length_ind ['a]:
   forall (l:'a list) (n:int).
-  (ind_list_len (l, n) -> List.length l = n) /\
-  (List.length l = n -> ind_list_len (l, n))
+  (ind_list_len l n -> List.length l = n) /\
+  (List.length l = n -> ind_list_len l n)
 
 lemma remove_does_remove ['a] :
   forall (x : 'a) (l : 'a list).
@@ -130,7 +130,7 @@ axiom append_cons_list ['a] :
   match l with
   | Cons (x, Nil) ->  List.append l l2 = Cons x l2
   end
-axiom append_list_list ['a] :
+axiom append_list_list ['a] : (* TODO : transform this into an inductive *)
   forall (l1 l3: 'a list).
   match l1 with
   | Cons (x, l2) -> List.append l1 l3 = Cons x (List.append l2 l3)
