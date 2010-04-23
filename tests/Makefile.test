@@ -3,10 +3,9 @@
 
 TIME:=/usr/bin/time
 TIMETMP:=time-tmp.bak
-PROGRAM=../../../main.native $(OPTIONS)
+PROGRAM= $(shell if test -f $*.sh; then echo ./$*.sh ; else echo ./script.sh; fi)
 EXT=who
 
-OPTIONS=$(shell if test -f $*.opt; then cat $*.opt; else cat options; fi)
 BAD_INPUTS=$(shell if pwd | grep bad 1> /dev/null; \
              then find . -name "*.$(EXT)"; fi)
 BAD_OUTPUTS=$(BAD_INPUTS:.$(EXT)=.bad-output)
@@ -42,10 +41,10 @@ expected: clean-expected $(GOOD_EXPECTED)
 
 %.good-output:%.$(EXT)
 	@ (echo TEST >> good-counter);					 \
-          ($(TIME) -o $(TIMETMP) -f "[ OK %S ] $<" $(PROGRAM) $< 1> $@ 2> $@  	 \
-	   && (diff -u $@ $*.expected 1> /dev/null 2> /dev/null) && 	 \
+          ($(TIME) -o $(TIMETMP) -f "[ OK %S ] $<" $(PROGRAM) $< 1> $@ 2> $@ \
+	   && (diff -u $@ $*.expected 1> /dev/null 2> /dev/null) && \
 	  (cat $(TIMETMP); (echo "OK $@" >> good-ok-counter))) \
-	  || (echo "[ KO ]   --> " $<); if [ x$$VERBOSE = x1 ]; then	 \
+	  || (echo "[ KO ]   --> " $<); if [ x$$VERBOSE = x1 ]; then \
 	echo;								 \
 	echo "INPUT:";							 \
 	cat $<;								 \
