@@ -368,9 +368,12 @@ module Pangoline = struct
       fprintf fmt "forall %t %a." in_term (list space string) tl
 
   let is_infix_symbol s =
-    match s.[0] with
-    | '=' | '!' | '+' | '-' | '*' | '<' | '>'  -> true
-    | _ -> false
+    match s with
+    | "and" -> true
+    | _ ->
+      match s.[0] with
+      | '=' | '!' | '+' | '-' | '*' | '<' | '>'  -> true
+      | _ -> false
 
   let rec decl fmt d =
     match d with

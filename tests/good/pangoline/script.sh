@@ -1,3 +1,3 @@
 basename=`basename $1 .who`
-../../../main.native --clear --noprelude $1 &&
-pangoline --noprelude --pprint --namecheck-only $basename\_who.pge
+../../../main.native $1 &&
+pangoline --namecheck-only $basename\_who.pge
