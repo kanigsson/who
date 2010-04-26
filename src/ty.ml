@@ -233,6 +233,7 @@ let elsubst evl effl =
 
 module Generalize = struct
   (* order : ty,r,e *)
+  type ty = t
   type t = Name.t list * Name.t list * Name.t list
   type 'a bind = 'a Name.listbind Name.listbind Name.listbind
 
@@ -266,6 +267,9 @@ module Generalize = struct
   let get_first = function
     | [],[],x::_ | [],x::_,_ | x::_,_,_ -> x
     | [],[],[] -> assert false
+
+  let to_inst g =
+    Inst.map var Misc.id Effect.esingleton g
 
 end
 module G = Generalize

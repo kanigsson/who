@@ -84,6 +84,7 @@ val app : Name.t -> t list -> t
 val equal : t -> t -> bool
 
 module Generalize : sig
+  type ty = t
   type t = Name.t list * Name.t list * Name.t list
   type 'a bind = 'a Name.listbind Name.listbind Name.listbind
 
@@ -96,6 +97,8 @@ module Generalize : sig
   val close : t -> 'a -> 'a bind
 
   val equal : t -> t -> bool
+
+  val to_inst : t -> (ty, Name.t, Effect.t) Inst.t
 
 end
 

@@ -68,6 +68,7 @@ type decl =
   | Section of Name.t * Const.takeover list * decl list
   | TypeDef of Name.t * Name.t list * Ast.typedef
   | Program of Name.t * G.t * t * isrec * [`Infix | `Prefix ]
+  | Fixpoint of Name.t * G.t * Ty.t * t * [`Infix | `Prefix ]
   | DLetReg of Name.t list
   | Inductive of Name.t * G.t * Ty.t * inductive_branch list
   | DGen of G.t

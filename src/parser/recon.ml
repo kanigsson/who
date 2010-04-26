@@ -55,13 +55,13 @@ let to_rw loc t =
   try M.to_rw t
   with MutableType.UndeterminedType -> error loc UndeterminedType
 
-let var loc v =
+let recon_var loc v =
   let g,t = v.I.scheme in
   { var = v.I.var ; scheme = g, to_ty loc t;
     is_constr = v.I.is_constr; fix = v.I.fix }
 
 let rec recon' loc = function
-  | I.Var (x,i) -> Var (var loc x,inst loc i)
+  | I.Var (x,i) -> Var (recon_var loc x,inst loc i)
   | I.Const c -> Const c
   | I.PureFun (x,t,e) ->
       let e = recon e in
@@ -134,7 +134,7 @@ and branch (nvl,p,t) = pclose nvl (pattern p) (recon t)
 and pattern_node loc p =
   match p with
   | I.PVar v -> PVar v
-  | I.PApp (v,i,pl) -> PApp (var loc v, inst loc i, List.map pattern pl)
+  | I.PApp (v,i,pl) -> PApp (recon_var loc v, inst loc i, List.map pattern pl)
 and pattern p =
   let loc = p.I.ploc in
   { pv = pattern_node loc p.I.pv; pt = to_ty loc p.I.pt; ploc = loc}
@@ -150,22 +150,42 @@ let rec recon_decl x =
   *       `Infix); *)
       let s = g,t in
       Predefined.add_binding x (g,t,f);
-      Logic (x,s)
-  | I.Formula (s,t,k) -> Formula (s, recon t, k)
-  | I.Section (s,cl, dl) -> Section (s,recon_th dl, `Block cl)
-  | I.DLetReg rl -> DLetReg rl
-  | I.TypeDef (n,tl,Abstract) -> TypeDef (n,tl, Abstract)
-  | I.TypeDef (n,tl,ADT bl) -> TypeDef (n,tl, ADT (List.map constbranch bl))
+      [Logic (x,s)]
+  | I.Formula (s,t,k) -> [Formula (s, recon t, k)]
+  | I.Section (s,cl, dl) -> [Section (s,recon_th dl, `Block cl)]
+  | I.DLetReg rl -> [DLetReg rl]
+  | I.TypeDef (n,tl,Abstract) -> [TypeDef (n,tl, Abstract)]
+  | I.TypeDef (n,tl,ADT bl) -> [TypeDef (n,tl, ADT (List.map constbranch bl))]
   | I.Program (n,g,t,r,fix) ->
       let t = recon t in
       Predefined.add_binding n (g,t.t, fix);
-      Program (n,g,t, r)
+      [Program (n,g,t, r)]
+  | I.Fixpoint (n,g,t,e, fix) ->
+      let e = recon e in
+      let l = e.loc in
+      Predefined.add_binding n (g,e.t, fix);
+      let form =
+        let acc, e = lambda_rev_destruct e in
+        let tl = List.map (fun (x,t) ->
+          let v = mk_var_with_type false `Prefix x t in
+          svar v l) acc in
+        let f =
+          let v = mk_var_with_scheme false fix n (g,t) in
+          var v (Ty.Generalize.to_inst g) l in
+        let fapp = List.fold_left (fun acc t -> app acc t l) f tl in
+        let def = eq fapp e l in
+        List.fold_left (fun acc (x,t) -> sforall x t acc l) def acc in
+      [
+        Logic (n,(g,t));
+        Formula (Name.append n "def", form, `Assumed)
+      ]
+
   | I.Inductive (n,g,t,tel) ->
       Predefined.add_binding n (g,t, `Prefix);
       let tel = List.map (fun (n,b) -> n, recon b) tel in
-      Inductive (n,g,t,tel)
-  | I.DGen g -> DGen g
-and recon_th l = List.map recon_decl l
+      [Inductive (n,g,t,tel)]
+  | I.DGen g -> [DGen g]
+and recon_th l = List.flatten (List.map recon_decl l)
 and constbranch (n,tl) = n, tl
 
 let theory th =

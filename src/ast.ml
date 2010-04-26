@@ -225,6 +225,15 @@ let destruct_get' x =
 
 let destruct_get x = destruct_get' x.v
 
+let lambda_rev_destruct =
+  let rec aux acc t =
+    match t.v with
+    | PureFun (at,b) ->
+        let x, f = vopen b in
+        aux ((x,at)::acc)  f
+    | _ -> acc, t in
+  aux []
+
 module Convert = struct
 
   module P = PrintTree
@@ -265,7 +274,7 @@ module Convert = struct
             let env = add_id env x in
             P.Lam (id env x,ty env at, body env b )
         | HoareTriple b -> P.HoareTriple (body env b)
-        | PureFun (at,b) ->
+          | PureFun (at,b) ->
             let x,e = vopen b in
             let env = add_id env x in
             P.PureFun (id env x, ty env at, t env e )
@@ -894,7 +903,6 @@ and get_tuple i t l =
 let applist l loc =
   match l with
   | [] | [ _ ] -> failwith "not enough arguments given"
-  | [f;a;b] -> app2 f a b loc
   | a::b::rest ->
       List.fold_left (fun acc x -> app acc x loc) (app a b loc) rest
 
