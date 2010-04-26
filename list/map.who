@@ -1,38 +1,38 @@
-let rec map ['a 'b||'e] (ia : <'e> -> 'a list -> prop) (ib : 'b list -> prop)
+logic List.length ['a] : 'a list -> int
+
+let rec List.map ['a 'b||'e]
+  (ia : <'e> -> 'a list -> prop) (ib : <'e> -> <'e> -> 'b list -> prop)
   (f : 'a ->{'e} 'b) (l : 'a list) : 'b list,{'e} =
-  { ia cur l /\ ib Nil /\
-      forall x l k.
-        [[ ia cur (Cons x l) /\ ib k ]]
+  { ia cur l /\ (forall s s'. ib s s' Nil) /\
+  (forall s1 s2 s3 x r l .
+    ib s2 s3 l /\ post f x s1 s2 r -> ib s1 s3 (Cons r l)) /\
+      forall x l.
+        [[ ia cur (Cons x l) ]]
         f x
-        [[ r : ia cur l /\ ib (Cons r k) ]]
+        [[ r : ia cur l ]]
   }
   match l with
   | Nil -> Nil
   | Cons (x,rl) ->
       let r = f x in
-      Cons r (map ia ib f rl)
+      Cons r (List.map ia ib f rl)
   end
-  {r : ia cur Nil /\ ib r}
+  {r : ia cur Nil /\ ib old cur r}
 
-(*
-type a
-type b
-letregion r
+inductive l_incr int list, int, int =
+| lincrbase : forall n1 n2. l_incr Nil n1 n2
+| lincrcons : forall l n k. l_incr l (n+1) k -> l_incr (Cons n l) n k
+end
 
-logic inv : <r> -> a list -> b list -> prop
-
-parameter f (x : a) : {r} b =
+let test2 (l : int list) =
   {}
-  {}
-
-parameter map (l : a list) : 'b list {r} =
-  {}
-  {r : inv cur l r}
-
-let main (x : a) (l : a list) =
-  {}
-  let r = f x in
-  let k = map l in
-  Cons r k
-  {r : inv cur (Cons x l) r }
-*)
+  letregion t in
+  let r = ref(t) 0 in
+  let ia (s:<t>) (l_cur:int list) =
+    !!r@s + List.length l_cur = List.length l in
+  let ib (s1 s2:<t>) (l_res:int list) =
+    l_incr l_res (!!r@s1+1) !!r@s2 in
+  let f ( _ : int) =
+    {} r := !r + 1; !r { res : res = !!r /\ !!r = !!r@old + 1 } in
+  List.map [{t}] ia ib f l
+  { res: l_incr res 1 (List.length res) }
