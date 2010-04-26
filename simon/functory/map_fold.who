@@ -50,40 +50,25 @@ logic List.index ['a] : int -> 'a list -> 'a
 logic List.remove ['a] : 'a -> 'a list -> 'a list
 logic List.length ['a] : 'a list -> int
 
-(* spec of List.map. It takes a relationship rel in arg, which describe a bound between
-the arg list, the state before call, the state after call and the result list *)
-parameter List.map ['a 'b||'e] (rel : 'a list -> <'e> -> <'e> -> 'b list -> prop) (f : 'a ->{'e} 'b) (l : 'a list) : {'e} 'b list =
-  { 
-    match l with
-    | Nil -> rel l cur cur Nil
-    | Cons (head,tail) -> (pre f head cur /\ (* precondition of f on head of list *)
-      (forall (res_tail : 'b list) (s2:<'e>).
-        [[]] f head [[res : rel tail cur s2 res_tail -> rel l old s2 (Cons res res_tail)]])) (* propagate relationship *)
-    end
+(* List.map takes to invariants *)
+let rec List.map ['a 'b||'e] (ia : <'e> -> 'a list -> prop) (ib : 'b list -> prop)
+  (f : 'a ->{'e} 'b) (l : 'a list) : 'b list,{'e} =
+  { ia cur l /\ ib Nil /\
+      forall x l k.
+        [[ ia cur (Cons x l) /\ ib k ]]
+        f x
+        [[ r : ia cur l /\ ib (Cons r k) ]]
   }
-  { res:
-    match l with
-    | Nil -> res = (Nil:'b list) /\ cur = old
-    | Cons (head,tail) -> (res <> (Nil:'b list) /\
-      rel l old cur res)
-    end 
-    (* this means, roughly : rel (List.map f (tail l)) -> rel (List.map f l) *)
-  }
+  match l with
+  | Nil -> Nil
+  | Cons (x,rl) ->
+      let r = f x in
+      Cons r (List.map ia ib f rl)
+  end
+  {r : ia cur Nil /\ ib r}
 
-let empty_rel ['a 'b||'e] (l_old : 'a list) (s1:<'e>) (s2:<'e>) (l_res : b list) = True
-
-(*
-  l =             [x]--------------->l2
-  states : s1=old         s2               s3
-              \          / \               /
-               \-> f x -/   \-> map f l2 -/
-
-                            `------------'
-                            rel l2 s1 s2 (tail res)
-====>
-              `--------------------------'
-                  rel l old s2 res
-*)
+let empty_ia ['a||'e] (s:<'e>) (l:'a list) = True
+let empty_ib ['b] (l:'b list) = True
 
 (* inductive for membership *)
 inductive List.mem ['a] 'a, 'a list =
@@ -93,7 +78,7 @@ inductive List.mem ['a] 'a, 'a list =
 
 inductive ind_list_rem ['a] 'a, 'a list, 'a list =
   | base_success : forall (x:'a)(l:'a list). ind_list_rem x (Cons x l) l
-  | base_failure : forall (x y:'a)(l l2:'a list). x <> y -> 
+  | base_failure : forall (x y:'a)(l l2:'a list). x <> y ->
       ind_list_rem x l l2 -> ind_list_rem x (Cons y l) (Cons y l2)
   | base_nil : forall (x:'a). ind_list_rem x Nil Nil
   end
@@ -104,7 +89,7 @@ axiom list_remove_ind ['a]:
 
 inductive ind_list_len ['a] 'a list, int =
   | base : ind_list_len Nil 0
-  | recur : forall (x:'a) (l:'a list) (n:int). 
+  | recur : forall (x:'a) (l:'a list) (n:int).
       ind_list_len l n -> ind_list_len (Cons x l) (n+1)
   end
 axiom list_length_ind ['a]:
@@ -125,15 +110,12 @@ axiom append_does_append ['a] :
   forall (l1 l2 : 'a list) (x : 'a).
   (List.mem x l1 -> List.mem x (List.append l1 l2)) /\
   (List.mem x l2 -> List.mem x (List.append l1 l2))
-axiom append_cons_list ['a] :
+axiom append_match ['a] :
   forall (l l2:'a list).
   match l with
   | Cons (x, Nil) ->  List.append l l2 = Cons x l2
-  end
-axiom append_list_list ['a] : (* TODO : transform this into an inductive *)
-  forall (l1 l3: 'a list).
-  match l1 with
-  | Cons (x, l2) -> List.append l1 l3 = Cons x (List.append l2 l3)
+  | Nil -> List.append l l2 = l2
+  | Cons (x, l3) -> List.append l l2 = Cons x (List.append l3 l2)
   end
 lemma list_length_nil ['a]:
   forall (l : 'a list).
@@ -142,17 +124,17 @@ lemma list_length_pos ['a] :
   forall (l:'a list).
   List.length l >= 0
 axiom list_length_map ['a 'b||'e]:
-  forall (l:'a list) (f:'a ->{'e} 'b) (rel: 'a list -> <'e> -> <'e> -> 'b list -> prop).
-  [[]] List.map [{'e}] rel f l [[res : List.length l = List.length res]]
-goal blih : 
+  forall (l:'a list) (f:'a ->{'e} 'b) (ia : <'e> -> 'a list -> prop) (ib : 'b list -> prop).
+  [[]] List.map [{'e}] ia ib f l [[res : List.length l = List.length res]]
+goal basic_test1 :
   forall (l:int list).
   List.length l < List.length (Cons 1 l)
 
 (* (map f l)[i] = f l[i] *)
 axiom list_index_map ['a 'b||'e] :
-  forall (x:'a) (l:'a list) (i:int) (f:'a ->{'e} 'b) (rel: 'a list -> <'e> -> <'e> -> 'b list -> prop).
+  forall (x:'a) (l:'a list) (i:int) (f:'a ->{'e} 'b) (ia : <'e> -> 'a list -> prop) (ib : 'b list -> prop).
   i >= 0 /\ i < List.length l ->
-  [[]] List.map [{'e}] rel f l [[res: [[]] f (List.index i l)[[r : r = List.index i res]] ]]
+  [[]] List.map [{'e}] ia ib f l [[res: [[]] f (List.index i l)[[r : r = List.index i res]] ]]
 axiom list_cons_mem ['a]:
   forall (x:'a) (l:'a list).
   List.mem x (Cons x l)
@@ -203,7 +185,7 @@ goal g6 ['a] :
 *)
 goal g6 ['a 'b] :
   forall (l:'a list)(f:'a -> 'b).
-  [[]] List.map [{}] (empty_rel [{}]) (fun (x:'a) ->{} f x {}) l [[res: List.length res = List.length l]]
+  [[]] List.map [{}] (empty_ia [{}]) empty_ib (fun (x:'a) ->{} f x {}) l [[res: List.length res = List.length l]]
 goal g7 ['a] :
   forall (x:'a) (l:'a list).
   ~ (List.mem x l) -> List.remove x l = l
@@ -230,7 +212,7 @@ parameter map_fold_wrapper ['a 'b 'c 'd 'e]
   (truc : ('a, ('b * 'c)) map_or_fold) : {} ('e, 'd) map_or_fold =
   {}
   { res:
-    match truc with 
+    match truc with
     | Map m -> res = Map (map m)
     | Fold f ->  res = Fold (fold (fst f) (snd f))
     end
@@ -242,7 +224,7 @@ parameter map_fold_wrapper2 ['a 'b 'c 'd 'e]
   (truc : ('a, ('b * 'c)) map_or_fold) : {} 'd =
   {}
   { res:
-    match truc with 
+    match truc with
     | Map m -> res = map m
     | Fold f -> res = (fold (fst f) (snd f))
     end
