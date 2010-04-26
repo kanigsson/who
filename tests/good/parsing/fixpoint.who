@@ -1,0 +1,13 @@
+type list['a] =
+| Nil
+| Cons of 'a * 'a list
+
+logic + : int -> int -> int
+
+logic = ['a] : 'a -> 'a -> prop
+
+fixpoint List.length ['a] (l : 'a list) : int =
+  match l with
+  | Nil -> 0
+  | Cons (x,xs) -> 1 + List.length xs
+  end

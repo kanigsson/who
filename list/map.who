@@ -1,4 +1,8 @@
-logic List.length ['a] : 'a list -> int
+fixpoint List.length ['a] (l : 'a list) : int =
+  match l with
+  | Nil -> 0
+  | Cons (x,xs) -> 1 + List.length xs
+  end
 
 let rec List.map ['a 'b||'e]
   (ia : <'e> -> 'a list -> prop) (ib : <'e> -> <'e> -> 'b list -> prop)
@@ -35,4 +39,4 @@ let test2 (l : int list) =
   let f ( _ : int) =
     {} r := !r + 1; !r { res : res = !!r /\ !!r = !!r@old + 1 } in
   List.map [{t}] ia ib f l
-  { res: l_incr res 1 (List.length res) }
+  { res: l_incr res 1 (List.length l) }

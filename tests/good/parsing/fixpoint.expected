@@ -1,0 +1,9 @@
+type list ['a||] = | Nil | Cons of a* list[a] 
+logic +  : int -> int -> int
+logic = ['a||] : a -> a -> prop
+logic List_length ['a||] : list[a] -> int
+axiom List_lengthdef:
+  forall ['a||]. forall (l:list[a]).
+                 (List_length [a||] l) =
+                 (match l with Nil ->  0  | Cons(x,xs) ->
+                                1 + (List_length [a||] xs)  end ) 
