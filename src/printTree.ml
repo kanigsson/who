@@ -285,7 +285,8 @@ module Coq = struct
   and theory insection fmt t = list newline (decl insection) fmt t
   and arrow fmt () = fprintf fmt "->@ "
   and inductive_intros fmt (tl,_,_) =
-    fprintf fmt "( %a : Type)" (list space string) tl
+    if tl = [] then ()
+    else fprintf fmt "( %a : Type)" (list space string) tl
   and ind_term fmt (s,t) = fprintf fmt "| %s : %a" s term t
 
 end
