@@ -73,18 +73,24 @@
     | None -> e
     | Some t -> Loc.mk e.info (Annot (e,t))
 
+  let get_oblig_type t =
+    match t with
+    | None ->
+        failwith "annotation needed for arguments of recursive functions"
+    | Some t -> t
   let rec_annot args (t,eff) l =
     let argtys = List.rev_map snd args in
     match argtys with
     | [] -> failwith "recursive objects must be functions"
-    | None:: _ ->
-        failwith "annotation needed for arguments of recursive functions"
-    | Some x::xs ->
+    | x ::xs ->
         List.fold_left (fun acc t ->
-          match t with
-          | None ->
-              failwith "annotation needed for arguments of recursive functions"
-          | Some t -> purearrow t acc l) (effarrow x t eff l) xs
+          purearrow (get_oblig_type t) acc l)
+          (effarrow (get_oblig_type x) t eff l) xs
+
+  let fix_annot l rt =
+    List.fold_right (fun (_,t) acc ->
+      let t = get_oblig_type t in
+      purearrow t acc t.info) l rt
 
 %}
 
@@ -294,6 +300,13 @@ decl:
     let p = build $startpos $endpos in
     let par = mk_param args pre post rt e p in
     Program (fst x,l,par, NoRec, snd x)
+  }
+  | FIXPOINT x = defprogvar l = gen args = arglist COLON rt = ty 
+    EQUAL t = seq_term
+  {
+    let p = build $startpos $endpos in
+    let f = mk_pure_lam args t p in
+    Fixpoint (fst x,l,fix_annot args rt, f, snd x)
   }
   | AXIOM x = IDENT l = gen COLON t = nterm
     { Axiom (x, l, t) }

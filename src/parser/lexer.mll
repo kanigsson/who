@@ -66,6 +66,7 @@ let id_or_keyword =
         ("takeover",  TAKEOVER );
         ("pangoline",  PANGOLINE );
         ("inductive",  INDUCTIVE );
+        ("fixpoint",  FIXPOINT );
         ("fun",  FUN );
       ];
     fun s -> try Hashtbl.find h s with Not_found -> IDENT s
