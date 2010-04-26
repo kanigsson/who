@@ -10,6 +10,6 @@ all: clean map_fold
 clean:
 	rm -f *.pge *.why
 
-coq: map_fold.who
+coq:
 	who-vcg map_fold.who --coq
 	for i in *.v; do echo 'Add LoadPath "../../coq_files/".' > .temp.v; cat $$i >> .temp.v; mv -f .temp.v $$i; done
