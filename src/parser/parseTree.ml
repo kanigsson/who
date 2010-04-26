@@ -74,6 +74,7 @@ type decl =
   | Section of var * Const.takeover list * decl list
   | TypeDef of var * generalize * typedef
   | Program of var * generalize * t * ty Const.isrec * [`Infix | `Prefix ]
+  | Fixpoint of var * generalize * ty * t * [`Infix | `Prefix ]
   | Inductive of var * generalize * ty list * inductive_branch list
   | DLetReg of rvar list
 and inductive_branch = string * t

@@ -202,6 +202,12 @@ let rec decl env d =
       let env, nv, g , e, r = letgen env x g e r fix in
       Predefined.add_symbol x nv;
       env, [Program (nv, g, e, r, fix)]
+  | I.Fixpoint (x,g,typ, e, fix) ->
+      let env, nv, g, e, r = letgen env x g e (Const.Rec typ) fix in
+      Predefined.add_symbol x nv;
+      match r with
+      | Const.Rec t -> env, [Fixpoint (nv,g,t,e,fix)]
+      | _ -> assert false
 and theory x = ExtList.fold_map_flatten decl x
 and constbranch env_inner env_outer (n,tyl) =
   let tyl = List.map (ty env_inner) tyl in

@@ -339,6 +339,9 @@ let rec infer_th env d =
   | I.Program (x,g,e,r,fix) ->
       let env,e = letgen env x g e r in
       env, Program (x,g,e,r,fix)
+  | I.Fixpoint (x,g,ty,e,fix) ->
+      let env, e = letgen env x g e (Const.Rec ty) in
+      env, Fixpoint (x,g,ty,e,fix)
   | I.Inductive (n,g,t,tel) ->
       let inner_env = Env.add_svar env n (M.from_ty t) in
       let tel = List.map (fun (n,t) -> n,check_type inner_env M.prop t) tel in
