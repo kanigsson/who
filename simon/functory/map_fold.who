@@ -148,17 +148,20 @@ axiom list_index ['a]:
   forall (i : int) (l: 'a list).
   match l with
   | Cons (x, l2) -> i = 0 -> List.index i l = x
+  | Nil -> True
   end
 axiom list_index_rec ['a]:
   forall (i : int) (l:'a list).
   match l with
   | Cons (x, l2) -> i > 0 /\ i < List.length l -> List.index i l = List.index (i-1) l2
+  | Nil -> True
   end
 axiom list_mem_inverse ['a] :
   forall (x x2:'a) (l l2:'a list).
   match l with
   | Cons (x2, l2) -> ~ (List.mem x l) ->
-    (x2 <> x /\ ~ (List.mem x l2))
+      (x2 <> x /\ ~ (List.mem x l2))
+  | Nil -> True
   end
 
 
@@ -290,7 +293,7 @@ let test1 (f : int -> b) (l : int list) =
   let ia (s:<t>) (l_cur:int list) = 
     !!r@s + List.length l_cur = List.length l in
   let ib (l_res:b list) = True in
-  let answer = List.map [{t}] ia ib (fun (x:int) ->{} incr r; f x {}) l in
+  let answer = List.map [{t}] ia ib (fun (x:int) ->{} incr r; f x {!!r = !!r@old+1}) l in
   (answer, !r)
   {res:
     snd res = List.length l /\
