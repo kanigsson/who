@@ -187,6 +187,7 @@ section whoref
   let pre ['a 'b||] (x : 'a * 'b) = get_2_1_tuple x
   let post ['a 'b||] (x : 'a * 'b) = get_2_2_tuple x
 
+  logic ifp ['a] : prop -> 'a -> 'a -> 'a
 end
 
 parameter forto [||'e1 'e2 ] (inv : int -> <'e1 'e2> -> prop) (start end_ : int)

@@ -3,6 +3,8 @@ Require Import Bool.
 Require Import Setoid.
 Open Scope bool_scope.
 
+Definition ifp (a : Type) : Prop -> a -> a -> a. Admitted.
+
 
 Module Type Map.
   Parameter key : Type.

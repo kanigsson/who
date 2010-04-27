@@ -14,7 +14,7 @@ COQFILES := $(addprefix coq_files/, $(COQV))
 
 ALLML := $(wildcard src/*.ml src/*mll src/*.mli src/util/*ml src/util/*mli src/parser/*mly src/parser/*ml src/parser/*mli src/parser/*mll src/infer/*ml src/infer/*mli)
 
-all: main.native
+all: main.native coqfiles
 
 %.native: $(ALLML)
 	$(OCAMLBUILD) $@

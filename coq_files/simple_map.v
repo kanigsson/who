@@ -11,3 +11,10 @@ Definition kempty : kmap. Admitted.
 Notation "a -->> b" :=
   ((a -> kmap -> Prop) * 
   ( a -> kmap -> kmap -> b -> Prop))%type ( at level 200).
+
+Definition ifp (a : Type) : Prop -> a -> a -> a. Admitted.
+
+Axiom ifp_true :
+  forall a (p : Prop) l r, p -> ifp a p l r = l.
+Axiom ifp_false :
+  forall a (p : Prop) l r, ~ p -> ifp a p l r = l.

@@ -1,0 +1,13 @@
+type bool
+logic == ['a] : 'a -> 'a -> bool
+logic = ['a] : 'a -> 'a -> prop
+type list ['a] =
+| Nil
+| Cons of 'a * 'a list
+logic ifp ['a] : prop -> 'a -> 'a -> 'a
+
+fixpoint remove ['a] (x : 'a) (l : 'a list) : 'a list =
+  match l with
+  | Nil -> Nil
+  | Cons (hd,tl) -> ifp (x = hd) tl (Cons hd (remove x tl))
+  end
