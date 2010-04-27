@@ -173,7 +173,7 @@ let rec recon_decl x =
           let v = mk_var_with_scheme false fix n (g,t) in
           var v (Ty.Generalize.to_inst g) l in
         let e = subst n (fun _ -> f) e in
-        let fapp = List.fold_left (fun acc t -> app acc t l) f tl in
+        let fapp = List.fold_right (fun t acc -> app acc t l) tl f in
         let def = eq fapp e l in
         List.fold_left (fun acc (x,t) -> sforall x t acc l) def acc in
       [
