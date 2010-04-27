@@ -31,11 +31,11 @@ parameter Hashtbl.find ['a 'b||] (hshtbl : ('a, 'b) hashtbl) (x : 'a) : {} 'b =
 axiom hashtbl_empty_lengh ['a 'b|r|] :
   forall (n: int).
   [[]] (Hashtbl.create n : ('a, 'b) hashtbl) [[res : (Hashtbl.length res) = 0 /\ forall (x:'a). ~ (Hashtbl.mem res x)]]
-(* adding an item to a hashtbl makes this item member of the later *)
+(* adding an item to a hashtable makes this item member of the later *)
 axiom hashtbl_add ['a 'b|r|] :
   forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
   [[]] Hashtbl.add hshtbl x y [[Hashtbl.mem !!hshtbl x]]
-(* adding an item to a hastable increments its length *)
+(* adding an item to a hashtable increments its length *)
 axiom hashtbl_add_length ['a 'b|r|] :
   forall (x : 'a) (y : 'b) (hshtbl : ref(r, ('a, 'b) hashtbl)).
   [[~ (Hashtbl.mem !!hshtbl x)]] Hashtbl.add hshtbl x y [[(Hashtbl.length !!hshtbl) = (Hashtbl.length !!hshtbl@old) +1]]
@@ -47,10 +47,8 @@ axiom hashtbl_add_find ['a 'b|r|] :
 (* ============ lists ============= *)
 logic List.append ['a] : 'a list -> 'a list -> 'a list
 logic List.index ['a] : int -> 'a list -> 'a
-logic List.remove ['a] : 'a -> 'a list -> 'a list
-logic List.length ['a] : 'a list -> int
 
-(* List.map takes to invariants *)
+(* List.map takes two invariants *)
 let rec List.map ['a 'b||'e] (ia : <'e> -> 'a list -> prop) (ib : 'b list -> prop)
   (f : 'a ->{'e} 'b) (l : 'a list) : 'b list,{'e} =
   { ia cur l /\ ib Nil /\
@@ -70,60 +68,55 @@ let rec List.map ['a 'b||'e] (ia : <'e> -> 'a list -> prop) (ib : 'b list -> pro
 let empty_ia ['a||'e] (s:<'e>) (l:'a list) = True
 let empty_ib ['b] (l:'b list) = True
 
+logic ifp ['a] : prop -> 'a -> 'a -> 'a
+
 (* inductive for membership *)
-inductive List.mem ['a] 'a, 'a list =
-  | base_mem : forall (x:'a) (l:'a list). List.mem x (Cons x l)
-  | rec_mem : forall (x y:'a) (l:'a list). List.mem x l -> List.mem x (Cons y l)
+fixpoint List.mem ['a] (x:'a) (l:'a list) : prop =
+  match l with
+  | Nil -> False
+  | Cons (head, tail) -> head = x \/ List.mem x tail
   end
 
-inductive ind_list_rem ['a] 'a, 'a list, 'a list =
-  | base_success : forall (x:'a)(l:'a list). ind_list_rem x (Cons x l) l
-  | base_failure : forall (x y:'a)(l l2:'a list). x <> y ->
-      ind_list_rem x l l2 -> ind_list_rem x (Cons y l) (Cons y l2)
-  | base_nil : forall (x:'a). ind_list_rem x Nil Nil
+fixpoint List.remove ['a] (x:'a) (l:'a list) : 'a list =
+  match l with
+  | Cons (head, tail) -> ifp (x = head)
+    tail (Cons head (List.remove x tail))
+  | Nil -> Nil
   end
-axiom list_remove_ind ['a]:
-  forall (x:'a) (l l2:'a list).
-  (ind_list_rem x l l2 -> List.remove x l = l2) /\
-  (List.remove x l = l2 -> ind_list_rem x l l2)
 
-inductive ind_list_len ['a] 'a list, int =
-  | base : ind_list_len Nil 0
-  | recur : forall (x:'a) (l:'a list) (n:int).
-      ind_list_len l n -> ind_list_len (Cons x l) (n+1)
+fixpoint List.length ['a] (l:'a list) : int =
+  match l with
+  | Nil -> 0
+  | Cons (head, tail) -> 1 + List.length tail
   end
-axiom list_length_ind ['a]:
-  forall (l:'a list) (n:int).
-  (ind_list_len l n -> List.length l = n) /\
-  (List.length l = n -> ind_list_len l n)
 
-axiom remove_does_remove ['a] :
-  forall (x : 'a) (l : 'a list).
-  List.remove x (Cons x l) = l
-axiom remove_does_not_rampage ['a] :
-  forall (x y : 'a) (l : 'a list).
-  y <> x -> List.remove y (Cons x l) = Cons x (List.remove y l)
-axiom remove_empty ['a]:
-  forall (x: 'a) (l : 'a list).
-  l = Nil -> List.remove x l = Nil
 axiom append_does_append ['a] :
   forall (l1 l2 : 'a list) (x : 'a).
   (List.mem x l1 -> List.mem x (List.append l1 l2)) /\
   (List.mem x l2 -> List.mem x (List.append l1 l2))
-axiom append_match ['a] :
+lemma remove_does_remove ['a] :
+  forall (x : 'a) (l : 'a list).
+  List.remove x (Cons x l) = l
+lemma remove_does_not_rampage ['a] :
+  forall (x y : 'a) (l : 'a list).
+  y <> x -> List.remove y (Cons x l) = Cons x (List.remove y l)
+lemma remove_empty ['a]:
+  forall (x: 'a) (l : 'a list).
+  l = Nil -> List.remove x l = Nil
+lemma append_match ['a] :
   forall (l l2:'a list).
   match l with
   | Cons (x, Nil) ->  List.append l l2 = Cons x l2
   | Nil -> List.append l l2 = l2
   | Cons (x, l3) -> List.append l l2 = Cons x (List.append l3 l2)
   end
-axiom list_length_nil ['a]:
+lemma list_length_nil ['a]:
   forall (l : 'a list).
   l = Nil -> List.length l = 0
-axiom list_length_pos ['a] :
+lemma list_length_pos ['a] :
   forall (l:'a list).
   List.length l >= 0
-axiom list_length_map ['a 'b||'e]:
+lemma list_length_map ['a 'b||'e]:
   forall (l:'a list) (f:'a ->{'e} 'b) (ia : <'e> -> 'a list -> prop) (ib : 'b list -> prop).
   [[]] List.map [{'e}] ia ib f l [[res : List.length l = List.length res]]
 (*goal basic_test1 :
@@ -167,7 +160,6 @@ axiom list_mem_inverse ['a] :
 
 
 (* tests for those axioms *)
-(*
 goal g1 ['a] :
   forall (x x2:'a) (l:'a list).
   List.length (Cons x (Cons x2 l)) >= 2
@@ -193,7 +185,6 @@ goal g6 ['a 'b] :
 goal g7 ['a] :
   forall (x:'a) (l:'a list).
   ~ (List.mem x l) -> List.remove x l = l
-*)
 (*
 *)
 
@@ -265,8 +256,8 @@ axiom relat_trans_trans ['c||'e] :
 
 parameter X.compute ['c||'e]
   (inv : <'e> -> (a * 'c) list -> prop )
-  (worker : (a -> 'b))
-  (master : (a * 'c -> 'b ->{'e} (a * 'c) list))
+  (worker : (a -> b))
+  (master : (a * 'c -> b ->{'e} (a * 'c) list))
   (l : (a * 'c) list)
   : {'e} unit =
   {
@@ -313,7 +304,7 @@ let test2 (l : int list) =
   let ia (s:<t>) (l_cur:int list) = 
     !!r@s + List.length l_cur = List.length l in
   let ib (l_res:int list) = True in
-  List.map [{t}] ia ib (fun (x:int) ->{} r := !r + 1; !r {}) l
+  List.map [{t}] ia ib (fun (x:int) ->{} r := !r + 1; !r {!!r = !!r@old+1}) l
   { res:
     forall (j:int).
     0 <= j /\ j < List.length l -> List.index j res = j+1
@@ -339,7 +330,7 @@ let map (f : a -> b) (l : a list) =
     List.map [{r}] rel (fun (x:'a) -> {} incr i; x, !i {}) l in
   letregion r2 in
   let results = ref (r2) (Hashtbl.create 17) in
-  let inv (s : <r2>) (l1 : (a * int) list) = (* invariant *)
+  let inv (s : <r2>) (l1 : (a * int) list) = (* invariant for compute *)
     (Hashtbl.length (!!results@s)) + List.length l1 = List.length l /\
     (forall (i:int).
       [[Hashtbl.mem !!results@s i]] Hashtbl.find !results i [[res : res = f (List.index (i-1) l) ]])
@@ -353,7 +344,7 @@ let map (f : a -> b) (l : a list) =
     l_res <> Nil -> (snd (List.head l_old)) + List.length l_res = List.length l in
   List.map [{r2}]
     rel
-    (fun (tuple : a*int) -> {} results := !results; (* FIXME : dirty hack *) Hashtbl.find !results (snd tuple) {})
+    (fun (tuple : a*int) -> {} (* results := !results; dirty hack *) Hashtbl.find !results (snd tuple) {})
     tasks
   { res:
     (l = Nil -> res = Nil) /\
@@ -446,21 +437,21 @@ let map_fold_a ~(map : 'a -> 'b) ~(fold : 'b -> 'b -> 'b) acc l =
   let results = Hashtbl.create 17 in
   let merge i j r =
     if Hashtbl.mem results (i-1) then begin
-let l, h, x = Hashtbl.find results (i-1) in
-assert (h = i-1);
-Hashtbl.remove results l;
-Hashtbl.remove results h;
-[Fold (x, r), (l, j)]
+      let l, h, x = Hashtbl.find results (i-1) in
+      assert (h = i-1);
+      Hashtbl.remove results l;
+      Hashtbl.remove results h;
+      [Fold (x, r), (l, j)]
     end else if Hashtbl.mem results (j+1) then begin
-let l, h, x = Hashtbl.find results (j+1) in
-assert (l = j+1);
-Hashtbl.remove results h;
-Hashtbl.remove results l;
-[Fold (r, x), (i, h)]
+      let l, h, x = Hashtbl.find results (j+1) in
+      assert (l = j+1);
+      Hashtbl.remove results h;
+      Hashtbl.remove results l;
+      [Fold (r, x), (i, h)]
     end else begin
-Hashtbl.add results i (i,j,r);
-Hashtbl.add results j (i,j,r);
-[]
+      Hashtbl.add results i (i,j,r);
+      Hashtbl.add results j (i,j,r);
+      []
     end
   in
   X.compute
@@ -472,5 +463,5 @@ Hashtbl.add results j (i,j,r);
   (* we are done; results must contain 2 mappings only, for 1 and n *)
   try let _,_,r = Hashtbl.find results 1 in r with Not_found -> acc
 
-
 *)
+
