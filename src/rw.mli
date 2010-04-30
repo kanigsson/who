@@ -43,6 +43,8 @@ val rremove : t -> Name.t list -> t
 val overapprox : t -> Effect.t
 val kernel : t -> Effect.t
 
+val sub : t -> t -> bool
+
 module Convert : sig
   val t : Name.Env.t -> t -> PrintTree.rw
 end

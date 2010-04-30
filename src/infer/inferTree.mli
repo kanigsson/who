@@ -38,7 +38,7 @@ type t' =
   | Let of Ty.Generalize.t * t * Name.t * t * isrec
   | PureFun of Name.t * MutableType.t * t
   | Ite of t * t * t
-  | Annot of t * Ty.t
+  | Annot of t * Ty.t * Rw.t
   | Quant of [`FA | `EX ] * Name.t * MutableType.t * t
   | Param of Ty.t * Rw.t
   | Gen of Ty.Generalize.t * t

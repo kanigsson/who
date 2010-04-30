@@ -191,10 +191,13 @@ and infer env (x : I.t) =
         in
         let e2 = check_type env t1 e2 in
         App (e1,e2), t2, M.rw_union3 e1.e e2.e eff
-    | I.Annot (e,t) ->
+    | I.Annot (e,t,rw) ->
         let t' = M.from_ty t in
         let e = check_type env t' e in
-        Annot (e,t), t', e.e
+        begin match rw with
+        | None -> e.v, e.t, e.e
+        | Some rw -> Annot (e,t,rw), t', M.from_rw rw
+        end
     | I.Const c -> Const c, M.const (Const.type_of_constant c), M.rw_empty
     | I.PureFun (x,nt,e) ->
         let nt = Opt.get_lazy M.new_ty nt in

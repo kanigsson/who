@@ -61,7 +61,7 @@ let rec ast' loc env = function
       let env, x = Env.add_var env x in
       Quant (k, x, Opt.map (to_mutable env) t, ast env e)
   | I.Ite (e1,e2,e3) -> Ite (ast env e1, ast env e2, ast env e3)
-  | I.Annot (e,t) -> Annot (ast env e, ty env t)
+  | I.Annot (e,t,eff) -> Annot (ast env e, ty env t, Opt.map (rw loc env) eff)
   | I.Param (t,e) -> Param (ty env t, rw loc env e)
   | I.For (dir,p,i,st,en,e) ->
       let st = ast env st in

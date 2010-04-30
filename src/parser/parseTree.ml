@@ -43,7 +43,7 @@ type t' =
   | Let of generalize * t * var * t * ty Const.isrec
   | PureFun of var option * ty option * t
   | Ite of t * t * t
-  | Annot of t * ty
+  | Annot of t * ty * rw option
   | Quant of [`FA | `EX] * var option * ty option * t
   | Param of ty * rw
   | For of var * t option * var * t * t * t

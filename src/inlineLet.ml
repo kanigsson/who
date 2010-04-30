@@ -35,7 +35,8 @@ let term env t =
       | Let (g,e1,b) ->
           let x,e2 = vopen b in
           polsubst g x e1 e2
-      | Const _ | Var _ | App _ | Gen _ | PureFun _ | Quant _ | Ite _
+      | Const _ | Var _ | App _ | Gen _ | PureFun _
+      | Quant _ | Ite _ | SubEff _
       | Lam _ | LetReg _ | Param _ | HoareTriple _ | Case _| LetRec _ -> t)
     t
 

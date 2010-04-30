@@ -41,7 +41,7 @@ type t' =
   | Let of G.t * t * Name.t * t * isrec
   | PureFun of Name.t * M.t * t
   | Ite of t * t * t
-  | Annot of t * Ty.t
+  | Annot of t * Ty.t * Rw.t
   | Quant of [`FA | `EX ] * Name.t * M.t * t
   | Param of Ty.t * Rw.t
   | Gen of G.t * t
@@ -82,5 +82,3 @@ let const c = mk_val (Const c) (M.const (Const.type_of_constant c))
 
 let pure_lam x t e =
   mk_val (PureFun (x, t, e)) (M.parr t e.t)
-
-let annot e t = mk (Annot (e,t)) e.t e.e

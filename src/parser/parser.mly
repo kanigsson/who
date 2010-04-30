@@ -71,7 +71,7 @@
   let may_annot annot e =
     match annot with
     | None -> e
-    | Some t -> Loc.mk e.info (Annot (e,t))
+    | Some t -> Loc.mk e.info (Annot (e,t, None))
 
   let get_oblig_type t =
     match t with
@@ -130,7 +130,7 @@ aterm_nopos:
   | LPAREN x = infix RPAREN { Var (x, ([],[],[])) }
   | LPAREN t = seq_term RPAREN { t.c }
   | BEGIN t = seq_term END { t.c }
-  | LPAREN e = seq_term COLON t = ty RPAREN { Annot (e,t) }
+  | LPAREN e = seq_term COLON t = ty RPAREN { Annot (e,t, None) }
   | REF LPAREN r = IDENT RPAREN { ParseTree.Ref r }
 aterm: t = annotated(aterm_nopos) { t }
 

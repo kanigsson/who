@@ -74,3 +74,5 @@ end
 
 let print = Print.rw
 
+let sub a b =
+  Effect.sub_effect a.read b.read && Effect.sub_effect a.write b.write

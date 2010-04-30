@@ -63,7 +63,7 @@ let rec lift_value v =
   | Case (t,bl) ->
       case (lift_value t) (List.map lift_branch bl) l
   | HoareTriple (p,e,q) -> bodyfun p e q
-  | LetReg _ | Gen _ | Param _ | Ite _ | LetRec _  ->
+  | LetReg _ | Gen _ | Param _ | Ite _ | LetRec _ | SubEff _  ->
       error (Myformat.sprintf "not a value: %a" print v) l
 and lift_branch b =
   let nvl, p, t = popen b in
@@ -85,7 +85,7 @@ and correct v =
   | Case (t,bl) ->
       and_ (correct t) (case (lift_value t) (List.map branch_correct bl) l) l
   | LetReg _ | Gen _ | Param _ | LetRec _
-  | Ite _ | HoareTriple _ ->
+  | Ite _ | HoareTriple _ | SubEff _ ->
       Myformat.printf "correct: not a value: %a@." print v;
       assert false
 and branch_correct b =
@@ -157,7 +157,9 @@ and wp m q e =
     | Case (v,bl) ->
         case (lift_value v) (List.map (branch m q) bl) l
     | Param _ -> ptrue_ l
-    | _ -> assert false
+    | SubEff (e,_) -> wp_node m q e
+    | HoareTriple _ | Gen _ | Quant _ | PureFun _ | Lam _ | Var _ | Const _ ->
+        assert false
 and wp_node m q e =
 (*   Myformat.printf "wp:%a@." print e; *)
   let read, write = Rw.read_write e.e in

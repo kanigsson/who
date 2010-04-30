@@ -36,7 +36,7 @@ type t' =
   | Let of G.t * t * Name.t * t * isrec
   | PureFun of Name.t * MutableType.t option * t
   | Ite of t * t * t
-  | Annot of t * Ty.t
+  | Annot of t * Ty.t * Rw.t option
   | Quant of [`FA | `EX ] * Name.t * MutableType.t option * t
   | Param of Ty.t * Rw.t
   | Gen of G.t * t
@@ -77,7 +77,7 @@ and induct_branch = Name.t * t
 type theory = decl list
 
 let mk t l = { v = t ; loc = l }
-let annot e t = mk (Annot (e,t))
+let annot e t = mk (Annot (e,t,None))
 let gen g t l =
   if Ty.Generalize.is_empty g then t else mk (Gen (g,t)) l
 

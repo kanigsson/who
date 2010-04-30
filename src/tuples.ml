@@ -245,7 +245,7 @@ let rec term env t =
         let_ g e1 x (term env e2) Const.NoRec l
     | Case (t,bl) ->
         case (term env t) (List.map (branch env) bl) l
-    | Lam _ | LetReg _ | Param _ | HoareTriple _ | LetRec _ ->
+    | Lam _ | LetReg _ | Param _ | HoareTriple _ | LetRec _ | SubEff _ ->
         assert false
 and branch env b =
   let nvl, p, t = popen b in

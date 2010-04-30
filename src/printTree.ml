@@ -56,6 +56,7 @@ type t =
   | HoareTriple of funcbody
   | LetReg of string list * t
   | Case of t * branch list
+  | SubEff of t * ty * rw
 and funcbody = t * t * t
 and isrec = ty Const.isrec
 and branch = pattern * t
@@ -145,8 +146,8 @@ module Generic = struct
     fprintf fmt "(%a :@ %s)" (list space string) l s
 
   let is_compound_term = function
-    | Const _ | Var _ | Lam _ | PureFun _ | Get _ | PRef _ -> false
-    | App _ | Let _ | Ite _ | Case _
+    | Const _ | Var _ | Lam _ | PureFun _ | Get _ | PRef _ | SubEff _-> false
+    | App _ | Let _ | Ite _ | Case _  -> true
     | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
 
   let inductive_sep fmt () = fprintf fmt "@ |@ "
@@ -210,7 +211,7 @@ module Coq = struct
         if tl = [] then term fmt t else
           fprintf fmt "%a %a" pr_generalize tl term t
     (* specific to Who, will not be printed in backends *)
-    | Param _ | HoareTriple _ | LetReg _ | Lam _ | Get _ | PRef _ ->
+    | Param _ | HoareTriple _ | LetReg _ | Lam _ | Get _ | PRef _ | SubEff _ ->
         assert false
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
@@ -346,7 +347,7 @@ module Pangoline = struct
         fprintf fmt "@[case %a of @[%a@] end @]" (term env) t
           (list inductive_sep (branch env)) bl
     (* specific to Who, will not be printed in backends *)
-    | Param _ | HoareTriple _ | LetReg _ | Lam _ | Get _ | PRef _ ->
+    | Param _ | HoareTriple _ | LetReg _ | Lam _ | Get _ | PRef _ | SubEff _ ->
         assert false
   and with_paren env fmt x =
     if is_compound_term x then paren (term env) fmt x else (term env) fmt x
@@ -502,6 +503,8 @@ module Who = struct
           (list inductive_sep branch) bl
     | Get (r,t) -> fprintf fmt "!!%a@@%a" term r term t
     | PRef r -> fprintf fmt "ref(%a)" string r
+    | SubEff (t,typ, eff) ->
+        fprintf fmt "(%a : %a %a)" term t ty typ rw eff
   and with_paren fmt x =
     if is_compound_term x then paren term fmt x else term fmt x
   and branch fmt (p,t) =

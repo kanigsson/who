@@ -50,6 +50,7 @@ type node =
   | HoareTriple of funcbody
   | LetReg of Name.t list * t
   | Case of t * branch list
+  | SubEff of t * Rw.t
 and t = { v : node ; t : Ty.t ; e : Rw.t; loc : Loc.loc }
 and isrec = Ty.t Const.isrec
 and funcbody = t * t * t
@@ -102,6 +103,7 @@ let map ~varfun ~varbindfun ~patternbindfun
     | Quant (k,t,b) -> Quant (k,tyfun t,varbindfun b)
     | Gen (g,e) -> Gen (g,aux e)
     | Case (t,bl) -> Case (aux t, List.map branch bl)
+    | SubEff (t,rw) -> SubEff (aux t, rwfun rw)
   and rwfun e = Rw.map effectfun e
   and body (p,e,q) = aux p, aux e, aux q
   and branch b = patternbindfun b
@@ -301,6 +303,8 @@ module Convert = struct
         | Case (e,bl) ->
             let e = t env e in
             P.Case (e, List.map (branch env) bl)
+        | SubEff (e,eff) ->
+            P.SubEff (t env e,ty env e.t, rw env eff)
   and body env (t1,t2,t3) = t env t1, t env t2, t env t3
   and branch env pb =
     let nvl, p,e = popen pb in
@@ -542,6 +546,13 @@ let plam x t e loc =
 
 let hoare_triple p e q l = mk_val (HoareTriple (p,e,q)) Ty.prop l
 
+let subeff t e l =
+  if Rw.sub t.e e then mk (SubEff (t,e)) t.t e l
+  else begin
+    Myformat.printf "subeffecting not correct@.";
+    failwith "subeff"
+  end
+
 let gen g e l = true_or e (mk (Gen (g, e)) e.t e.e l)
 
 let simple_app t1 t2 l =
@@ -722,6 +733,7 @@ and rebuild_map ?(varfun = Misc.k3) ?(termfun = Misc.id) ?(tyfun = Misc.id) =
           hoare_triple (aux p) (aux e) (aux q) l
       | Case (e,bl) -> case (aux e) (List.map branch bl) l
       | Lam (x,t,(p,e,q)) -> lam x t (aux p) (aux e) (aux q) l
+      | SubEff (t,e) -> subeff (aux t) e l
       | LetReg _ | Param _ -> assert false in
     termfun t
   and branch b =
@@ -968,7 +980,7 @@ let andlist l loc =
 let rec is_value x =
   match x.v with
   | Const _ | Var _ | Lam _ | PureFun _ | Quant _ | HoareTriple _ -> true
-  | Let _ | Ite _ | LetReg _ | Param _ | Case _ | LetRec _ -> false
+  | Let _ | Ite _ | LetReg _ | Param _ | Case _ | LetRec _ | SubEff _ -> false
   | Gen (_,e) -> is_value e
   | App (t1,_) ->
       match t1.t with

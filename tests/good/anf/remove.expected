@@ -1,0 +1,14 @@
+type bool
+logic == ['a||] : a -> a -> bool
+logic = ['a||] : a -> a -> prop
+type list ['a||] = | Nil | Cons of a* list[a] 
+logic remove ['a||] : a -> list[a] -> list[a]
+axiom removedef:
+  forall ['a||]. forall (x:a).
+                 forall (l:list[a]).
+                 let
+                 anf =
+                      match l with Nil ->  Nil [a||]  | Cons(hd,tl) ->
+                                    if x == hd then tl else
+                                    Cons [a||] hd (remove [a||] x tl)  end 
+                 in anf = (remove [a||] x l) 

@@ -40,6 +40,7 @@ type error =
   | TyMismatch of Ty.t * Ty.t
   | CapMismatch of Name.t list * Name.t list
   | PatternArgs of Name.t
+  | EffectTooLarge of Rw.t * Rw.t
   | Other of string
 
 exception Error of Loc.loc * error
@@ -75,6 +76,10 @@ let explain e =
       Myformat.sprintf
         "constructor %a has not been given the right number of arguments"
         Name.print n
+  | EffectTooLarge (actual, assumed) ->
+      Myformat.sprintf
+        "cannot subeffect here: %a larger than %a"
+        Rw.print actual Rw.print assumed
   | Other s -> s
 
 let error loc e = raise (Error (loc, e))
@@ -201,6 +206,7 @@ let rec formtyping' env loc = function
   | Param _ -> errorm loc "effectful parameter in logic"
   | LetRec _ -> assert false
   | LetReg _ -> assert false
+  | SubEff _ -> assert false
 and formtyping env (e : Ast.t) : Ty.t =
 (*   Myformat.printf "formtyping %a@." Ast.print e; *)
   let t = formtyping' env e.loc e.v in
@@ -311,6 +317,10 @@ and typing' env loc = function
   | LetReg (vl,e) ->
       let t, eff = typing env e in
       t, Rw.rremove eff vl
+  | SubEff (e,rw) ->
+      let t, eff = typing env e in
+      if Rw.sub eff rw then t, rw
+      else error e.loc (EffectTooLarge (eff, rw))
   | Case (e,bl) ->
       let t,eff = typing env e in
       let tl, effl = List.split (List.map (branch env t) bl) in

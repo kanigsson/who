@@ -123,7 +123,10 @@ let rec recon' loc = function
       f.v
 *)
   | I.LetReg (vl,e) -> LetReg (vl,recon e)
-  | I.Annot (e,t) -> (recon e).v
+  | I.Annot (e,t,eff) ->
+      let e = recon e in
+      if Rw.equal e.e eff then e.v
+      else SubEff (e,eff)
   | I.Gen (g,e) -> Gen (g,recon e)
   | I.Case (t,bl) -> Case (recon t, List.map branch bl)
 and get_pre (_,x) =

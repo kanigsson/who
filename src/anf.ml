@@ -63,6 +63,7 @@ and normalize e k =
 (*       Format.printf "found hoare_triple@."; *)
       k (hoare_triple (normalize_term p)
         (normalize_term e) (normalize_term q) loc)
+  | SubEff (e,eff) -> k (subeff (normalize_term e) eff loc)
 and branch b =
   let nvl,p,e = popen b in
   let e = normalize_term e in
