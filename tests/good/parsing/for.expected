@@ -116,7 +116,6 @@ let fst ['a 'b||] = (fun (x:a * b) -> get_2_1_tuple [a,b||] x)
 let snd ['a 'b||] = (fun (x:a * b) -> get_2_2_tuple [a,b||] x) 
 let pre ['a 'b||] = (fun (x:a * b) -> get_2_1_tuple [a,b||] x) 
 let post ['a 'b||] = (fun (x:a * b) -> get_2_2_tuple [a,b||] x) 
-logic ifp ['a||] : prop -> a -> a -> a
 let forto [||'e
   'e1] = (fun (inv:int -> < 'e 'e1> -> prop) ->
          (fun (start:int) ->
@@ -199,6 +198,7 @@ axiom create_access:
 type list ['a||] = | Nil | Cons of a* list[a] 
 logic is_nil ['a||] : list[a] -> bool
 logic l_in ['a||] : a -> list[a] -> prop
+logic ifp ['a||] : prop -> a -> a -> a
 type option ['a||] = | None | Some of a 
 let
   f [|r|] = (fun (b:unit) ->

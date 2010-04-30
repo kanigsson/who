@@ -1,0 +1,6 @@
+letregion r s
+
+let f (x : int) =
+  {}
+  (x : int {r s})
+  {}

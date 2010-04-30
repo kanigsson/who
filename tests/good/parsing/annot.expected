@@ -1,0 +1,4 @@
+letregion s r
+let
+  f  = (fun (x:int) -> {(fun (cur:<r s >) -> True)} (x : int {  + r s })
+       {(fun (old:<r s >) -> (fun (cur:<r s >) -> (fun (anon:int) -> True)))}) 

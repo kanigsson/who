@@ -1,0 +1,19 @@
+letregion r
+
+logic fact : int -> int
+
+axiom fact_zero : fact 0 = 1
+axiom fact_step : forall (n: int). 0 <= n -> fact (n+1) = (n + 1) * (fact n)
+
+let is_fact (f :  int ->{r} int) =
+  forall k. [[ 0 <= k ]] f k [[ r : r = fact k ]]
+
+let circfact () =
+  {}
+  let x = ref(r) (fun (n : int) -> {} (n : int, {r}) {}) in
+  x := (fun (n : int) ->
+    { 0 <= n /\ is_fact (!!x) }
+      if n == 0 then 1 else n * (!x) (n-1)
+    { r : r = fact n });
+  !x
+  {is_fact !!x}

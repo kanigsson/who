@@ -130,9 +130,13 @@ aterm_nopos:
   | LPAREN x = infix RPAREN { Var (x, ([],[],[])) }
   | LPAREN t = seq_term RPAREN { t.c }
   | BEGIN t = seq_term END { t.c }
-  | LPAREN e = seq_term COLON t = ty RPAREN { Annot (e,t, None) }
+  | LPAREN e = seq_term COLON a = term_annot RPAREN
+    { let t, rw = a in Annot (e,t, rw) }
   | REF LPAREN r = IDENT RPAREN { ParseTree.Ref r }
 aterm: t = annotated(aterm_nopos) { t }
+term_annot :
+  | t = ty { t, None}
+  | p = param_annot { let t,e = p in t, Some e }
 
 tuple_list:
   | t1 = nterm COMMA t2 = nterm { [t2; t1] }
