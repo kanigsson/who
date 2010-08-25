@@ -101,6 +101,10 @@ let scheme env (g, t) =
   g, tyfun env t
 
 let find_type t =
+  (** find type [t] in another type of (nested) tuple form; return the list of
+    integers that is needed to access the object of this type by projection *)
+  (** example: find type [a] in the tuple [(b,(d,f,a))] This function returns
+      the list [ [3;2;] ] *)
   let rec aux acc in_t =
     if Ty.equal in_t t then acc
     else
@@ -118,9 +122,12 @@ let find_type t =
   aux []
 
 let build_get_tuple il tup l =
+  (** take a list of integers [ [i;j;...] ] and build the term
+     [get_i (get_j * ... (tup))]  *)
   List.fold_right (fun i acc -> get_tuple i acc l) il tup
 
 let obtain_get t in_t tup l =
+  (** wrapper around [obtain_get] for exception and [unit] *)
   if Ty.is_unit t then void l
   else
     try
@@ -129,6 +136,8 @@ let obtain_get t in_t tup l =
     with Not_found -> error (NotFoundInTuple (t,in_t,tup))
 
 let one_or_many f t =
+  (** take a type of tuple form (where singleton tuples are identified with
+     simple types), and apply [f] to each of the contained types *)
   match t with
   | Ty.Tuple tl -> List.map f tl
   | _ -> [f t]
@@ -136,14 +145,9 @@ let one_or_many f t =
 let adapt_tuples te t1 t2 l =
   (* [t] is a tuple of t1, but we want a tuple of t2 *)
   mk_tuple (one_or_many (fun t -> obtain_get t t1 te l) t2) l
-(*
-  Myformat.printf "-have types %a, but want type %a@."
-  Ty.print t1 Ty.print t2;
-*)
 
 let combine_to_tuple target m1 m2 l =
-(*   Format.printf "combining %a and %a of types %a and %a@." print m1 print m2
- *   *)
+  (** an implementation of [combine] on tuples *)
   mk_tuple (one_or_many (fun t ->
     try obtain_get t m2.t m2 l
     with Error NotFoundInTuple _ ->
@@ -151,7 +155,7 @@ let combine_to_tuple target m1 m2 l =
       ) target) l
 
 let restrict_to_tuple target m l =
-(*   Format.printf "restrict@."; *)
+  (** an implementation of [restrict] on tuples *)
   mk_tuple (one_or_many (fun t -> obtain_get t m.t m l) target) l
 
 let adapt obt exp t l =
@@ -216,7 +220,7 @@ let rec term env t =
         let el = List.map (effect_to_tuple_type env) el in
         let tl = List.map (tyfun env) tl in
         let tl = tl@(rl@el) in
-        (* expected-type is the type of the object we want to have here;
+        (* expected_type is the type of the object we want to have here;
          * we simply use its original type in the effect system and
          * convert it *)
         let expected_type = tyfun env t.t in
