@@ -7,28 +7,28 @@ let add h key info =
   if h.size > Array.length h.data lsl 1 then resize hash h
 *)
 
-section Hashtbl
-  coq "WhoHashtbl"
-  type hashkey
-  logic hash : hashkey -> int
-  type hl ['a||] = (hashkey * 'a) list
+logic mmod : int -> int -> int
+axiom mmod1 :
+  forall (a b : int). 0 <= mmod a b /\ mmod a b < b
 
-  logic repr ['a||] : 
-    'a hl array -> 'a hl -> prop
+type hashkey
+logic hash : hashkey -> int
+type hl ['a||] = (hashkey * 'a) list
 
-  let is_hashtable ['a||] (h : 'a hl array) =
-    let l = len h in
-    0 < l /\
-    forall (i : int).
-      0 <= i -> i < l ->
-      forall (k : hashkey) (v : 'a).
-        l_in (k,v) (get i h) -> mod (hash k) l = i
+logic repr ['a||] :
+  'a hl array -> 'a hl -> prop
 
-end
+let is_hashtable ['a||] (h : 'a hl array) =
+  let l = len h in
+  0 < l /\
+  forall (i : int).
+    0 <= i -> i < l ->
+    forall (k : hashkey) (v : 'a).
+      l_in (k,v) (get i h) -> mmod (hash k) l = i
 
 let add ['a |r| ] (l : 'a hl)
   (h : ref(r,'a hl array)) (key : hashkey) (val : 'a) =
-  {is_hashtable (!! h) /\ repr (!! h) l  }
-  let i = mod (hash key) (len (!h)) in
-  h := set i (cons (key,val) (get i (!h))) (!h)
-  {is_hashtable (!! h) /\ repr (!! h) (cons (key, val) l)}
+  {is_hashtable !! h }
+  let i = mmod (hash key) (len !h) in
+  h := set i (Cons (key,val) (get i !h)) !h
+  {is_hashtable !! h}
