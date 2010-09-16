@@ -1,16 +1,21 @@
+let ignore ['a] (x : 'a) = ()
+
 let iter ['a|t|'e]
   (inv : <t 'e> -> int ->  prop)
   (ar : ref(t, 'a array)) (f : 'a ->{t 'e} unit)  =
+
   { inv cur 0 /\
     forall (i:int). 0 <= i /\ i < len (!!ar) ->
     [[ inv cur i ]] f (get i !ar) [[inv cur (i+1)]]
   }
+
   for i = 0 to len !ar - 1 do
     { inv cur i }
     f (get i !ar)
   done
-  {inv cur (len !!ar@old) }
-(*
+
+  { inv cur (len !!ar@old) }
+
 logic sum_array : int -> int array -> int
 axiom sum_array_none :
   forall (t : int array). sum_array 0 t = 0
@@ -19,19 +24,17 @@ axiom sum_array_step :
     0 <= i -> i < len t ->
     sum_array (i+1) t = sum_array i t + get i t
 
-region ar
-parameter arr : ref(ar,int array)
-
-let main (z : unit) =
+let main [|ar|] (arr : ref(ar,int array)) =
   {}
   letregion s in
-  let sum = ref{{s}} 0 in
+  let sum = ref(s) 0 in
   let arrcur = !arr in
-  iter
-    (fun (s : <ar s>) (k : int) ->
-        !!sum|s = sum_array k !!arr|s /\ !!arr|s = arrcur)
+  iter [{s}]
+    (fun (cur : <ar s>) (k : int) ->
+        !!sum = sum_array k !!arr /\ !!arr = arrcur)
     arr
-    (fun (z : int) -> {} sum := !sum + z { !!sum = !!sum|old + z});
+    (fun (z : int) ->
+      {} arr := !arr; sum := !sum + z
+      { !!sum = !!sum@old + z /\ !!arr = !!arr@old });
   !sum
-  {r : r = sum_array (len !!arr) !!arr /\ !!arr = !!arr|old  }
-*)
+  {r : r = sum_array (len !!arr) !!arr /\ !!arr = !!arr@old  }
