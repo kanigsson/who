@@ -23,12 +23,12 @@
 
 type 'a t = 'a option
 
-let get def x = 
+let get def x =
   match x with
   | None -> def
   | Some x -> x
 
-let force x = 
+let force x =
   match x with
   | None -> invalid_arg "force"
   | Some x -> x
@@ -43,12 +43,12 @@ let get_map def f x =
   | None -> def
   | Some x -> f x
 
-let map f x = 
+let map f x =
   match x with
   | None -> None
   | Some x -> Some (f x)
 
-let print pr fmt x = 
+let print pr fmt x =
   match x with
   | None -> ()
   | Some x -> pr fmt x

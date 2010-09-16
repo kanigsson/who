@@ -223,7 +223,8 @@ and infer env (x : I.t) =
         Gen (g,e), e.t, e.e
     | I.Param (t,eff) ->
         let rw = M.from_rw eff in
-        Param (t,eff), M.from_ty t, rw
+        let nt = M.from_ty t in
+        Param (t,eff), nt, rw
     | I.For (dir,inv,i,s,e,body) ->
         let env = Env.add_svar env i M.int in
         let body = check_type env (M.unit ()) body in
@@ -258,7 +259,8 @@ and infer env (x : I.t) =
         let e = infer (Env.to_program_env env) e in
         let p = pre env (fst e.e) p l in
         let q = post env e.e e.t q l in
-        Lam (x,xt,(p,e,q)), M.arrow nt e.t e.e, M.rw_empty
+        let rt = M.arrow nt e.t e.e in
+        Lam (x,xt,(p,e,q)), rt, M.rw_empty
   in
   { v = e ; t = t ; e  = eff ; loc = l }
 and pre env eff (cur,x) l =
@@ -341,6 +343,7 @@ let rec infer_th env d =
   | I.DGen g -> env, DGen g
   | I.Program (x,g,e,r,fix) ->
       let env,e = letgen env x g e r in
+(*       Myformat.printf "added: %a : %a@." Name.print x M.print e.t; *)
       env, Program (x,g,e,r,fix)
   | I.Fixpoint (x,g,ty,e,fix) ->
       let env, e = letgen env x g e (Const.Rec ty) in

@@ -126,24 +126,24 @@ module Convert = struct
 
   let rw env (r1,r2) = effect env r1, effect env r2
 
-  let ty env =
-    let rec aux x =
-      match Uf.desc x with
-      | U -> P.TApp (Myformat.sprintf "%d" (Uf.tag x), [])
-      | Const c -> P.TConst c
-      | Tuple tl -> P.Tuple (List.map aux tl)
-      | PureArr (t1,t2) -> P.PureArr (aux t1, aux t2)
-      | Ref (r,t) -> P.Ref (region env r, aux t)
-      | Arrow (t1,t2,e) -> P.Arrow (aux t2, aux t2, rw env e)
-      | Map e -> P.Map (effect env e)
-      | App (n,i) -> P.TApp (id env n, List.map aux i) in
-    aux
+  let rec ty env x = ty_aux (Uf.tag x) env (Uf.desc x)
+  and ty_aux tag env x =
+    match x with
+    | U -> P.TApp (Myformat.sprintf "%d" tag, [])
+    | Const c -> P.TConst c
+    | Tuple tl -> P.Tuple (List.map (ty env) tl)
+    | PureArr (t1,t2) -> P.PureArr (ty env t1, ty env t2)
+    | Ref (r,t) -> P.Ref (region env r, ty env t)
+    | Arrow (t1,t2,e) -> P.Arrow (ty env t1, ty env t2, rw env e)
+    | Map e -> P.Map (effect env e)
+    | App (n,i) -> P.TApp (id env n, List.map (ty env) i)
 end
 
 module Print = struct
 
   open Myformat
   let empty = Name.Env.empty Name.M.empty
+  let ty_aux fmt t = PrintTree.Print.ty fmt (Convert.ty_aux 0 empty t)
   let ty fmt t = PrintTree.Print.ty fmt (Convert.ty empty t)
   let effect fmt t = PrintTree.Print.effect fmt (Convert.effect empty t)
   let rw fmt t = PrintTree.Print.rw fmt (Convert.rw empty t)
@@ -158,6 +158,7 @@ let memo =
     with Not_found ->
       let n = mkt t in
       Hty.add h t n; n
+
 
 let parr t1 t2 = memo (PureArr (t1,t2))
 let arrow t1 t2 e = memo (Arrow (t1,t2,e))

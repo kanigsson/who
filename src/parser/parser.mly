@@ -305,7 +305,7 @@ decl:
     let par = mk_param args pre post rt e p in
     Program (fst x,l,par, NoRec, snd x)
   }
-  | FIXPOINT x = defprogvar l = gen args = arglist COLON rt = ty 
+  | FIXPOINT x = defprogvar l = gen args = arglist COLON rt = ty
     EQUAL t = seq_term
   {
     let p = build $startpos $endpos in

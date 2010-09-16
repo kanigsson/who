@@ -21,7 +21,7 @@
 (*  along with this program.  If not, see <http://www.gnu.org/licenses/>      *)
 (******************************************************************************)
 
-type 'a t = { mutable father : 'a t; mutable rank : int; 
+type 'a t = { mutable father : 'a t; mutable rank : int;
               mutable desc : 'a; tag : int  }
 
 let cnt = ref 0
@@ -45,14 +45,14 @@ let hash c = (find c).tag
 let union f x y =
   let rx = find x and ry = find y in
   let ndesc = f rx.desc ry.desc in
-  if rx != ry then 
+  if rx != ry then
     if rx.rank > ry.rank then begin
       ry.father <- rx;
       rx.desc <- ndesc
     end else if rx.rank < ry.rank then begin
       rx.father <-ry;
       ry.desc <- ndesc
-    end else begin 
+    end else begin
       ry.father <- rx;
       rx.rank <- rx.rank + 1;
       rx.desc <- ndesc
