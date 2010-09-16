@@ -11,6 +11,15 @@ let map f a =
 
 *)
 
+logic sum_array : int -> int array -> int
+axiom sum_array_none :
+  forall (t : int array). sum_array 0 t = 0
+axiom sum_array_step :
+  forall (t : int array) (i : int).
+    0 <= i -> i < len t ->
+    sum_array (i+1) t = sum_array i t + get i t
+
+
 logic sub ['a||] : 'a array -> int -> 'a array
 
 axiom sub_equal ['a||] :
@@ -35,13 +44,15 @@ axiom set_equal ['a] :
     0 <= i -> i < l -> get i a = k -> set i k a = a
 
 let map ['a 'b|in_ out|'e]
-  (inv : <in_ 'e> -> 'a array -> int -> prop)
-  (ar : ref(in_, 'a array)) (f : 'a ->{in_ 'e} 'a) =
+  (inv : <in_ 'e> -> 'b array -> int -> prop)
+  (ar : ref(in_, 'a array)) (f : 'a ->{in_ 'e} 'b) =
   {
     inv cur@{in_ 'e} ar_empty 0 /\
-     [[ ]] f (get 0 !ar) [[ k : forall (r : 'a array). inv cur (sub (set 0 k r) 1) 1 ]] /\
-    forall (k : 'a array) (i:int).
+     [[ 0 < len !!ar /\ inv cur ar_empty 0 ]] f (get 0 !ar)
+     [[ k : forall (r : 'b array). 1 <= len r -> inv cur (sub (set 0 k r) 1) 1 ]] /\
+    forall (k : 'b array) (i:int).
       1 <= i -> i < len !!ar ->
+      len k = len !!ar ->
     [[ inv cur (sub k i) i ]] f (get i !ar) [[ r: inv cur (sub (set i r k) (i+1)) (i+1) ]]
   }
   let l = len !ar in
@@ -59,18 +70,24 @@ let map ['a 'b|in_ out|'e]
   {r : inv cur@{in_ 'e} !!r (len !!ar@old) }
 
 
-(*
-predicate inv (k : int, a : int farray, b : int farray) =
-  forall i : int. 0 < i <= k -> sumarray(a,i) = access(b,i-1)
+let inv (k s : int) (a : int array) (b : int array) =
+  0 <= k /\ k <= len a /\ k <= len b /\ (k = 0 -> s = 0) /\
+  forall (i : int). 0 < i /\ i <= k -> sum_array i a = s /\ s = get (i-1) b
 
-let _ =
-  let s = ref 0 in
-  Array.map
-    (fun s i -> inv k a|s ??  )
-    (fun x ->
-      {}
-      s := !s + x; !s
-      {r : !s = !s|old + x /\ r = !s }) a
+let main [|r |] (a : ref(r, int array)) =
   {}
-
-  *)
+  letregion k in
+  letregion out in
+  let s = ref(k) 0 in
+  let f (x : int) =
+      {}
+      a := !a;
+      s := !s + x; !s
+      {r : !!s = !!s@old + x /\ r = !!s /\ !!a = !!a@old }
+  in
+  let z =
+  (map [{k}]
+    (fun (cur : <r k>) (out : int array) i -> inv i !!s !!a out)
+    a f : ref(out,int array))  in
+  !z
+  {r : inv (len !!a@old) (sum_array (len !!a@old) !!a) !!a r}
