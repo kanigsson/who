@@ -71,7 +71,8 @@ let map ['a 'b|in_ out|'e]
 
 let inv (k s : int) (a : int array) (b : int array) =
   (k = 0 -> s = 0) /\
-  forall (i : int). 0 < i /\ i <= k -> sum_array i a = s /\ s = get (i-1) b
+  sum_array k a = s /\
+  forall (i : int). 0 < i /\ i <= k -> sum_array i a = get (i-1) b
 
 let main [|r |] (a : ref(r, int array)) =
   {}
