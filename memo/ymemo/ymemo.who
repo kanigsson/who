@@ -29,7 +29,7 @@ let ymemo (f0 : int -> int)
           (ff : (int ->{t} int) ->{} int ->{t} int) =
   { forall (k : int ->{t} int).
     [[ realizes f0 k]] ff k [[ r : realizes f0 r ]] }
-  let rec (f : int ->{t} int) (x : int) =
+  let rec f (x : int) : int,{t} =
     { stores f0 !!table }
     if hmem x !table then hget x !table
     else
@@ -41,24 +41,22 @@ let ymemo (f0 : int -> int)
   f
   { rf : realizes f0 rf }
 
-(*
-logic Fib : int -> int
-axiom fib_zero : forall (n:int). n <= 1 -> Fib n = 1
-axiom fib_succ : forall (n:int). 1 < n -> Fib n = Fib (n-1) + Fib (n-2)
+logic fib : int -> int
+axiom fib_zero : forall (n:int). n <= 1 -> fib n = 1
+axiom fib_succ : forall (n:int). 1 < n -> fib n = fib (n-1) + fib (n-2)
 
-logic arg : int
-
-let main () =
-  { stores Fib cur }
-  ymemo Fib
-  (fun (f : int ->{table} int) (n : int) ->
-    { stores Fib cur /\ realizes Fib f }
-    if n <= 1 then 1 else f (n-1) + f (n-2)
-    {r : r = Fib n /\ stores Fib cur}
-  ) arg
-  {r : r = Fib arg}
-
-  *)
+let main (arg : int) =
+  { stores fib !!table }
+  let recfib (f : int ->{t} int) =
+    {realizes fib f}
+    fun (n : int) ->
+    { stores fib !!table }
+    if n <<= 1 then 1 else f (n-1) + f (n-2)
+    {r : r = fib n /\ stores fib !!table}
+  { r : realizes fib r }
+  in
+  ymemo fib recfib arg
+  {r : r = fib arg}
 
 (* une note : ymemo sans etat *)
 (*
