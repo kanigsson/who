@@ -79,5 +79,7 @@ let effect_ids =
     combine_id; restrict_id; get_id; empty_id
   ]
 
+let mk_tuple_ids = List.map mk_tuple_id [2;3;4;5;6;7]
+
 let is_infix_id id = List.exists (fun x -> x = id) infix_ids
 

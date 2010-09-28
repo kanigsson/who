@@ -65,3 +65,4 @@ val is_infix_id : string -> bool
 
 val infix_ids : string list
 val effect_ids : string list
+val mk_tuple_ids : string list

@@ -44,7 +44,8 @@ type t =
   | Get of t * t
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t
+  | Appn of t * t list
+  | NTuple of t list
   | Lam of string * ty * funcbody
   | Let of gen * t * string * t * isrec
   | PureFun of string * ty * t
@@ -147,8 +148,9 @@ module Generic = struct
     fprintf fmt "(%a :@ %s)" (list space string) l s
 
   let is_compound_term = function
-    | Const _ | Var _ | Lam _ | PureFun _ | Get _ | PRef _ | SubEff _-> false
-    | App _ | Let _ | Ite _ | Case _  -> true
+    | Const _ | Var _ | Lam _ | PureFun _ | Get _ | PRef _ | SubEff _
+    | NTuple _ -> false
+    | Appn _ | Let _ | Ite _ | Case _  -> true
     | Quant _ | Param _ | LetReg _ | Gen _ | HoareTriple _ -> true
 
   let inductive_sep fmt () = fprintf fmt "@ |@ "
@@ -187,10 +189,11 @@ module Coq = struct
   let rec term fmt x =
     match x with
     | Const c -> Const.print `Coq fmt c
-    | App (App (Var(v,_,_,`Infix),t1),t2) ->
+    | Appn (Var(v,_,_,`Infix), [t1;t2]) ->
         fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 string v with_paren t2
-    | App (t1,t2) ->
-          fprintf fmt "@[%a@ %a@]" term t1 with_paren t2
+    | Appn (f,args) ->
+        fprintf fmt "@[%a@ %a@]" term f (list space with_paren) args
+    | NTuple tl -> paren (list comma term) fmt tl
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then@ %a else@ %a@]" term e1 term e2 term e3
     | PureFun (x,t,e) ->
@@ -318,11 +321,12 @@ module Pangoline = struct
   let rec term env fmt t =
     match t with
     | Const c -> Const.print `Pangoline fmt c
-    | App (App (Var(v,i,_,`Infix),t1),t2) ->
+    | Appn (Var(v,i,_,`Infix), [t1;t2]) ->
         fprintf fmt "@[%a@ %a%a@ %a@]" (with_paren env) t1 string v inst i
           (with_paren env) t2
-    | App (t1,t2) ->
-          fprintf fmt "@[%a@ %a@]" (term env) t1 (with_paren env) t2
+    | Appn (f,args) ->
+        fprintf fmt "@[%a@ %a@]" (term env) f (list space (with_paren env)) args
+    | NTuple tl -> paren (list comma (term env)) fmt tl
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then@ %a else@ %a@]" (term env) e1 (term env) e2
           (term env) e3
@@ -467,10 +471,12 @@ module Who = struct
   let rec term fmt t =
     match t with
     | Const c -> Const.print `Who fmt c
-    | App (App (Var(v,_,_,`Infix),t1),t2) ->
+    | Appn (Var(v,_,_,`Infix), [t1;t2]) ->
         fprintf fmt "@[%a@ %a@ %a@]" with_paren t1 string v with_paren t2
-    | App (t1,t2) ->
-          fprintf fmt "@[%a@ %a@]" term t1 with_paren t2
+    | Appn (f,args) ->
+        fprintf fmt "@[%a@ %a@]" term f (list space with_paren) args
+    | NTuple tl ->
+        paren (list comma term) fmt tl
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then@ %a else@ %a@]" term e1 term e2 term e3
     | PureFun (x,t,e) ->
@@ -576,7 +582,7 @@ module Why3 = struct
   let rec ty env fmt x =
     match x with
     | Arrow _ | Map _ | Ref _ -> assert false
-    | PureArr (t1,t2) -> fprintf fmt "HO.func %a %a" mayp t1 mayp t2
+    | PureArr (t1,t2) -> fprintf fmt "HO.func %a %a" (mayp env) t1 (mayp env) t2
     | Tuple tl -> list comma (mayp env) fmt tl
     | TConst c -> Const.print_ty `Why3 fmt c
     | TApp (v,[]) when Misc.StringSet.mem v env -> tyvar fmt v
@@ -599,11 +605,12 @@ module Why3 = struct
   let rec term env fmt t =
     match t with
     | Const c -> Const.print `Why3 fmt c
-    | App (App (Var(v,_,_,`Infix),t1),t2) ->
+    | Appn (Var(v,_,_,`Infix), [t1;t2]) ->
         fprintf fmt "@[%a@ %a@ %a@]" (with_paren env) t1 string v
         (with_paren env) t2
-    | App (t1,t2) ->
-          fprintf fmt "@[%a@ %a@]" (term env) t1 (with_paren env) t2
+    | Appn (f,args) ->
+        fprintf fmt "@[%a@ %a@]" (term env) f (list space (with_paren env)) args
+    | NTuple tl -> paren (list comma (term env)) fmt tl
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then@ %a else@ %a@]"
           (term env) e1 (term env) e2 (term env) e3
@@ -669,7 +676,7 @@ module Why3 = struct
     | Formula (s,t,`Assumed) ->
         fprintf fmt "@[<hov 2>axiom %a:@ %a@]" upstring s (term empty) t
     | Formula (s,t,`Proved) ->
-        fprintf fmt "@[<hov 2>goal %a:@ %a@]" string s (term empty) t
+        fprintf fmt "@[<hov 2>goal %a:@ %a@]" upstring s (term empty) t
     | TypeDef (x,tl, Abstract) ->
         fprintf fmt "@[<hov 2>type %a %a@]" string x (list space tyvar) tl
     | TypeDef (n,tl,ADT bl) ->
@@ -761,10 +768,17 @@ module Print = struct
           Decl "use import programs.Prelude" ::
           t
       | _ -> t in
-    match kind with
-    | `Who -> Who.theory fmt t
-    | `Coq -> Coq.theory false fmt t
-    | `Pangoline -> Pangoline.theory fmt t
-    | `Why3 -> Why3.theory fmt t
+    let tail =
+      match kind with
+      | `Why3 -> [ Decl "end" ]
+      | _ -> [] in
+    let printfun =
+      match kind with
+      | `Who -> Who.theory
+      | `Coq -> Coq.theory false
+      | `Pangoline -> Pangoline.theory
+      | `Why3 -> Why3.theory in
+    printfun fmt t;
+    printfun fmt tail
 
 end

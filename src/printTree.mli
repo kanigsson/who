@@ -19,7 +19,8 @@ type t =
   | Get of t * t
   (* app (f,x,_,r) - r is the list of region names this execution creates -
   obligatory *)
-  | App of t * t
+  | Appn of t * t list
+  | NTuple of t list
   | Lam of string * ty * funcbody
   | Let of gen * t * string * t * isrec
   | PureFun of string * ty * t
