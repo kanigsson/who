@@ -122,9 +122,11 @@ let update () =
   else
     match !backend with
     | `Coq when !sections -> append_simple_trans Sectionize.theory ()
-    | _ ->
+    | _ -> ()
+(*
         append_simple_trans Split_conj.theory ();
         append_trans Split_goals.theory ();
         append_simple_trans Sectionize.theory ()
+*)
 
 

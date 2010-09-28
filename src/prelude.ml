@@ -131,10 +131,17 @@ section arith
   logic >> : int -> int -> bool
   logic >>= : int -> int -> bool
   logic <> ['a] : 'a -> 'a -> prop
-  logic int_max : int -> int -> int
-  logic int_min : int -> int -> int
   logic band : bool -> bool -> bool
   logic bor : bool -> bool -> bool
+
+end
+
+section min_max
+  coq predefined
+  pangoline takeover
+  why3 takeover
+  logic int_max : int -> int -> int
+  logic int_min : int -> int -> int
 
   axiom int_max_is_ge :
     forall (x y :int).
@@ -151,8 +158,8 @@ section arith
   axiom int_min_is_some :
     forall (x y : int).
       int_min x y = x \\/ int_min x y = y
-
 end
+
 
 section beq
   coq predefined
@@ -224,6 +231,10 @@ section whoarrays
   logic set ['a]: int -> 'a -> 'a array -> 'a array
   logic len ['a] :  'a array -> int
   logic create ['a] :  int -> 'a -> 'a array
+  logic ar_empty ['a] : 'a array
+
+  axiom ar_empty_length ['a] :
+    len (ar_empty : 'a array)  = 0
 
   axiom update_length ['a] :
     forall (t : 'a array) (i : int) (z : 'a).

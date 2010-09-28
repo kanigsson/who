@@ -69,6 +69,7 @@ let pangoline_predefined =
 let why3_predefined =
   [
     void_id, "()";
+    not_id, "not";
   ]
 
 let coq_predefined =

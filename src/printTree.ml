@@ -131,6 +131,7 @@ module Generic = struct
     | Tuple _ | Arrow _ | PureArr _ -> true
 
   let is_empty (l1,l2,l3) = l1 = [] && l2 = [] && l3 = []
+  let is_prop t = t = TConst Const.TProp
 
   let prl pr = list comma pr
   let prsl pr fmt l =
@@ -582,7 +583,10 @@ module Why3 = struct
   let rec ty env fmt x =
     match x with
     | Arrow _ | Map _ | Ref _ -> assert false
-    | PureArr (t1,t2) -> fprintf fmt "HO.func %a %a" (mayp env) t1 (mayp env) t2
+    | PureArr (t1,t2) when is_prop t2 ->
+        fprintf fmt "HO.pred %a" (mayp env) t1
+    | PureArr (t1,t2) ->
+        fprintf fmt "HO.func %a %a" (mayp env) t1 (mayp env) t2
     | Tuple tl -> list comma (mayp env) fmt tl
     | TConst c -> Const.print_ty `Why3 fmt c
     | TApp (v,[]) when Misc.StringSet.mem v env -> tyvar fmt v
@@ -602,6 +606,21 @@ module Why3 = struct
     List.fold_right Misc.StringSet.add tvl s
   let tvlist_to_env tvl = add_tvlist tvl Misc.StringSet.empty
 
+  let ty_contains env =
+    let rec aux t =
+      match t with
+      | TConst _ | Map _ -> false
+      | TApp (v,tl) -> Misc.StringSet.mem v env || List.exists aux tl
+      | Tuple tl  -> List.exists aux tl
+      | Arrow (t1,t2,_) | PureArr (t1,t2) -> aux t1 || aux t2
+      | Ref (_,t) -> aux t in
+    aux
+
+  let is_ty_app t =
+    match t with
+    | TApp _ -> true
+    | _ -> false
+
   let rec term env fmt t =
     match t with
     | Const c -> Const.print `Why3 fmt c
@@ -619,7 +638,12 @@ module Why3 = struct
     | Let (_,e1,x,e2,_) ->
         fprintf fmt "@[let@ %a =@[@ %a@]@ in@ %a@]" string x
           (term env) e1 (term env) e2
-    | Var (v,_,_,_) -> string fmt v
+    | Var (v,i,t,_) ->
+        (* the rule is: if v is a polymorphic variable, and
+         * it's type contains type variables, then print a type annotation *)
+        if not (is_empty i) && is_ty_app t && ty_contains env t then
+          fprintf fmt "(%s : %a)" v (ty env) t
+        else string fmt v
     | Quant (k,x,t,e) ->
         fprintf fmt "@[%a %a.@ %a@]"
           Const.quant k (binder env) (x,t) (term env) e
@@ -662,8 +686,7 @@ module Why3 = struct
   let empty = Misc.StringSet.empty
 
   let ret_ty env fmt t =
-    if t = TConst Const.TProp then ()
-    else fprintf fmt "@ :@ %a" (ty env) t
+    if is_prop t then () else fprintf fmt "@ :@ %a" (ty env) t
 
   let rec decl fmt d =
     match d with
@@ -762,6 +785,7 @@ module Print = struct
       | `Coq -> Decl "Set Implicit Arguments." :: t
       | `Why3 ->
           Decl "theory Iter" ::
+          Decl "use HighOrd as HO" ::
           Decl "use import bool.Bool" ::
           Decl "use import int.Int" ::
           Decl "use import list.List" ::
