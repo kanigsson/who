@@ -621,6 +621,15 @@ module Why3 = struct
     | TApp _ -> true
     | _ -> false
 
+  let grab_funs t =
+    let rec aux acc t =
+      match t with
+      | PureFun (x,ty,t) -> aux ((x,ty)::acc) t
+      | _ -> acc, t
+    in
+    let argl, t = aux [] t in
+    List.rev argl, t
+
   let rec term env fmt t =
     match t with
     | Const c -> Const.print `Why3 fmt c
@@ -633,8 +642,10 @@ module Why3 = struct
     | Ite (e1,e2,e3) ->
         fprintf fmt "@[if %a then@ %a else@ %a@]"
           (term env) e1 (term env) e2 (term env) e3
-    | PureFun (x,t,e) ->
-        fprintf fmt "@[(fun %a@ ->@ %a)@]" (binder env) (x,t) (term env) e
+    | PureFun _ ->
+        let args, body = grab_funs t in
+        fprintf fmt "@[(\\ %a@ .@ %a)@]" (list comma (binder env)) args
+          (term env) body
     | Let (_,e1,x,e2,_) ->
         fprintf fmt "@[let@ %a =@[@ %a@]@ in@ %a@]" string x
           (term env) e1 (term env) e2

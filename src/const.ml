@@ -52,12 +52,12 @@ let print kind fmt = function
   | Int b -> string fmt (Big_int.string_of_big_int b)
   | Ptrue ->
       begin match kind with
-      | `Pangoline -> string fmt "true"
+      | `Pangoline | `Why3 -> string fmt "true"
       | _ -> string fmt "True"
       end
   | Pfalse ->
       begin match kind with
-      | `Pangoline -> string fmt "false"
+      | `Pangoline | `Why3 -> string fmt "false"
       | _ -> string fmt "False"
       end
 

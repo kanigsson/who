@@ -70,6 +70,8 @@ let why3_predefined =
   [
     void_id, "()";
     not_id, "not";
+    btrue_id, "True";
+    bfalse_id, "False";
   ]
 
 let coq_predefined =
