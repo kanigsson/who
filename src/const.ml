@@ -40,7 +40,7 @@ let type_of_constant = function
   | Int _ -> TInt
   | Ptrue | Pfalse -> TProp
 
-type prover = [`Coq | `Pangoline | `Who ]
+type prover = [`Coq | `Pangoline | `Who | `Why3 ]
 type takeover = prover * choice
 and choice =
   | Include of string
@@ -65,6 +65,7 @@ let funsep fmt kind =
   match kind with
   | `Who | `Pangoline -> string fmt "->"
   | `Coq -> string fmt "=>"
+  | `Why3 -> string fmt "."
 
 let print_ty kind fmt = function
   | TInt ->
@@ -83,13 +84,15 @@ let quant fmt = function
 
 let quantsep fmt kind =
   match kind with
-  | `Who | `Pangoline -> string fmt "."
+  | `Who | `Pangoline | `Why3 -> string fmt "."
   | `Coq -> string fmt ","
 
 let prover fmt = function
   | `Pangoline -> string fmt "pangoline"
   | `Coq -> string fmt "coq"
   | `Who -> string fmt "who"
+  | `Why3 -> string fmt "why3"
+
 let choice fmt = function
   | Predefined -> string fmt "predefined"
   | Include s -> printf "\"%s\"" s

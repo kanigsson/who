@@ -34,7 +34,7 @@ and inst = t list
 val print : t Myformat.fmt
 val print_list : unit Myformat.fmt -> t list Myformat.fmt
 val coq_print : t Myformat.fmt
-val gen_print : ?kind:[`Coq | `Who | `Pangoline ] -> t Myformat.fmt
+val gen_print : ?kind:Const.prover -> t Myformat.fmt
 
 val var : Name.t -> t
 val const : Const.ty -> t

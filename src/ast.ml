@@ -374,6 +374,7 @@ module Print = struct
   let predef kind =
     match kind with
     | `Who -> Name.M.empty
+    | `Why3 -> Name.M.empty
     | `Coq -> Predefined.coq_map ()
     | `Pangoline -> Predefined.pangoline_map ()
 

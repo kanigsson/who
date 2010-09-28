@@ -25,6 +25,7 @@ let prelude = "
 section boolean
   coq predefined
   pangoline takeover
+  why3 predefined
   type bool
   logic true : bool
   logic false : bool
@@ -33,6 +34,7 @@ end
 section singleton
   coq predefined
   pangoline takeover
+  why3 predefined
   type unit
   logic tt : unit
 end
@@ -40,6 +42,7 @@ end
 section basiclogic
   coq predefined
   pangoline predefined
+  why3 predefined
   logic /\\ : prop -> prop -> prop
   logic \\/ : prop -> prop -> prop
   logic -> : prop -> prop -> prop
@@ -58,6 +61,7 @@ end
 section tuples
   coq \"WhoTuples\"
   pangoline predefined
+  why3 predefined
 
   logic mk_2tuple ['a 'b] : 'a -> 'b -> 'a * 'b
   logic mk_3tuple ['a 'b 'c] : 'a -> 'b -> 'c -> 'a * 'b * 'c
@@ -114,6 +118,7 @@ end
 section arith
   coq \"WhoArith\"
   pangoline takeover
+  why3 predefined
   logic + : int -> int -> int
   logic - : int -> int -> int
   logic * : int -> int -> int
@@ -164,6 +169,7 @@ parameter assume (f : prop) : unit,{} = {  }  { f }
 section whoref
   coq \"WhoMap\"
   pangoline predefined
+  why3 predefined
 
   logic !! ['a|r|'e] : ref(r,'a) -> <r 'e > -> 'a
   parameter ! ['a|r|] (x : ref(r,'a)) : 'a, {r + } =
@@ -214,7 +220,6 @@ section whoarrays
   pangoline takeover
   type array ['a]
 
-  logic ar_empty ['a] : 'a array
   logic get ['a] : int -> 'a array -> 'a
   logic set ['a]: int -> 'a -> 'a array -> 'a array
   logic len ['a] :  'a array -> int
@@ -227,8 +232,6 @@ section whoarrays
   axiom get_set_eq ['a] :
     forall (t : 'a array) (i : int) (z : 'a).
       0 <= i /\\ i < len t -> get i (set i z t) = z
-
-  axiom length_empty ['a] : len (ar_empty : 'a array) = 0
 
   axiom get_set_neq ['a] :
     forall (t : 'a array ) (i : int) (j : int) (z : 'a).
@@ -250,6 +253,7 @@ end
 section wholists
   coq \"WhoList\"
   pangoline takeover
+  why3 predefined
 
   type list ['a] =
   | Nil
@@ -264,6 +268,7 @@ end
 section whooptions
   coq predefined
   pangoline takeover
+  why3 predefined
 
   type option ['a] =
     | None

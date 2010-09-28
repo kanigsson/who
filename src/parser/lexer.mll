@@ -65,6 +65,7 @@ let id_or_keyword =
         ("predefined",  PREDEFINED );
         ("takeover",  TAKEOVER );
         ("pangoline",  PANGOLINE );
+        ("why3",  WHY3 );
         ("inductive",  INDUCTIVE );
         ("fixpoint",  FIXPOINT );
         ("fun",  FUN );

@@ -30,7 +30,7 @@ let constr_only = ref false
 let no_prelude = ref false
 let outfile = ref ""
 let check_coq = ref false
-let backend : [ `Coq | `Pangoline ] ref = ref `Pangoline
+let backend : [ `Coq | `Pangoline | `Why3 ] ref = ref `Pangoline
 let sections = ref false
 let suffix = ref ""
 let verbose = ref false
@@ -92,6 +92,8 @@ let opt_spec =
             " set output format to pangoline";
     "--coq", Arg.Unit (fun () -> backend := `Coq),
             " set output format to Coq";
+    "--why3", Arg.Unit (fun () -> backend := `Why3),
+            " set output format to Why3";
     "--check-coq", Arg.Set check_coq, " check produced coq file using coqc";
     "--sections", Arg.Set sections, " when using Coq, do not split files";
     "--noprelude", Arg.Set no_prelude, " do not add a prelude to the file";
@@ -110,6 +112,7 @@ let update () =
   let () =
     suffix :=
       match !backend with
+      | `Why3 -> "_who.why"
       | `Pangoline -> "_who.pge"
       | `Coq -> "_who.v" in
   if !outfile = "" then outfile := base;
