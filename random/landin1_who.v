@@ -88,5 +88,5 @@ Section sec.
       rewrite <- H3 in *; clear H3.
       generalize (H anon); clear H. intuition.
       apply H3; auto.
-    Admitted.
+    Qed.
      End sec.
