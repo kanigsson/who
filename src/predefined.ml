@@ -66,6 +66,14 @@ let pangoline_predefined =
   @ ExtList.repeat ~from:2 (preinstantiated_tuple + 1) (fun i ->
     mk_tuple_id i, Myformat.sprintf "mk_tuple%d" i)
 
+let why3_predefined =
+  [
+    void_id, "()";
+    not_id, "not";
+    btrue_id, "True";
+    bfalse_id, "False";
+  ]
+
 let coq_predefined =
   [
     fst_id, "fst";
@@ -116,6 +124,8 @@ let is_get_tuple_var x =
   try Some (snd (find x get_tuple_ids))
   with Not_found -> None
 
+let is_mk_tuple x = belongs_to x mk_tuple_ids
+
 let build_map list =
   let map = ref None in
   fun () ->
@@ -130,3 +140,4 @@ let build_map list =
 
 let pangoline_map = build_map pangoline_predefined
 let coq_map = build_map coq_predefined
+let why3_map = build_map why3_predefined

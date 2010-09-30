@@ -42,7 +42,7 @@ type 'a isrec =
   | NoRec
   | Rec of 'a
 
-type prover = [`Coq | `Pangoline | `Who ]
+type prover = [`Coq | `Pangoline | `Who | `Why3 ]
 type takeover = prover  * choice
 and choice =
   | Include of string

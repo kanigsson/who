@@ -38,11 +38,11 @@ val add_symbol : string -> Name.t -> unit
 val add_symbol_and_binding :
   string -> Name.t -> binding -> unit
 
-val belongs_to : Name.t -> string list -> bool
-
 val is_infix : Name.t -> bool
 val is_effect_var : Name.t -> bool
 val is_get_tuple_var : Name.t -> int option
+val is_mk_tuple : Name.t -> bool
 
 val pangoline_map : unit -> string Name.M.t
 val coq_map : unit -> string Name.M.t
+val why3_map : unit -> string Name.M.t

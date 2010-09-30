@@ -95,6 +95,7 @@ takeover:
 prover:
   | COQ { `Coq }
   | PANGOLINE { `Pangoline }
+  | WHY3 { `Why3 }
 
 %public takeoverdecl:
   | p = prover t = takeover { p, t }

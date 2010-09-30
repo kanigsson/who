@@ -10,9 +10,9 @@ let assert ['a||] (p : [ 'a ->{r}'a] -> <r> -> prop) ref(r,'a ->{r} 'a) =
 *)
 let backpatch ['a||]
   (p : [[ 'a ->{r}'a ]] -> <r> -> prop )
-  (f : ref(r,'a ->{r} 'a) ->{} 'a ->{r + }'a) =
+  (f : ref(r,'a ->{r +} 'a) ->{} 'a ->{r + }'a) =
   {forall x. [[ True ]]f x [[ g : forall (s : <r>). !!x@s = g -> p g s]] }
-  let id (x :'a) = {} (x : 'a,{r}) {} in
+  let id (x :'a) = {} (x : 'a,{r +}) {} in
   let x = ref(r) id in
   x := f x;
   !x

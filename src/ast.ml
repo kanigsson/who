@@ -202,6 +202,13 @@ let destruct_app2_var' x =
 let destruct_app2_var x = destruct_app2_var' x.v
 let destruct_app x = destruct_app' x.v
 
+let destruct_appn =
+  let rec aux acc t =
+    match t.v with
+    | App (t1,t2) -> aux (t2::acc) t1
+    | _ -> t, acc in
+  aux []
+
 let is_equality t =
   match destruct_app2_var t with
   | Some (v, _, _,_) when PL.equal v.var I.equal_id -> true
@@ -267,8 +274,12 @@ module Convert = struct
         | Var (v,i) ->
             let s = id env v.var in
             P.Var (s, inst env i, ty env term.t,v.fix)
-        | App (t1,t2) ->
-            P.App (t env t1, t env t2)
+        | App _ ->
+            begin match destruct_appn term with
+            | { v = Var (v,_)}, tl when PL.is_mk_tuple v.var ->
+                P.NTuple (List.map (t env) tl)
+            | f, tl -> P.Appn (t env f, List.map (t env) tl)
+            end
         | LetReg (l,e) ->
             let env = add_ids env l in
             P.LetReg (List.map (id env) l,t env e)
@@ -374,6 +385,7 @@ module Print = struct
   let predef kind =
     match kind with
     | `Who -> Name.M.empty
+    | `Why3 -> Predefined.why3_map ()
     | `Coq -> Predefined.coq_map ()
     | `Pangoline -> Predefined.pangoline_map ()
 
