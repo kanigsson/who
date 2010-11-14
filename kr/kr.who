@@ -1,0 +1,67 @@
+type tree
+type forest
+
+logic node : int -> forest -> tree
+logic nodi : tree -> int
+logic nodf : tree -> forest
+
+logic nil : forest
+logic cons : tree -> forest -> forest
+logic append : forest -> forest -> forest
+
+logic is_nil : forest -> bool
+logic head : forest -> tree
+logic tail : forest -> forest
+
+type color
+logic Black : color
+logic White : color
+logic is_white : color -> bool
+
+type state
+
+logic get : state -> int -> color
+logic set : state -> int -> color -> state
+
+logic anyf : state -> forest -> prop
+
+logic mirrorf : state -> state -> forest -> prop
+
+logic evenf : forest -> prop
+logic oddf : forest -> prop
+
+logic validf : forest -> prop
+
+logic eq_out : state -> state -> forest -> prop
+
+use (bits : state)
+
+let rec enum_forest [e||] 
+  (f0 : forest) (k : unit ->{bits e} unit) (f : forest) :
+  forest ->{} (unit ->{bits e} unit) ->{} forest -> {bits e} unit =
+  { validf (append f f0) /\ anyf bits (append f f0) /\
+    (forall (s : <bits e>) . validf f0 -> anyf bits|s f0 -> pre k () s) /\
+    (forall (s s': <bits e>). 
+     post k () s s' () -> mirrorf bits|s bits|s' f0 /\ eq_out bits|s bits|s' f0)
+   }
+  if is_nil f then k ()
+  else 
+    let k = 
+      (fun () ->
+        { validf (append (tail f) f0) /\ anyf bits (append (tail f) f0) } 
+        enum_forest f0 k (tail f)
+        { mirrorf bits|old bits (append (tail f) f0) /\
+          eq_out bits|old bits (append (tail f) f0) }) 
+    in
+    let i = nodi (head f) in
+    let f' = nodf (head f) in
+    if is_white (get !bits i) then
+      (let () = k () in 
+       let () = bits := set !bits i Black in
+       enum_forest (append (tail f) f0) k f')
+    else
+      (let () = enum_forest (append (tail f) f0) k f' in
+       let () = bits := set !bits i White in
+       k ())
+  { mirrorf bits|old bits (append f f0) /\ eq_out bits|old bits (append f f0) }
+
