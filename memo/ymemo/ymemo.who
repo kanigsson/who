@@ -29,7 +29,7 @@ let ymemo (f0 : int -> int)
           (ff : (int ->{t} int) ->{} int ->{t} int) =
   { forall (k : int ->{t} int).
     [[ realizes f0 k]] ff k [[ r : realizes f0 r ]] }
-  let rec f (x : int) : int,{t} =
+  let rec f (x : int) : int, {t} =
     { stores f0 !!table }
     if hmem x !table then hget x !table
     else
