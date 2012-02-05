@@ -1,5 +1,9 @@
 # Who - A simple VCGen for higher-order programs.
 
+This project is now abandoned. I leave it online for interested people; in particular, examples might be interesting.
+
+Note that newer versions of Ocaml (>= 3.12) do not compile who.
+
 To install the program, do:
 
     autoconf
